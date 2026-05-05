@@ -4,7 +4,7 @@
 *
 * Buffer : io_buf.ibs  |  Model : driver  (I/O, Active-High enable)
 * Channel: channel.sp  (10-section RLGC ladder, 10 cm FR4)
-* Stimulus: prbs11.pwl (400 bits, 8.1 Gbps HBR3, 0-3.3 V)
+* Stimulus: prbs11.pwl (400 bits, UI=5 ns / 200 Mbps, 0-3.3 V)
 * ============================================================
 
 .option post=2
@@ -50,7 +50,7 @@ Rdig  dig_q  0  1k
 .include 'channel.sp'
 
 * ---- Termination: 85 Ohm to GND at receiver end ----
-Rterm  n10b  0  85
+Rterm  n10b  0  75
 
 * ---- Analysis ----
 .TRAN 10p 2u
