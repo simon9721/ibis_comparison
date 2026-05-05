@@ -19,7 +19,7 @@ Vsupply  vdd  0  DC 3.3
 Ven  en_sig  0  DC 3.3
 
 * ---- Stimulus: PRBS11 PWL, 0-3.3V swing ----
-Vstim  in_dig  0  PWL file='prbs11.pwl'
+Vstim  in_dig  0  PWL PWLFILE='prbs11.pwl'
 
 * ---- I/O buffer as output driver (B_IO, 8-node form) ----
 * Node order: nd_pu  nd_pd  nd_out  nd_in  nd_en  nd_out_of_in  nd_pc  nd_gc

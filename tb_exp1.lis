@@ -1,0 +1,105 @@
+ ****** PrimeSim HSPICE -- T-2022.06 win64 (May 20 2022 7637141) ******
+  Copyright (c) 1986 - 2026 by Synopsys, Inc. All Rights Reserved.
+  This software and the associated documentation are proprietary
+  to Synopsys, Inc. This software may only be used in accordance
+  with the terms and conditions of a written license agreement with
+  Synopsys, Inc. All other use, reproduction, or distribution of
+  this software is strictly prohibited.
+  Input File: tb_exp1.sp                                                        
+  Command line options: C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com tb_exp1.sp -o tb_exp1
+  Start time: Mon May  4 18:24:37 2026
+  lic:  
+  lic: FLEXlm: SDK_12.10 
+  lic: USER:   sh3qm                HOSTNAME: rd78ece-emclab 
+  lic: HOSTID: 00ff89f5aa52         PID:      4492 
+  lic: Using FLEXlm license file: 
+  lic: 1704@synopsys.lic.mst.edu 
+  lic: Checkout 1 hspice 
+  lic: License/Maintenance for hspice will expire on 04-may-2026/2025.06 
+  lic: 1(in_use)/50(total) FLOATING license(s) on SERVER 1704@synopsys.lic.mst.e
+ du 
+  lic:   
+  **warning** (tb_exp1.sp:11) runlvl smaller than 5, reset to 5 when accurate turned on
+
+ **warning**  runlvl smaller than 5, reset to 5 when accurate turned on
+  **info** (tb_exp1.sp:22) DC voltage reset to initial transient source value in source 0:vstim. new dc=0.3300D+01
+  
+
+  **warning** the following singular supplies were terminated to 1 meg resistor 
+          supply       node1            node2
+(tb_exp1.sp:15)vsupply                 0:vdd              defined in subckt 0                     0:0                defined in subckt 0               
+      
+ *****************************************************************
+ ******  option summary
+ ******
+ runlvl  = 5         bypass  = 2.0000    
+
+ **info** rebuilding matrix with pivot option
+
+ **info** dc convergence successful at Newton-Raphson method 
+1****** PrimeSim HSPICE -- T-2022.06 win64 (May 20 2022 7637141) ******
+ ******  
+ * ============================================================
+
+ ****** operating point information tnom=  25.000 temp=  27.000 ******
+ ****** operating point status is voltage   simulation time is     0.     
+    node    =voltage      node    =voltage      node    =voltage
+
+ +0:dig_q   = 500.0000m 0:en_sig  =   3.3000  0:gc_node =   0.     
+ +0:gnd_node=   0.      0:in_dig  =   3.3000  0:n10a    =   1.4048 
+ +0:n10b    =   1.4048  0:n1a     =   1.5114  0:n1b     =   1.5114 
+ +0:n2a     =   1.4966  0:n2b     =   1.4966  0:n3a     =   1.4826 
+ +0:n3b     =   1.4826  0:n4a     =   1.4693  0:n4b     =   1.4693 
+ +0:n5a     =   1.4567  0:n5b     =   1.4567  0:n6a     =   1.4449 
+ +0:n6b     =   1.4449  0:n7a     =   1.4338  0:n7b     =   1.4338 
+ +0:n8a     =   1.4234  0:n8b     =   1.4234  0:n9a     =   1.4138 
+ +0:n9b     =   1.4138  0:pc_node =   3.3000  0:tx_out  =   1.5269 
+ +0:vcc_node=   3.3000  0:vdd     =   3.3000 
+
+
+          ***** job concluded
+ ******  
+ * ============================================================
+
+ ****** job statistics summary tnom=  25.000 temp=  27.000 ******
+
+  ******  PrimeSim HSPICE Threads Information  ******
+
+  Command Line Threads Count :     1
+  Available CPU Count        :    12
+  Actual Threads Count       :     1
+
+
+  ******  Circuit Statistics  ******
+  # nodes       =      35 # elements   =      47
+  # resistors   =      13 # capacitors =      10 # inductors   =      10
+  # mutual_inds =       0 # vccs       =      10 # vcvs        =       0
+  # cccs        =       0 # ccvs       =       0 # volt_srcs   =       3
+  # curr_srcs   =       0 # diodes     =       0 # bjts        =       0
+  # jfets       =       0 # mosfets    =       0 # U elements  =       0
+  # T elements  =       0 # W elements =       0 # B elements  =       1
+  # S elements  =       0 # P elements =       0 # va device   =       0
+  # vector_srcs =       0 # N elements =       0
+
+
+  ******  Runtime Statistics (seconds)  ******
+
+  analysis           time    # points   tot. iter  conv.iter
+  op point           0.00           1           8
+  transient          2.08      200001       82289       30127 rev=       400
+  readin             0.15
+  errchk             0.01
+  setup              0.00
+  output             0.00
+
+
+           peak memory used         80.82 megabytes
+           total cpu time            2.24 seconds
+           total elapsed time        2.37 seconds
+           job started at     18:24:37 05/04/2026
+           job ended   at     18:24:40 05/04/2026
+           job total runtime         2.37 seconds
+
+
+  lic: Release hspice token(s) 
+ lic: total license checkout elapse time:        0.10(s)

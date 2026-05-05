@@ -1,0 +1,42 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "18:24:37 05/04/2026 "
+* "netlist" "tb_exp1.sp "
+* "runtitle" "* ============================================================"
+* time =    0.            
+* temperature =   27.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ dig_q = 500.0000m       
++ en_sig =   3.3000        
++ gc_node =   0.            
++ gnd_node =   0.            
++ in_dig =   3.3000        
++ n10a =   1.4048        
++ n10b =   1.4048        
++ n1a =   1.5114        
++ n1b =   1.5114        
++ n2a =   1.4966        
++ n2b =   1.4966        
++ n3a =   1.4826        
++ n3b =   1.4826        
++ n4a =   1.4693        
++ n4b =   1.4693        
++ n5a =   1.4567        
++ n5b =   1.4567        
++ n6a =   1.4449        
++ n6b =   1.4449        
++ n7a =   1.4338        
++ n7b =   1.4338        
++ n8a =   1.4234        
++ n8b =   1.4234        
++ n9a =   1.4138        
++ n9b =   1.4138        
++ pc_node =   3.3000        
++ tx_out =   1.5269        
++ vcc_node =   3.3000        
++ vdd =   3.3000        
+***   END: Saved Operating Point ***                     
