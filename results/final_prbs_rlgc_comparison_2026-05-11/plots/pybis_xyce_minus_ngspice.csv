@@ -1,0 +1,2 @@
+comparison,reference,test,points,t_end_ns,rmse_mV,max_abs_error_mV,mean_error_mV
+Xyce + pybis edge15_flat4p2 minus ngspice + pybis,ngspice_pybis,xyce_pybis,20001,1000.0,26.642522172816953,50.37620911600271,-13.30314075488344

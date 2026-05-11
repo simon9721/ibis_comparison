@@ -36,18 +36,21 @@ measured rise/fall crossing phase split:
 That duty-cycle distortion is why one side can look mostly rising while the
 other side looks mostly falling.
 
-For the visual eye the user expected, the simpler and better current review
-folders are:
+Later review correction:
+
+The edge-aligned folders below are diagnostic transition overlays only. They
+should not be used as the physically correct eye result, because they detect
+receiver threshold crossings and redraw each transition family at both UI
+boundaries. That intentionally removes the rise/fall phase split from the
+transition locations.
 
 1. eyes_ngspice_simple_edge_with_rails
 2. eyes_xyce_simple_edge_with_rails
 
-These use:
+They used:
 
   --fold_mode edge --edge_include_clock_rails
 
-This detects receiver threshold crossings, draws each transition family at both
-UI boundaries, and keeps the normal clock-folded rail slices. This is closer to
-the simple visual eye requested. It is not the same as a raw clock-folded timing
-eye, because it intentionally removes the rise/fall phase split from the
-transition locations.
+The eye tool has since been reverted to clock/UI-grid folding only. That means
+the eye plot should preserve the transient waveform's duty-cycle distortion
+instead of compensating it visually.

@@ -1,0 +1,2 @@
+comparison,reference,test,points,t_end_ns,rmse_mV,max_abs_error_mV,mean_error_mV
+Xyce + io_buf.sp minus ngspice + io_buf.sp,ngspice_refspice,xyce_refspice,20001,1000.0,3.141806393612942,23.970260570373796,0.16011723691261626

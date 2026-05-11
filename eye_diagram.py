@@ -350,7 +350,7 @@ def estimate_signal_levels(voltage):
 
 
 def estimate_eye_phase(time, voltage, ui, levels=None, skip_ui=5):
-    """Estimate crossing phase in UI units so folded eyes can align to edges."""
+    """Estimate one common fold phase in UI units from threshold crossings."""
     time, voltage = sanitize_waveform(time, voltage)
     levels = levels or estimate_signal_levels(voltage)
     threshold = levels['v_mid']
@@ -399,7 +399,11 @@ def resolve_signal_key(data, requested):
 
 def build_eye(time, voltage, ui, skip_ui=5, n_interp=2000, n_ui=3, phase_ui=0.0):
     """
-    Fold a waveform into an eye diagram.
+    Fold a waveform into a clock-referenced eye diagram.
+
+    This preserves the transient waveform's timing. All slices are taken on a
+    single UI-spaced time grid; rising and falling edges are not independently
+    shifted or aligned.
 
     Parameters
     ----------
@@ -447,58 +451,6 @@ def build_eye(time, voltage, ui, skip_ui=5, n_interp=2000, n_ui=3, phase_ui=0.0)
     t_eye = np.linspace(0, n_ui * ui, n_interp * n_ui, endpoint=False)
 
     return t_eye, eye_slices
-
-
-def build_edge_aligned_eye(time, voltage, ui, skip_ui=5, n_interp=2000,
-                           levels=None, include_rails=True):
-    """
-    Build a 1-UI edge-aligned eye.
-
-    This mode detects receiver threshold crossings and draws each transition at
-    both UI boundaries. It is useful for visual inspection when the goal is to
-    compare rising and falling edge shapes at the eye crossings. It intentionally
-    removes duty-cycle distortion from the x-axis; use clock-fold mode when the
-    raw timing skew is the thing being measured.
-    """
-    time, voltage = sanitize_waveform(time, voltage)
-    levels = levels or estimate_signal_levels(voltage)
-    threshold = levels['v_mid']
-    t_start = time[0] + skip_ui * ui
-
-    above = voltage >= threshold
-    crossing_idx = np.where(above[:-1] != above[1:])[0]
-    t_grid = np.linspace(0.0, ui, n_interp, endpoint=False)
-
-    slices = []
-    for i in crossing_idx:
-        t0, t1 = time[i], time[i + 1]
-        if t1 < t_start:
-            continue
-        v0, v1 = voltage[i], voltage[i + 1]
-        if v1 == v0:
-            continue
-        tc = t0 + (threshold - v0) * (t1 - t0) / (v1 - v0)
-
-        # Crossing at left UI boundary after centering x by UI/2.
-        if tc + ui <= time[-1]:
-            slices.append(np.interp(t_grid + tc, time, voltage))
-
-        # Crossing at right UI boundary after centering x by UI/2.
-        if tc - ui >= time[0]:
-            slices.append(np.interp(t_grid + tc - ui, time, voltage))
-
-    if include_rails:
-        _, rail_slices = build_eye(
-            time, voltage, ui, skip_ui=skip_ui, n_interp=n_interp,
-            n_ui=1, phase_ui=0.0
-        )
-        slices.extend(rail_slices)
-
-    if not slices:
-        raise ValueError("No threshold crossings found for edge-aligned eye.")
-
-    return t_grid, np.asarray(slices)
-
 
 # =============================================================================
 # 4. Eye metrics
@@ -1029,23 +981,17 @@ def main():
     parser.add_argument('--n_interp', type=int, default=2000,
                         help='Interpolated samples per UI (default: 2000)')
     parser.add_argument('--phase_ui', type=float, default=0.0,
-                        help='Fold phase offset in UI units (default: 0.0)')
+                        help='Common clock-fold phase offset in UI units '
+                             '(default: 0.0)')
     parser.add_argument('--auto_phase', action='store_true',
-                        help='Estimate fold phase from signal threshold crossings')
+                        help='Estimate one common clock-fold phase from signal '
+                             'threshold crossings')
     parser.add_argument('--auto_phase_target', default='decision',
                         choices=['decision', 'crossing'],
                         help='With --auto_phase, place the eye opening at the plot center '
                              "('decision') or align the plot start to crossings ('crossing').")
     parser.add_argument('--center_x', action='store_true',
                         help='Center the x-axis around the decision point')
-    parser.add_argument('--fold_mode', default='clock',
-                        choices=['clock', 'edge'],
-                        help='clock = raw UI-grid fold; edge = edge-aligned visual eye '
-                             'with rise/fall families at both UI boundaries')
-    parser.add_argument('--edge_include_clock_rails', action='store_true',
-                        help='In edge fold mode, also include clock-folded 1-UI rail slices')
-    parser.add_argument('--edge_transition_only', action='store_true',
-                        help='In edge fold mode, omit clock-folded rail slices')
     parser.add_argument('--levels', default='auto',
                         choices=['auto', 'vdd'],
                         help='Threshold levels: auto signal swing or 0..Vdd (default: auto)')
@@ -1125,17 +1071,7 @@ def main():
     print("\n  Building eye diagram...")
     phase_ui = args.phase_ui
     crossing_phase_ui = ''
-    if args.fold_mode == 'edge':
-        if args.n_ui != 1:
-            print("  NOTE: edge fold mode uses a 1-UI window; ignoring --n_ui.")
-            args.n_ui = 1
-        t_eye, eye_slices = build_edge_aligned_eye(
-            time, voltage, args.ui, skip_ui=args.skip_ui,
-            n_interp=args.n_interp, levels=levels,
-            include_rails=(args.edge_include_clock_rails or not args.edge_transition_only)
-        )
-        print("  Fold mode    : edge-aligned")
-    elif args.auto_phase:
+    if args.auto_phase:
         crossing_phase = estimate_eye_phase(time, voltage, args.ui,
                                             levels=levels,
                                             skip_ui=args.skip_ui)
@@ -1157,6 +1093,7 @@ def main():
             skip_ui=args.skip_ui, n_interp=args.n_interp, n_ui=args.n_ui,
             phase_ui=phase_ui
         )
+    print("  Fold method   : clock/UI grid (no per-edge alignment)")
     n_interp = eye_slices.shape[1] // args.n_ui
     print(f"  UI slices used : {eye_slices.shape[0]}  ({args.n_ui}-UI eye)")
 
@@ -1175,7 +1112,7 @@ def main():
     print("\n  Generating plots...")
     modes = (['heatmap', 'overlay', 'contour']
              if args.mode == 'all' else [args.mode])
-    x_offset = 0.5 * args.n_ui * args.ui if (args.center_x or args.fold_mode == 'edge') else 0.0
+    x_offset = 0.5 * args.n_ui * args.ui if args.center_x else 0.0
 
     eye_title = f"Eye Diagram - {stem} - {args.signal}"
     if 'heatmap' in modes:
@@ -1222,8 +1159,7 @@ def main():
             'file', 'format', 'signal', 'samples', 't_start_ns', 't_end_ns',
             'v_min', 'v_max', 'level_low', 'level_high',
             'fold_mode', 'crossing_phase_ui', 'phase_ui',
-            'auto_phase_target', 'center_x', 'edge_include_clock_rails',
-            'edge_transition_only',
+            'auto_phase_target', 'center_x',
             'skip_ui', 'n_ui', 'ui_s', 'eye_slices',
             'eye_height_mV', 'eye_width_ps', 'v_eye_high', 'v_eye_low',
             'rise_time_ps', 'fall_time_ps', 'overshoot_mV',
@@ -1241,13 +1177,11 @@ def main():
             'v_max': float(voltage.max()),
             'level_low': levels['v_low'],
             'level_high': levels['v_high'],
-            'fold_mode': args.fold_mode,
+            'fold_mode': 'clock',
             'crossing_phase_ui': crossing_phase_ui,
             'phase_ui': phase_ui,
             'auto_phase_target': args.auto_phase_target if args.auto_phase else '',
             'center_x': args.center_x,
-            'edge_include_clock_rails': args.edge_include_clock_rails,
-            'edge_transition_only': args.edge_transition_only,
             'skip_ui': args.skip_ui,
             'n_ui': args.n_ui,
             'ui_s': args.ui,
