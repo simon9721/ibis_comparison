@@ -1,0 +1,18 @@
+* Xyce pybis: tanh92 pulse train with Backward-Euler/non-LTE timestep control.
+
+Vin   in_dig  0  PULSE(0 3.3 1.5n 200p 200p 2n 5n)
+Ven   en_sig  0  DC 3.3
+Vdd   vdd     0  DC 3.3
+
+.include 'driver_OutputInput_Typical_xyce_relaxed92.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+
+RCH_TX  pad tx_out 1u
+.include 'channel_xyce.sp'
+RTERM   n10b 0 50
+
+.ic V(pad)=0 V(tx_out)=0 V(n10b)=0 V(XDRV:Ku)=0 V(XDRV:Kd)=1 V(XDRV:NX)=0 V(XDRV:N6)=0 V(XDRV:N8)=0
+.options timeint method=trap maxord=1 erroption=1 delmax=20p nlmin=3 nlmax=8 timestepsreversal=1
+.tran 10p 40n uic
+.print tran format=csv time V(in_dig) V(pad) V(tx_out) V(n10b) V(XDRV:Ku) V(XDRV:Kd) V(XDRV:NX)
+.end

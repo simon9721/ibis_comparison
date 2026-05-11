@@ -1,0 +1,23 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Large/generated simulator waveform outputs
+*.raw
+*.cir.csv
+*.prn
+*.out
+*.log
+*.err
+*_out.txt
+test_*.txt
+rsf_compare_log*.txt
+
+# Local reference documents
+*.pdf
+
+# Separate local clone used for optional eye-tool reference
+/eye/
+
+# Scratch workspace copies
+/experiments/

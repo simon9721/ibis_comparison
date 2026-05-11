@@ -1,0 +1,19 @@
+* Xyce pybis tail-fix probe: SPISim-style T-line rise-fall-rise, 200 ps edge
+* Candidate: KUR/KDR arg soft cap 4.2 ns, k=10
+
+Vin   in_dig   0  PWL(0 0 1n 0 1.2n 3.3 9n 3.3 9.2n 0 17n 0 17.2n 3.3 25n 3.3 25.2n 0)
+Ven   en_sig   0  DC 3.3
+Vdd   vdd      0  DC 3.3
+
+.include 'driver_OutputInput_Typical_xyce_relaxed92_tailsoft4p2k10.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+
+TVAL  pad  0  ntst  0  Z0=50 Td=30p
+RLOAD ntst 0  50
+
+.ic V(pad)=0 V(ntst)=0 V(XDRV:Ku)=0 V(XDRV:Kd)=1 V(XDRV:NX)=0 V(XDRV:N6)=0 V(XDRV:N8)=0
+.options timeint method=trap maxord=1 erroption=1 delmax=20p nlmin=3 nlmax=8 timestepsreversal=1
+.options output initial_interval=10p
+.tran 10p 26n uic
+.print tran format=csv time V(in_dig) V(pad) V(ntst) V(XDRV:Ku) V(XDRV:Kd) V(XDRV:NX)
+.end

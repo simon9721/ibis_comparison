@@ -1,0 +1,21 @@
+* ============================================================
+* Xyce diagnostic: PRBS7 + pybis2spice + new 50-ohm RLGC channel
+* Same as tb_pybis_prbs7_new50ohm_xyce.cir, but skips DCOP with uic
+* and limits runtime to 100 ns for convergence probing.
+* ============================================================
+
+.include 'prbs7_vstim.inc'
+Ven    en_sig  0  DC 3.3
+Vdd    vdd     0  DC 3.3
+
+.include 'driver_OutputInput_Typical.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+
+RCH_TX  pad tx_out 1u
+.include 'channel_xyce.sp'
+RTERM   n10b 0 50
+
+.ic V(pad)=0 V(tx_out)=0 V(n10b)=0
+.tran 10p 100n uic
+.print tran format=csv time V(in_dig) V(pad) V(tx_out) V(n10b) V(XDRV:Ku) V(XDRV:Kd)
+.end

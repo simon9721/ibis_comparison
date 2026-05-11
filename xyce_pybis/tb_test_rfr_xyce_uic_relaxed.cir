@@ -1,0 +1,16 @@
+* Xyce pybis Test 2: fast rise/fall, Rload only
+
+Vin   in_dig  0  PWL(0 0  0.2n 3.3  10n 3.3  10.2n 0)
+Ven   en_sig  0  DC 3.3
+Vdd   vdd     0  DC 3.3
+
+.include 'driver_OutputInput_Typical_xyce_relaxed.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+Rload pad  0  50
+
+.ic V(pad)=0 V(XDRV:Ku)=0 V(XDRV:Kd)=1 V(XDRV:NX)=0 V(XDRV:N6)=0 V(XDRV:N8)=0
+.tran 10p 20n uic
+.print tran format=csv time V(in_dig) V(pad) V(XDRV:Ku) V(XDRV:Kd) V(XDRV:NX) V(XDRV:N6) V(XDRV:N8)
+.end
+
+

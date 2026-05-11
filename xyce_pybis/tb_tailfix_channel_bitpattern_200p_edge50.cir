@@ -1,0 +1,20 @@
+* Xyce pybis tail-fix probe: 50-ohm channel deterministic bit pattern, 200 ps edge
+* Candidate: edge/latch tanh50 only
+
+Vin   in_dig  0  PWL(0 0 1.5n 0 1.7n 3.3 6.5n 3.3 6.7n 0 11.5n 0 11.7n 3.3 21.5n 3.3 21.7n 0 31.5n 0 31.7n 3.3 36.5n 3.3 36.7n 0 45n 0)
+Ven   en_sig  0  DC 3.3
+Vdd   vdd     0  DC 3.3
+
+.include 'driver_OutputInput_Typical_xyce_relaxed92_edge50.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+
+RCH_TX  pad tx_out 1u
+.include 'channel_xyce.sp'
+RTERM   n10b 0 50
+
+.ic V(pad)=0 V(tx_out)=0 V(n10b)=0 V(XDRV:Ku)=0 V(XDRV:Kd)=1 V(XDRV:NX)=0 V(XDRV:N6)=0 V(XDRV:N8)=0
+.options timeint method=trap maxord=1 erroption=1 delmax=20p nlmin=3 nlmax=8 timestepsreversal=1
+.options output initial_interval=10p
+.tran 10p 45n uic
+.print tran format=csv time V(in_dig) V(pad) V(tx_out) V(n10b) V(XDRV:Ku) V(XDRV:Kd) V(XDRV:NX)
+.end

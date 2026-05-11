@@ -1,0 +1,15 @@
+* Xyce pybis Test A1: delayed single rising edge, Rload only
+
+Vin   in_dig  0  PWL(0 0  1.5n 0  1.7n 3.3)
+Ven   en_sig  0  DC 3.3
+Vdd   vdd     0  DC 3.3
+
+.include 'driver_OutputInput_Typical_xyce_relaxed.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+Rload pad  0  50
+
+.tran 10p 20n
+.print tran format=csv time V(in_dig) V(pad) V(XDRV:Ku) V(XDRV:Kd) V(XDRV:NX) V(XDRV:N6) V(XDRV:N8)
+.end
+
+

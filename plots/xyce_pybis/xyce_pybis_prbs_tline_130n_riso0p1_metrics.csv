@@ -1,0 +1,2 @@
+simulator,candidate,model,riso_ohm,returncode,timed_out,wall_s,deck,output,rows,t_end_ns,completed,ntst_min,ntst_max,pad_min,pad_max
+ngspice,direct,driver_OutputInput_Typical.sub,0.1,,True,75.01,ngspice_pybis/tb_prbs7_tline_50ohm_130n_riso0p1_ngspice_pybis.sp,ngspice_pybis/tb_prbs7_tline_50ohm_130n_riso0p1_ngspice_pybis.raw,585069,125.54859833888356,False,-0.01276798214324059,1.5535051775838737,-0.012787547406684656,1.5566081208288642

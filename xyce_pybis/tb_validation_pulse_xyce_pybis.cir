@@ -1,0 +1,21 @@
+* ============================================================
+* Compact Xyce validation bench for the pybis2spice input-driven model
+* Mirrors ngspice_pybis/tb_validation_pulse_ngspice_pybis_batch.sp
+* ============================================================
+
+* Input / supplies
+Vin   in_dig   0  PULSE(0 3.3 1n 5p 5p 1.5n 3n)
+Ven   en_sig   0  DC 3.3
+Vdd   vdd      0  DC 3.3
+
+* Converted pybis2spice model, using SPISim-style Ku/Kd timing control
+.include 'driver_OutputInput_Typical.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+
+* SPISim-style validation load: ideal delayed 50 ohm environment
+TVAL  pad  0  ntst  0  Z0=50 Td=30p
+RLOAD ntst 0  50
+
+.tran 10p 20n uic
+.print tran format=csv time V(in_dig) V(pad) V(ntst) V(XDRV:Ku) V(XDRV:Kd)
+.end

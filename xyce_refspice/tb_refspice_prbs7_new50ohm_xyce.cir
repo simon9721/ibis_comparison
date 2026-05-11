@@ -1,0 +1,29 @@
+* ============================================================
+* PRBS7 transient bench - transistor-level refspice + new 50 ohm channel
+* Xyce port of ngspice_refspice/tb_refspice_prbs7_new50ohm_batch.sp
+* ============================================================
+
+.include 'prbs7_vstim.inc'
+Rin    in_dig  in_buf  1
+
+Vdd_ref  vdd_ref_src  0  DC 3.3
+Voe_ref  oe_ref_src   0  DC 3.3
+Rvdd_ref vdd_ref_src  vdd_ref  1
+Roe_ref  oe_ref_src   oe_ref   1
+Cdec_ref vdd_ref      0        10p
+
+.subckt SPICE_BUF in oe out in_sense vdd vss
+.include '../hspice_ngspice.mod'
+.include '../io_buf.sp'
+.ends SPICE_BUF
+
+XREF in_buf oe_ref pad_ref in_sense_ref vdd_ref 0 SPICE_BUF
+
+RCH_TX  pad_ref tx_out 1u
+.include 'channel_xyce.sp'
+RTERM   n10b 0 50
+
+.ic V(pad_ref)=0 V(tx_out)=0 V(n10b)=0
+.tran 10p 1000n uic
+.print tran format=csv time V(in_dig) V(in_buf) V(pad_ref) V(tx_out) V(n10b) V(in_sense_ref)
+.end

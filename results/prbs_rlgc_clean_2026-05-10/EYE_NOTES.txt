@@ -1,0 +1,53 @@
+Eye diagram notes for the clean PRBS7 + RLGC rerun
+
+The first generated eye folders, eyes_ngspice and eyes_xyce, used --auto_phase
+to align the fold start directly to the receiver threshold crossings. That is
+not a good review convention: it makes the plots look like repeated transition
+or step responses.
+
+Corrected review folders:
+
+1. eyes_ngspice_1ui_decision
+2. eyes_xyce_1ui_decision
+
+These use a 1-UI window, crossing-to-crossing, with the decision point centered
+on the x-axis:
+
+  --n_ui 1 --auto_phase --auto_phase_target crossing --center_x
+
+Also generated:
+
+1. eyes_ngspice_clock_centered
+2. eyes_xyce_clock_centered
+
+These use a 2-UI window with the decision point at the plot center:
+
+  --n_ui 2 --auto_phase --auto_phase_target decision --center_x
+
+Important correction after review:
+
+The clock-folded eyes still do not force rising and falling edges to intersect
+at both UI boundaries. They preserve the raw receiver timing, including the
+measured rise/fall crossing phase split:
+
+  ngspice V(n10b) rising crossing phase ~= 0.608 UI
+  ngspice V(n10b) falling crossing phase ~= 0.334 UI
+
+That duty-cycle distortion is why one side can look mostly rising while the
+other side looks mostly falling.
+
+For the visual eye the user expected, the simpler and better current review
+folders are:
+
+1. eyes_ngspice_simple_edge_with_rails
+2. eyes_xyce_simple_edge_with_rails
+
+These use:
+
+  --fold_mode edge --edge_include_clock_rails
+
+This detects receiver threshold crossings, draws each transition family at both
+UI boundaries, and keeps the normal clock-folded rail slices. This is closer to
+the simple visual eye requested. It is not the same as a raw clock-folded timing
+eye, because it intentionally removes the rise/fall phase split from the
+transition locations.

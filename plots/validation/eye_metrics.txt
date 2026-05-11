@@ -1,0 +1,14 @@
+Eye Diagram Metrics  --  PRBS7 @ 200 Mbps, 50-ohm load, ngspice
+  refspice: 1000 ns full run  |  pybis: 210 ns (partial, ~21 UI)
+============================================================
+Metric                    Transistor-level     pybis2spice
+------------------------------------------------------------
+Eye Height (V)                       1.204           0.783
+Eye High (V)                         1.222           0.808
+Eye Low (V)                          0.018           0.025
+Eye Width (UI)                       1.000           0.813
+Rise Time 20-80% (ps)               1007.8          1000.4
+Fall Time 80-20% (ps)                200.8           297.9
+Overshoot (%Vswing)                    0.9             1.1
+Undershoot (%Vswing)                   0.4             0.8
+============================================================
