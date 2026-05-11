@@ -1,55 +1,69 @@
 # IBIS_Comparison
 
-This project compares three related flows for the same `io_buf.ibs` driver:
+This project compares several flows for the same `io_buf` driver family:
 
-- native HSPICE IBIS simulation
-- SPISim's free-spice reference flow
-- `pybis2spice` conversion plus ngspice
+- HSPICE native IBIS results
+- transistor-level `io_buf.sp` in ngspice and Xyce
+- `pybis2spice` conversion plus ngspice and Xyce
 
-The current focus is waveform-based ngspice simulation that is as close as practical to SPISim's architecture while still using the converted `pybis2spice` model.
+The current accepted benchmark is PRBS7 through the new 50 ohm RLGC channel,
+with physical clock-folded eye plots generated from the transient output.
 
 ## Layout
 
-- `io_buf.ibs`
-  The working IBIS model under test.
-- `channel.sp`
-  The shared 10-section RLGC ladder channel used by the HSPICE and ngspice channel benches.
-- `prbs11.pwl`
-  The shared PRBS11 stimulus file.
-- `tb_exp1.sp`
-  Original HSPICE native-IBIS channel bench with `power=on`.
-- `tb_exp1_hspice_poweroff.sp`
-  HSPICE native-IBIS channel bench with explicit rails and `power=off`.
-- `SimIbis_FreeSpice_From_SPISim/`
-  SPISim's example files used as external reference and verification.
-- `ngspice_pybis/`
-  Generated pybis2spice/ngspice models, benches, and ngspice outputs.
+- `models/`
+  Source models shared by simulator decks: `io_buf.ibs`, `io_buf.sp`, and
+  `hspice_ngspice.mod`.
+- `channels/`
+  Shared legacy channel snippets that are not local to one simulator folder.
+- `hspice/native_ibis_exp1/`
+  Historical HSPICE native-IBIS Exp 1 deck and `.tr0/.lis/.st0/.ic0` outputs.
+- `ngspice_refspice/` and `xyce_refspice/`
+  Transistor-level `io_buf.sp` reference benches.
+- `ngspice_pybis/` and `xyce_pybis/`
+  Converted pybis/minimum-modification benches and outputs.
+- `scripts/`
+  Runners, plotting tools, regression checks, and analysis helpers.
+- `results/`
+  Accepted comparison bundles and generated review artifacts.
+- `plots/`
+  Older plot output kept for reference.
+- `docs/reports/`
+  Detailed status reports and historical findings.
+- `docs/references/`
+  Local PDF manuals and papers. These are ignored by git.
+- `eye/`
+  Local ignored eye-tool reference workspace.
+- `experiments/`
+  Local ignored scratch/HSPICE workspace.
 
 ## Where To Start
 
-- Read [STATUS_2026-05-06.md](C:/Users/simom/Desktop/IBIS_Comparison/STATUS_2026-05-06.md) for the most detailed status snapshot.
-- Read [ngspice_pybis/README.md](C:/Users/simom/Desktop/IBIS_Comparison/ngspice_pybis/README.md) for the ngspice-side deck map.
+- Current plan: [ibis_comparison_plan.md](C:/Users/simom/Desktop/IBIS_Comparison/ibis_comparison_plan.md)
+- Detailed progress report: [docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md](C:/Users/simom/Desktop/IBIS_Comparison/docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md)
+- Accepted benchmark bundle: [results/final_prbs_rlgc_comparison_2026-05-11/README.md](C:/Users/simom/Desktop/IBIS_Comparison/results/final_prbs_rlgc_comparison_2026-05-11/README.md)
+- Xyce pybis ladder bundle: [results/xyce_pybis_minmod_ladder_2026-05-11/README.md](C:/Users/simom/Desktop/IBIS_Comparison/results/xyce_pybis_minmod_ladder_2026-05-11/README.md)
+
+## Current Commands
+
+```powershell
+python scripts\run_accepted_prbs_rlgc_regression.py
+python scripts\run_xyce_pybis_minmod_ladder.py
+```
+
+Useful direct tool examples:
+
+```powershell
+python scripts\eye_diagram.py hspice\native_ibis_exp1\tb_exp1.tr0 --signal v(n10b) --ui 5e-9
+python scripts\check_ibis.py
+```
 
 ## Current Summary
 
-- SPISim's `Ibs2Spc_Coef.spc` and `Ibs2Spc_Ramp.spc` both run successfully in ngspice.
-- The converted `pybis2spice` input-driven model now follows the SPISim-style elapsed-time and `Ku/Kd` approach closely enough to validate in ngspice.
-- Compact validation decks and short PRBS/channel decks run well in ngspice.
-- The full `2 us` PRBS/channel ngspice deck is still a long-run job.
-
-## Recommended Workflow
-
-1. Use the SPISim compact decks as reference:
-   `SimIbis_FreeSpice_From_SPISim/Ibs2Spc_Coef.spc`
-   `SimIbis_FreeSpice_From_SPISim/Ibs2Spc_Ramp.spc`
-2. Use the compact pybis2spice/ngspice validation deck for model checks:
-   `ngspice_pybis/tb_validation_pulse_ngspice_pybis_batch.sp`
-3. Use the short PRBS/channel deck for quick channel sanity:
-   `ngspice_pybis/tb_exp1_ngspice_pybis_inputdriven_100n_batch.sp`
-4. Use the full `2 us` deck only for long correlation runs:
-   `ngspice_pybis/tb_exp1_ngspice_pybis_inputdriven_batch.sp`
-
-## Notes
-
-- The `ngspice_pybis` folder contains both the current preferred SPISim-style input-driven model and an older direct-wrapper model kept for reference.
-- No file moves were done during this documentation pass because many decks rely on simple relative `.include` paths.
+- ngspice and Xyce both run the transistor-level `io_buf.sp` PRBS/RLGC accepted
+  benchmark and agree closely.
+- ngspice pybis is stable for the accepted PRBS/RLGC comparison.
+- Xyce pybis needs the documented minimum-modification/tail-fix setup for the
+  accepted benchmark.
+- HSPICE native IBIS historical `.tr0` files exist, but a matched HSPICE +
+  transistor-level `io_buf.sp` run is still deferred.

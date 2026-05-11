@@ -70,4 +70,4 @@ Reference bench:
 
 ## Notes
 - Eye-width value from current eye script is often 0 ps for deterministic traces and should not be used alone as a quality indicator.
-- UI-folding logic in `eye_diagram.py` was corrected during this session to use real multi-UI windows rather than tiled single-UI slices.
+- UI-folding logic in `scripts/eye_diagram.py` was corrected during this session to use real multi-UI windows rather than tiled single-UI slices.

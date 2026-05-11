@@ -9,8 +9,8 @@ Parses HSPICE ASCII .tr0 files (POST=2) and produces:
     overshoot, undershoot
 
 Usage:
-    python eye_diagram.py tb_exp1.tr0 --signal v(n10b) --ui 5e-9
-    python eye_diagram.py tb_exp1.tr0 --signal v(n10b) --ui 5e-9 --skip_ui 10
+    python scripts/eye_diagram.py tb_exp1.tr0 --signal v(n10b) --ui 5e-9
+    python scripts/eye_diagram.py tb_exp1.tr0 --signal v(n10b) --ui 5e-9 --skip_ui 10
 
 Design notes:
   - Simulator-agnostic core: load_waveform / build_eye / measure_eye /

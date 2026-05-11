@@ -1,5 +1,9 @@
 import re
-lines = open('io_buf.ibs').readlines()
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+IBIS_PATH = ROOT / "models" / "io_buf.ibs"
+lines = IBIS_PATH.read_text().splitlines()
 
 # Find falling waveform V_fixture=0 and show where the fast transition happens
 for i, L in enumerate(lines):

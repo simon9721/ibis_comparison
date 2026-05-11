@@ -2,7 +2,7 @@
 run_matrix.py — Clean test matrix runner for pybis vs refspice convergence study.
 
 Usage:
-    python run_matrix.py [--timeout 30] [--tag D1] [--dry-run]
+    python scripts/run_matrix.py [--timeout 30] [--tag D1] [--dry-run]
 
 Issue dimensions
 ----------------
@@ -35,7 +35,7 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
-ROOT      = Path(__file__).parent
+ROOT      = Path(__file__).resolve().parents[1]
 PYBIS_DIR = ROOT / "ngspice_pybis"
 REF_DIR   = ROOT / "ngspice_refspice"
 NGSPICE   = Path(r"C:\Users\simom\Desktop\spice\ngspice-46_64\Spice64\bin\ngspice_con.exe")

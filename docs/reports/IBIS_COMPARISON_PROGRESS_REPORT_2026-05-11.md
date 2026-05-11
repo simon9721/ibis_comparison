@@ -151,16 +151,16 @@ about 1.3 ns, or about 0.26 to 0.27 UI at 5 ns UI. The absolute delay and swing
 differ because the benches are not all identical, but the timing distortion is
 consistent.
 
-The root-level `tb_exp1.tr0` HSPICE native IBIS result was not used as the main
-reference because that waveform rings badly, with approximately -1.50 V to
-3.84 V at `V(n10b)`. The cleaner HSPICE native IBIS `.tr0` is the
+The `hspice/native_ibis_exp1/tb_exp1.tr0` HSPICE native IBIS result was not used
+as the main reference because that waveform rings badly, with approximately
+-1.50 V to 3.84 V at `V(n10b)`. The cleaner HSPICE native IBIS `.tr0` is the
 `experiments/tb_exp1.tr0` file.
 
 ## 7. HSPICE Status
 
 What exists:
 
-- `tb_exp1.tr0`
+- `hspice/native_ibis_exp1/tb_exp1.tr0`
 - `experiments/tb_exp1.tr0`
 
 Both are HSPICE native IBIS style runs, not HSPICE transistor-level `io_buf.sp`
@@ -175,7 +175,7 @@ It wraps `io_buf.sp` as:
 ```spice
 .subckt SPICE_BUF  in  oe  out  in_sense  vdd  vss
 .include 'hspice.mod'
-.include 'io_buf.sp'
+.include '../models/io_buf.sp'
 .ends SPICE_BUF
 ```
 
@@ -188,7 +188,7 @@ But no corresponding HSPICE result exists:
 Likely setup issue before future HSPICE run:
 
 - if run from `experiments/`, `.include 'io_buf.sp'` probably needs to become
-  `.include '../io_buf.sp'`
+  `.include '../models/io_buf.sp'`
 - if run from repo root, `hspice.mod` path may need to be checked
 - current HSPICE license availability remains the practical blocker
 
@@ -359,7 +359,7 @@ duty-cycle distortion we were trying to measure.
 
 Current state:
 
-- `eye_diagram.py` now uses clock/UI-grid folding only
+- `scripts/eye_diagram.py` now uses clock/UI-grid folding only
 - edge-aligned mode has been removed from the CLI
 - `--fold_mode edge`, `--edge_include_clock_rails`, and
   `--edge_transition_only` are gone
@@ -901,8 +901,8 @@ Important current artifacts:
   `scripts/run_xyce_pybis_minmod_ladder.py`
 - Xyce pybis ladder results:
   `results/xyce_pybis_minmod_ladder_2026-05-11/`
-- Xyce result notes: `XYCE_RESULTS_2026-05-09.md`
-- ngspice alignment notes: `ALIGNMENT_FINDINGS_2026-05-07.md`
+- Xyce result notes: `docs/reports/XYCE_RESULTS_2026-05-09.md`
+- ngspice alignment notes: `docs/reports/ALIGNMENT_FINDINGS_2026-05-07.md`
 - Clean pybis PRBS/RLGC run: `results/prbs_rlgc_clean_2026-05-10/`
 - HSPICE `.tr0` comparison: `results/hspice_tr0_comparison_2026-05-11/`
 - Physical `io_buf.sp` eyes: `results/io_buf_sp_physical_eye_2026-05-11/`

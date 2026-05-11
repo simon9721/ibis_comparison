@@ -1,4 +1,4 @@
-* ============================================================
+﻿* ============================================================
 * Rise-fall-rise ngspice comparison bench:
 * transistor-level reference SPICE vs converted IBIS-SPICE
 * ============================================================
@@ -20,8 +20,8 @@ Ren_ibis en_ibis_src  en_ibis  1
 
 * ---- Transistor-level reference SPICE buffer ----
 .subckt SPICE_BUF in oe out in_sense vdd vss
-.include '../hspice_ngspice.mod'
-.include '../io_buf.sp'
+.include '../models/hspice_ngspice.mod'
+.include '../models/io_buf.sp'
 .ends SPICE_BUF
 
 XREF in_dig oe_ref pad_ref in_sense_ref vdd_ref 0 SPICE_BUF

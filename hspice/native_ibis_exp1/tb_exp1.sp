@@ -2,9 +2,9 @@
 * tb_exp1.sp  —  Experiment 1: HSPICE Native IBIS (Ground Truth)
 * Missouri S&T EMC Lab — IBIS Comparison Study — April 2026
 *
-* Buffer : io_buf.ibs  |  Model : driver  (I/O, Active-High enable)
-* Channel: channel.sp  (10-section RLGC ladder, 10 cm FR4)
-* Stimulus: prbs11.pwl (400 bits, UI=5 ns / 200 Mbps, 0-3.3 V)
+* Buffer : ../../models/io_buf.ibs  |  Model : driver  (I/O, Active-High enable)
+* Channel: ../../channels/channel.sp  (10-section RLGC ladder, 10 cm FR4)
+* Stimulus: ../../prbs11.pwl (400 bits, UI=5 ns / 200 Mbps, 0-3.3 V)
 * ============================================================
 
 .option post=2
@@ -19,7 +19,7 @@ Vsupply  vdd  0  DC 3.3
 Ven  en_sig  0  DC 3.3
 
 * ---- Stimulus: PRBS11 PWL, 0-3.3V swing ----
-Vstim  in_dig  0  PWL PWLFILE='prbs11.pwl'
+Vstim  in_dig  0  PWL PWLFILE='../../prbs11.pwl'
 
 * ---- I/O buffer as output driver (B_IO, 8-node form) ----
 * Node order: nd_pu  nd_pd  nd_out  nd_in  nd_en  nd_out_of_in  nd_pc  nd_gc
@@ -34,7 +34,7 @@ Vstim  in_dig  0  PWL PWLFILE='prbs11.pwl'
 * nd_gc   : gc_node   — HSPICE ties to 0V internally (power=on)
 *
 B_drv  vcc_node  gnd_node  tx_out  in_dig  en_sig  dig_q  pc_node  gc_node
-+ file='io_buf.ibs'
++ file='../../models/io_buf.ibs'
 + model='driver'
 + typ=typ
 + power=on
@@ -47,7 +47,7 @@ Rdig  dig_q  0  1k
 * ---- Channel: 10-section RLGC ladder ----
 * tx_out is ch_in (direct connection via shared node name)
 * ch_out is n10b — connects to termination below
-.include 'channel.sp'
+.include '../../channels/channel.sp'
 
 * ---- Termination: 85 Ohm to GND at receiver end ----
 Rterm  n10b  0  75

@@ -308,7 +308,10 @@ Known issue:
 
 Primary status/report files:
 
-- `IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md`
+- `docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md`
+- `docs/reports/XYCE_RESULTS_2026-05-09.md`
+- `docs/reports/ALIGNMENT_FINDINGS_2026-05-07.md`
+- `docs/reports/STATUS_2026-05-06.md`
 - `results/final_prbs_rlgc_comparison_2026-05-11/README.md`
 - `results/final_prbs_rlgc_comparison_2026-05-11/final_metrics_summary.csv`
 - `results/final_prbs_rlgc_comparison_2026-05-11/pairwise_error_summary.csv`

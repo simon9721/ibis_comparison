@@ -1,7 +1,7 @@
 # Ngspice Reference-SPICE Benches
 
-These decks use the transistor-level reference buffer from `../io_buf.sp`
-with MOS models from `../hspice.mod`, driven by the same ngspice PRBS
+These decks use the transistor-level reference buffer from `../models/io_buf.sp`
+with MOS models from `../models/hspice_ngspice.mod`, driven by the same ngspice PRBS
 source style used for the converted IBIS benches.
 
 Files:
@@ -22,7 +22,7 @@ Bench alignment choices:
 
 - Supply: `3.3 V`
 - Enable/OE: held high
-- Channel: `../channel.sp`
+- Channel: `../channels/channel.sp`
 - Termination: `85 ohm`
 - Stimulus: `../ngspice_pybis/prbs11_ngspice.inc`
 
