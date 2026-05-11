@@ -312,6 +312,9 @@ Primary status/report files:
 - `results/final_prbs_rlgc_comparison_2026-05-11/README.md`
 - `results/final_prbs_rlgc_comparison_2026-05-11/final_metrics_summary.csv`
 - `results/final_prbs_rlgc_comparison_2026-05-11/pairwise_error_summary.csv`
+- `results/final_prbs_rlgc_comparison_2026-05-11/REGRESSION_SUMMARY.md`
+- `results/xyce_pybis_minmod_ladder_2026-05-11/README.md`
+- `results/xyce_pybis_minmod_ladder_2026-05-11/xyce_pybis_minmod_ladder_summary.csv`
 
 Primary plots:
 
@@ -319,14 +322,26 @@ Primary plots:
 - `results/final_prbs_rlgc_comparison_2026-05-11/plots/rx_transient_overlay_30_80ns.png`
 - `results/final_prbs_rlgc_comparison_2026-05-11/plots/rx_transient_overlay_full.png`
 - `results/final_prbs_rlgc_comparison_2026-05-11/eyes/*/*_overlay.png`
+- `results/xyce_pybis_minmod_ladder_2026-05-11/xyce_pybis_minmod_ladder_matrix.png`
+
+Primary commands:
+
+```powershell
+python scripts\run_accepted_prbs_rlgc_regression.py
+python scripts\run_xyce_pybis_minmod_ladder.py
+```
 
 ## 12. Immediate Plan
 
 1. Treat `results/final_prbs_rlgc_comparison_2026-05-11/` as the current
    accepted benchmark baseline.
-2. Keep HSPICE deferred until the matched setup is ready.
-3. If continuing Xyce pybis research, focus on minimal-modification variants
+2. Use `scripts/run_accepted_prbs_rlgc_regression.py` for the one-command
+   accepted-benchmark rerun.
+3. Use `scripts/run_xyce_pybis_minmod_ladder.py` to maintain the Xyce pybis
+   minimum-modification matrix.
+4. Keep HSPICE deferred until the matched setup is ready.
+5. If continuing Xyce pybis research, focus on minimal-modification variants
    around `edge50_flat4p2` and `edge15_flat4p2`, with the accepted PRBS/RLGC
    benchmark as the final gate.
-4. Keep the eye tool physically clock-folded; no visual edge compensation for
+6. Keep the eye tool physically clock-folded; no visual edge compensation for
    final evidence.

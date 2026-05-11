@@ -895,6 +895,12 @@ Important current artifacts:
   `results/final_prbs_rlgc_comparison_2026-05-11/`
 - Final benchmark builder:
   `scripts/build_final_prbs_rlgc_comparison.py`
+- One-command accepted benchmark regression:
+  `scripts/run_accepted_prbs_rlgc_regression.py`
+- Xyce pybis minimum-modification ladder:
+  `scripts/run_xyce_pybis_minmod_ladder.py`
+- Xyce pybis ladder results:
+  `results/xyce_pybis_minmod_ladder_2026-05-11/`
 - Xyce result notes: `XYCE_RESULTS_2026-05-09.md`
 - ngspice alignment notes: `ALIGNMENT_FINDINGS_2026-05-07.md`
 - Clean pybis PRBS/RLGC run: `results/prbs_rlgc_clean_2026-05-10/`

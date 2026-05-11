@@ -1,0 +1,5 @@
+case,return_code,timed_out,wall_s,log
+ngspice_refspice,0,False,4.296757459640503,results/final_prbs_rlgc_comparison_2026-05-11/regression_logs/ngspice_refspice.log
+xyce_refspice,0,False,2.5758137702941895,results/final_prbs_rlgc_comparison_2026-05-11/regression_logs/xyce_refspice.log
+clean_pybis_pair,0,False,12.976863861083984,results/final_prbs_rlgc_comparison_2026-05-11/regression_logs/clean_pybis_pair.log
+build_final_comparison,0,False,7.829847097396851,results/final_prbs_rlgc_comparison_2026-05-11/regression_logs/build_final_comparison.log
