@@ -1,0 +1,17 @@
+case,flow,simulator,model,direction,edge_index,context,input_crossing_ns,output_50_delay_ps,slew_20_80_ps
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,0,00->10,8.1,4127.696343409563,482.6223236945395
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,1,01->00,10.1,2964.0743842108523,294.7183802716083
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,2,00->11,14.1,4314.440807026962,1227.7573496229188
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,3,11->01,18.1,2997.67879238322,436.6459559785551
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,4,10->10,20.1,4108.873125859596,448.3284536990373
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,5,01->01,22.099999999999998,2984.9603782265585,302.74727398832624
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,6,10->11,24.1,108.87312585959701,-3670.5695233699503
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,7,11->00,32.1,3010.065250096029,436.83224345229587
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,8,00->10,46.1,4127.083966806435,477.74764705365794
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,9,01->00,48.1,2964.548158799747,295.2681129449115
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,10,00->11,52.1,4313.956464811806,1224.228561179575
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,11,11->01,56.1,2996.9489116764507,434.8555985892109
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,12,10->10,58.099999999999994,4107.513492676998,447.5326865541395
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,13,01->01,60.1,2984.792120683186,302.3201591958267
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,rise,14,10->11,62.099999999999994,107.51349267700193,-3670.537155615882
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge50_flat4p2,Xyce,less-smoothed edge controls plus flat tail,fall,15,11->00,70.1,3009.2924663607478,437.11365786452876

@@ -301,6 +301,125 @@ def plot_receiver_overlays(waveforms):
         plt.close(fig)
 
 
+def pair_error_metrics(ref_case, ref_t, ref_v, test_case, test_t, test_v):
+    t0 = max(ref_t[0], test_t[0])
+    t1 = min(ref_t[-1], test_t[-1])
+    grid = np.linspace(t0, t1, 20001)
+    ref_interp = np.interp(grid, ref_t, ref_v)
+    test_interp = np.interp(grid, test_t, test_v)
+    diff = test_interp - ref_interp
+    return {
+        "comparison": f"{test_case.label} minus {ref_case.label}",
+        "reference": ref_case.key,
+        "test": test_case.key,
+        "points": len(grid),
+        "t_end_ns": t1 * 1e9,
+        "rmse_mV": float(np.sqrt(np.mean(diff * diff)) * 1e3),
+        "max_abs_error_mV": float(np.max(np.abs(diff)) * 1e3),
+        "mean_error_mV": float(np.mean(diff) * 1e3),
+    }
+
+
+def plot_two_window_overlay(entries, outfile: Path, title: str, subtitle: str = ""):
+    fig, axes = plt.subplots(2, 1, figsize=(12, 7.2), sharey=True)
+    windows = [(0.0, 120.0, "0-120 ns overview"), (30.0, 80.0, "30-80 ns zoom")]
+
+    values = []
+    for _, time, voltage, _ in entries:
+        mask = (ns(time) >= 0.0) & (ns(time) <= 120.0)
+        values.extend(voltage[mask])
+    if values:
+        y_min = float(np.min(values))
+        y_max = float(np.max(values))
+        margin = max((y_max - y_min) * 0.08, 0.05)
+        ylim = (y_min - margin, y_max + margin)
+    else:
+        ylim = None
+
+    for ax, (x0, x1, window_label) in zip(axes, windows):
+        for case, time, voltage, style in entries:
+            t_ns = ns(time)
+            mask = (t_ns >= x0) & (t_ns <= x1)
+            ax.plot(
+                t_ns[mask],
+                voltage[mask],
+                label=case.label,
+                **style,
+            )
+        ax.set_xlim(x0, x1)
+        if ylim:
+            ax.set_ylim(*ylim)
+        ax.set_ylabel("V(n10b) (V)")
+        ax.set_title(window_label, fontsize=10)
+        ax.grid(True, alpha=0.25)
+        ax.legend(loc="best", fontsize=9)
+
+    axes[-1].set_xlabel("Time (ns)")
+    fig.suptitle(title if not subtitle else f"{title}\n{subtitle}", fontsize=13)
+    fig.tight_layout(rect=(0, 0, 1, 0.94))
+    fig.savefig(outfile, dpi=170)
+    plt.close(fig)
+
+
+def plot_refspice_pybis_overlays(waveforms):
+    plots_dir = OUT_DIR / "plots"
+    by_key = {case.key: (case, time, voltage) for case, time, voltage in waveforms}
+
+    pair_specs = [
+        (
+            "ngspice",
+            "ngspice_refspice",
+            "ngspice_pybis",
+            "refspice_vs_pybis_ngspice.png",
+            "ngspice: refspice vs pybis receiver transient",
+            "#1f77b4",
+        ),
+        (
+            "Xyce",
+            "xyce_refspice",
+            "xyce_pybis",
+            "refspice_vs_pybis_xyce.png",
+            "Xyce: refspice vs pybis receiver transient",
+            "#d62728",
+        ),
+    ]
+
+    metric_rows = []
+    all_entries = []
+    for simulator, ref_key, pybis_key, filename, title, color in pair_specs:
+        ref_case, ref_t, ref_v = by_key[ref_key]
+        pybis_case, pybis_t, pybis_v = by_key[pybis_key]
+        metrics = pair_error_metrics(ref_case, ref_t, ref_v, pybis_case, pybis_t, pybis_v)
+        metric_rows.append({"simulator": simulator, **metrics})
+        subtitle = (
+            f"pybis - refspice: RMSE={metrics['rmse_mV']:.1f} mV, "
+            f"max={metrics['max_abs_error_mV']:.1f} mV over 0-{metrics['t_end_ns']:.0f} ns"
+        )
+        plot_two_window_overlay(
+            [
+                (ref_case, ref_t, ref_v, dict(color=color, lw=1.3, alpha=0.95, ls="-")),
+                (pybis_case, pybis_t, pybis_v, dict(color=color, lw=1.3, alpha=0.95, ls="--")),
+            ],
+            plots_dir / filename,
+            title,
+            subtitle,
+        )
+        all_entries.extend(
+            [
+                (ref_case, ref_t, ref_v, dict(color=color, lw=1.2, alpha=0.9, ls="-")),
+                (pybis_case, pybis_t, pybis_v, dict(color=color, lw=1.2, alpha=0.9, ls="--")),
+            ]
+        )
+
+    plot_two_window_overlay(
+        all_entries,
+        plots_dir / "refspice_vs_pybis_all.png",
+        "ngspice and Xyce: refspice vs pybis receiver transient",
+        "Solid = transistor-level refspice, dashed = pybis; blue = ngspice, red = Xyce",
+    )
+    write_csv(plots_dir / "refspice_vs_pybis_error_summary.csv", metric_rows)
+
+
 def plot_metric_bars(rows):
     plots_dir = OUT_DIR / "plots"
     labels = [r["label"] for r in rows]
@@ -337,22 +456,7 @@ def compare_pairs(waveforms):
     for filename, ref_key, test_key in pairs:
         ref_case, ref_t, ref_v = by_key[ref_key]
         test_case, test_t, test_v = by_key[test_key]
-        t0 = max(ref_t[0], test_t[0])
-        t1 = min(ref_t[-1], test_t[-1])
-        grid = np.linspace(t0, t1, 20001)
-        ref_interp = np.interp(grid, ref_t, ref_v)
-        test_interp = np.interp(grid, test_t, test_v)
-        diff = test_interp - ref_interp
-        row = {
-            "comparison": f"{test_case.label} minus {ref_case.label}",
-            "reference": ref_case.key,
-            "test": test_case.key,
-            "points": len(grid),
-            "t_end_ns": t1 * 1e9,
-            "rmse_mV": float(np.sqrt(np.mean(diff * diff)) * 1e3),
-            "max_abs_error_mV": float(np.max(np.abs(diff)) * 1e3),
-            "mean_error_mV": float(np.mean(diff) * 1e3),
-        }
+        row = pair_error_metrics(ref_case, ref_t, ref_v, test_case, test_t, test_v)
         rows.append(row)
         write_csv(plots_dir / filename, [row])
 
@@ -399,6 +503,10 @@ def write_readme(rows):
             "",
             "- `final_metrics_summary.csv`: combined per-case metrics",
             "- `pairwise_error_summary.csv`: Xyce-vs-ngspice error summaries",
+            "- `plots/refspice_vs_pybis_ngspice.png`: ngspice refspice-vs-pybis overlay",
+            "- `plots/refspice_vs_pybis_xyce.png`: Xyce refspice-vs-pybis overlay",
+            "- `plots/refspice_vs_pybis_all.png`: four-trace refspice/pybis overlay",
+            "- `plots/refspice_vs_pybis_error_summary.csv`: refspice-vs-pybis error summaries",
             "- `plots/rx_transient_overlay_0_120ns.png`: receiver overlay",
             "- `plots/rx_transient_overlay_30_80ns.png`: early transition zoom",
             "- `eyes/*/*_overlay.png`: physical clock-folded eye overlays",
@@ -428,6 +536,7 @@ def main():
 
     write_csv(OUT_DIR / "final_metrics_summary.csv", rows)
     plot_receiver_overlays(waveforms)
+    plot_refspice_pybis_overlays(waveforms)
     plot_metric_bars(rows)
     compare_pairs(waveforms)
     write_readme(rows)

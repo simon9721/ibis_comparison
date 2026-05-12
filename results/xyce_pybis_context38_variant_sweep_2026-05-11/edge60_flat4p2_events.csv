@@ -1,0 +1,17 @@
+case,flow,simulator,model,direction,edge_index,context,input_crossing_ns,output_50_delay_ps,slew_20_80_ps
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,0,00->10,8.1,4127.145004192836,482.8116436212881
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,1,01->00,10.1,2964.241979920004,294.84937960824294
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,2,00->11,14.1,4313.567897710432,1220.4715354771645
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,3,11->01,18.1,2998.001858381311,435.4750915965277
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,4,10->10,20.1,4108.318292248474,448.5217572078783
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,5,01->01,22.099999999999998,2985.234930092457,303.541709944291
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,6,10->11,24.1,108.31829224847452,-3670.2350051660255
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,7,11->00,32.1,3010.023024846179,436.14989160694034
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,8,00->10,46.09999995758993,4126.736955464602,478.1831598643545
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,9,01->00,48.1,2965.231602615262,295.69361127058704
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,10,00->11,52.1,4313.655994842692,1218.7544317445982
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,11,11->01,56.1,2997.4263393393653,433.93840984845474
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,12,10->10,58.099999999999994,4107.822142888227,447.02733792012424
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,13,01->01,60.1,2985.209323641959,301.7061735024344
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,rise,14,10->11,62.099999999999994,107.82214288823073,-3670.995121480726
+ui2_len30cm_loss5_coarse10,xyce_pybis_edge60_flat4p2,Xyce,edge/latch tanh60 plus flat tail,fall,15,11->00,70.1,3009.2218112272944,436.3487073969154

@@ -32,6 +32,10 @@ accepted result folder.
 
 - `final_metrics_summary.csv`: combined per-case metrics
 - `pairwise_error_summary.csv`: Xyce-vs-ngspice error summaries
+- `plots/refspice_vs_pybis_ngspice.png`: ngspice refspice-vs-pybis overlay
+- `plots/refspice_vs_pybis_xyce.png`: Xyce refspice-vs-pybis overlay
+- `plots/refspice_vs_pybis_all.png`: four-trace refspice/pybis overlay
+- `plots/refspice_vs_pybis_error_summary.csv`: refspice-vs-pybis error summaries
 - `plots/rx_transient_overlay_0_120ns.png`: receiver overlay
 - `plots/rx_transient_overlay_30_80ns.png`: early transition zoom
 - `eyes/*/*_overlay.png`: physical clock-folded eye overlays

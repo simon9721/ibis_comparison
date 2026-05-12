@@ -1,0 +1,17 @@
+case,flow,simulator,model,direction,edge_index,context,input_crossing_ns,output_50_delay_ps,slew_20_80_ps
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,0,00->10,8.1,4128.35788607725,471.0408957471513
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,1,01->00,10.1,2988.0329322387083,337.00925541895987
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,2,00->11,14.1,4458.834149480643,2071.582642560725
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,3,11->01,18.1,3022.7331681596984,434.2652571603981
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,4,10->10,20.1,4108.987396865511,-3811.9464425195924
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,5,01->01,22.099999999999998,3009.519118672232,372.174257317162
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,6,10->11,24.1,108.98739686551203,-3676.4397972553224
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,7,11->00,32.1,3035.5182538946056,2685.2625588741566
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,8,00->10,46.1,4123.962618672215,476.95682078171285
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,9,01->00,48.1,2983.8129129300673,335.2729303060302
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,10,00->11,52.1,4463.952905751187,2067.9539887637447
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,11,11->01,56.1,3022.9257792576514,433.78755479573846
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,12,10->10,58.099999999999994,4107.857591675248,-3812.3759191006993
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,13,01->01,60.1,3006.731585605293,368.51828848983325
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,rise,14,10->11,62.099999999999994,107.85759167525198,-3677.5364492120643
+ui2_len30cm_loss5_coarse10,xyce_pybis_tanh10,Xyce,global tanh10 smoothing,fall,15,11->00,70.1,3036.350618722073,2685.234109094074
