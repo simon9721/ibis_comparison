@@ -21,16 +21,19 @@ Two folders were created:
 - `results/transient_review_plots_2026-05-13/normal_prbs_channel/`
 - `results/transient_review_plots_2026-05-13/stressed_edge50_prbs80_channel/`
 
-Each folder contains 11 PNGs:
+Each folder now contains 14 PNGs:
 
 - 4 individual transient plots
 - 1 ngspice refspice-vs-pybis transient overlay
 - 1 Xyce refspice-vs-pybis transient overlay
 - 1 all-four transient overlay
 - 4 individual physical eye diagrams
+- 2 individual pybis `Ku/Kd` diagnostic plots, one for ngspice and one for Xyce
+- 1 ngspice-vs-Xyce pybis `Ku/Kd` overlay
 
 The transient plot filenames are numbered `01` through `07`; the eye diagrams
-are numbered `08` through `11`.
+are numbered `08` through `11`; the `Ku/Kd` diagnostics are numbered `12`
+through `14`.
 
 ## Normal Case
 
@@ -56,6 +59,14 @@ This is expected.  The case is deterministic, relatively gentle, and not
 injecting random jitter or noise.  Increasing only the bit count should mostly
 make the overlay denser, not fundamentally change the eye shape.
 
+`Ku/Kd` diagnostic:
+
+The accepted normal ngspice RAW did not contain internal pybis nodes, so
+`scripts/plot_review_kukd.py` regenerated a short `0-75 ns` ngspice pybis
+diagnostic run with `V(xdrv.ku)`, `V(xdrv.kd)`, and `V(xdrv.nx)` saved.  The
+zoom window is `50-70 ns`.  Xyce already had `V(XDRV:Ku)` and `V(XDRV:Kd)` in
+the existing CSV, so it was plotted over the same review window.
+
 ## Stressed Case
 
 Configuration:
@@ -76,6 +87,14 @@ The stressed case has fewer bits than the normal case, but it produces a much
 more spread-out eye.  The spread is caused by deterministic ISI and
 history-dependent channel/model behavior, not by a larger PRBS population.
 
+`Ku/Kd` diagnostic:
+
+The stressed pybis receiver spike is marked at about `56.69 ns`.  The new
+diagnostic plots zoom over `55.5-58.8 ns` so the `Ku/Kd` coefficient behavior
+can be inspected directly at the spike timing.  The ngspice pybis diagnostic was
+rerun with the same corrected edge50/tailflat4p2 model and circuit setup, only
+adding internal `Ku/Kd/NX` saved nodes.
+
 This is consistent with the pybis behavior study documented in:
 
 - `docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md`
@@ -86,6 +105,14 @@ Reusable transient utility:
 
 - `scripts/transient_plot.py`
 - documented in `docs/TRANSIENT_PLOT_TOOL.md`
+
+Pybis coefficient diagnostic utility:
+
+- `scripts/plot_review_kukd.py`
+- regenerates missing ngspice internal-node RAWs for review
+- writes `12_ngspice_pybis_kukd.png`, `13_xyce_pybis_kukd.png`,
+  `14_ngspice_xyce_pybis_kukd_overlay.png`, and `kukd_metrics.csv` into each
+  review folder
 
 Eye tool updates:
 

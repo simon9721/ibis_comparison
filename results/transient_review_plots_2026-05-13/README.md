@@ -22,9 +22,19 @@ Each subfolder contains the same plot set:
 | `09_eye_ngspice_pybis.png` | ngspice pybis physical eye |
 | `10_eye_xyce_refspice.png` | Xyce refspice physical eye |
 | `11_eye_xyce_pybis.png` | Xyce pybis physical eye |
+| `12_ngspice_pybis_kukd.png` | ngspice pybis `Ku/Kd` diagnostic with `V(n10b)` context |
+| `13_xyce_pybis_kukd.png` | Xyce pybis `Ku/Kd` diagnostic with `V(n10b)` context |
+| `14_ngspice_xyce_pybis_kukd_overlay.png` | ngspice vs Xyce pybis `Ku/Kd` and `V(n10b)` overlay |
+| `kukd_metrics.csv` | `Ku/Kd` min/max/mean summary for full and zoom windows |
 
 The eye diagrams use clock/UI-grid folding.  They do not use per-edge alignment
 or rise/fall phase compensation.
+
+The `Ku/Kd` diagnostic plots show the pybis behavioral pull-up/pull-down
+coefficients.  Each individual plot includes `V(n10b)` in the upper row and
+`Ku/Kd` in the lower row, with a full-window view and a zoom-window view.  The
+overlay plot compares ngspice pybis against Xyce pybis for `V(n10b)`, `Ku`, and
+`Kd`.
 
 ## Normal PRBS + Channel Case
 
@@ -48,6 +58,15 @@ The normal-case eyes have highly aligned rising and falling edge families.  The
 case is deterministic, relatively gentle, and already covers more than one full
 PRBS7 sequence period.  Increasing the bit count alone should mostly increase
 plot density rather than fundamentally changing the eye shape.
+
+`Ku/Kd` diagnostic note:
+
+The original ngspice review RAW only saved external waveform nodes.  For the
+normal-case `Ku/Kd` plots, ngspice was rerun from the same pybis/channel setup
+with `V(xdrv.ku)`, `V(xdrv.kd)`, and `V(xdrv.nx)` added to `.save`.  To keep the
+internal-node diagnostic practical, this rerun covers `0-75 ns`; the zoom panel
+uses `50-70 ns`.  The Xyce plot uses the existing 1000 ns CSV but is plotted on
+the same `0-75 ns` review window.
 
 ## Stressed Edge50 PRBS80/Channel Case
 
@@ -76,11 +95,23 @@ structure.  This is mainly caused by the shorter UI, harsher channel, and pybis
 edge50 behavior.  It is not simply a consequence of having more bits; this case
 actually uses fewer bits than the normal benchmark.
 
+`Ku/Kd` diagnostic note:
+
+The stressed-case `Ku/Kd` zoom is `55.5-58.8 ns`, with the marker placed at
+`56.69 ns`, the measured pybis receiver spike peak region from the pybis/refspice
+comparison.  As with the normal case, the ngspice pybis run was regenerated only
+to add the internal `Ku/Kd/NX` saved nodes; the circuit setup and model are the
+same corrected edge50/tailflat4p2 setup used for the transient review.
+
 ## Tooling
 
 Transient plots were generated with:
 
 - `scripts/transient_plot.py`
+
+`Ku/Kd` diagnostic plots were generated with:
+
+- `scripts/plot_review_kukd.py`
 
 Eye diagrams were generated with:
 
