@@ -113,6 +113,8 @@ Pybis coefficient diagnostic utility:
 - writes `12_ngspice_pybis_kukd.png`, `13_xyce_pybis_kukd.png`,
   `14_ngspice_xyce_pybis_kukd_overlay.png`, and `kukd_metrics.csv` into each
   review folder
+- writes `15_stressed_spike_leadin_kukd_history.png` and
+  `spike_leadin_metrics.csv` for the stressed-case spike lead-in
 
 Eye tool updates:
 
@@ -131,6 +133,14 @@ The normal benchmark is useful as a stable accepted comparison and as a
 sanity-check case for ngspice/Xyce agreement.  The stressed edge50 case is more
 useful for exposing deterministic history sensitivity in pybis and for seeing
 edge-family spread in eye diagrams.
+
+The focused `Ku/Kd` lead-in plot shows that the pybis receiver spike around
+`56.69 ns` is not a same-time `Ku` turn-on.  At the spike peak, `Ku` is still
+near zero and `Kd` is near one in both ngspice and Xyce.  The spike is instead
+the delayed channel response to a large pybis transmitter-side pad launch near
+`54.24 ns`, immediately after the prior falling input edge.  The pybis pad peak
+is about `2.18-2.19 V`, while the matching refspice pad peak is only about
+`1.52-1.53 V`; the receiver spike arrives roughly `2.45 ns` later.
 
 These two cases answer different questions:
 

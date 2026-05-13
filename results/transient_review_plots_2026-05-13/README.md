@@ -103,6 +103,19 @@ comparison.  As with the normal case, the ngspice pybis run was regenerated only
 to add the internal `Ku/Kd/NX` saved nodes; the circuit setup and model are the
 same corrected edge50/tailflat4p2 setup used for the transient review.
 
+Additional stressed-case spike-history files:
+
+| File | Meaning |
+|---|---|
+| `15_stressed_spike_leadin_kukd_history.png` | focused lead-in plot showing input, transmitter pad, receiver output, `Ku`, `Kd`, and `NX` from `53.6-58.9 ns` |
+| `spike_leadin_metrics.csv` | peak/crossing metrics for the stressed pybis spike lead-in |
+
+This focused plot shows that the large receiver spike near `56.69 ns` is not
+caused by a same-time `Ku` turn-on.  At the receiver spike peak, both pybis
+flows still have `Ku` near zero and `Kd` near one.  The spike tracks back to a
+large pybis transmitter-side pad launch around `54.24 ns`, immediately after
+the prior falling input edge, followed by roughly `2.45 ns` of channel delay.
+
 ## Tooling
 
 Transient plots were generated with:
