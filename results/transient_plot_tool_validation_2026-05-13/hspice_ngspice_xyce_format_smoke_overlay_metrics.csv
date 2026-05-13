@@ -1,0 +1,4 @@
+window_index,window_label,trace_index,label,path,requested_signal,resolved_signal,samples,t_start_s,t_end_s,v_min,v_max,v_mean
+0,0s to 50ns,0,HSPICE native IBIS,C:\Users\simom\Desktop\IBIS_Comparison\hspice\native_ibis_exp1\tb_exp1.tr0,v(n10b),v(n10b),11,0.0,3.99836e-08,3.285935,3.285935,3.2859350000000003
+0,0s to 50ns,1,ngspice refspice,C:\Users\simom\Desktop\IBIS_Comparison\ngspice_refspice\tb_refspice_prbs7_new50ohm_batch.raw,v(n10b),v(n10b),5058,1e-13,4.999249999999954e-08,-0.013484090950028999,1.5144881252671765,0.3729200274194102
+0,0s to 50ns,2,Xyce refspice,C:\Users\simom\Desktop\IBIS_Comparison\xyce_refspice\tb_refspice_prbs7_new50ohm_xyce.cir.csv,v(n10b),v(n10b),751,0.0,5e-08,-0.0129535761,1.51482494,0.24491188390046736

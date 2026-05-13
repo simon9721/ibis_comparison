@@ -1,0 +1,74 @@
+* hist_h1_g1_p1_30cm_loss5 / corrected ngspice pybis edge50
+.temp 27
+.options method=gear maxord=1 reltol=1e-3 abstol=1e-3 vntol=1e-4 gmin=1e-12 itl4=50 itl5=0 trtol=7
+Vstim in_dig 0 PWL(0.000000000e+00 0.0000
++ 2.000000000e-09 0.0000
++ 4.000000000e-09 0.0000
++ 6.000000000e-09 0.0000
++ 8.000000000e-09 0.0000
++ 8.200000000e-09 3.3000
++ 1.000000000e-08 3.3000
++ 1.020000000e-08 0.0000
++ 1.200000000e-08 0.0000
++ 1.220000000e-08 3.3000
++ 1.400000000e-08 3.3000
++ 1.420000000e-08 0.0000
++ 1.600000000e-08 0.0000
++ 1.800000000e-08 0.0000
++ 2.000000000e-08 0.0000
++ 2.200000000e-08 0.0000)
+Ven    en_sig  0  DC 3.3
+Vdd    vdd     0  DC 3.3
+
+.include '../../../models/driver_OutputInput_Typical_relaxed92_edge50_tailflat4p2_ngspice_syntax.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+RCH_TX  pad tx_out 1u
+* Generated 10-section RLGC ladder for ngspice
+* length_scale=3, loss_scale=5
+* section_length_scale=3 cm-equivalent sections
+* nominal one-way delay=2.076 ns
+RCH1   tx_out   s1a      0.75
+LCH1   s1a      s1b      1.038000000e-08
+CCH1   s1b      0        4.152000000e-12
+GCH1   s1b      0        value={1.500000000e-05*v(s1b,0)}
+RCH2   s1b      s2a      0.75
+LCH2   s2a      s2b      1.038000000e-08
+CCH2   s2b      0        4.152000000e-12
+GCH2   s2b      0        value={1.500000000e-05*v(s2b,0)}
+RCH3   s2b      s3a      0.75
+LCH3   s3a      s3b      1.038000000e-08
+CCH3   s3b      0        4.152000000e-12
+GCH3   s3b      0        value={1.500000000e-05*v(s3b,0)}
+RCH4   s3b      s4a      0.75
+LCH4   s4a      s4b      1.038000000e-08
+CCH4   s4b      0        4.152000000e-12
+GCH4   s4b      0        value={1.500000000e-05*v(s4b,0)}
+RCH5   s4b      s5a      0.75
+LCH5   s5a      s5b      1.038000000e-08
+CCH5   s5b      0        4.152000000e-12
+GCH5   s5b      0        value={1.500000000e-05*v(s5b,0)}
+RCH6   s5b      s6a      0.75
+LCH6   s6a      s6b      1.038000000e-08
+CCH6   s6b      0        4.152000000e-12
+GCH6   s6b      0        value={1.500000000e-05*v(s6b,0)}
+RCH7   s6b      s7a      0.75
+LCH7   s7a      s7b      1.038000000e-08
+CCH7   s7b      0        4.152000000e-12
+GCH7   s7b      0        value={1.500000000e-05*v(s7b,0)}
+RCH8   s7b      s8a      0.75
+LCH8   s8a      s8b      1.038000000e-08
+CCH8   s8b      0        4.152000000e-12
+GCH8   s8b      0        value={1.500000000e-05*v(s8b,0)}
+RCH9   s8b      s9a      0.75
+LCH9   s9a      s9b      1.038000000e-08
+CCH9   s9b      0        4.152000000e-12
+GCH9   s9b      0        value={1.500000000e-05*v(s9b,0)}
+RCH10  s9b      s10a     0.75
+LCH10  s10a     n10b     1.038000000e-08
+CCH10  n10b     0        4.152000000e-12
+GCH10  n10b     0        value={1.500000000e-05*v(n10b,0)}
+RTERM   n10b 0 50
+
+.save V(in_dig) V(pad) V(tx_out) V(n10b)
+.tran 1.000000000e-11 2.200000000e-08
+.end

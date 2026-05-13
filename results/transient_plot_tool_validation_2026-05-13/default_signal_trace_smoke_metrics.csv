@@ -1,0 +1,2 @@
+window_index,window_label,trace_index,label,path,requested_signal,resolved_signal,samples,t_start_s,t_end_s,v_min,v_max,v_mean
+0,0s to 30ns,0,tb_refspice_pulse_new50ohm_xyce.cir,C:\Users\simom\Desktop\IBIS_Comparison\xyce_refspice\tb_refspice_pulse_new50ohm_xyce.cir.csv,v(n10b),v(n10b),1167,0.0,2e-08,-0.0666150436,1.18682415,0.2989855558417264

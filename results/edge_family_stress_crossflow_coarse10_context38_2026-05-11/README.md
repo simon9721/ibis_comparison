@@ -16,10 +16,10 @@ Flows:
 
 | Case | Flow | Return | Timed out | Wall s | Output |
 |---|---|---:|---:|---:|---:|
-| ui2_len30cm_loss5_coarse10 | ngspice_refspice | 0 | False | 0.58 | True |
-| ui2_len30cm_loss5_coarse10 | ngspice_pybis | 0 | False | 232.41 | True |
-| ui2_len30cm_loss5_coarse10 | xyce_refspice | 0 | False | 0.41 | True |
-| ui2_len30cm_loss5_coarse10 | xyce_pybis | timeout | True | 500.01 | True |
+| ui2_len30cm_loss5_coarse10 | ngspice_refspice | 0 | False | 0.37 | True |
+| ui2_len30cm_loss5_coarse10 | ngspice_pybis | 0 | False | 5.68 | True |
+| ui2_len30cm_loss5_coarse10 | xyce_refspice | 0 | False | 0.39 | True |
+| ui2_len30cm_loss5_coarse10 | xyce_pybis | 4294967295 | False | 171.94 | True |
 
 ## Edge-Family Metrics
 
@@ -27,8 +27,8 @@ Flows:
 |---|---|---|---:|---:|---:|---:|
 | ui2_len30cm_loss5_coarse10 | ngspice_refspice | rise | 113.5 ps | 0.0567 UI | 9.5 ps | 789.9 mV |
 | ui2_len30cm_loss5_coarse10 | ngspice_refspice | fall | 145.1 ps | 0.0726 UI | 32.1 ps | 869.5 mV |
-| ui2_len30cm_loss5_coarse10 | ngspice_pybis | rise | 4238.3 ps | 2.1191 UI | 4849.2 ps | 899.5 mV |
-| ui2_len30cm_loss5_coarse10 | ngspice_pybis | fall | 42.8 ps | 0.0214 UI | 168.1 ps | 1146.8 mV |
+| ui2_len30cm_loss5_coarse10 | ngspice_pybis | rise | 2016.6 ps | 1.0083 UI | 2041.7 ps | 713.5 mV |
+| ui2_len30cm_loss5_coarse10 | ngspice_pybis | fall | 2096.1 ps | 1.0480 UI | 151.3 ps | 735.0 mV |
 | ui2_len30cm_loss5_coarse10 | xyce_refspice | rise | 107.3 ps | 0.0536 UI | 84.8 ps | 797.4 mV |
 | ui2_len30cm_loss5_coarse10 | xyce_refspice | fall | 144.8 ps | 0.0724 UI | 20.6 ps | 892.3 mV |
 

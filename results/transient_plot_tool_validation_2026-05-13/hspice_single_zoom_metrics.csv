@@ -1,0 +1,2 @@
+window_index,window_label,trace_index,label,path,requested_signal,resolved_signal,samples,t_start_s,t_end_s,v_min,v_max,v_mean
+0,0s to 60ns,0,HSPICE native IBIS,C:\Users\simom\Desktop\IBIS_Comparison\hspice\native_ibis_exp1\tb_exp1.tr0,v(n10b),v(n10b),177,0.0,5.997838e-08,-1.453586,3.632731,2.5290499474576276

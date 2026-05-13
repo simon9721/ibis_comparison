@@ -1,0 +1,77 @@
+* ch_len20cm_loss5_h1_g1_p3 / Xyce pybis edge50
+Vstim in_dig 0 PWL(0.000000000e+00 0.0000
++ 2.000000000e-09 0.0000
++ 4.000000000e-09 0.0000
++ 6.000000000e-09 0.0000
++ 8.000000000e-09 0.0000
++ 8.200000000e-09 3.3000
++ 1.000000000e-08 3.3000
++ 1.020000000e-08 0.0000
++ 1.200000000e-08 0.0000
++ 1.220000000e-08 3.3000
++ 1.400000000e-08 3.3000
++ 1.600000000e-08 3.3000
++ 1.800000000e-08 3.3000
++ 1.820000000e-08 0.0000
++ 2.000000000e-08 0.0000
++ 2.200000000e-08 0.0000
++ 2.400000000e-08 0.0000
++ 2.600000000e-08 0.0000)
+Ven   en_sig  0  DC 3.3
+Vdd   vdd     0  DC 3.3
+
+.include '../../../../../xyce_pybis/driver_OutputInput_Typical_xyce_relaxed92_edge50_tailflat4p2.sub'
+XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
+RCH_TX  pad tx_out 1u
+* Generated 10-section RLGC ladder for xyce
+* length_scale=2, loss_scale=5
+* section_length_scale=2 cm-equivalent sections
+* nominal one-way delay=1.384 ns
+RCH1   tx_out   s1a      0.5
+LCH1   s1a      s1b      6.920000000e-09
+CCH1   s1b      0        2.768000000e-12
+RGCH1   s1b      0        100000
+RCH2   s1b      s2a      0.5
+LCH2   s2a      s2b      6.920000000e-09
+CCH2   s2b      0        2.768000000e-12
+RGCH2   s2b      0        100000
+RCH3   s2b      s3a      0.5
+LCH3   s3a      s3b      6.920000000e-09
+CCH3   s3b      0        2.768000000e-12
+RGCH3   s3b      0        100000
+RCH4   s3b      s4a      0.5
+LCH4   s4a      s4b      6.920000000e-09
+CCH4   s4b      0        2.768000000e-12
+RGCH4   s4b      0        100000
+RCH5   s4b      s5a      0.5
+LCH5   s5a      s5b      6.920000000e-09
+CCH5   s5b      0        2.768000000e-12
+RGCH5   s5b      0        100000
+RCH6   s5b      s6a      0.5
+LCH6   s6a      s6b      6.920000000e-09
+CCH6   s6b      0        2.768000000e-12
+RGCH6   s6b      0        100000
+RCH7   s6b      s7a      0.5
+LCH7   s7a      s7b      6.920000000e-09
+CCH7   s7b      0        2.768000000e-12
+RGCH7   s7b      0        100000
+RCH8   s7b      s8a      0.5
+LCH8   s8a      s8b      6.920000000e-09
+CCH8   s8b      0        2.768000000e-12
+RGCH8   s8b      0        100000
+RCH9   s8b      s9a      0.5
+LCH9   s9a      s9b      6.920000000e-09
+CCH9   s9b      0        2.768000000e-12
+RGCH9   s9b      0        100000
+RCH10  s9b      s10a     0.5
+LCH10  s10a     n10b     6.920000000e-09
+CCH10  n10b     0        2.768000000e-12
+RGCH10  n10b     0        100000
+RTERM   n10b 0 50
+
+.ic V(pad)=0 V(tx_out)=0 V(n10b)=0 V(XDRV:Ku)=0 V(XDRV:Kd)=1 V(XDRV:NX)=0 V(XDRV:N6)=0 V(XDRV:N8)=0
+.options timeint method=gear maxord=1 erroption=1 delmax=20p nlmin=3 nlmax=8 timestepsreversal=1
+.options output initial_interval=10p
+.tran 1.000000000e-11 2.600000000e-08 uic
+.print tran format=csv time V(in_dig) V(pad) V(tx_out) V(n10b) V(XDRV:Ku) V(XDRV:Kd) V(XDRV:NX)
+.end

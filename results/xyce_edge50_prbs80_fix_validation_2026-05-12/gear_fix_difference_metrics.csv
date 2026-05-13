@@ -1,0 +1,11 @@
+a,b,window,signal,points,max_abs,rmse
+gear1_nl8,baseline_trap_timeout,pre_timeout,v(pad),12227,0.0071542200000001,0.0006517538889153048
+gear1_nl8,baseline_trap_timeout,pre_timeout,v(n10b),12227,0.0017371910000000268,0.0002725072133089013
+gear1_nl8,baseline_trap_timeout,pre_timeout,v(xdrv:ku),12227,0.0013648649999999929,3.1933487576051915e-05
+gear1_nl8,baseline_trap_timeout,pre_timeout,v(xdrv:kd),12227,0.000658676671,1.541093134099843e-05
+gear1_nl8,baseline_trap_timeout,pre_timeout,v(xdrv:nx),12227,0.0,0.0
+gear2_nl50,gear1_nl8,full_160ns,v(pad),16001,0.04577521100000004,0.007780437203857001
+gear2_nl50,gear1_nl8,full_160ns,v(n10b),16001,0.015131369000000006,0.0033987808084152893
+gear2_nl50,gear1_nl8,full_160ns,v(xdrv:ku),16001,0.0013650099999999998,1.848925500269879e-05
+gear2_nl50,gear1_nl8,full_160ns,v(xdrv:kd),16001,0.0006587464410000001,8.922814603152668e-06
+gear2_nl50,gear1_nl8,full_160ns,v(xdrv:nx),16001,0.0,0.0

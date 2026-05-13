@@ -1,0 +1,11 @@
+File: c:\Users\simom\Desktop\IBIS_Comparison\ngspice_pybis\tb_pybis_prbs7_new50ohm.raw
+Num variables: 5, Num points: 100884
+
+Variables: 5
+No. Points: 100884
+Variables:
+0	time	time
+1	v(in_dig)	voltage
+2	v(pad)	voltage
+3	v(tx_out)	voltage
+4	v(n10b)	voltage

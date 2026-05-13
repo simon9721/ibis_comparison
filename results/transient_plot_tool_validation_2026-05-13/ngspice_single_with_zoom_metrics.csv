@@ -1,0 +1,3 @@
+window_index,window_label,trace_index,label,path,requested_signal,resolved_signal,samples,t_start_s,t_end_s,v_min,v_max,v_mean
+0,full transient,0,ngspice pybis,C:\Users\simom\Desktop\IBIS_Comparison\ngspice_pybis\tb_pybis_prbs7_new50ohm.raw,v(n10b),v(n10b),100884,0.0,1.0000000000000002e-06,-0.008225306461753902,1.5404863042381678,0.665180676252657
+1,30ns to 80ns,0,ngspice pybis,C:\Users\simom\Desktop\IBIS_Comparison\ngspice_pybis\tb_pybis_prbs7_new50ohm.raw,v(n10b),v(n10b),5040,3.0000000000000004e-08,8e-08,-0.008225281742170147,1.5404862846699166,1.0739637747476398

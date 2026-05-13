@@ -875,19 +875,23 @@ def plot_eye_overlay(t_eye, eye_slices, title='Eye Diagram Overlay',
     t_ns = (t_eye - x_offset) * 1e9
     n_slices = eye_slices.shape[0]
     step = max(1, int(np.ceil(n_slices / max_traces)))
-    for row in eye_slices[::step]:
-        ax.plot(t_ns, row, color='#00e5ff', lw=0.45, alpha=0.12)
+    plotted = eye_slices[::step]
+    # Adaptive opacity keeps short stressed runs from looking washed out while
+    # long PRBS runs still build a readable density.
+    trace_alpha = min(0.55, max(0.28, 40.0 / max(1, len(plotted))))
+    for row in plotted:
+        ax.plot(t_ns, row, color='#00f5ff', lw=0.65, alpha=trace_alpha)
 
     ui_ns = (t_eye[-1] - t_eye[0]) * 1e9 / n_ui
     for k in range(1, n_ui + 1):
         ax.axvline(ui_ns * k - x_offset * 1e9,
-                   color='#00ff88', lw=0.8, ls='--', alpha=0.35)
+                   color='#00ff88', lw=0.9, ls='--', alpha=0.55)
     if x_offset:
         ax.axvline(0, color='#00ff88', lw=1.0, ls='-', alpha=0.8)
 
-    ax.axhline(levels['v20'], color='#ff6b6b', lw=0.7, ls=':', alpha=0.7,
+    ax.axhline(levels['v20'], color='#ff6b6b', lw=0.9, ls=':', alpha=0.9,
                label=f"20% swing = {levels['v20']:.2f}V")
-    ax.axhline(levels['v80'], color='#ff6b6b', lw=0.7, ls=':', alpha=0.7,
+    ax.axhline(levels['v80'], color='#ff6b6b', lw=0.9, ls=':', alpha=0.9,
                label=f"80% swing = {levels['v80']:.2f}V")
 
     y_pad = max(0.10, 0.25 * levels['swing'])
@@ -904,7 +908,7 @@ def plot_eye_overlay(t_eye, eye_slices, title='Eye Diagram Overlay',
               labelcolor='#cccccc', loc='upper right')
 
     plt.tight_layout()
-    plt.savefig(outfile, dpi=150, bbox_inches='tight',
+    plt.savefig(outfile, dpi=180, bbox_inches='tight',
                 facecolor=fig.get_facecolor())
     plt.close()
     print(f"  Saved: {outfile}")
@@ -1009,7 +1013,16 @@ def main():
                         help='Maximum overlay traces to draw (default: 500)')
     parser.add_argument('--outdir', default='.',
                         help='Output directory for PNG files (default: .)')
+    parser.add_argument('--eye-out', default='',
+                        help='Explicit output path for the selected eye PNG. '
+                             'Use only with a single --mode, not --mode all.')
+    parser.add_argument('--no-transitions', action='store_true',
+                        help='Do not write the transition zoom PNG.')
+    parser.add_argument('--no-metrics', action='store_true',
+                        help='Do not write the metrics CSV.')
     args = parser.parse_args()
+    if args.eye_out and args.mode == 'all':
+        parser.error('--eye-out cannot be used with --mode all')
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -1116,18 +1129,22 @@ def main():
 
     eye_title = f"Eye Diagram - {stem} - {args.signal}"
     if 'heatmap' in modes:
+        heatmap_out = (Path(args.eye_out) if args.eye_out
+                       else outdir / f"{stem}_{sig_clean}_eye.png")
         plot_eye(t_eye, eye_slices, em, args.ui,
                  title=eye_title,
-                 outfile=str(outdir / f"{stem}_{sig_clean}_eye.png"),
+                 outfile=str(heatmap_out),
                  vdd=args.vdd, n_ui=args.n_ui, levels=levels,
                  x_offset=x_offset)
 
     if 'overlay' in modes:
+        overlay_out = (Path(args.eye_out) if args.eye_out
+                       else outdir / f"{stem}_{sig_clean}_overlay.png")
         plot_eye_overlay(
             t_eye,
             eye_slices,
             title=f"{eye_title} (Overlay)",
-            outfile=str(outdir / f"{stem}_{sig_clean}_overlay.png"),
+            outfile=str(overlay_out),
             vdd=args.vdd,
             n_ui=args.n_ui,
             levels=levels,
@@ -1136,68 +1153,72 @@ def main():
         )
 
     if 'contour' in modes:
+        contour_out = (Path(args.eye_out) if args.eye_out
+                       else outdir / f"{stem}_{sig_clean}_contour.png")
         plot_eye_contour(
             t_eye,
             eye_slices,
             title=f"{eye_title} (Contour)",
-            outfile=str(outdir / f"{stem}_{sig_clean}_contour.png"),
+            outfile=str(contour_out),
             vdd=args.vdd,
             n_ui=args.n_ui,
             levels=levels,
             x_offset=x_offset,
         )
 
-    trans_title = f"Transitions - {stem} - {args.signal}"
-    plot_transitions(time, voltage, args.ui,
-                     title=trans_title,
-                     outfile=str(outdir / f"{stem}_{sig_clean}_trans.png"),
-                     vdd=args.vdd, levels=levels)
+    if not args.no_transitions:
+        trans_title = f"Transitions - {stem} - {args.signal}"
+        plot_transitions(time, voltage, args.ui,
+                         title=trans_title,
+                         outfile=str(outdir / f"{stem}_{sig_clean}_trans.png"),
+                         vdd=args.vdd, levels=levels)
 
-    metrics_out = outdir / f"{stem}_{sig_clean}_metrics.csv"
-    with metrics_out.open('w', newline='') as f:
-        writer = csv.DictWriter(f, fieldnames=[
-            'file', 'format', 'signal', 'samples', 't_start_ns', 't_end_ns',
-            'v_min', 'v_max', 'level_low', 'level_high',
-            'fold_mode', 'crossing_phase_ui', 'phase_ui',
-            'auto_phase_target', 'center_x',
-            'skip_ui', 'n_ui', 'ui_s', 'eye_slices',
-            'eye_height_mV', 'eye_width_ps', 'v_eye_high', 'v_eye_low',
-            'rise_time_ps', 'fall_time_ps', 'overshoot_mV',
-            'undershoot_mV', 'overshoot_pct', 'undershoot_pct',
-        ])
-        writer.writeheader()
-        writer.writerow({
-            'file': str(args.tr0file),
-            'format': args.fmt,
-            'signal': args.signal,
-            'samples': len(time),
-            't_start_ns': time[0] * 1e9,
-            't_end_ns': time[-1] * 1e9,
-            'v_min': float(voltage.min()),
-            'v_max': float(voltage.max()),
-            'level_low': levels['v_low'],
-            'level_high': levels['v_high'],
-            'fold_mode': 'clock',
-            'crossing_phase_ui': crossing_phase_ui,
-            'phase_ui': phase_ui,
-            'auto_phase_target': args.auto_phase_target if args.auto_phase else '',
-            'center_x': args.center_x,
-            'skip_ui': args.skip_ui,
-            'n_ui': args.n_ui,
-            'ui_s': args.ui,
-            'eye_slices': eye_slices.shape[0],
-            'eye_height_mV': em['eye_height'] * 1e3,
-            'eye_width_ps': em['eye_width'] * 1e12,
-            'v_eye_high': em['v_eye_high'],
-            'v_eye_low': em['v_eye_low'],
-            'rise_time_ps': tm['rise_time'] * 1e12,
-            'fall_time_ps': tm['fall_time'] * 1e12,
-            'overshoot_mV': tm['overshoot_abs'] * 1e3,
-            'undershoot_mV': tm['undershoot_abs'] * 1e3,
-            'overshoot_pct': tm['overshoot_pct'],
-            'undershoot_pct': tm['undershoot_pct'],
-        })
-    print(f"  Saved: {metrics_out}")
+    if not args.no_metrics:
+        metrics_out = outdir / f"{stem}_{sig_clean}_metrics.csv"
+        with metrics_out.open('w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                'file', 'format', 'signal', 'samples', 't_start_ns', 't_end_ns',
+                'v_min', 'v_max', 'level_low', 'level_high',
+                'fold_mode', 'crossing_phase_ui', 'phase_ui',
+                'auto_phase_target', 'center_x',
+                'skip_ui', 'n_ui', 'ui_s', 'eye_slices',
+                'eye_height_mV', 'eye_width_ps', 'v_eye_high', 'v_eye_low',
+                'rise_time_ps', 'fall_time_ps', 'overshoot_mV',
+                'undershoot_mV', 'overshoot_pct', 'undershoot_pct',
+            ])
+            writer.writeheader()
+            writer.writerow({
+                'file': str(args.tr0file),
+                'format': args.fmt,
+                'signal': args.signal,
+                'samples': len(time),
+                't_start_ns': time[0] * 1e9,
+                't_end_ns': time[-1] * 1e9,
+                'v_min': float(voltage.min()),
+                'v_max': float(voltage.max()),
+                'level_low': levels['v_low'],
+                'level_high': levels['v_high'],
+                'fold_mode': 'clock',
+                'crossing_phase_ui': crossing_phase_ui,
+                'phase_ui': phase_ui,
+                'auto_phase_target': args.auto_phase_target if args.auto_phase else '',
+                'center_x': args.center_x,
+                'skip_ui': args.skip_ui,
+                'n_ui': args.n_ui,
+                'ui_s': args.ui,
+                'eye_slices': eye_slices.shape[0],
+                'eye_height_mV': em['eye_height'] * 1e3,
+                'eye_width_ps': em['eye_width'] * 1e12,
+                'v_eye_high': em['v_eye_high'],
+                'v_eye_low': em['v_eye_low'],
+                'rise_time_ps': tm['rise_time'] * 1e12,
+                'fall_time_ps': tm['fall_time'] * 1e12,
+                'overshoot_mV': tm['overshoot_abs'] * 1e3,
+                'undershoot_mV': tm['undershoot_abs'] * 1e3,
+                'overshoot_pct': tm['overshoot_pct'],
+                'undershoot_pct': tm['undershoot_pct'],
+            })
+        print(f"  Saved: {metrics_out}")
 
     print(f"\n  Done.\n")
 

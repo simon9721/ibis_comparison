@@ -53,6 +53,8 @@ N_BITS = 200
 SKIP_UI = 10
 STIMULUS_NAME = "PRBS7"
 STIMULUS_STATES: list[int] | None = None
+XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed92_edge15_tailflat4p2.sub"
+XYCE_PYBIS_MODEL_LABEL = "edge15_flat4p2"
 
 R_BASE = 0.05
 L_BASE = 3.46e-9
@@ -114,12 +116,17 @@ COARSE_CASES = [
 ]
 CONTEXT_STATES = [int(ch) for ch in "00001001101011110000000100110101111000"]
 
-FLOWS = [
-    Flow("ngspice_refspice", "ngspice", "io_buf.sp", "ngspice", "#1f77b4"),
-    Flow("ngspice_pybis", "ngspice", "pybis", "ngspice", "#ff7f0e"),
-    Flow("xyce_refspice", "Xyce", "io_buf.sp", "xyce", "#2ca02c"),
-    Flow("xyce_pybis", "Xyce", "pybis edge15_flat4p2", "xyce", "#d62728"),
-]
+
+def make_flows() -> list[Flow]:
+    return [
+        Flow("ngspice_refspice", "ngspice", "io_buf.sp", "ngspice", "#1f77b4"),
+        Flow("ngspice_pybis", "ngspice", "pybis", "ngspice", "#ff7f0e"),
+        Flow("xyce_refspice", "Xyce", "io_buf.sp", "xyce", "#2ca02c"),
+        Flow("xyce_pybis", "Xyce", f"pybis {XYCE_PYBIS_MODEL_LABEL}", "xyce", "#d62728"),
+    ]
+
+
+FLOWS = make_flows()
 
 
 def rel_include(path: Path, cwd: Path) -> str:
@@ -298,14 +305,16 @@ RTERM   n10b 0 50
 Ven   en_sig  0  DC 3.3
 Vdd   vdd     0  DC 3.3
 
-.include '{rel_include(ROOT / "xyce_pybis" / "driver_OutputInput_Typical_xyce_relaxed92_edge15_tailflat4p2.sub", cwd)}'
+.include '{rel_include(ROOT / "xyce_pybis" / XYCE_PYBIS_MODEL_FILE, cwd)}'
 XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
 RCH_TX  pad tx_out 1u
 {format_channel(case, "xyce")}
 RTERM   n10b 0 50
 
 .ic V(pad)=0 V(tx_out)=0 V(n10b)=0 V(XDRV:Ku)=0 V(XDRV:Kd)=1 V(XDRV:NX)=0 V(XDRV:N6)=0 V(XDRV:N8)=0
-.options timeint method=trap maxord=1 erroption=1 delmax=20p nlmin=3 nlmax=8 timestepsreversal=1
+* Gear avoids Xyce trap timestep collapse in the pybis B-source/T-line latch
+* while preserving the same 10 ps output grid and original nonlinear limits.
+.options timeint method=gear maxord=1 erroption=1 delmax=20p nlmin=3 nlmax=8 timestepsreversal=1
 .options output initial_interval=10p
 .tran {step} {stop} uic
 .print tran format=csv time V(in_dig) V(pad) V(tx_out) V(n10b) V(XDRV:Ku) V(XDRV:Kd) V(XDRV:NX)
@@ -669,13 +678,15 @@ def write_readme(run_rows, summary_rows):
         "The goal is to see whether the more realistic eye/edge-family behavior is",
         "preserved across the comparison flows.",
         f"Stimulus: `{STIMULUS_NAME}`, {N_BITS} bits, skip {SKIP_UI} UI for edge metrics.",
+        "Xyce pybis uses Gear order 1 time integration to avoid trap timestep collapse",
+        "in the pybis B-source/T-line latch.",
         "",
         "Flows:",
         "",
         "- ngspice + transistor-level `io_buf.sp`",
         "- ngspice + pybis",
         "- Xyce + transistor-level `io_buf.sp`",
-        "- Xyce + pybis `edge15_flat4p2`",
+        f"- Xyce + pybis `{XYCE_PYBIS_MODEL_LABEL}`",
         "",
         "## Run Status",
         "",
@@ -733,11 +744,20 @@ def reset_out_dir():
 
 def configure_suite(argv: list[str] | None = None) -> float:
     global CASES, OUT_DIR, N_BITS, SKIP_UI, STIMULUS_NAME, STIMULUS_STATES
+    global XYCE_PYBIS_MODEL_FILE, XYCE_PYBIS_MODEL_LABEL, FLOWS
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--suite",
-        choices=["prbs200", "coarse10", "coarse10_context"],
+        choices=[
+            "prbs200",
+            "coarse10",
+            "coarse10_context",
+            "coarse10_edge50",
+            "coarse10_edge60",
+            "coarse10_tanh10",
+            "coarse10_tanh15",
+        ],
         default="prbs200",
         help="stress suite to run",
     )
@@ -747,7 +767,37 @@ def configure_suite(argv: list[str] | None = None) -> float:
         default=None,
         help="per-simulation timeout in seconds",
     )
+    parser.add_argument(
+        "--n-bits",
+        type=int,
+        default=None,
+        help="override PRBS bit count for non-context suites",
+    )
+    parser.add_argument(
+        "--out-dir",
+        type=Path,
+        default=None,
+        help="write results to this directory; relative paths are resolved from repo root",
+    )
     args = parser.parse_args(argv)
+
+    def finish(timeout_s: float) -> float:
+        global N_BITS, STIMULUS_NAME, OUT_DIR
+        if args.n_bits is None:
+            pass
+        else:
+            if STIMULUS_STATES is not None:
+                raise ValueError("--n-bits is only valid for PRBS suites")
+            old_bits = N_BITS
+            N_BITS = args.n_bits
+            STIMULUS_NAME = f"PRBS7-{N_BITS}"
+            OUT_DIR = OUT_DIR.with_name(OUT_DIR.name.replace(f"_{old_bits}b_", f"_{N_BITS}b_"))
+        if args.out_dir is not None:
+            out_dir = args.out_dir
+            if not out_dir.is_absolute():
+                out_dir = ROOT / out_dir
+            OUT_DIR = out_dir
+        return timeout_s
 
     if args.suite == "coarse10":
         CASES = COARSE_CASES
@@ -755,24 +805,77 @@ def configure_suite(argv: list[str] | None = None) -> float:
         SKIP_UI = 10
         STIMULUS_NAME = "PRBS7-80"
         STIMULUS_STATES = None
+        XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed92_edge15_tailflat4p2.sub"
+        XYCE_PYBIS_MODEL_LABEL = "edge15_flat4p2"
+        FLOWS = make_flows()
         OUT_DIR = ROOT / "results" / "edge_family_stress_crossflow_coarse10_80b_2026-05-11"
-        return args.timeout_s or 700.0
+        return finish(args.timeout_s or 700.0)
+    if args.suite == "coarse10_edge50":
+        CASES = COARSE_CASES
+        N_BITS = 80
+        SKIP_UI = 10
+        STIMULUS_NAME = "PRBS7-80"
+        STIMULUS_STATES = None
+        XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed92_edge50_tailflat4p2.sub"
+        XYCE_PYBIS_MODEL_LABEL = "edge50_flat4p2"
+        FLOWS = make_flows()
+        OUT_DIR = ROOT / "results" / "edge_family_stress_crossflow_coarse10_80b_edge50_2026-05-11"
+        return finish(args.timeout_s or 300.0)
+    if args.suite == "coarse10_edge60":
+        CASES = COARSE_CASES
+        N_BITS = 80
+        SKIP_UI = 10
+        STIMULUS_NAME = "PRBS7-80"
+        STIMULUS_STATES = None
+        XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed92_edge60_tailflat4p2.sub"
+        XYCE_PYBIS_MODEL_LABEL = "edge60_flat4p2"
+        FLOWS = make_flows()
+        OUT_DIR = ROOT / "results" / "edge_family_stress_crossflow_coarse10_80b_edge60_2026-05-11"
+        return finish(args.timeout_s or 300.0)
+    if args.suite == "coarse10_tanh10":
+        CASES = COARSE_CASES
+        N_BITS = 80
+        SKIP_UI = 10
+        STIMULUS_NAME = "PRBS7-80"
+        STIMULUS_STATES = None
+        XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed10.sub"
+        XYCE_PYBIS_MODEL_LABEL = "tanh10"
+        FLOWS = make_flows()
+        OUT_DIR = ROOT / "results" / "edge_family_stress_crossflow_coarse10_80b_tanh10_2026-05-11"
+        return finish(args.timeout_s or 300.0)
+    if args.suite == "coarse10_tanh15":
+        CASES = COARSE_CASES
+        N_BITS = 80
+        SKIP_UI = 10
+        STIMULUS_NAME = "PRBS7-80"
+        STIMULUS_STATES = None
+        XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed15.sub"
+        XYCE_PYBIS_MODEL_LABEL = "tanh15"
+        FLOWS = make_flows()
+        OUT_DIR = ROOT / "results" / "edge_family_stress_crossflow_coarse10_80b_tanh15_2026-05-11"
+        return finish(args.timeout_s or 300.0)
     if args.suite == "coarse10_context":
         CASES = COARSE_CASES
         N_BITS = len(CONTEXT_STATES)
         SKIP_UI = 2
         STIMULUS_NAME = "context38"
         STIMULUS_STATES = CONTEXT_STATES
+        XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed92_edge15_tailflat4p2.sub"
+        XYCE_PYBIS_MODEL_LABEL = "edge15_flat4p2"
+        FLOWS = make_flows()
         OUT_DIR = ROOT / "results" / "edge_family_stress_crossflow_coarse10_context38_2026-05-11"
-        return args.timeout_s or 500.0
+        return finish(args.timeout_s or 500.0)
     else:
         CASES = DEFAULT_CASES
         N_BITS = 200
         SKIP_UI = 10
         STIMULUS_NAME = "PRBS7"
         STIMULUS_STATES = None
+        XYCE_PYBIS_MODEL_FILE = "driver_OutputInput_Typical_xyce_relaxed92_edge15_tailflat4p2.sub"
+        XYCE_PYBIS_MODEL_LABEL = "edge15_flat4p2"
+        FLOWS = make_flows()
         OUT_DIR = ROOT / "results" / "edge_family_stress_crossflow_2026-05-11"
-        return args.timeout_s or 240.0
+        return finish(args.timeout_s or 240.0)
 
 
 def main(argv: list[str] | None = None) -> int:

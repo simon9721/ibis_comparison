@@ -1,0 +1,11 @@
+File: c:\Users\simom\Desktop\IBIS_Comparison\results\ngspice_kukd_ab_context38_2026-05-11\runs\baseline_pre_kukd\baseline_fixed_abs.raw
+Num variables: 5, Num points: 0
+
+Variables: 5
+No. Points: 0
+Variables:
+0	time	time
+1	v(in_dig)	voltage
+2	v(pad)	voltage
+3	v(tx_out)	voltage
+4	v(n10b)	voltage
