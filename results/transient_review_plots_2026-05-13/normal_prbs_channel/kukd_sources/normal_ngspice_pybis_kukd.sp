@@ -6,7 +6,7 @@
 Ven    en_sig  0  DC 3.3
 Vdd    vdd     0  DC 3.3
 
-.include 'C:/Users/simom/Desktop/IBIS_Comparison/ngspice_pybis/driver_OutputInput_Typical.sub'
+.include 'C:/Users/simom/Desktop/IBIS_Comparison/results/ngspice_kukd_ab_context38_2026-05-11/driver_OutputInput_Typical_pre_kukd_3e0bf44.sub'
 XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
 
 RCH_TX  pad tx_out 1u
@@ -14,5 +14,5 @@ RCH_TX  pad tx_out 1u
 RTERM   n10b 0 50
 
 .save V(in_dig) V(pad) V(tx_out) V(n10b) V(xdrv.ku) V(xdrv.kd) V(xdrv.nx)
-.tran 10p 75n
+.tran 10p 80n
 .end

@@ -7,7 +7,8 @@ This folder contains the clean review plots for two comparison cases:
 - `normal_prbs_channel/`: accepted PRBS7 + 50 ohm RLGC channel benchmark
 - `stressed_edge50_prbs80_channel/`: corrected stressed edge50 PRBS80/channel case
 
-Each subfolder contains the same plot set:
+Each subfolder contains this common plot set, plus case-specific diagnostic
+plots listed below:
 
 | File | Meaning |
 |---|---|
@@ -63,10 +64,29 @@ plot density rather than fundamentally changing the eye shape.
 
 The original ngspice review RAW only saved external waveform nodes.  For the
 normal-case `Ku/Kd` plots, ngspice was rerun from the same pybis/channel setup
-with `V(xdrv.ku)`, `V(xdrv.kd)`, and `V(xdrv.nx)` added to `.save`.  To keep the
-internal-node diagnostic practical, this rerun covers `0-75 ns`; the zoom panel
-uses `50-70 ns`.  The Xyce plot uses the existing 1000 ns CSV but is plotted on
-the same `0-75 ns` review window.
+with `V(xdrv.ku)`, `V(xdrv.kd)`, and `V(xdrv.nx)` added to `.save`.  The accepted
+normal ngspice RAW predates later edits to `ngspice_pybis/driver_OutputInput_Typical.sub`,
+so the diagnostic rerun intentionally uses the preserved matching model snapshot:
+`results/ngspice_kukd_ab_context38_2026-05-11/driver_OutputInput_Typical_pre_kukd_3e0bf44.sub`.
+To keep the internal-node diagnostic practical, this rerun covers `0-80 ns`;
+the plotted review window remains `0-75 ns` and the zoom panel uses `50-70 ns`.
+The Xyce plot uses the existing 1000 ns CSV but is plotted on the same review
+window.
+
+Additional normal-case source-edge files:
+
+| File | Meaning |
+|---|---|
+| `15_normal_source_edge_response_map.png` | explicit source-side map: input edge, sustained pybis coefficient response, pybis `tx_out`, and refspice `tx_out` |
+| `normal_source_edge_response_map_metrics.csv` | timestamps used by the normal source-side edge-response map |
+
+The normal source-edge map shows aligned behavior between ngspice and Xyce:
+input rises at `35.10 ns` and `70.10 ns` drive sustained `Ku` around
+`38.76-38.78 ns` and `73.78 ns`; the input fall at `65.10 ns` drives sustained
+`Kd` around `68.02-68.03 ns`.  The pybis source voltage stays in the same range
+as refspice, unlike the stressed source pulse.  The first Xyce input crossing
+has a one-sample `Ku` blip; the metrics use sustained crossings so that blip is
+not counted as the real coefficient response.
 
 ## Stressed Edge50 PRBS80/Channel Case
 
@@ -108,7 +128,12 @@ Additional stressed-case spike-history files:
 | File | Meaning |
 |---|---|
 | `15_stressed_spike_leadin_kukd_history.png` | focused lead-in plot showing input, transmitter pad, receiver output, `Ku`, `Kd`, and `NX` from `53.6-58.9 ns` |
+| `16_stressed_spike_chain_kukd_top_transient_bottom.png` | simplified chain-of-event plot with `Ku/Kd` on top and transient waveforms below |
+| `17_stressed_pybis_tx_vs_kukd_no_channel.png` | minimal source-side plot: pybis `Ku/Kd` vs `tx_out` before the RLGC channel |
+| `18_stressed_pybis_tx_kukd_source_context.png` | wider source-side context plot showing the prior rise, problematic fall/source pulse, and next rise |
+| `19_stressed_source_edge_response_map.png` | explicit edge-response map: input edge, pybis coefficient response, pybis `tx_out`, and refspice `tx_out` |
 | `spike_leadin_metrics.csv` | peak/crossing metrics for the stressed pybis spike lead-in |
+| `source_edge_response_map_metrics.csv` | timestamps used by the source-side edge-response map |
 
 This focused plot shows that the large receiver spike near `56.69 ns` is not
 caused by a same-time `Ku` turn-on.  At the receiver spike peak, both pybis

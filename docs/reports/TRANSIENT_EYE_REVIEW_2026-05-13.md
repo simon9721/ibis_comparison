@@ -21,7 +21,7 @@ Two folders were created:
 - `results/transient_review_plots_2026-05-13/normal_prbs_channel/`
 - `results/transient_review_plots_2026-05-13/stressed_edge50_prbs80_channel/`
 
-Each folder now contains 14 PNGs:
+The common review set contains 14 PNGs in each folder:
 
 - 4 individual transient plots
 - 1 ngspice refspice-vs-pybis transient overlay
@@ -34,6 +34,12 @@ Each folder now contains 14 PNGs:
 The transient plot filenames are numbered `01` through `07`; the eye diagrams
 are numbered `08` through `11`; the `Ku/Kd` diagnostics are numbered `12`
 through `14`.
+
+Additional source-side diagnostics were added after the common set:
+
+- normal case: `15_normal_source_edge_response_map.png`
+- stressed case: `15_stressed_spike_leadin_kukd_history.png` through
+  `19_stressed_source_edge_response_map.png`
 
 ## Normal Case
 
@@ -62,10 +68,35 @@ make the overlay denser, not fundamentally change the eye shape.
 `Ku/Kd` diagnostic:
 
 The accepted normal ngspice RAW did not contain internal pybis nodes, so
-`scripts/plot_review_kukd.py` regenerated a short `0-75 ns` ngspice pybis
+`scripts/plot_review_kukd.py` regenerated a short `0-80 ns` ngspice pybis
 diagnostic run with `V(xdrv.ku)`, `V(xdrv.kd)`, and `V(xdrv.nx)` saved.  The
-zoom window is `50-70 ns`.  Xyce already had `V(XDRV:Ku)` and `V(XDRV:Kd)` in
-the existing CSV, so it was plotted over the same review window.
+plotted review window is `0-75 ns` and the zoom window is `50-70 ns`.  Xyce
+already had `V(XDRV:Ku)` and `V(XDRV:Kd)` in the existing CSV, so it was
+plotted over the same review window.
+
+One important setup detail: the accepted normal ngspice RAW was generated before
+the later `ngspice_pybis/driver_OutputInput_Typical.sub` edits.  To make the
+normal diagnostic match the accepted normal transient, the diagnostic rerun uses
+the preserved pre-edit snapshot:
+`results/ngspice_kukd_ab_context38_2026-05-11/driver_OutputInput_Typical_pre_kukd_3e0bf44.sub`.
+
+The normal source-edge map is:
+
+- `results/transient_review_plots_2026-05-13/normal_prbs_channel/15_normal_source_edge_response_map.png`
+- `results/transient_review_plots_2026-05-13/normal_prbs_channel/normal_source_edge_response_map_metrics.csv`
+
+It shows the expected calm behavior:
+
+- E1 input rise: `35.10 ns`; sustained `Ku` at `38.764 ns` in Xyce and
+  `38.781 ns` in ngspice
+- E2 input fall: `65.10 ns`; sustained `Kd` at `68.020 ns` in Xyce and
+  `68.030 ns` in ngspice
+- E3 input rise: `70.10 ns`; sustained `Ku` at `73.779 ns` in Xyce and
+  `73.781 ns` in ngspice
+
+The Xyce normal trace has a one-sample `Ku` blip at the first input threshold
+crossing.  The metric intentionally uses a sustained crossing so this blip is
+not mistaken for the real source response.
 
 ## Stressed Case
 
@@ -115,6 +146,19 @@ Pybis coefficient diagnostic utility:
   review folder
 - writes `15_stressed_spike_leadin_kukd_history.png` and
   `spike_leadin_metrics.csv` for the stressed-case spike lead-in
+- writes `16_stressed_spike_chain_kukd_top_transient_bottom.png` as a simpler
+  cause/effect view with `Ku/Kd` above the transient waveforms
+- writes `17_stressed_pybis_tx_vs_kukd_no_channel.png` as the minimal
+  source-side view, using `tx_out` before the RLGC channel so the channel delay
+  is removed from the causal view
+- writes `18_stressed_pybis_tx_kukd_source_context.png` to show the neighboring
+  source-side events before and after the problematic falling-edge pulse
+- writes `19_stressed_source_edge_response_map.png` and
+  `source_edge_response_map_metrics.csv` to explicitly map input edges to
+  pybis coefficient transitions and pybis/refspice source responses
+- writes `15_normal_source_edge_response_map.png` and
+  `normal_source_edge_response_map_metrics.csv` for the normal-case source-side
+  input/`Ku/Kd`/`tx_out` comparison
 
 Eye tool updates:
 
