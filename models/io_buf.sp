@@ -1,6 +1,4 @@
-* optimized_io_buffer_v11.sp
-* Adapted from optimized_tristate_output_v11.sp for I/O functionality
-* Optimized for Cadence T2B SPICE to IBIS conversion: Tri-state output with feedback path for input sensing
+* io_buffer.sp
 * Maintains tri-state success, adds input sensing from 'out' to 'in_sense'
 
 * Predriver for IN (inverter to n1 = ~IN)

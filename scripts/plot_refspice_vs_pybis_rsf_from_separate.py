@@ -2,9 +2,8 @@
 RSF comparison plot using two SEPARATE raw files instead of a combined bench.
 
 Loads:
-  - ngspice_refspice/rsf_fixed.raw  (standalone refspice RSF bench, verified working)
-  - ngspice_pybis/tb_validation_rfr_ngspice_pybis_12n_batch.raw  (pybis 12ns RFR bench;
-    first 12ns of the RFR pattern = RSF pattern, matching the refspice stimulus exactly)
+  - ngspice_refspice/tb_validation_refspice_rsf_batch.raw
+  - ngspice_pybis/tb_validation_rfr_ngspice_pybis_12n_batch.raw
 
 Both benches use the same RSF stimulus:
   - Rise at ~1ns (5ps edges)
@@ -21,7 +20,7 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_REF = ROOT / "ngspice_refspice" / "rsf_fixed.raw"
+RAW_REF = ROOT / "ngspice_refspice" / "tb_validation_refspice_rsf_batch.raw"
 RAW_PYBIS = ROOT / "ngspice_pybis" / "tb_validation_rfr_ngspice_pybis_12n_batch.raw"
 OUT_DIR = ROOT / "plots" / "validation"
 
@@ -97,9 +96,9 @@ def main():
     # Use refspice input for reference (same stimulus)
     ax_pad.plot(
         time_ref_ns[ref_mask], ref["v(in_dig)"][ref_mask],
-        ":", label="Input (shared)", linewidth=1.5, alpha=0.8, color="gray"
+        "--", label="Input (shared)", linewidth=1.5, alpha=0.8, color="gray"
     )
-    style_axis(ax_pad, "Rise-Steady-Fall Pad Comparison: Reference SPICE vs Converted IBIS-SPICE\n(loaded from separate raw files)")
+    style_axis(ax_pad, "Rise-Steady-Fall Pad Comparison: Reference SPICE vs Converted IBIS-SPICE\n(separate standalone reruns)")
     ax_pad.legend(loc="best")
     fig_pad.tight_layout()
     out_pad = OUT_DIR / "refspice_vs_pybis_rsf_pad_separate.png"
@@ -120,9 +119,9 @@ def main():
     )
     ax_load.plot(
         time_ref_ns[ref_mask], ref["v(in_dig)"][ref_mask],
-        ":", label="Input (shared)", linewidth=1.5, alpha=0.8, color="gray"
+        "--", label="Input (shared)", linewidth=1.5, alpha=0.8, color="gray"
     )
-    style_axis(ax_load, "Rise-Steady-Fall Load Comparison: Reference SPICE vs Converted IBIS-SPICE\n(loaded from separate raw files)")
+    style_axis(ax_load, "Rise-Steady-Fall Load Comparison: Reference SPICE vs Converted IBIS-SPICE\n(separate standalone reruns)")
     ax_load.legend(loc="best")
     fig_load.tight_layout()
     out_load = OUT_DIR / "refspice_vs_pybis_rsf_load_separate.png"

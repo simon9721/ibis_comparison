@@ -1,0 +1,31 @@
+Threshold used: 0.750 V
+
+Per-bench delay constancy summary (pybis crossing time minus refspice crossing time):
+
+simple_fixture / pad
+  mean delay : 0.632261 ns
+  std dev    : 0.033959 ns
+  min delay  : 0.603618 ns
+  max delay  : 0.705032 ns
+  span       : 0.101413 ns
+
+simple_fixture / load
+  mean delay : 0.632261 ns
+  std dev    : 0.033959 ns
+  min delay  : 0.603618 ns
+  max delay  : 0.705032 ns
+  span       : 0.101413 ns
+
+actual_channel / tx_pad
+  mean delay : 0.640085 ns
+  std dev    : 0.015225 ns
+  min delay  : 0.624369 ns
+  max delay  : 0.658776 ns
+  span       : 0.034408 ns
+
+actual_channel / rx_load
+  mean delay : 0.641621 ns
+  std dev    : 0.017267 ns
+  min delay  : 0.618389 ns
+  max delay  : 0.659731 ns
+  span       : 0.041342 ns

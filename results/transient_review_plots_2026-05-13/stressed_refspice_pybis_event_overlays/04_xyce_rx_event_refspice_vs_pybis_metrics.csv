@@ -1,0 +1,3 @@
+window_index,window_label,trace_index,label,path,requested_signal,resolved_signal,samples,t_start_s,t_end_s,v_min,v_max,v_mean
+0,54p7ns to 58p6ns,0,Xyce refspice,C:\Users\simom\Desktop\IBIS_Comparison\results\stressed_edge50_corrected_crossflow_2026-05-12_clean\runs\ui2_len30cm_loss5_coarse10\xyce_refspice\ui2_len30cm_loss5_coarse10_xyce_refspice.cir.csv,v(n10b),v(n10b),390,5.471e-08,5.86e-08,-0.0596822843,0.925076131,0.2413491098847974
+0,54p7ns to 58p6ns,1,Xyce pybis,C:\Users\simom\Desktop\IBIS_Comparison\results\stressed_edge50_corrected_crossflow_2026-05-12_clean\runs\ui2_len30cm_loss5_coarse10\xyce_pybis_edge50\ui2_len30cm_loss5_coarse10_xyce_pybis_edge50.cir.csv,v(n10b),v(n10b),390,5.471e-08,5.86e-08,-0.0480603668,1.52241486,0.3421573321697641

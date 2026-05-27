@@ -1,0 +1,434 @@
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+import csv
+import shutil
+import struct
+import subprocess
+import sys
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PYBIS_REPO = ROOT.parent / "spice" / "pybis2spice"
+if str(PYBIS_REPO) not in sys.path:
+    sys.path.insert(0, str(PYBIS_REPO))
+
+from pybis2spice import pybis2spice  # noqa: E402
+from pybis2spice import subcircuit  # noqa: E402
+
+
+IBIS_DIR = ROOT / "PIC18F1xQ20_LV_IBIS_Models"
+IBIS_PATH = IBIS_DIR / "PIC18F1xQ20_vqfn20_LV.ibs"
+CONVERTED_DIR = IBIS_DIR / "converted_inputdriven_typical" / "PIC18F1xQ20_vqfn20_LV" / "Output"
+OUT_DIR = IBIS_DIR / "ccomp_fullzero_experiment_vqfn20"
+MODEL_DIR = OUT_DIR / "models"
+BENCH_DIR = OUT_DIR / "benches"
+RAW_DIR = OUT_DIR / "raw"
+PLOT_DIR = OUT_DIR / "plots"
+NGSPICE_BIN = ROOT.parent / "spice" / "ngspice-46_64" / "Spice64" / "bin" / "ngspice_con.exe"
+
+COMPONENT_NAME = "PIC18F1xQ20"
+TARGET_R_FIX = 50.0
+TARGET_V_FIX = 0.0
+RISE_START_NS = 50.0
+FALL_START_NS = 700.0
+STOP_NS = 1300.0
+
+MODELS = [
+    "ptc_i3c_std",
+    "io_vrefh10_slctrl",
+    "io_vrefh10_std",
+    "io_vrefh5_std",
+    "io_zxover_std",
+    "io_dig_slctrl",
+]
+
+
+@dataclass
+class Waveform:
+    time_s: np.ndarray
+    v_typ: np.ndarray
+    r_fix: float
+    v_fix: float
+
+
+def parse_ngspice_raw(path: Path):
+    data = path.read_bytes()
+    marker = b"Binary:\n"
+    idx = data.find(marker)
+    if idx < 0:
+        raise RuntimeError(f"Binary marker not found in {path}")
+
+    header = data[:idx].decode("latin1")
+    lines = header.splitlines()
+    nvars = None
+    npts = None
+    variables = []
+    reading_vars = False
+
+    for line in lines:
+        if line.startswith("No. Variables:"):
+            nvars = int(line.split(":", 1)[1])
+        elif line.startswith("No. Points:"):
+            npts = int(line.split(":", 1)[1])
+        elif line.strip() == "Variables:":
+            reading_vars = True
+        elif reading_vars and line.startswith("\t"):
+            variables.append(line.split()[1])
+
+    if nvars is None or npts is None or len(variables) != nvars:
+        raise RuntimeError(f"Could not parse ngspice raw header for {path}")
+
+    payload = data[idx + len(marker):]
+    values = struct.unpack("<" + "d" * (nvars * npts), payload[: 8 * nvars * npts])
+    arr = np.asarray(values, dtype=float).reshape((npts, nvars))
+    return {name: arr[:, i] for i, name in enumerate(variables)}
+
+
+def choose_waveform(data_model, kind: str) -> Waveform:
+    candidates = data_model.vt_rising if kind == "rising" else data_model.vt_falling
+    best = None
+    best_score = None
+    for wf in candidates:
+        score = abs(float(wf.r_fix) - TARGET_R_FIX) + abs(float(wf.v_fix[0]) - TARGET_V_FIX)
+        if best is None or score < best_score:
+            best = wf
+            best_score = score
+    if best is None:
+        raise RuntimeError(f"No {kind} waveform found for {data_model.model_name}")
+    return Waveform(
+        time_s=np.asarray(best.data[:, 0], dtype=float),
+        v_typ=np.asarray(best.data[:, 1], dtype=float),
+        r_fix=float(best.r_fix),
+        v_fix=float(best.v_fix[0]),
+    )
+
+
+def read_subckt_name(path: Path) -> str:
+    for line in path.read_text().splitlines():
+        if line.startswith(".SUBCKT "):
+            return line.split()[1]
+    raise RuntimeError(f"Could not find .SUBCKT line in {path}")
+
+
+def rename_subckt_file(src: Path, dst: Path, new_name: str) -> str:
+    text = src.read_text(encoding="utf-8")
+    old_name = read_subckt_name(src)
+    text = text.replace(f".SUBCKT {old_name} ", f".SUBCKT {new_name} ", 1)
+    text = text.replace(f".SUBCKT {old_name}\n", f".SUBCKT {new_name}\n", 1)
+    dst.write_text(text, encoding="utf-8")
+    return old_name
+
+
+def make_runtime_zero_model(src: Path, dst: Path, new_name: str):
+    text = src.read_text(encoding="utf-8")
+    old_name = read_subckt_name(src)
+    text = text.replace(f".SUBCKT {old_name} ", f".SUBCKT {new_name} ", 1)
+    text = text.replace(f".SUBCKT {old_name}\n", f".SUBCKT {new_name}\n", 1)
+    text = text.replace(".param C_comp = ", ".param C_comp_original = ", 1)
+    lines = text.splitlines()
+    out_lines = []
+    inserted = False
+    for line in lines:
+        out_lines.append(line)
+        if line.startswith(".param C_comp_original ="):
+            out_lines.append(".param C_comp = 0")
+            inserted = True
+    if not inserted:
+        raise RuntimeError(f"Could not find C_comp parameter in {src}")
+    dst.write_text("\n".join(out_lines) + "\n", encoding="utf-8")
+
+
+def build_fullzero_model(ibis, model_name: str, dst: Path, new_name: str):
+    data_model = pybis2spice.DataModel(ibis, model_name, COMPONENT_NAME)
+    data_model.c_comp = [0.0 if value is not None else None for value in data_model.c_comp]
+    ret = subcircuit.generate_spice_model(
+        io_type="Output",
+        subcircuit_type="InputDriven",
+        ibis_data=data_model,
+        corner="Typical",
+        output_filepath=str(dst),
+    )
+    if ret != 0:
+        raise RuntimeError(f"Failed to generate full-zero model for {model_name}")
+    text = dst.read_text(encoding="utf-8")
+    old_name = read_subckt_name(dst)
+    text = text.replace(f".SUBCKT {old_name} ", f".SUBCKT {new_name} ", 1)
+    text = text.replace(f".SUBCKT {old_name}\n", f".SUBCKT {new_name}\n", 1)
+    dst.write_text(text, encoding="utf-8")
+
+
+def enable_voltage(enable_mode, vcc: float) -> float:
+    if enable_mode == "Active-Low":
+        return 0.0
+    return vcc
+
+
+def write_bench(model_paths: dict[str, Path], model_names: dict[str, str], vcc: float, en_v: float, bench_path: Path):
+    pulse_width_ns = FALL_START_NS - RISE_START_NS
+    bench_text = "\n".join(
+        [
+            ".temp 27",
+            ".options method=gear maxord=2 reltol=1e-3 abstol=1e-9 vntol=1e-6 gmin=1e-12",
+            f"Vin in_src 0 PULSE(0 {vcc} {RISE_START_NS}n 5p 5p {pulse_width_ns}n {2*STOP_NS}n)",
+            "Rin in_src in_dig 1",
+            f"Ven en_sig 0 DC {en_v}",
+            f"Vdd vdd 0 DC {vcc}",
+            f".include '{model_paths['original'].as_posix()}'",
+            f".include '{model_paths['runtime_zero'].as_posix()}'",
+            f".include '{model_paths['full_zero'].as_posix()}'",
+            f"XORIG pad_orig in_dig en_sig vdd 0 {model_names['original']}",
+            f"XRZERO pad_rzero in_dig en_sig vdd 0 {model_names['runtime_zero']}",
+            f"XFZERO pad_fzero in_dig en_sig vdd 0 {model_names['full_zero']}",
+            f"Rload_orig pad_orig 0 {TARGET_R_FIX}",
+            f"Rload_rzero pad_rzero 0 {TARGET_R_FIX}",
+            f"Rload_fzero pad_fzero 0 {TARGET_R_FIX}",
+            ".save V(in_dig) V(pad_orig) V(pad_rzero) V(pad_fzero)",
+            f".tran 100p {STOP_NS}n",
+            ".end",
+            "",
+        ]
+    )
+    bench_path.write_text(bench_text, encoding="utf-8")
+
+
+def build_stitched_reference(sim_time_s: np.ndarray, rise: Waveform, fall: Waveform):
+    ref = np.full_like(sim_time_s, rise.v_typ[0])
+    rise_t = rise.time_s + RISE_START_NS * 1e-9
+    fall_t = fall.time_s + FALL_START_NS * 1e-9
+    rise_mask = (sim_time_s >= rise_t[0]) & (sim_time_s <= rise_t[-1])
+    ref[rise_mask] = np.interp(sim_time_s[rise_mask], rise_t, rise.v_typ)
+    hold_mask = (sim_time_s > rise_t[-1]) & (sim_time_s < fall_t[0])
+    ref[hold_mask] = rise.v_typ[-1]
+    fall_mask = (sim_time_s >= fall_t[0]) & (sim_time_s <= fall_t[-1])
+    ref[fall_mask] = np.interp(sim_time_s[fall_mask], fall_t, fall.v_typ)
+    after_mask = sim_time_s > fall_t[-1]
+    ref[after_mask] = fall.v_typ[-1]
+    return ref
+
+
+def crossing_time(time_s: np.ndarray, voltage: np.ndarray, threshold: float, rising: bool):
+    for i in range(1, len(time_s)):
+        if rising and voltage[i - 1] < threshold <= voltage[i]:
+            return float(np.interp(threshold, [voltage[i - 1], voltage[i]], [time_s[i - 1], time_s[i]]))
+        if (not rising) and voltage[i - 1] > threshold >= voltage[i]:
+            return float(np.interp(threshold, [voltage[i - 1], voltage[i]], [time_s[i - 1], time_s[i]]))
+    return float("nan")
+
+
+def compute_metrics(sim_time_s: np.ndarray, sim_pad: np.ndarray, rise: Waveform, fall: Waveform):
+    rise_abs_t = rise.time_s + RISE_START_NS * 1e-9
+    fall_abs_t = fall.time_s + FALL_START_NS * 1e-9
+    rise_sim = np.interp(rise_abs_t, sim_time_s, sim_pad)
+    fall_sim = np.interp(fall_abs_t, sim_time_s, sim_pad)
+    rise_err = rise_sim - rise.v_typ
+    fall_err = fall_sim - fall.v_typ
+    rise_threshold = 0.5 * (float(rise.v_typ[0]) + float(rise.v_typ[-1]))
+    fall_threshold = 0.5 * (float(fall.v_typ[0]) + float(fall.v_typ[-1]))
+    rise_dt = crossing_time(sim_time_s, sim_pad, rise_threshold, True) * 1e9 - RISE_START_NS
+    rise_ibis = crossing_time(rise.time_s, rise.v_typ, rise_threshold, True) * 1e9
+    fall_dt = crossing_time(sim_time_s, sim_pad, fall_threshold, False) * 1e9 - FALL_START_NS
+    fall_ibis = crossing_time(fall.time_s, fall.v_typ, fall_threshold, False) * 1e9
+    return {
+        "rise_rms_error_v": float(np.sqrt(np.mean(rise_err ** 2))),
+        "rise_max_abs_error_v": float(np.max(np.abs(rise_err))),
+        "fall_rms_error_v": float(np.sqrt(np.mean(fall_err ** 2))),
+        "fall_max_abs_error_v": float(np.max(np.abs(fall_err))),
+        "rise_cross_delta_ns": float(rise_dt - rise_ibis),
+        "fall_cross_delta_ns": float(fall_dt - fall_ibis),
+    }
+
+
+def score(metrics: dict) -> float:
+    return max(
+        metrics["rise_rms_error_v"],
+        metrics["fall_rms_error_v"],
+        metrics["rise_max_abs_error_v"],
+        metrics["fall_max_abs_error_v"],
+    )
+
+
+def plot_case(model_name: str, time_s: np.ndarray, v_in: np.ndarray, traces: dict[str, np.ndarray], ref: np.ndarray,
+              rise: Waveform, fall: Waveform, out_path: Path):
+    t_ns = time_s * 1e9
+    rise_t_ns = rise.time_s * 1e9 + RISE_START_NS
+    fall_t_ns = fall.time_s * 1e9 + FALL_START_NS
+    fig, axes = plt.subplots(3, 1, figsize=(10, 11), constrained_layout=True)
+
+    axes[0].plot(t_ns, ref, label="IBIS reference", linewidth=2)
+    axes[0].plot(t_ns, traces["original"], label="original", linewidth=2)
+    axes[0].plot(t_ns, traces["runtime_zero"], label="runtime C_comp=0", linewidth=2)
+    axes[0].plot(t_ns, traces["full_zero"], label="re-extract + C_comp=0", linewidth=2)
+    axes[0].plot(t_ns, v_in, "--", label="input", linewidth=1.0, alpha=0.7)
+    axes[0].set_title(f"{model_name}: C_comp experiment")
+    axes[0].set_xlabel("Time (ns)")
+    axes[0].set_ylabel("Voltage (V)")
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend()
+
+    axes[1].plot(rise_t_ns, rise.v_typ, label="IBIS rise", linewidth=2)
+    axes[1].plot(rise_t_ns, np.interp(rise_t_ns * 1e-9, time_s, traces["original"]), label="original", linewidth=2)
+    axes[1].plot(rise_t_ns, np.interp(rise_t_ns * 1e-9, time_s, traces["runtime_zero"]), label="runtime C_comp=0", linewidth=2)
+    axes[1].plot(rise_t_ns, np.interp(rise_t_ns * 1e-9, time_s, traces["full_zero"]), label="re-extract + C_comp=0", linewidth=2)
+    axes[1].set_xlim(RISE_START_NS - 5, RISE_START_NS + rise.time_s[-1] * 1e9 + 10)
+    axes[1].set_xlabel("Time (ns)")
+    axes[1].set_ylabel("Voltage (V)")
+    axes[1].grid(True, alpha=0.3)
+    axes[1].legend()
+
+    axes[2].plot(fall_t_ns, fall.v_typ, label="IBIS fall", linewidth=2)
+    axes[2].plot(fall_t_ns, np.interp(fall_t_ns * 1e-9, time_s, traces["original"]), label="original", linewidth=2)
+    axes[2].plot(fall_t_ns, np.interp(fall_t_ns * 1e-9, time_s, traces["runtime_zero"]), label="runtime C_comp=0", linewidth=2)
+    axes[2].plot(fall_t_ns, np.interp(fall_t_ns * 1e-9, time_s, traces["full_zero"]), label="re-extract + C_comp=0", linewidth=2)
+    axes[2].set_xlim(FALL_START_NS - 5, FALL_START_NS + fall.time_s[-1] * 1e9 + 10)
+    axes[2].set_xlabel("Time (ns)")
+    axes[2].set_ylabel("Voltage (V)")
+    axes[2].grid(True, alpha=0.3)
+    axes[2].legend()
+
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+
+def main() -> int:
+    if OUT_DIR.exists():
+        shutil.rmtree(OUT_DIR)
+    for path in (OUT_DIR, MODEL_DIR, BENCH_DIR, RAW_DIR, PLOT_DIR):
+        path.mkdir(parents=True, exist_ok=True)
+
+    ibis = pybis2spice.get_ibis_model_ecdtools(str(IBIS_PATH))
+    rows = []
+
+    for model_name in MODELS:
+        data_model = pybis2spice.DataModel(ibis, model_name, COMPONENT_NAME)
+        vcc = float(data_model.v_range[0])
+        en_v = enable_voltage(data_model.enable, vcc)
+        rise = choose_waveform(data_model, "rising")
+        fall = choose_waveform(data_model, "falling")
+
+        src_model = CONVERTED_DIR / f"{model_name}-Output-Typical.sub"
+        orig_copy = MODEL_DIR / f"{model_name}-orig.sub"
+        runtime_zero = MODEL_DIR / f"{model_name}-runtime-zero.sub"
+        full_zero = MODEL_DIR / f"{model_name}-full-zero.sub"
+
+        orig_name = f"{model_name}_Orig"
+        runtime_zero_name = f"{model_name}_RuntimeZero"
+        full_zero_name = f"{model_name}_FullZero"
+
+        rename_subckt_file(src_model, orig_copy, orig_name)
+        make_runtime_zero_model(src_model, runtime_zero, runtime_zero_name)
+        build_fullzero_model(ibis, model_name, full_zero, full_zero_name)
+
+        bench_path = BENCH_DIR / f"{model_name}_compare_fullzero.sp"
+        raw_path = BENCH_DIR / f"{model_name}_compare_fullzero.raw"
+        write_bench(
+            {"original": orig_copy, "runtime_zero": runtime_zero, "full_zero": full_zero},
+            {"original": orig_name, "runtime_zero": runtime_zero_name, "full_zero": full_zero_name},
+            vcc,
+            en_v,
+            bench_path,
+        )
+
+        proc = subprocess.run(
+            [str(NGSPICE_BIN), "-b", "-r", raw_path.name, bench_path.name],
+            cwd=BENCH_DIR,
+            capture_output=True,
+            text=True,
+        )
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"ngspice failed for {model_name}\nSTDOUT:\n{proc.stdout}\nSTDERR:\n{proc.stderr}"
+            )
+
+        generated_raw = BENCH_DIR / raw_path.name
+        generated_raw.replace(RAW_DIR / raw_path.name)
+        raw_path = RAW_DIR / raw_path.name
+        traces = parse_ngspice_raw(raw_path)
+        time_s = traces["time"]
+        v_in = traces["v(in_dig)"]
+        v_orig = traces["v(pad_orig)"]
+        v_rzero = traces["v(pad_rzero)"]
+        v_fzero = traces["v(pad_fzero)"]
+        ref = build_stitched_reference(time_s, rise, fall)
+
+        orig_metrics = compute_metrics(time_s, v_orig, rise, fall)
+        rzero_metrics = compute_metrics(time_s, v_rzero, rise, fall)
+        fzero_metrics = compute_metrics(time_s, v_fzero, rise, fall)
+
+        orig_score = score(orig_metrics)
+        rzero_score = score(rzero_metrics)
+        fzero_score = score(fzero_metrics)
+
+        plot_path = PLOT_DIR / f"{model_name}_fullzero_compare.png"
+        plot_case(
+            model_name,
+            time_s,
+            v_in,
+            {"original": v_orig, "runtime_zero": v_rzero, "full_zero": v_fzero},
+            ref,
+            rise,
+            fall,
+            plot_path,
+        )
+
+        rows.append(
+            {
+                "model_name": model_name,
+                "c_comp_pf": float(data_model.c_comp[0] * 1e12),
+                "original_score": orig_score,
+                "runtime_zero_score": rzero_score,
+                "full_zero_score": fzero_score,
+                "improvement_fullzero_vs_original": orig_score - fzero_score,
+                "improvement_fullzero_vs_runtimezero": rzero_score - fzero_score,
+                "orig_rise_rms_v": orig_metrics["rise_rms_error_v"],
+                "orig_fall_rms_v": orig_metrics["fall_rms_error_v"],
+                "orig_rise_dt_ns": orig_metrics["rise_cross_delta_ns"],
+                "orig_fall_dt_ns": orig_metrics["fall_cross_delta_ns"],
+                "runtime_zero_rise_rms_v": rzero_metrics["rise_rms_error_v"],
+                "runtime_zero_fall_rms_v": rzero_metrics["fall_rms_error_v"],
+                "runtime_zero_rise_dt_ns": rzero_metrics["rise_cross_delta_ns"],
+                "runtime_zero_fall_dt_ns": rzero_metrics["fall_cross_delta_ns"],
+                "full_zero_rise_rms_v": fzero_metrics["rise_rms_error_v"],
+                "full_zero_fall_rms_v": fzero_metrics["fall_rms_error_v"],
+                "full_zero_rise_dt_ns": fzero_metrics["rise_cross_delta_ns"],
+                "full_zero_fall_dt_ns": fzero_metrics["fall_cross_delta_ns"],
+                "plot_file": plot_path.name,
+            }
+        )
+
+    csv_path = OUT_DIR / "summary.csv"
+    with csv_path.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows)
+
+    lines = [
+        "# Full C_comp Zero Experiment",
+        "",
+        "- Package variant: `vqfn20`",
+        "- Source IBIS: `PIC18F1xQ20_vqfn20_LV.ibs`",
+        "- Three variants are compared:",
+        "  - original converted model",
+        "  - runtime `C_comp=0` only",
+        "  - re-extract `Ku/Kd` with `C_comp=0` and simulate with `C_comp=0`",
+        "",
+        "| Model | C_comp (pF) | Original | Runtime Zero | Full Zero | Full Zero Improvement vs Original | Plot |",
+        "| --- | ---: | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for row in sorted(rows, key=lambda item: item["improvement_fullzero_vs_original"], reverse=True):
+        lines.append(
+            f"| `{row['model_name']}` | {row['c_comp_pf']:.3f} | {row['original_score']:.6f} | "
+            f"{row['runtime_zero_score']:.6f} | {row['full_zero_score']:.6f} | "
+            f"{row['improvement_fullzero_vs_original']:.6f} | `{row['plot_file']}` |"
+        )
+    (OUT_DIR / "summary.md").write_text("\n".join(lines), encoding="utf-8")
+    print(f"Wrote full C_comp experiment artifacts to {OUT_DIR}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
