@@ -1,0 +1,2 @@
+plot_basis,rise_start_ns,fall_start_ns,refspice_original_fall_start_ns,pad_ref_minus_pybis_rmse_mv,pad_ref_minus_ibis_rmse_mv,pad_pybis_minus_ibis_rmse_mv,load_ref_minus_pybis_rmse_mv
+continuous_rsf_edge-remapped,1.0,9.0,10.0,24.06815111396997,21.739216377862302,6.316419121766251,24.074789750202132
