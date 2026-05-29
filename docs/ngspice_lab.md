@@ -24,14 +24,18 @@ Run with the pybis2spice virtualenv Python:
 The GUI lets you:
 
 - choose IBIS or SPICE DUTs
+- scan an IBIS file into component/model/corner dropdowns so the common path does not require typing names
 - add multiple DUTs before running
-- set termination, optional channel, and stimulus parameters
+- set termination, optional ideal T-line or lossy RLGC ladder channel, and stimulus parameters
 - use a scrollable `Setup` tab with controls grouped into Run, Stimulus, Termination/Channel, Add DUT, and DUT list sections
 - show only the fields relevant to the selected stimulus kind, channel mode, and DUT type
 - use always-visible top buttons for `Generate Schematic`, `Run Sim`, and `Save Config`
 - generate a schematic before simulation and view it inside the `Setup` tab as a setup sanity check
 - run ngspice and view results in the `Output` tab
 - switch dynamically between `transient_overlay` and `transient_side_by_side` after a run
+- use embedded waveform-view controls for zooming and horizontal/vertical markers
+
+The lossy RLGC ladder channel is discretized as repeated series `R`/`L` and shunt `C`/`G` sections. The GUI exposes length, section count, and per-mm `R`, `L`, `G`, and `C` values.
 
 For SPICE DUTs, use the pin-order field to map the subcircuit pins. Recognized pin names include `OUT`, `PAD`, `IN`, `EN`, `VDD`, `VCC`, `VSS`, and `GND`. Unknown names are passed through as literal node names.
 

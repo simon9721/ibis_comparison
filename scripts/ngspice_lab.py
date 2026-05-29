@@ -46,6 +46,13 @@ def clean_label(label: str) -> str:
     return text or "dut"
 
 
+def short_label(label: str, max_chars: int = 28) -> str:
+    text = str(label)
+    if len(text) <= max_chars:
+        return text
+    return text[: max(3, max_chars - 3)] + "..."
+
+
 def parse_float(value: Any, default: float) -> float:
     if value is None or value == "":
         return default
@@ -78,9 +85,15 @@ class StimulusConfig:
 class TerminationConfig:
     r_ohm: float = 50.0
     v_term: float = 0.0
-    channel: str = "none"  # none, ideal_tline
+    channel: str = "none"  # none, ideal_tline, rlgc_ladder
     tline_z0_ohm: float = 50.0
     tline_delay_ns: float = 1.0
+    rlgc_length_mm: float = 50.0
+    rlgc_sections: int = 20
+    rlgc_r_ohm_per_mm: float = 0.02
+    rlgc_l_nh_per_mm: float = 0.4
+    rlgc_g_us_per_mm: float = 0.0
+    rlgc_c_pf_per_mm: float = 0.16
 
 
 @dataclass
@@ -228,6 +241,12 @@ def config_from_dict(data: dict[str, Any]) -> RunConfig:
             channel=term_data.get("channel", "none"),
             tline_z0_ohm=parse_float(term_data.get("tline_z0_ohm"), 50.0),
             tline_delay_ns=parse_float(term_data.get("tline_delay_ns"), 1.0),
+            rlgc_length_mm=parse_float(term_data.get("rlgc_length_mm"), 50.0),
+            rlgc_sections=parse_int(term_data.get("rlgc_sections"), 20),
+            rlgc_r_ohm_per_mm=parse_float(term_data.get("rlgc_r_ohm_per_mm"), 0.02),
+            rlgc_l_nh_per_mm=parse_float(term_data.get("rlgc_l_nh_per_mm"), 0.4),
+            rlgc_g_us_per_mm=parse_float(term_data.get("rlgc_g_us_per_mm"), 0.0),
+            rlgc_c_pf_per_mm=parse_float(term_data.get("rlgc_c_pf_per_mm"), 0.16),
         ),
         duts=duts,
     )
@@ -391,6 +410,26 @@ def map_spice_pins(pin_order: str, out_node: str, config: RunConfig) -> list[str
     return pins
 
 
+def append_rlgc_ladder(lines: list[str], runtime: DutRuntime, term: TerminationConfig) -> None:
+    sections = max(1, int(term.rlgc_sections))
+    length_per_section = max(term.rlgc_length_mm, 0.0) / sections
+    r_seg = max(term.rlgc_r_ohm_per_mm * length_per_section, 1e-9)
+    l_seg_nh = max(term.rlgc_l_nh_per_mm * length_per_section, 1e-12)
+    c_seg_pf = max(term.rlgc_c_pf_per_mm * length_per_section, 1e-12)
+    g_seg_s = max(term.rlgc_g_us_per_mm * 1e-6 * length_per_section, 0.0)
+
+    node_a = runtime.out_node
+    for index in range(1, sections + 1):
+        node_b = runtime.pad_node if index == sections else f"ch_{runtime.label}_{index}"
+        mid = f"ch_{runtime.label}_{index}_rl"
+        lines.append(f"RCH_{runtime.label}_{index} {node_a} {mid} {r_seg:g}")
+        lines.append(f"LCH_{runtime.label}_{index} {mid} {node_b} {l_seg_nh:g}n")
+        lines.append(f"CCH_{runtime.label}_{index} {node_b} 0 {c_seg_pf:g}p")
+        if g_seg_s > 0.0:
+            lines.append(f"RGCH_{runtime.label}_{index} {node_b} 0 {1.0 / g_seg_s:g}")
+        node_a = node_b
+
+
 def prepare_duts(config: RunConfig, out_dir: Path) -> list[DutRuntime]:
     runtimes: list[DutRuntime] = []
     labels_seen: set[str] = set()
@@ -472,6 +511,8 @@ def write_testbench(config: RunConfig, runtimes: list[DutRuntime], out_dir: Path
                 f"TCH_{runtime.label} {runtime.out_node} 0 {runtime.pad_node} 0 "
                 f"Z0={config.termination.tline_z0_ohm:g} TD={config.termination.tline_delay_ns:g}n"
             )
+        elif config.termination.channel == "rlgc_ladder":
+            append_rlgc_ladder(lines, runtime, config.termination)
         else:
             runtime.pad_node = runtime.out_node
 
@@ -509,10 +550,10 @@ def run_ngspice(config: RunConfig, bench_path: Path, raw_path: Path) -> Path:
 
 
 def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_path: Path | None = None) -> Figure:
-    row_h = 2.35
-    height = max(4.8, 1.65 + row_h * len(runtimes))
+    row_h = 2.75
+    height = max(4.8, 2.0 + row_h * len(runtimes))
     width = 11.8
-    fig = Figure(figsize=(10.0, height * 0.82), dpi=120)
+    fig = Figure(figsize=(9.0, height * 0.68), dpi=120)
     ax = fig.add_subplot(111)
     ax.axis("off")
     ax.set_xlim(0, width)
@@ -538,16 +579,16 @@ def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_
         ax.add_patch(Circle((x, y), 0.32, fill=False, lw=1.25, edgecolor="#2f2f2f"))
         ax.text(x - 0.07, y + 0.11, "+", fontsize=9, ha="center", va="center")
         ax.text(x - 0.07, y - 0.13, "-", fontsize=9, ha="center", va="center")
-        ax.text(x, y + 0.55, label, ha="center", va="bottom", fontsize=8)
+        ax.text(x - 0.46, y, label, ha="right", va="center", fontsize=8)
 
     def dut_box(x: float, y: float, runtime: DutRuntime) -> None:
         rect = plt_rectangle((x, y - 0.62), 2.15, 1.24, fc="#eef7ef")
         ax.add_patch(rect)
         detail = runtime.config.type.upper()
         if runtime.config.type == "ibis" and runtime.config.ibis:
-            detail += f"\n{runtime.config.ibis.model}"
+            detail += f"\n{short_label(runtime.config.ibis.model, 26)}"
         elif runtime.config.type == "spice" and runtime.config.spice:
-            detail += f"\n{runtime.config.spice.subckt}"
+            detail += f"\n{short_label(runtime.config.spice.subckt, 26)}"
         ax.text(x + 1.08, y + 0.18, runtime.label, ha="center", va="center", fontsize=9, weight="bold")
         ax.text(x + 1.08, y - 0.24, detail, ha="center", va="center", fontsize=7.5)
         ax.text(x - 0.06, y + 0.28, "IN", ha="right", va="center", fontsize=7)
@@ -592,6 +633,28 @@ def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_
             color="#5a3c8a",
         )
 
+    def rlgc_ladder(x1: float, x2: float, y: float) -> None:
+        cell_w = (x2 - x1) / 3.0
+        node_x = x1
+        for index in range(3):
+            next_x = x1 + (index + 1) * cell_w
+            mid_x = (node_x + next_x) / 2.0
+            line(node_x, y, mid_x - 0.08, y, "#7a4b1f")
+            line(mid_x - 0.08, y - 0.08, mid_x + 0.08, y + 0.08, "#7a4b1f")
+            line(mid_x + 0.08, y + 0.08, next_x, y, "#7a4b1f")
+            line(next_x, y, next_x, y - 0.34, "#7a4b1f")
+            ax.text(next_x, y - 0.45, "C/G", ha="center", va="top", fontsize=6.5, color="#7a4b1f")
+            node_x = next_x
+        ax.text(
+            (x1 + x2) / 2,
+            y + 0.4,
+            f"RLGC ladder\n{config.termination.rlgc_length_mm:g} mm, {config.termination.rlgc_sections:d} sections",
+            ha="center",
+            va="bottom",
+            fontsize=7.3,
+            color="#7a4b1f",
+        )
+
     ax.text(width / 2, height - 0.18, "ngspice testbench schematic", ha="center", va="top", fontsize=12, weight="bold")
     stim = config.stimulus
     stim_lines = [f"Vin: {stim.kind}", f"{stim.v_low:g} to {stim.v_high:g} V", f"edge {stim.edge_ps:g} ps"]
@@ -604,12 +667,13 @@ def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_
     ax.text(0.35, height - 0.72, "\n".join(stim_lines), ha="left", va="top", fontsize=8, color="#333333")
 
     for i, runtime in enumerate(runtimes):
-        y = height - 2.3 - i * row_h
+        y = height - 2.15 - i * row_h
         src_x = 0.95
         dut_x = 3.65
         out_x = dut_x + 2.15
-        pad_x = 9.45 if config.termination.channel == "ideal_tline" else 8.15
-        res_x = 10.05 if config.termination.channel == "ideal_tline" else 9.05
+        has_channel = config.termination.channel in {"ideal_tline", "rlgc_ladder"}
+        pad_x = 9.45 if has_channel else 8.15
+        res_x = 10.05 if has_channel else 9.05
 
         source(src_x, y + 0.28, "Vin")
         line(src_x + 0.32, y + 0.28, dut_x, y + 0.28)
@@ -629,6 +693,9 @@ def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_
         line(out_x, y, out_x + 0.45, y)
         if config.termination.channel == "ideal_tline":
             tline(out_x + 0.45, pad_x - 0.45, y)
+            line(pad_x - 0.45, y, pad_x, y)
+        elif config.termination.channel == "rlgc_ladder":
+            rlgc_ladder(out_x + 0.45, pad_x - 0.45, y)
             line(pad_x - 0.45, y, pad_x, y)
         else:
             line(out_x + 0.45, y, pad_x, y)
@@ -815,8 +882,49 @@ def execute_run(config: RunConfig) -> SimulationResult:
 
 def load_ibis_names(ibis_path: str) -> tuple[list[str], list[str]]:
     pybis2spice, _ = import_pybis()
-    ibis = pybis2spice.get_ibis_model_ecdtools(str(Path(ibis_path)))
+    path = Path(ibis_path)
+    if not path.is_absolute():
+        path = ROOT / path
+    ibis = pybis2spice.get_ibis_model_ecdtools(str(path))
     return list(pybis2spice.list_components(ibis)), list(pybis2spice.list_models(ibis))
+
+
+def load_ibis_catalog(ibis_path: str) -> dict[str, Any]:
+    pybis2spice, _ = import_pybis()
+    path = Path(ibis_path)
+    if not path.is_absolute():
+        path = ROOT / path
+    ibis = pybis2spice.get_ibis_model_ecdtools(str(path))
+    all_models = list(pybis2spice.list_models(ibis))
+    selector_names = set(getattr(ibis, "model_selector_names", []) or [])
+    component_models: dict[str, list[str]] = {}
+
+    for component_name in pybis2spice.list_components(ibis):
+        component = ibis.get_component_by_name(component_name)
+        models: list[str] = []
+        for pin in getattr(component, "pins", []) or []:
+            pin_model = getattr(pin, "model_name", None)
+            if not pin_model:
+                continue
+            if pin_model in all_models:
+                models.append(pin_model)
+            elif pin_model in selector_names:
+                selector = ibis.get_model_selector_by_name(pin_model)
+                models.extend([model.name for model in getattr(selector, "models", [])])
+        seen: set[str] = set()
+        unique_models = []
+        for model in models:
+            if model in all_models and model not in seen:
+                unique_models.append(model)
+                seen.add(model)
+        component_models[component_name] = unique_models or all_models
+
+    return {
+        "components": list(pybis2spice.list_components(ibis)),
+        "models": all_models,
+        "component_models": component_models,
+        "corners": ["Typical", "WeakSlow", "FastStrong"],
+    }
 
 
 def example_config() -> RunConfig:
@@ -870,6 +978,12 @@ def parse_direct_ibis_args(args: argparse.Namespace) -> RunConfig:
             channel=args.channel,
             tline_z0_ohm=args.tline_z0_ohm,
             tline_delay_ns=args.tline_delay_ns,
+            rlgc_length_mm=args.rlgc_length_mm,
+            rlgc_sections=args.rlgc_sections,
+            rlgc_r_ohm_per_mm=args.rlgc_r_ohm_per_mm,
+            rlgc_l_nh_per_mm=args.rlgc_l_nh_per_mm,
+            rlgc_g_us_per_mm=args.rlgc_g_us_per_mm,
+            rlgc_c_pf_per_mm=args.rlgc_c_pf_per_mm,
         ),
         duts=[
             DutConfig(
@@ -905,9 +1019,13 @@ def gui_main() -> None:
             self.toolbar: NavigationToolbar2Tk | None = None
             self.schematic_canvas: FigureCanvasTkAgg | None = None
             self.schematic_toolbar: NavigationToolbar2Tk | None = None
+            self.output_marker_mode: str | None = None
+            self.output_marker_artists: list[Any] = []
+            self.output_axes: list[Any] = []
 
             self.vars: dict[str, tk.Variable] = {}
             self.field_rows: dict[str, list[Any]] = {}
+            self.ibis_catalog: dict[str, Any] = {}
             self.build()
             self.load_defaults()
 
@@ -971,29 +1089,36 @@ def gui_main() -> None:
             self.entry(stim_box, 9, "Stop ns optional", "stop_ns", "")
 
             term_box = self.section(setup_body, "Termination / Channel", 0, 2)
-            self.combo(term_box, 0, "Preset", "preset", ["1160 ohm to ground", "50 ohm to ground", "custom"], "1160 ohm to ground", callback=self.apply_preset)
-            self.entry(term_box, 1, "R ohm", "r_ohm", "1160")
+            self.combo(term_box, 0, "Preset", "preset", ["50 ohm to ground", "custom"], "50 ohm to ground", callback=self.apply_preset)
+            self.entry(term_box, 1, "R ohm", "r_ohm", "50")
             self.entry(term_box, 2, "V term", "v_term", "0")
-            self.combo(term_box, 3, "Channel", "channel", ["none", "ideal_tline"], "none", callback=self.update_channel_fields)
+            self.combo(term_box, 3, "Channel", "channel", ["none", "ideal_tline", "rlgc_ladder"], "none", callback=self.update_channel_fields)
             self.entry(term_box, 4, "Tline Z0", "tline_z0_ohm", "50")
             self.entry(term_box, 5, "Tline delay ns", "tline_delay_ns", "1")
+            self.entry(term_box, 6, "RLGC length mm", "rlgc_length_mm", "50")
+            self.entry(term_box, 7, "RLGC sections", "rlgc_sections", "20")
+            self.entry(term_box, 8, "R ohm/mm", "rlgc_r_ohm_per_mm", "0.02")
+            self.entry(term_box, 9, "L nH/mm", "rlgc_l_nh_per_mm", "0.4")
+            self.entry(term_box, 10, "G uS/mm", "rlgc_g_us_per_mm", "0")
+            self.entry(term_box, 11, "C pF/mm", "rlgc_c_pf_per_mm", "0.16")
 
             dut_box = self.section(setup_body, "Add DUT", 1, 0, columnspan=2)
             dut_box.columnconfigure(1, weight=1)
             dut_box.columnconfigure(4, weight=1)
             self.combo(dut_box, 0, "DUT type", "dut_type", ["ibis", "spice"], "ibis", callback=self.update_dut_fields, column=0)
-            self.entry(dut_box, 1, "Label", "dut_label", "hibiki_i3c", column=0)
-            self.entry(dut_box, 2, "IBIS file", "ibis", str(ROOT / "pcbauto" / "Hibiki_IOCL_I3C_I2C_ibis_20260211.ibs"), browse_file=True, column=0)
-            self.entry(dut_box, 3, "Component", "component", "A11486_IBIS-00001760", column=0)
-            self.entry(dut_box, 4, "Model", "model", "I3C_TX_0p125mA_tx", column=0)
-            self.entry(dut_box, 5, "Corner", "corner", "Typical", column=0)
+            self.entry(dut_box, 1, "Label", "dut_label", "buffer1", column=0)
+            ibis_entry = self.entry(dut_box, 2, "IBIS file", "ibis", str(ROOT / "pcbauto" / "Hibiki_IOCL_I3C_I2C_ibis_20260211.ibs"), browse_file=True, column=0)
+            ibis_entry.bind("<FocusOut>", lambda _event: self.refresh_ibis_catalog(show_errors=False))
+            self.component_combo = self.combo(dut_box, 3, "Component", "component", [], "A11486_IBIS-00001760", callback=self.update_model_dropdown, column=0, state="normal")
+            self.model_combo = self.combo(dut_box, 4, "Model", "model", [], "I3C_TX_0p125mA_tx", column=0, state="normal")
+            self.corner_combo = self.combo(dut_box, 5, "Corner", "corner", ["Typical", "WeakSlow", "FastStrong"], "Typical", column=0)
             self.entry(dut_box, 0, "SPICE include", "spice_include", "", browse_file=True, column=3)
             self.entry(dut_box, 1, "SPICE subckt", "spice_subckt", "", column=3)
             self.entry(dut_box, 2, "SPICE pin order", "pin_order", "OUT IN EN VCC VSS", column=3)
 
             dut_actions = ttk.Frame(dut_box)
             dut_actions.grid(row=6, column=0, columnspan=6, sticky="ew", pady=(8, 0))
-            self.list_ibis_button = ttk.Button(dut_actions, text="List IBIS Names", command=self.list_ibis_names)
+            self.list_ibis_button = ttk.Button(dut_actions, text="Rescan IBIS", command=self.refresh_ibis_catalog)
             self.list_ibis_button.grid(row=0, column=0, padx=(0, 6))
             ttk.Button(dut_actions, text="Add DUT", command=self.add_dut).grid(row=0, column=1, padx=(0, 6))
             ttk.Button(dut_actions, text="Clear DUTs", command=self.clear_duts).grid(row=0, column=2)
@@ -1034,6 +1159,15 @@ def gui_main() -> None:
             self.output_tab_view.bind("<<ComboboxSelected>>", lambda _event: self.refresh_output_view())
             ttk.Button(output_controls, text="Redraw", command=self.refresh_output_view).pack(side=tk.LEFT, padx=(0, 6))
             ttk.Button(output_controls, text="Show Output Folder", command=self.show_output_folder).pack(side=tk.LEFT)
+            ttk.Separator(output_controls, orient=tk.VERTICAL).pack(side=tk.LEFT, fill=tk.Y, padx=8)
+            ttk.Button(output_controls, text="Zoom In", command=lambda: self.zoom_output(0.6)).pack(side=tk.LEFT, padx=(0, 4))
+            ttk.Button(output_controls, text="Zoom Out", command=lambda: self.zoom_output(1.6)).pack(side=tk.LEFT, padx=(0, 4))
+            ttk.Button(output_controls, text="Reset", command=self.refresh_output_view).pack(side=tk.LEFT, padx=(0, 8))
+            ttk.Button(output_controls, text="V Marker", command=lambda: self.set_marker_mode("vertical")).pack(side=tk.LEFT, padx=(0, 4))
+            ttk.Button(output_controls, text="H Marker", command=lambda: self.set_marker_mode("horizontal")).pack(side=tk.LEFT, padx=(0, 4))
+            ttk.Button(output_controls, text="Clear Markers", command=self.clear_markers).pack(side=tk.LEFT, padx=(0, 8))
+            self.marker_status = tk.StringVar(value="Markers: choose V or H, then click plot")
+            ttk.Label(output_controls, textvariable=self.marker_status).pack(side=tk.LEFT)
 
             output_pane = ttk.PanedWindow(output_tab, orient=tk.VERTICAL)
             output_pane.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
@@ -1078,7 +1212,7 @@ def gui_main() -> None:
             frame.columnconfigure(1, weight=1)
             return frame
 
-        def entry(self, parent: Any, row: int, label: str, name: str, value: str, browse_file: bool = False, browse_dir: bool = False, column: int = 0) -> None:
+        def entry(self, parent: Any, row: int, label: str, name: str, value: str, browse_file: bool = False, browse_dir: bool = False, column: int = 0) -> Any:
             widgets = []
             lbl = ttk.Label(parent, text=label)
             lbl.grid(row=row, column=column, sticky="w", pady=2, padx=(0, 6))
@@ -1095,18 +1229,31 @@ def gui_main() -> None:
                 btn.grid(row=row, column=column + 2, padx=(3, 8))
                 widgets.append(btn)
             self.field_rows[name] = widgets
+            return ent
 
-        def combo(self, parent: Any, row: int, label: str, name: str, values: list[str], value: str, callback: Any | None = None, column: int = 0) -> None:
+        def combo(
+            self,
+            parent: Any,
+            row: int,
+            label: str,
+            name: str,
+            values: list[str],
+            value: str,
+            callback: Any | None = None,
+            column: int = 0,
+            state: str = "readonly",
+        ) -> Any:
             widgets = []
             lbl = ttk.Label(parent, text=label)
             lbl.grid(row=row, column=column, sticky="w", pady=2, padx=(0, 6))
             widgets.append(lbl)
-            cb = ttk.Combobox(parent, textvariable=self.var(name, value), values=values, state="readonly", width=35)
+            cb = ttk.Combobox(parent, textvariable=self.var(name, value), values=values, state=state, width=35)
             cb.grid(row=row, column=column + 1, sticky="ew", pady=2)
             widgets.append(cb)
             if callback:
                 cb.bind("<<ComboboxSelected>>", lambda _event: callback())
             self.field_rows[name] = widgets
+            return cb
 
         def set_field_visible(self, name: str, visible: bool) -> None:
             for widget in self.field_rows.get(name, []):
@@ -1124,9 +1271,20 @@ def gui_main() -> None:
             self.set_field_visible("prbs_bits", kind == "prbs7")
 
         def update_channel_fields(self) -> None:
-            show_tline = self.vars["channel"].get() == "ideal_tline"
+            channel = self.vars["channel"].get()
+            show_tline = channel == "ideal_tline"
+            show_rlgc = channel == "rlgc_ladder"
             self.set_field_visible("tline_z0_ohm", show_tline)
             self.set_field_visible("tline_delay_ns", show_tline)
+            for name in (
+                "rlgc_length_mm",
+                "rlgc_sections",
+                "rlgc_r_ohm_per_mm",
+                "rlgc_l_nh_per_mm",
+                "rlgc_g_us_per_mm",
+                "rlgc_c_pf_per_mm",
+            ):
+                self.set_field_visible(name, show_rlgc)
 
         def update_dut_fields(self) -> None:
             is_ibis = self.vars["dut_type"].get() == "ibis"
@@ -1148,6 +1306,8 @@ def gui_main() -> None:
             path = filedialog.askopenfilename()
             if path:
                 self.vars[var_name].set(path)
+                if var_name == "ibis":
+                    self.refresh_ibis_catalog()
 
         def browse_dir(self, var_name: str) -> None:
             path = filedialog.askdirectory()
@@ -1159,17 +1319,47 @@ def gui_main() -> None:
             if preset == "50 ohm to ground":
                 self.vars["r_ohm"].set("50")
                 self.vars["v_term"].set("0")
-            elif preset == "1160 ohm to ground":
-                self.vars["r_ohm"].set("1160")
-                self.vars["v_term"].set("0")
 
         def load_defaults(self) -> None:
+            self.refresh_ibis_catalog(show_errors=False)
             if not self.duts:
                 self.add_dut()
 
+        def refresh_ibis_catalog(self, show_errors: bool = True) -> None:
+            ibis_path = self.vars["ibis"].get().strip()
+            if not ibis_path:
+                return
+            try:
+                catalog = load_ibis_catalog(ibis_path)
+            except Exception as exc:
+                self.ibis_catalog = {}
+                if show_errors:
+                    messagebox.showerror("IBIS scan failed", str(exc))
+                return
+            self.ibis_catalog = catalog
+            components = catalog.get("components", [])
+            component_choices = ["All components"] + components
+            self.component_combo.configure(values=component_choices)
+            if components and self.vars["component"].get() not in components:
+                self.vars["component"].set("All components")
+            self.corner_combo.configure(values=catalog.get("corners", ["Typical", "WeakSlow", "FastStrong"]))
+            self.update_model_dropdown()
+            self.status.set(f"Loaded IBIS names from {Path(ibis_path).name}")
+
+        def update_model_dropdown(self) -> None:
+            all_models = self.ibis_catalog.get("models", [])
+            component = self.vars["component"].get()
+            component_models = self.ibis_catalog.get("component_models", {})
+            models = all_models if component == "All components" else component_models.get(component) or all_models
+            self.model_combo.configure(values=models)
+            if models and self.vars["model"].get() not in models:
+                self.vars["model"].set(models[0])
+
         def list_ibis_names(self) -> None:
             try:
-                comps, models = load_ibis_names(self.vars["ibis"].get())
+                self.refresh_ibis_catalog()
+                comps = self.ibis_catalog.get("components", [])
+                models = self.ibis_catalog.get("models", [])
                 messagebox.showinfo(
                     "IBIS names",
                     "Components:\n"
@@ -1181,16 +1371,27 @@ def gui_main() -> None:
             except Exception as exc:
                 messagebox.showerror("IBIS load failed", str(exc))
 
+        def next_default_label(self) -> str:
+            return f"buffer{len(self.duts) + 1}"
+
         def add_dut(self) -> None:
             dut_type = self.vars["dut_type"].get()
-            label = self.vars["dut_label"].get().strip() or self.vars["model"].get().strip() or "dut"
+            label = self.vars["dut_label"].get().strip() or self.next_default_label()
             if dut_type == "ibis":
+                component = self.vars["component"].get()
+                if component == "All components":
+                    components = self.ibis_catalog.get("components", [])
+                    if len(components) == 1:
+                        component = components[0]
+                    else:
+                        messagebox.showerror("Component required", "Select one IBIS component before adding this DUT.")
+                        return
                 dut = DutConfig(
                     type="ibis",
                     ibis=IbisDutConfig(
                         label=label,
                         ibis=self.vars["ibis"].get(),
-                        component=self.vars["component"].get(),
+                        component=component,
                         model=self.vars["model"].get(),
                         corner=self.vars["corner"].get() or "Typical",
                     ),
@@ -1209,6 +1410,7 @@ def gui_main() -> None:
                 detail = f"{dut.spice.subckt} from {Path(dut.spice.include).name}"
             self.duts.append(dut)
             self.dut_tree.insert("", "end", values=(dut.type, f"{label}: {detail}"))
+            self.vars["dut_label"].set(self.next_default_label())
 
         def clear_duts(self) -> None:
             self.duts.clear()
@@ -1245,6 +1447,12 @@ def gui_main() -> None:
                     channel=self.vars["channel"].get(),
                     tline_z0_ohm=parse_float(self.vars["tline_z0_ohm"].get(), 50.0),
                     tline_delay_ns=parse_float(self.vars["tline_delay_ns"].get(), 1.0),
+                    rlgc_length_mm=parse_float(self.vars["rlgc_length_mm"].get(), 50.0),
+                    rlgc_sections=parse_int(self.vars["rlgc_sections"].get(), 20),
+                    rlgc_r_ohm_per_mm=parse_float(self.vars["rlgc_r_ohm_per_mm"].get(), 0.02),
+                    rlgc_l_nh_per_mm=parse_float(self.vars["rlgc_l_nh_per_mm"].get(), 0.4),
+                    rlgc_g_us_per_mm=parse_float(self.vars["rlgc_g_us_per_mm"].get(), 0.0),
+                    rlgc_c_pf_per_mm=parse_float(self.vars["rlgc_c_pf_per_mm"].get(), 0.16),
                 ),
                 duts=list(self.duts),
             )
@@ -1252,11 +1460,83 @@ def gui_main() -> None:
         def show_figure(self, fig: Figure) -> None:
             for child in self.plot_area.winfo_children():
                 child.destroy()
+            self.output_marker_artists.clear()
+            self.output_axes = list(fig.axes)
             self.canvas = FigureCanvasTkAgg(fig, master=self.plot_area)
             self.canvas.draw()
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
             self.toolbar = NavigationToolbar2Tk(self.canvas, self.plot_area)
             self.toolbar.update()
+            self.canvas.mpl_connect("button_press_event", self.on_plot_click)
+
+        def set_marker_mode(self, mode: str) -> None:
+            self.output_marker_mode = mode
+            label = "vertical" if mode == "vertical" else "horizontal"
+            self.marker_status.set(f"{label.capitalize()} marker armed: click a waveform plot")
+
+        def on_plot_click(self, event: Any) -> None:
+            if self.output_marker_mode is None or event.inaxes is None or event.xdata is None or event.ydata is None:
+                return
+            ax = event.inaxes
+            if self.output_marker_mode == "vertical":
+                artist = ax.axvline(event.xdata, color="#d62728", lw=1.1, ls="--", alpha=0.9)
+                ymin, ymax = ax.get_ylim()
+                text = ax.text(
+                    event.xdata,
+                    ymax,
+                    f" {event.xdata:.4g} ns",
+                    color="#d62728",
+                    fontsize=8,
+                    ha="left",
+                    va="top",
+                    rotation=90,
+                    clip_on=True,
+                )
+                self.output_marker_artists.extend([artist, text])
+                self.marker_status.set(f"V marker at {event.xdata:.6g} ns")
+            else:
+                artist = ax.axhline(event.ydata, color="#1f77b4", lw=1.1, ls="--", alpha=0.9)
+                xmin, xmax = ax.get_xlim()
+                text = ax.text(
+                    xmin,
+                    event.ydata,
+                    f" {event.ydata:.4g} V",
+                    color="#1f77b4",
+                    fontsize=8,
+                    ha="left",
+                    va="bottom",
+                    clip_on=True,
+                )
+                self.output_marker_artists.extend([artist, text])
+                self.marker_status.set(f"H marker at {event.ydata:.6g} V")
+            self.canvas.draw_idle()
+
+        def clear_markers(self) -> None:
+            for artist in self.output_marker_artists:
+                try:
+                    artist.remove()
+                except ValueError:
+                    pass
+            self.output_marker_artists.clear()
+            self.output_marker_mode = None
+            self.marker_status.set("Markers cleared")
+            if self.canvas:
+                self.canvas.draw_idle()
+
+        def zoom_output(self, scale: float) -> None:
+            if not self.output_axes:
+                return
+            for ax in self.output_axes:
+                x0, x1 = ax.get_xlim()
+                y0, y1 = ax.get_ylim()
+                xc = (x0 + x1) / 2.0
+                yc = (y0 + y1) / 2.0
+                x_half = (x1 - x0) * scale / 2.0
+                y_half = (y1 - y0) * scale / 2.0
+                ax.set_xlim(xc - x_half, xc + x_half)
+                ax.set_ylim(yc - y_half, yc + y_half)
+            if self.canvas:
+                self.canvas.draw_idle()
 
         def show_schematic(self, fig: Figure) -> None:
             for child in self.schematic_area.winfo_children():
@@ -1393,9 +1673,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
     run.add_argument("--vdd", type=float, default=1.2)
     run.add_argument("--r-ohm", type=float, default=50.0)
     run.add_argument("--v-term", type=float, default=0.0)
-    run.add_argument("--channel", choices=["none", "ideal_tline"], default="none")
+    run.add_argument("--channel", choices=["none", "ideal_tline", "rlgc_ladder"], default="none")
     run.add_argument("--tline-z0-ohm", type=float, default=50.0)
     run.add_argument("--tline-delay-ns", type=float, default=1.0)
+    run.add_argument("--rlgc-length-mm", type=float, default=50.0)
+    run.add_argument("--rlgc-sections", type=int, default=20)
+    run.add_argument("--rlgc-r-ohm-per-mm", type=float, default=0.02)
+    run.add_argument("--rlgc-l-nh-per-mm", type=float, default=0.4)
+    run.add_argument("--rlgc-g-us-per-mm", type=float, default=0.0)
+    run.add_argument("--rlgc-c-pf-per-mm", type=float, default=0.16)
     run.add_argument("--stimulus", choices=["pulse_train", "bit_pattern", "prbs7"], default="pulse_train")
     run.add_argument("--start-ns", type=float, default=10.0)
     run.add_argument("--edge-ps", type=float, default=5.0)
