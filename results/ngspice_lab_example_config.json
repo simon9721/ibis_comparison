@@ -1,0 +1,47 @@
+{
+  "ngspice": "C:\\Users\\simom\\Desktop\\Projects\\spice\\ngspice-46_64\\Spice64\\bin\\ngspice_con.exe",
+  "output_dir": "C:\\Users\\simom\\Desktop\\Projects\\IBIS_Comparison\\results\\ngspice_lab_hibiki_1160_5pulse",
+  "vdd": 1.2,
+  "temperature_c": 25.0,
+  "max_step_ps": 10.0,
+  "reltol": 0.0001,
+  "abstol": 1e-12,
+  "vntol": 1e-07,
+  "gmin": 1e-12,
+  "view": "overlay",
+  "stimulus": {
+    "kind": "pulse_train",
+    "v_low": 0.0,
+    "v_high": 1.2,
+    "start_ns": 10.0,
+    "edge_ps": 5.0,
+    "high_ns": 20.0,
+    "low_ns": 20.0,
+    "pulses": 5,
+    "bit_rate_mbps": 50.0,
+    "bit_pattern": "10101010",
+    "prbs_bits": 64,
+    "stop_ns": null
+  },
+  "termination": {
+    "r_ohm": 1160.0,
+    "v_term": 0.0,
+    "channel": "none",
+    "tline_z0_ohm": 50.0,
+    "tline_delay_ns": 1.0
+  },
+  "duts": [
+    {
+      "type": "ibis",
+      "ibis": {
+        "label": "hibiki_i3c_0p125ma",
+        "ibis": "C:\\Users\\simom\\Desktop\\Projects\\IBIS_Comparison\\pcbauto\\Hibiki_IOCL_I3C_I2C_ibis_20260211.ibs",
+        "component": "A11486_IBIS-00001760",
+        "model": "I3C_TX_0p125mA_tx",
+        "corner": "Typical",
+        "io_type": "Output",
+        "subckt_type": "InputDriven"
+      }
+    }
+  ]
+}

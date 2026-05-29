@@ -1,0 +1,2 @@
+label,type,pad_min_v,pad_max_v,pad_final_v,pad_last_window_avg_v,pad_node,source_node
+hibiki_i3c_0p125ma,ibis,-0.0010263423954047152,0.6040507463921041,0.00040942857143032627,0.0005367665724036785,src_hibiki_i3c_0p125ma,src_hibiki_i3c_0p125ma

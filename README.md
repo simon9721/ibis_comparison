@@ -44,6 +44,7 @@ with physical clock-folded eye plots generated from the transient output.
 - Pybis stressed-channel behavior summary: [docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md](C:/Users/simom/Desktop/IBIS_Comparison/docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md)
 - Transient/eye review summary: [docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md](C:/Users/simom/Desktop/IBIS_Comparison/docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md)
 - Reusable transient plotting tool: [docs/TRANSIENT_PLOT_TOOL.md](C:/Users/simom/Desktop/IBIS_Comparison/docs/TRANSIENT_PLOT_TOOL.md)
+- Reusable ngspice CLI/GUI testbench tool: [docs/ngspice_lab.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/ngspice_lab.md)
 - Current review plot bundle: [results/transient_review_plots_2026-05-13/README.md](C:/Users/simom/Desktop/IBIS_Comparison/results/transient_review_plots_2026-05-13/README.md)
 - Accepted benchmark bundle: [results/final_prbs_rlgc_comparison_2026-05-11/README.md](C:/Users/simom/Desktop/IBIS_Comparison/results/final_prbs_rlgc_comparison_2026-05-11/README.md)
 - Xyce pybis ladder bundle: [results/xyce_pybis_minmod_ladder_2026-05-11/README.md](C:/Users/simom/Desktop/IBIS_Comparison/results/xyce_pybis_minmod_ladder_2026-05-11/README.md)
@@ -54,6 +55,7 @@ with physical clock-folded eye plots generated from the transient output.
 python scripts\run_accepted_prbs_rlgc_regression.py
 python scripts\run_xyce_pybis_minmod_ladder.py
 python scripts\transient_plot.py --list-signals hspice\native_ibis_exp1\tb_exp1.tr0 --fmt hspice
+& 'C:\Users\simom\Desktop\Projects\spice\pybis2spice\.venv\Scripts\python.exe' scripts\ngspice_lab.py gui
 ```
 
 Useful direct tool examples:
