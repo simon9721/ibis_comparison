@@ -27,6 +27,7 @@ The GUI lets you:
 - add multiple DUTs before running
 - set termination, optional channel, and stimulus parameters
 - use a scrollable `Setup` tab with controls grouped into Run, Stimulus, Termination/Channel, Add DUT, and DUT list sections
+- show only the fields relevant to the selected stimulus kind, channel mode, and DUT type
 - use always-visible top buttons for `Generate Schematic`, `Run Sim`, and `Save Config`
 - generate a schematic before simulation and view it inside the `Setup` tab as a setup sanity check
 - run ngspice and view results in the `Output` tab

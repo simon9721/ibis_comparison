@@ -21,3 +21,4 @@ rsf_compare_log*.txt
 
 # Scratch workspace copies
 /experiments/
+/results/ngspice_lab_gui_run/

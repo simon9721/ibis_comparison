@@ -509,10 +509,10 @@ def run_ngspice(config: RunConfig, bench_path: Path, raw_path: Path) -> Path:
 
 
 def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_path: Path | None = None) -> Figure:
-    row_h = 2.65
-    height = max(5.2, 1.85 + row_h * len(runtimes))
-    width = 13.4
-    fig = Figure(figsize=(12.8, height), dpi=130)
+    row_h = 2.35
+    height = max(4.8, 1.65 + row_h * len(runtimes))
+    width = 11.8
+    fig = Figure(figsize=(10.0, height * 0.82), dpi=120)
     ax = fig.add_subplot(111)
     ax.axis("off")
     ax.set_xlim(0, width)
@@ -592,7 +592,7 @@ def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_
             color="#5a3c8a",
         )
 
-    ax.text(width / 2, height - 0.2, "ngspice testbench schematic", ha="center", va="top", fontsize=13, weight="bold")
+    ax.text(width / 2, height - 0.18, "ngspice testbench schematic", ha="center", va="top", fontsize=12, weight="bold")
     stim = config.stimulus
     stim_lines = [f"Vin: {stim.kind}", f"{stim.v_low:g} to {stim.v_high:g} V", f"edge {stim.edge_ps:g} ps"]
     if stim.kind == "pulse_train":
@@ -650,7 +650,7 @@ def draw_testbench_schematic(config: RunConfig, runtimes: list[DutRuntime], out_
         if i < len(runtimes) - 1:
             line(0.25, y - 1.35, width - 0.25, y - 1.35, "#dddddd", 0.8)
 
-    fig.tight_layout()
+    fig.tight_layout(pad=0.45)
     return fig
 
 
@@ -907,6 +907,7 @@ def gui_main() -> None:
             self.schematic_toolbar: NavigationToolbar2Tk | None = None
 
             self.vars: dict[str, tk.Variable] = {}
+            self.field_rows: dict[str, list[Any]] = {}
             self.build()
             self.load_defaults()
 
@@ -958,7 +959,7 @@ def gui_main() -> None:
             self.entry(run_box, 2, "VDD", "vdd", "1.2")
 
             stim_box = self.section(setup_body, "Stimulus", 0, 1)
-            self.combo(stim_box, 0, "Kind", "stim_kind", ["pulse_train", "bit_pattern", "prbs7"], "pulse_train")
+            self.combo(stim_box, 0, "Kind", "stim_kind", ["pulse_train", "bit_pattern", "prbs7"], "pulse_train", callback=self.update_stimulus_fields)
             self.entry(stim_box, 1, "Start ns", "start_ns", "10")
             self.entry(stim_box, 2, "Edge ps", "edge_ps", "5")
             self.entry(stim_box, 3, "High ns", "high_ns", "20")
@@ -973,14 +974,14 @@ def gui_main() -> None:
             self.combo(term_box, 0, "Preset", "preset", ["1160 ohm to ground", "50 ohm to ground", "custom"], "1160 ohm to ground", callback=self.apply_preset)
             self.entry(term_box, 1, "R ohm", "r_ohm", "1160")
             self.entry(term_box, 2, "V term", "v_term", "0")
-            self.combo(term_box, 3, "Channel", "channel", ["none", "ideal_tline"], "none")
+            self.combo(term_box, 3, "Channel", "channel", ["none", "ideal_tline"], "none", callback=self.update_channel_fields)
             self.entry(term_box, 4, "Tline Z0", "tline_z0_ohm", "50")
             self.entry(term_box, 5, "Tline delay ns", "tline_delay_ns", "1")
 
             dut_box = self.section(setup_body, "Add DUT", 1, 0, columnspan=2)
             dut_box.columnconfigure(1, weight=1)
             dut_box.columnconfigure(4, weight=1)
-            self.combo(dut_box, 0, "DUT type", "dut_type", ["ibis", "spice"], "ibis", column=0)
+            self.combo(dut_box, 0, "DUT type", "dut_type", ["ibis", "spice"], "ibis", callback=self.update_dut_fields, column=0)
             self.entry(dut_box, 1, "Label", "dut_label", "hibiki_i3c", column=0)
             self.entry(dut_box, 2, "IBIS file", "ibis", str(ROOT / "pcbauto" / "Hibiki_IOCL_I3C_I2C_ibis_20260211.ibs"), browse_file=True, column=0)
             self.entry(dut_box, 3, "Component", "component", "A11486_IBIS-00001760", column=0)
@@ -992,9 +993,10 @@ def gui_main() -> None:
 
             dut_actions = ttk.Frame(dut_box)
             dut_actions.grid(row=6, column=0, columnspan=6, sticky="ew", pady=(8, 0))
-            ttk.Button(dut_actions, text="List IBIS Names", command=self.list_ibis_names).pack(side=tk.LEFT, padx=(0, 6))
-            ttk.Button(dut_actions, text="Add DUT", command=self.add_dut).pack(side=tk.LEFT, padx=(0, 6))
-            ttk.Button(dut_actions, text="Clear DUTs", command=self.clear_duts).pack(side=tk.LEFT)
+            self.list_ibis_button = ttk.Button(dut_actions, text="List IBIS Names", command=self.list_ibis_names)
+            self.list_ibis_button.grid(row=0, column=0, padx=(0, 6))
+            ttk.Button(dut_actions, text="Add DUT", command=self.add_dut).grid(row=0, column=1, padx=(0, 6))
+            ttk.Button(dut_actions, text="Clear DUTs", command=self.clear_duts).grid(row=0, column=2)
 
             list_box = self.section(setup_body, "DUTs In This Run", 1, 2)
             self.dut_tree = ttk.Treeview(list_box, columns=("type", "detail"), height=9, show="headings")
@@ -1045,6 +1047,7 @@ def gui_main() -> None:
             text_scroll.pack(side=tk.RIGHT, fill=tk.Y)
             self.output_text.configure(yscrollcommand=text_scroll.set)
             self.write_output_message("Run a simulation to populate this tab. The setup schematic preview lives in the Setup tab.")
+            self.update_dynamic_fields()
 
         def scrollable_frame(self, parent: Any) -> ttk.Frame:
             container = ttk.Frame(parent)
@@ -1076,20 +1079,70 @@ def gui_main() -> None:
             return frame
 
         def entry(self, parent: Any, row: int, label: str, name: str, value: str, browse_file: bool = False, browse_dir: bool = False, column: int = 0) -> None:
-            ttk.Label(parent, text=label).grid(row=row, column=column, sticky="w", pady=2, padx=(0, 6))
+            widgets = []
+            lbl = ttk.Label(parent, text=label)
+            lbl.grid(row=row, column=column, sticky="w", pady=2, padx=(0, 6))
+            widgets.append(lbl)
             ent = ttk.Entry(parent, textvariable=self.var(name, value), width=38)
             ent.grid(row=row, column=column + 1, sticky="ew", pady=2)
+            widgets.append(ent)
             if browse_file:
-                ttk.Button(parent, text="...", width=3, command=lambda n=name: self.browse_file(n)).grid(row=row, column=column + 2, padx=(3, 8))
+                btn = ttk.Button(parent, text="...", width=3, command=lambda n=name: self.browse_file(n))
+                btn.grid(row=row, column=column + 2, padx=(3, 8))
+                widgets.append(btn)
             elif browse_dir:
-                ttk.Button(parent, text="...", width=3, command=lambda n=name: self.browse_dir(n)).grid(row=row, column=column + 2, padx=(3, 8))
+                btn = ttk.Button(parent, text="...", width=3, command=lambda n=name: self.browse_dir(n))
+                btn.grid(row=row, column=column + 2, padx=(3, 8))
+                widgets.append(btn)
+            self.field_rows[name] = widgets
 
         def combo(self, parent: Any, row: int, label: str, name: str, values: list[str], value: str, callback: Any | None = None, column: int = 0) -> None:
-            ttk.Label(parent, text=label).grid(row=row, column=column, sticky="w", pady=2, padx=(0, 6))
+            widgets = []
+            lbl = ttk.Label(parent, text=label)
+            lbl.grid(row=row, column=column, sticky="w", pady=2, padx=(0, 6))
+            widgets.append(lbl)
             cb = ttk.Combobox(parent, textvariable=self.var(name, value), values=values, state="readonly", width=35)
             cb.grid(row=row, column=column + 1, sticky="ew", pady=2)
+            widgets.append(cb)
             if callback:
                 cb.bind("<<ComboboxSelected>>", lambda _event: callback())
+            self.field_rows[name] = widgets
+
+        def set_field_visible(self, name: str, visible: bool) -> None:
+            for widget in self.field_rows.get(name, []):
+                if visible:
+                    widget.grid()
+                else:
+                    widget.grid_remove()
+
+        def update_stimulus_fields(self) -> None:
+            kind = self.vars["stim_kind"].get()
+            for name in ("high_ns", "low_ns", "pulses"):
+                self.set_field_visible(name, kind == "pulse_train")
+            self.set_field_visible("bit_rate_mbps", kind in {"bit_pattern", "prbs7"})
+            self.set_field_visible("bit_pattern", kind == "bit_pattern")
+            self.set_field_visible("prbs_bits", kind == "prbs7")
+
+        def update_channel_fields(self) -> None:
+            show_tline = self.vars["channel"].get() == "ideal_tline"
+            self.set_field_visible("tline_z0_ohm", show_tline)
+            self.set_field_visible("tline_delay_ns", show_tline)
+
+        def update_dut_fields(self) -> None:
+            is_ibis = self.vars["dut_type"].get() == "ibis"
+            for name in ("ibis", "component", "model", "corner"):
+                self.set_field_visible(name, is_ibis)
+            for name in ("spice_include", "spice_subckt", "pin_order"):
+                self.set_field_visible(name, not is_ibis)
+            if is_ibis:
+                self.list_ibis_button.grid()
+            else:
+                self.list_ibis_button.grid_remove()
+
+        def update_dynamic_fields(self) -> None:
+            self.update_stimulus_fields()
+            self.update_channel_fields()
+            self.update_dut_fields()
 
         def browse_file(self, var_name: str) -> None:
             path = filedialog.askopenfilename()
@@ -1166,31 +1219,32 @@ def gui_main() -> None:
             stop_value = self.vars["stop_ns"].get().strip()
             selected_view = self.vars["output_view"].get()
             run_view = "side_by_side" if selected_view == "transient_side_by_side" else "overlay"
+            vdd = parse_float(self.vars["vdd"].get(), 1.2)
             return RunConfig(
                 ngspice=self.vars["ngspice"].get(),
                 output_dir=self.vars["output_dir"].get(),
-                vdd=float(self.vars["vdd"].get()),
+                vdd=vdd,
                 view=run_view,
                 stimulus=StimulusConfig(
                     kind=self.vars["stim_kind"].get(),
                     v_low=0.0,
-                    v_high=float(self.vars["vdd"].get()),
-                    start_ns=float(self.vars["start_ns"].get()),
-                    edge_ps=float(self.vars["edge_ps"].get()),
-                    high_ns=float(self.vars["high_ns"].get()),
-                    low_ns=float(self.vars["low_ns"].get()),
-                    pulses=int(self.vars["pulses"].get()),
-                    bit_rate_mbps=float(self.vars["bit_rate_mbps"].get()),
+                    v_high=vdd,
+                    start_ns=parse_float(self.vars["start_ns"].get(), 10.0),
+                    edge_ps=parse_float(self.vars["edge_ps"].get(), 5.0),
+                    high_ns=parse_float(self.vars["high_ns"].get(), 20.0),
+                    low_ns=parse_float(self.vars["low_ns"].get(), 20.0),
+                    pulses=parse_int(self.vars["pulses"].get(), 5),
+                    bit_rate_mbps=parse_float(self.vars["bit_rate_mbps"].get(), 50.0),
                     bit_pattern=self.vars["bit_pattern"].get(),
-                    prbs_bits=int(self.vars["prbs_bits"].get()),
-                    stop_ns=float(stop_value) if stop_value else None,
+                    prbs_bits=parse_int(self.vars["prbs_bits"].get(), 64),
+                    stop_ns=parse_float(stop_value, 0.0) if stop_value else None,
                 ),
                 termination=TerminationConfig(
-                    r_ohm=float(self.vars["r_ohm"].get()),
-                    v_term=float(self.vars["v_term"].get()),
+                    r_ohm=parse_float(self.vars["r_ohm"].get(), 50.0),
+                    v_term=parse_float(self.vars["v_term"].get(), 0.0),
                     channel=self.vars["channel"].get(),
-                    tline_z0_ohm=float(self.vars["tline_z0_ohm"].get()),
-                    tline_delay_ns=float(self.vars["tline_delay_ns"].get()),
+                    tline_z0_ohm=parse_float(self.vars["tline_z0_ohm"].get(), 50.0),
+                    tline_delay_ns=parse_float(self.vars["tline_delay_ns"].get(), 1.0),
                 ),
                 duts=list(self.duts),
             )
@@ -1209,9 +1263,8 @@ def gui_main() -> None:
                 child.destroy()
             self.schematic_canvas = FigureCanvasTkAgg(fig, master=self.schematic_area)
             self.schematic_canvas.draw()
-            self.schematic_canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-            self.schematic_toolbar = NavigationToolbar2Tk(self.schematic_canvas, self.schematic_area)
-            self.schematic_toolbar.update()
+            self.schematic_canvas.get_tk_widget().pack(anchor=tk.NW, padx=4, pady=4)
+            self.schematic_toolbar = None
 
         def write_output_message(self, text: str) -> None:
             self.output_text.configure(state="normal")
