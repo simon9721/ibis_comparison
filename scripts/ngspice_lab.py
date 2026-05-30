@@ -4,15 +4,17 @@ import argparse
 import csv
 import json
 import math
+import queue
 import re
 import struct
 import subprocess
 import sys
+import threading
 import time
 import traceback
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 import numpy as np
 from matplotlib.figure import Figure
@@ -532,18 +534,78 @@ def write_testbench(config: RunConfig, runtimes: list[DutRuntime], out_dir: Path
     return bench_path, raw_path, stop_ns
 
 
-def run_ngspice(config: RunConfig, bench_path: Path, raw_path: Path) -> Path:
+def emit_log(log_callback: Callable[[str], None] | None, message: str) -> None:
+    if log_callback:
+        log_callback(message.rstrip("\n"))
+
+
+def run_ngspice(
+    config: RunConfig,
+    bench_path: Path,
+    raw_path: Path,
+    log_callback: Callable[[str], None] | None = None,
+) -> Path:
     ngspice = Path(config.ngspice)
     if not ngspice.exists():
         raise FileNotFoundError(f"ngspice executable not found: {ngspice}")
-    proc = subprocess.run(
+    log_path = raw_path.with_suffix(".log")
+
+    if log_callback is None:
+        proc = subprocess.run(
+            [str(ngspice), "-b", "-r", str(raw_path), str(bench_path)],
+            cwd=bench_path.parent,
+            capture_output=True,
+            text=True,
+        )
+        log_path.write_text(proc.stdout + "\n" + proc.stderr, encoding="utf-8")
+        if proc.returncode != 0:
+            raise RuntimeError(f"ngspice failed. See {log_path}")
+        return log_path
+
+    emit_log(log_callback, f"Launching ngspice: {ngspice}")
+    emit_log(log_callback, f"Deck: {bench_path}")
+    emit_log(log_callback, f"Raw output: {raw_path}")
+    started = time.monotonic()
+    output_lines: list[str] = []
+    line_queue: queue.Queue[str] = queue.Queue()
+    proc = subprocess.Popen(
         [str(ngspice), "-b", "-r", str(raw_path), str(bench_path)],
         cwd=bench_path.parent,
-        capture_output=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
         text=True,
+        bufsize=1,
     )
-    log_path = raw_path.with_suffix(".log")
-    log_path.write_text(proc.stdout + "\n" + proc.stderr, encoding="utf-8")
+
+    def read_stdout() -> None:
+        assert proc.stdout is not None
+        for line in proc.stdout:
+            line_queue.put(line)
+
+    reader = threading.Thread(target=read_stdout, daemon=True)
+    reader.start()
+    last_status = started
+    while proc.poll() is None or not line_queue.empty():
+        try:
+            line = line_queue.get(timeout=0.25)
+        except queue.Empty:
+            now = time.monotonic()
+            if now - last_status >= 5.0:
+                emit_log(log_callback, f"[ngspice running] elapsed {now - started:.0f} s...")
+                last_status = now
+            continue
+        output_lines.append(line)
+        emit_log(log_callback, line)
+
+    reader.join(timeout=1.0)
+    while not line_queue.empty():
+        line = line_queue.get_nowait()
+        output_lines.append(line)
+        emit_log(log_callback, line)
+
+    log_path.write_text("".join(output_lines), encoding="utf-8")
+    emit_log(log_callback, f"ngspice exited with code {proc.returncode} after {time.monotonic() - started:.1f} s")
+    emit_log(log_callback, f"ngspice log written: {log_path}")
     if proc.returncode != 0:
         raise RuntimeError(f"ngspice failed. See {log_path}")
     return log_path
@@ -851,23 +913,40 @@ def write_summary(result: SimulationResult, stop_ns: float) -> None:
     (out_dir / "README.md").write_text("\n".join(readme), encoding="utf-8")
 
 
-def execute_run(config: RunConfig) -> SimulationResult:
+def execute_run(config: RunConfig, log_callback: Callable[[str], None] | None = None) -> SimulationResult:
+    run_started = time.monotonic()
+    emit_log(log_callback, "Starting ngspice lab run.")
     out_dir = Path(config.output_dir)
     if not out_dir.is_absolute():
         out_dir = ROOT / out_dir
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "plots").mkdir(exist_ok=True)
     config.output_dir = str(out_dir)
+    emit_log(log_callback, f"Output directory: {out_dir}")
 
+    emit_log(log_callback, f"Preparing {len(config.duts)} DUT(s).")
     runtimes = prepare_duts(config, out_dir)
+    for runtime in runtimes:
+        emit_log(log_callback, f"Prepared {runtime.config.type.upper()} DUT `{runtime.label}` using subckt `{runtime.subckt}`.")
+        emit_log(log_callback, f"Include: {runtime.include_path}")
+
+    emit_log(log_callback, "Writing ngspice testbench.")
     bench_path, raw_path, stop_ns = write_testbench(config, runtimes, out_dir)
+    emit_log(log_callback, f"Bench written: {bench_path}")
+    emit_log(log_callback, f"Transient stop time: {stop_ns:g} ns")
+
+    emit_log(log_callback, "Generating schematic preview.")
     diagram_path = out_dir / "plots" / "testbench_schematic.png"
     schematic = draw_testbench_schematic(config, runtimes, diagram_path)
     schematic.savefig(diagram_path, dpi=180, bbox_inches="tight")
+    emit_log(log_callback, f"Schematic written: {diagram_path}")
 
-    log_path = run_ngspice(config, bench_path, raw_path)
+    emit_log(log_callback, "Starting ngspice simulation.")
+    log_path = run_ngspice(config, bench_path, raw_path, log_callback)
+    emit_log(log_callback, "Parsing ngspice raw waveform.")
     traces = parse_ngspice_raw(raw_path)
     result = SimulationResult(config, out_dir, bench_path, raw_path, log_path, diagram_path, [], traces, runtimes)
+    emit_log(log_callback, "Generating transient plots.")
     overlay = make_transient_figure(result, "overlay")
     overlay_path = out_dir / "plots" / "transient_overlay.png"
     overlay.savefig(overlay_path, dpi=180, bbox_inches="tight")
@@ -877,6 +956,8 @@ def execute_run(config: RunConfig) -> SimulationResult:
     result.plot_paths = [overlay_path, side_path]
     (out_dir / "config_used.json").write_text(json.dumps(config_to_dict(config), indent=2), encoding="utf-8")
     write_summary(result, stop_ns)
+    emit_log(log_callback, f"Plots written: {overlay_path}; {side_path}")
+    emit_log(log_callback, f"Run complete after {time.monotonic() - run_started:.1f} s.")
     return result
 
 
@@ -1021,7 +1102,13 @@ def gui_main() -> None:
             self.schematic_toolbar: NavigationToolbar2Tk | None = None
             self.output_marker_mode: str | None = None
             self.output_marker_artists: list[Any] = []
+            self.output_markers: list[dict[str, Any]] = []
+            self.active_marker: dict[str, Any] | None = None
+            self.pan_state: dict[str, Any] | None = None
             self.output_axes: list[Any] = []
+            self.gui_log_queue: queue.Queue[str] = queue.Queue()
+            self.log_flush_active = False
+            self.run_in_progress = False
 
             self.vars: dict[str, tk.Variable] = {}
             self.field_rows: dict[str, list[Any]] = {}
@@ -1042,7 +1129,8 @@ def gui_main() -> None:
             toolbar.grid(row=0, column=0, sticky="ew")
             toolbar.columnconfigure(6, weight=1)
             ttk.Button(toolbar, text="Generate Schematic", command=self.generate_diagram).grid(row=0, column=0, padx=(0, 6))
-            ttk.Button(toolbar, text="Run Sim", command=self.run_sim).grid(row=0, column=1, padx=(0, 6))
+            self.run_button = ttk.Button(toolbar, text="Run Sim", command=self.run_sim)
+            self.run_button.grid(row=0, column=1, padx=(0, 6))
             ttk.Button(toolbar, text="Save Config", command=self.save_config).grid(row=0, column=2, padx=(0, 16))
             ttk.Label(toolbar, text="Output view").grid(row=0, column=3, padx=(0, 4))
             self.output_view = ttk.Combobox(
@@ -1063,8 +1151,10 @@ def gui_main() -> None:
 
             setup_tab = ttk.Frame(self.notebook)
             output_tab = ttk.Frame(self.notebook)
+            self.log_tab = ttk.Frame(self.notebook)
             self.notebook.add(setup_tab, text="Setup")
             self.notebook.add(output_tab, text="Output")
+            self.notebook.add(self.log_tab, text="Log")
 
             setup_body = self.scrollable_frame(setup_tab)
             setup_body.columnconfigure(0, weight=1)
@@ -1166,7 +1256,7 @@ def gui_main() -> None:
             ttk.Button(output_controls, text="V Marker", command=lambda: self.set_marker_mode("vertical")).pack(side=tk.LEFT, padx=(0, 4))
             ttk.Button(output_controls, text="H Marker", command=lambda: self.set_marker_mode("horizontal")).pack(side=tk.LEFT, padx=(0, 4))
             ttk.Button(output_controls, text="Clear Markers", command=self.clear_markers).pack(side=tk.LEFT, padx=(0, 8))
-            self.marker_status = tk.StringVar(value="Markers: choose V or H, then click plot")
+            self.marker_status = tk.StringVar(value="Mouse: toolbar pan/zoom, wheel zoom, right-drag pan. Markers: create then drag.")
             ttk.Label(output_controls, textvariable=self.marker_status).pack(side=tk.LEFT)
 
             output_pane = ttk.PanedWindow(output_tab, orient=tk.VERTICAL)
@@ -1181,6 +1271,23 @@ def gui_main() -> None:
             text_scroll.pack(side=tk.RIGHT, fill=tk.Y)
             self.output_text.configure(yscrollcommand=text_scroll.set)
             self.write_output_message("Run a simulation to populate this tab. The setup schematic preview lives in the Setup tab.")
+
+            self.log_tab.columnconfigure(0, weight=1)
+            self.log_tab.rowconfigure(1, weight=1)
+            log_controls = ttk.Frame(self.log_tab, padding=(8, 6))
+            log_controls.grid(row=0, column=0, sticky="ew")
+            ttk.Label(log_controls, text="ngspice run log").pack(side=tk.LEFT)
+            ttk.Button(log_controls, text="Clear Log", command=self.clear_log).pack(side=tk.RIGHT)
+            log_frame = ttk.Frame(self.log_tab)
+            log_frame.grid(row=1, column=0, sticky="nsew", padx=8, pady=(0, 8))
+            log_frame.columnconfigure(0, weight=1)
+            log_frame.rowconfigure(0, weight=1)
+            self.log_text = tk.Text(log_frame, height=16, wrap="word", font=("Consolas", 9))
+            self.log_text.grid(row=0, column=0, sticky="nsew")
+            log_scroll = ttk.Scrollbar(log_frame, orient=tk.VERTICAL, command=self.log_text.yview)
+            log_scroll.grid(row=0, column=1, sticky="ns")
+            self.log_text.configure(yscrollcommand=log_scroll.set, state="disabled")
+            self.append_log_message("Ready. Run Sim will stream ngspice output here.")
             self.update_dynamic_fields()
 
         def scrollable_frame(self, parent: Any) -> ttk.Frame:
@@ -1461,54 +1568,206 @@ def gui_main() -> None:
             for child in self.plot_area.winfo_children():
                 child.destroy()
             self.output_marker_artists.clear()
+            self.output_markers.clear()
+            self.active_marker = None
+            self.pan_state = None
             self.output_axes = list(fig.axes)
             self.canvas = FigureCanvasTkAgg(fig, master=self.plot_area)
+            try:
+                self.toolbar = NavigationToolbar2Tk(self.canvas, self.plot_area, pack_toolbar=False)
+                self.toolbar.pack(side=tk.TOP, fill=tk.X)
+            except TypeError:
+                self.toolbar = NavigationToolbar2Tk(self.canvas, self.plot_area)
+            self.toolbar.update()
             self.canvas.draw()
             self.canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
-            self.toolbar = NavigationToolbar2Tk(self.canvas, self.plot_area)
-            self.toolbar.update()
-            self.canvas.mpl_connect("button_press_event", self.on_plot_click)
+            self.canvas.mpl_connect("button_press_event", self.on_plot_press)
+            self.canvas.mpl_connect("motion_notify_event", self.on_plot_motion)
+            self.canvas.mpl_connect("button_release_event", self.on_plot_release)
+            self.canvas.mpl_connect("scroll_event", self.on_plot_scroll)
 
         def set_marker_mode(self, mode: str) -> None:
-            self.output_marker_mode = mode
-            label = "vertical" if mode == "vertical" else "horizontal"
-            self.marker_status.set(f"{label.capitalize()} marker armed: click a waveform plot")
-
-        def on_plot_click(self, event: Any) -> None:
-            if self.output_marker_mode is None or event.inaxes is None or event.xdata is None or event.ydata is None:
+            self.output_marker_mode = None
+            if not self.output_axes:
+                self.marker_status.set("Run or load a plot before adding markers.")
                 return
-            ax = event.inaxes
-            if self.output_marker_mode == "vertical":
-                artist = ax.axvline(event.xdata, color="#d62728", lw=1.1, ls="--", alpha=0.9)
-                ymin, ymax = ax.get_ylim()
+            ax = self.output_axes[0]
+            if mode == "vertical":
+                x0, x1 = ax.get_xlim()
+                self.create_output_marker("vertical", ax, x=(x0 + x1) / 2.0)
+            else:
+                y0, y1 = ax.get_ylim()
+                self.create_output_marker("horizontal", ax, y=(y0 + y1) / 2.0)
+            self.canvas.draw_idle()
+
+        def create_output_marker(self, kind: str, ax: Any, x: float | None = None, y: float | None = None) -> None:
+            if kind == "vertical":
+                if x is None:
+                    x0, x1 = ax.get_xlim()
+                    x = (x0 + x1) / 2.0
+                line = ax.axvline(x, color="#d62728", lw=1.2, ls="--", alpha=0.95)
                 text = ax.text(
-                    event.xdata,
-                    ymax,
-                    f" {event.xdata:.4g} ns",
+                    x,
+                    0.98,
+                    "",
+                    transform=ax.get_xaxis_transform(),
                     color="#d62728",
                     fontsize=8,
                     ha="left",
                     va="top",
-                    rotation=90,
                     clip_on=True,
+                    bbox={"boxstyle": "round,pad=0.25", "facecolor": "white", "edgecolor": "#d62728", "alpha": 0.88},
                 )
-                self.output_marker_artists.extend([artist, text])
-                self.marker_status.set(f"V marker at {event.xdata:.6g} ns")
+                marker = {"kind": kind, "ax": ax, "line": line, "text": text, "value": x}
+                self.update_output_marker(marker, x)
+                self.marker_status.set(f"V marker at {x:.6g} ns. Drag the marker to move it.")
             else:
-                artist = ax.axhline(event.ydata, color="#1f77b4", lw=1.1, ls="--", alpha=0.9)
-                xmin, xmax = ax.get_xlim()
+                if y is None:
+                    y0, y1 = ax.get_ylim()
+                    y = (y0 + y1) / 2.0
+                line = ax.axhline(y, color="#1f77b4", lw=1.2, ls="--", alpha=0.95)
                 text = ax.text(
-                    xmin,
-                    event.ydata,
-                    f" {event.ydata:.4g} V",
+                    0.01,
+                    y,
+                    f" {y:.4g} V",
+                    transform=ax.get_yaxis_transform(),
                     color="#1f77b4",
                     fontsize=8,
                     ha="left",
                     va="bottom",
                     clip_on=True,
                 )
-                self.output_marker_artists.extend([artist, text])
-                self.marker_status.set(f"H marker at {event.ydata:.6g} V")
+                marker = {"kind": kind, "ax": ax, "line": line, "text": text, "value": y}
+                self.marker_status.set(f"H marker at {y:.6g} V. Drag the marker to move it.")
+            self.output_markers.append(marker)
+            self.output_marker_artists.extend([line, text])
+
+        def vertical_marker_label(self, ax: Any, x: float) -> str:
+            rows = [f"t = {x:.6g} ns"]
+            panel_axes = [
+                candidate
+                for candidate in self.output_axes
+                if candidate is ax or np.allclose(candidate.get_position().bounds, ax.get_position().bounds, atol=1e-6)
+            ]
+            for sample_ax in panel_axes:
+                for line in sample_ax.lines:
+                    label = line.get_label()
+                    if line in self.output_marker_artists or not label or label.startswith("_"):
+                        continue
+                    if not line.get_visible():
+                        continue
+                    x_data = np.asarray(line.get_xdata(), dtype=float)
+                    y_data = np.asarray(line.get_ydata(), dtype=float)
+                    if x_data.size < 2 or y_data.size != x_data.size:
+                        continue
+                    finite = np.isfinite(x_data) & np.isfinite(y_data)
+                    if np.count_nonzero(finite) < 2:
+                        continue
+                    x_values = x_data[finite]
+                    y_values = y_data[finite]
+                    order = np.argsort(x_values)
+                    x_values = x_values[order]
+                    y_values = y_values[order]
+                    if x < x_values[0] or x > x_values[-1]:
+                        continue
+                    voltage = float(np.interp(x, x_values, y_values))
+                    rows.append(f"{label}: {voltage:.5g} V")
+            return "\n".join(rows)
+
+        def update_output_marker(self, marker: dict[str, Any], value: float) -> None:
+            marker["value"] = value
+            if marker["kind"] == "vertical":
+                marker["line"].set_xdata([value, value])
+                marker["text"].set_x(value)
+                marker["text"].set_text(self.vertical_marker_label(marker["ax"], value))
+                self.marker_status.set(f"V marker at {value:.6g} ns")
+            else:
+                marker["line"].set_ydata([value, value])
+                marker["text"].set_y(value)
+                marker["text"].set_text(f" {value:.4g} V")
+                self.marker_status.set(f"H marker at {value:.6g} V")
+
+        def marker_at_event(self, event: Any) -> dict[str, Any] | None:
+            if event.inaxes is None or event.x is None or event.y is None:
+                return None
+            threshold_px = 10.0
+            for marker in reversed(self.output_markers):
+                if marker["ax"] is not event.inaxes:
+                    continue
+                ax = marker["ax"]
+                value = marker["value"]
+                if marker["kind"] == "vertical":
+                    y0, _ = ax.get_ylim()
+                    marker_x = ax.transData.transform((value, y0))[0]
+                    if abs(event.x - marker_x) <= threshold_px:
+                        return marker
+                else:
+                    x0, _ = ax.get_xlim()
+                    marker_y = ax.transData.transform((x0, value))[1]
+                    if abs(event.y - marker_y) <= threshold_px:
+                        return marker
+            return None
+
+        def on_plot_press(self, event: Any) -> None:
+            if event.inaxes is None:
+                return
+            toolbar_mode = str(getattr(self.toolbar, "mode", "") or "")
+            marker = self.marker_at_event(event)
+            if event.button == 1 and marker is not None and not toolbar_mode:
+                self.active_marker = marker
+                self.marker_status.set("Dragging marker...")
+                return
+            if event.button in (2, 3) and event.xdata is not None and event.ydata is not None:
+                ax = event.inaxes
+                self.pan_state = {
+                    "ax": ax,
+                    "xdata": event.xdata,
+                    "ydata": event.ydata,
+                    "xlim": ax.get_xlim(),
+                    "ylim": ax.get_ylim(),
+                }
+                self.marker_status.set("Panning plot...")
+
+        def on_plot_motion(self, event: Any) -> None:
+            if self.active_marker is not None and event.inaxes is self.active_marker["ax"]:
+                if self.active_marker["kind"] == "vertical" and event.xdata is not None:
+                    self.update_output_marker(self.active_marker, event.xdata)
+                    self.canvas.draw_idle()
+                elif self.active_marker["kind"] == "horizontal" and event.ydata is not None:
+                    self.update_output_marker(self.active_marker, event.ydata)
+                    self.canvas.draw_idle()
+                return
+            if self.pan_state is not None and event.inaxes is self.pan_state["ax"] and event.xdata is not None and event.ydata is not None:
+                ax = self.pan_state["ax"]
+                dx = event.xdata - self.pan_state["xdata"]
+                dy = event.ydata - self.pan_state["ydata"]
+                x0, x1 = self.pan_state["xlim"]
+                y0, y1 = self.pan_state["ylim"]
+                ax.set_xlim(x0 - dx, x1 - dx)
+                ax.set_ylim(y0 - dy, y1 - dy)
+                self.canvas.draw_idle()
+
+        def on_plot_release(self, _event: Any) -> None:
+            if self.active_marker is not None:
+                self.marker_status.set("Marker placed. Drag it again to adjust.")
+            if self.pan_state is not None:
+                self.marker_status.set("Pan complete.")
+            self.active_marker = None
+            self.pan_state = None
+
+        def on_plot_scroll(self, event: Any) -> None:
+            if event.inaxes is None or event.xdata is None or event.ydata is None:
+                return
+            ax = event.inaxes
+            scale = 1 / 1.25 if event.button == "up" else 1.25
+            x0, x1 = ax.get_xlim()
+            y0, y1 = ax.get_ylim()
+            new_width = (x1 - x0) * scale
+            new_height = (y1 - y0) * scale
+            x_frac = (event.xdata - x0) / (x1 - x0) if x1 != x0 else 0.5
+            y_frac = (event.ydata - y0) / (y1 - y0) if y1 != y0 else 0.5
+            ax.set_xlim(event.xdata - new_width * x_frac, event.xdata + new_width * (1 - x_frac))
+            ax.set_ylim(event.ydata - new_height * y_frac, event.ydata + new_height * (1 - y_frac))
             self.canvas.draw_idle()
 
         def clear_markers(self) -> None:
@@ -1518,8 +1777,10 @@ def gui_main() -> None:
                 except ValueError:
                     pass
             self.output_marker_artists.clear()
+            self.output_markers.clear()
+            self.active_marker = None
             self.output_marker_mode = None
-            self.marker_status.set("Markers cleared")
+            self.marker_status.set("Markers cleared.")
             if self.canvas:
                 self.canvas.draw_idle()
 
@@ -1552,8 +1813,41 @@ def gui_main() -> None:
             self.output_text.insert(tk.END, text)
             self.output_text.configure(state="disabled")
 
+        def append_log_message(self, text: str) -> None:
+            self.append_log_messages([text])
+
+        def append_log_messages(self, messages: list[str]) -> None:
+            lines = [message.rstrip() for message in messages if message.rstrip()]
+            if not lines:
+                return
+            self.log_text.configure(state="normal")
+            timestamp = time.strftime("%H:%M:%S")
+            self.log_text.insert(tk.END, "".join(f"[{timestamp}] {line}\n" for line in lines))
+            self.log_text.see(tk.END)
+            self.log_text.configure(state="disabled")
+
+        def clear_log(self) -> None:
+            self.log_text.configure(state="normal")
+            self.log_text.delete("1.0", tk.END)
+            self.log_text.configure(state="disabled")
+
+        def enqueue_log_message(self, message: str) -> None:
+            self.gui_log_queue.put(message)
+
+        def flush_log_queue(self) -> None:
+            messages: list[str] = []
+            while True:
+                try:
+                    messages.append(self.gui_log_queue.get_nowait())
+                except queue.Empty:
+                    break
+            self.append_log_messages(messages)
+            if self.log_flush_active or not self.gui_log_queue.empty():
+                self.root.after(100, self.flush_log_queue)
+
         def set_busy(self, busy: bool) -> None:
             self.root.configure(cursor="watch" if busy else "")
+            self.run_button.configure(state="disabled" if busy else "normal")
 
         def generate_diagram(self) -> None:
             try:
@@ -1573,11 +1867,25 @@ def gui_main() -> None:
                 self.status.set("Schematic failed.")
 
         def run_sim(self) -> None:
-            config = self.build_config()
+            if self.run_in_progress:
+                self.notebook.select(self.log_tab)
+                self.append_log_message("Run request ignored: another ngspice run is already active.")
+                self.status.set("ngspice is already running.")
+                return
+
+            try:
+                config = self.build_config()
+            except Exception as exc:
+                messagebox.showerror("Run setup failed", str(exc))
+                self.status.set("Run setup failed.")
+                return
+
+            def log_from_worker(message: str) -> None:
+                self.enqueue_log_message(message)
 
             def work() -> None:
                 try:
-                    result = execute_run(config)
+                    result = execute_run(config, log_from_worker)
                 except Exception as exc:
                     traceback.print_exc()
                     self.root.after(0, lambda: self.run_failed(exc))
@@ -1585,8 +1893,14 @@ def gui_main() -> None:
                 self.root.after(0, lambda: self.run_complete(result))
 
             try:
+                self.clear_log()
+                self.append_log_message("Starting ngspice simulation from GUI.")
+                self.notebook.select(self.log_tab)
                 self.status.set("Running ngspice...")
                 self.set_busy(True)
+                self.run_in_progress = True
+                self.log_flush_active = True
+                self.root.after(100, self.flush_log_queue)
                 self.root.update_idletasks()
                 threading.Thread(target=work, daemon=True).start()
             except Exception as exc:
@@ -1597,7 +1911,11 @@ def gui_main() -> None:
 
         def run_complete(self, result: SimulationResult) -> None:
             self.result = result
+            self.run_in_progress = False
             self.set_busy(False)
+            self.log_flush_active = False
+            self.flush_log_queue()
+            self.append_log_message(f"GUI received completed run: {result.output_dir}")
             self.show_schematic(draw_testbench_schematic(result.config, result.dut_runtimes, result.diagram_path))
             self.vars["output_view"].set("transient_overlay")
             self.refresh_output_view()
@@ -1612,7 +1930,11 @@ def gui_main() -> None:
             )
 
         def run_failed(self, exc: Exception) -> None:
+            self.run_in_progress = False
             self.set_busy(False)
+            self.log_flush_active = False
+            self.flush_log_queue()
+            self.append_log_message(f"Run failed: {exc}")
             messagebox.showerror("Run failed", str(exc))
             self.status.set("Run failed.")
             self.write_output_message(f"Run failed:\n{exc}")
