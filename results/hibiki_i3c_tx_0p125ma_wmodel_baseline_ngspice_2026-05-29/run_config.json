@@ -1,0 +1,11 @@
+{
+  "baseline_length_mm": 100.0,
+  "ladder_sections": 80,
+  "r_load_ohm": 1160.0,
+  "vdd": 1.2,
+  "wmodel": "pcbauto\\Wmodel.sp",
+  "ibis": "pcbauto\\Hibiki_IOCL_I3C_I2C_ibis_20260211.ibs",
+  "model": "I3C_TX_0p125mA_tx",
+  "component": "A11486_IBIS-00001760",
+  "conversion": "Ro/Lo/Go/Co only; Rs/Gd ignored"
+}

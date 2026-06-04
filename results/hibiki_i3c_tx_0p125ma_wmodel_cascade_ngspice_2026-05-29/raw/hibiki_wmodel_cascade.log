@@ -1,0 +1,888 @@
+
+Note: No compatibility mode selected!
+
+
+Circuit: * hibiki i3c_tx_0p125ma_tx through cascaded wmodel baseline rlgc traces
+
+binary raw file "C:\Users\simom\Desktop\Projects\IBIS_Comparison\results\hibiki_i3c_tx_0p125ma_wmodel_cascade_ngspice_2026-05-29\raw\hibiki_wmodel_cascade.raw"
+Doing analysis at TEMP = 25.000000 and TNOM = 27.000000
+
+Using SPARSE 1.3 as Direct Linear Solver
+No. of Data Columns : 8
+
+Initial Transient Solution
+--------------------------
+
+Node                                   Voltage
+----                                   -------
+in_dig                                       0
+en_sig                                     1.2
+vdd                                        1.2
+src_driver                         2.09025e-06
+xhibiki.mid                        2.09025e-06
+xhibiki.die                        2.09025e-06
+xhibiki.pwr_clamp_ref                      1.2
+xhibiki.gnd_clamp_ref                        0
+xhibiki.pullup_ref                         1.2
+xhibiki.ku                                   0
+xhibiki.pulldown_ref                         0
+xhibiki.kd                                   1
+xhibiki.ninx                                 0
+xhibiki.nenable                              1
+xhibiki.ni                                -0.5
+xhibiki.n2                        -3.99991e-12
+xhibiki.n9                                -0.5
+xhibiki.n3                         3.99991e-12
+xhibiki.n4                                  -1
+xhibiki.n5                                   0
+xhibiki.n6                                   0
+xhibiki.n8                                   0
+xhibiki.nx                                   0
+xhibiki.kur0                        1.4434e-05
+xhibiki.kdr0                           1.00014
+xhibiki.kuf0                           1.00001
+xhibiki.kdf0                       5.51887e-06
+xhibiki.nkuf                                 0
+xhibiki.nkdf                                 1
+xhibiki.nkur                                 0
+xhibiki.nkdr                                 1
+ch_trace01_1_rl                    2.09024e-06
+ch_trace01_1                       2.09024e-06
+ch_trace01_2_rl                    2.09023e-06
+ch_trace01_2                       2.09023e-06
+ch_trace01_3_rl                    2.09022e-06
+ch_trace01_3                       2.09022e-06
+ch_trace01_4_rl                    2.09021e-06
+ch_trace01_4                       2.09021e-06
+ch_trace01_5_rl                     2.0902e-06
+ch_trace01_5                        2.0902e-06
+ch_trace01_6_rl                    2.09018e-06
+ch_trace01_6                       2.09018e-06
+ch_trace01_7_rl                    2.09017e-06
+ch_trace01_7                       2.09017e-06
+ch_trace01_8_rl                    2.09016e-06
+ch_trace01_8                       2.09016e-06
+ch_trace01_9_rl                    2.09015e-06
+ch_trace01_9                       2.09015e-06
+ch_trace01_10_rl                   2.09014e-06
+ch_trace01_10                      2.09014e-06
+ch_trace01_11_rl                   2.09013e-06
+ch_trace01_11                      2.09013e-06
+ch_trace01_12_rl                   2.09012e-06
+ch_trace01_12                      2.09012e-06
+ch_trace01_13_rl                   2.09011e-06
+ch_trace01_13                      2.09011e-06
+ch_trace01_14_rl                    2.0901e-06
+ch_trace01_14                       2.0901e-06
+ch_trace01_15_rl                   2.09009e-06
+ch_trace01_15                      2.09009e-06
+ch_trace01_16_rl                   2.09008e-06
+ch_trace01_16                      2.09008e-06
+ch_trace01_17_rl                   2.09006e-06
+ch_trace01_17                      2.09006e-06
+ch_trace01_18_rl                   2.09005e-06
+ch_trace01_18                      2.09005e-06
+ch_trace01_19_rl                   2.09004e-06
+ch_trace01_19                      2.09004e-06
+ch_trace01_20_rl                   2.09003e-06
+ch_trace01_20                      2.09003e-06
+ch_trace01_21_rl                   2.09002e-06
+ch_trace01_21                      2.09002e-06
+ch_trace01_22_rl                   2.09001e-06
+ch_trace01_22                      2.09001e-06
+ch_trace01_23_rl                      2.09e-06
+ch_trace01_23                         2.09e-06
+ch_trace01_24_rl                   2.08999e-06
+ch_trace01_24                      2.08999e-06
+ch_trace01_25_rl                   2.08998e-06
+ch_trace01_25                      2.08998e-06
+ch_trace01_26_rl                   2.08997e-06
+ch_trace01_26                      2.08997e-06
+ch_trace01_27_rl                   2.08996e-06
+ch_trace01_27                      2.08996e-06
+ch_trace01_28_rl                   2.08995e-06
+ch_trace01_28                      2.08995e-06
+ch_trace01_29_rl                   2.08993e-06
+ch_trace01_29                      2.08993e-06
+ch_trace01_30_rl                   2.08992e-06
+ch_trace01_30                      2.08992e-06
+ch_trace01_31_rl                   2.08991e-06
+ch_trace01_31                      2.08991e-06
+ch_trace01_32_rl                    2.0899e-06
+ch_trace01_32                       2.0899e-06
+ch_trace01_33_rl                   2.08989e-06
+ch_trace01_33                      2.08989e-06
+ch_trace01_34_rl                   2.08988e-06
+ch_trace01_34                      2.08988e-06
+ch_trace01_35_rl                   2.08987e-06
+ch_trace01_35                      2.08987e-06
+ch_trace01_36_rl                   2.08986e-06
+ch_trace01_36                      2.08986e-06
+ch_trace01_37_rl                   2.08985e-06
+ch_trace01_37                      2.08985e-06
+ch_trace01_38_rl                   2.08984e-06
+ch_trace01_38                      2.08984e-06
+ch_trace01_39_rl                   2.08983e-06
+ch_trace01_39                      2.08983e-06
+ch_trace01_40_rl                   2.08981e-06
+ch_trace01_40                      2.08981e-06
+ch_trace01_41_rl                    2.0898e-06
+ch_trace01_41                       2.0898e-06
+ch_trace01_42_rl                   2.08979e-06
+ch_trace01_42                      2.08979e-06
+ch_trace01_43_rl                   2.08978e-06
+ch_trace01_43                      2.08978e-06
+ch_trace01_44_rl                   2.08977e-06
+ch_trace01_44                      2.08977e-06
+ch_trace01_45_rl                   2.08976e-06
+ch_trace01_45                      2.08976e-06
+ch_trace01_46_rl                   2.08975e-06
+ch_trace01_46                      2.08975e-06
+ch_trace01_47_rl                   2.08974e-06
+ch_trace01_47                      2.08974e-06
+ch_trace01_48_rl                   2.08973e-06
+ch_trace01_48                      2.08973e-06
+ch_trace01_49_rl                   2.08972e-06
+ch_trace01_49                      2.08972e-06
+ch_trace01_50_rl                   2.08971e-06
+ch_trace01_50                      2.08971e-06
+ch_trace01_51_rl                   2.08969e-06
+ch_trace01_51                      2.08969e-06
+ch_trace01_52_rl                   2.08968e-06
+ch_trace01_52                      2.08968e-06
+ch_trace01_53_rl                   2.08967e-06
+ch_trace01_53                      2.08967e-06
+ch_trace01_54_rl                   2.08966e-06
+ch_trace01_54                      2.08966e-06
+ch_trace01_55_rl                   2.08965e-06
+ch_trace01_55                      2.08965e-06
+ch_trace01_56_rl                   2.08964e-06
+ch_trace01_56                      2.08964e-06
+ch_trace01_57_rl                   2.08963e-06
+ch_trace01_57                      2.08963e-06
+ch_trace01_58_rl                   2.08962e-06
+ch_trace01_58                      2.08962e-06
+ch_trace01_59_rl                   2.08961e-06
+ch_trace01_59                      2.08961e-06
+ch_trace01_60_rl                    2.0896e-06
+ch_trace01_60                       2.0896e-06
+ch_trace01_61_rl                   2.08959e-06
+ch_trace01_61                      2.08959e-06
+ch_trace01_62_rl                   2.08957e-06
+ch_trace01_62                      2.08957e-06
+ch_trace01_63_rl                   2.08956e-06
+ch_trace01_63                      2.08956e-06
+ch_trace01_64_rl                   2.08955e-06
+ch_trace01_64                      2.08955e-06
+ch_trace01_65_rl                   2.08954e-06
+ch_trace01_65                      2.08954e-06
+ch_trace01_66_rl                   2.08953e-06
+ch_trace01_66                      2.08953e-06
+ch_trace01_67_rl                   2.08952e-06
+ch_trace01_67                      2.08952e-06
+ch_trace01_68_rl                   2.08951e-06
+ch_trace01_68                      2.08951e-06
+ch_trace01_69_rl                    2.0895e-06
+ch_trace01_69                       2.0895e-06
+ch_trace01_70_rl                   2.08949e-06
+ch_trace01_70                      2.08949e-06
+ch_trace01_71_rl                   2.08948e-06
+ch_trace01_71                      2.08948e-06
+ch_trace01_72_rl                   2.08947e-06
+ch_trace01_72                      2.08947e-06
+ch_trace01_73_rl                   2.08945e-06
+ch_trace01_73                      2.08945e-06
+ch_trace01_74_rl                   2.08944e-06
+ch_trace01_74                      2.08944e-06
+ch_trace01_75_rl                   2.08943e-06
+ch_trace01_75                      2.08943e-06
+ch_trace01_76_rl                   2.08942e-06
+ch_trace01_76                      2.08942e-06
+ch_trace01_77_rl                   2.08941e-06
+ch_trace01_77                      2.08941e-06
+ch_trace01_78_rl                    2.0894e-06
+ch_trace01_78                       2.0894e-06
+ch_trace01_79_rl                   2.08939e-06
+ch_trace01_79                      2.08939e-06
+ch_trace01_80_rl                   2.08938e-06
+after_trace01                      2.08938e-06
+ch_trace02_1_rl                    2.08937e-06
+ch_trace02_1                       2.08937e-06
+ch_trace02_2_rl                    2.08936e-06
+ch_trace02_2                       2.08936e-06
+ch_trace02_3_rl                    2.08935e-06
+ch_trace02_3                       2.08935e-06
+ch_trace02_4_rl                    2.08933e-06
+ch_trace02_4                       2.08933e-06
+ch_trace02_5_rl                    2.08932e-06
+ch_trace02_5                       2.08932e-06
+ch_trace02_6_rl                    2.08931e-06
+ch_trace02_6                       2.08931e-06
+ch_trace02_7_rl                     2.0893e-06
+ch_trace02_7                        2.0893e-06
+ch_trace02_8_rl                    2.08929e-06
+ch_trace02_8                       2.08929e-06
+ch_trace02_9_rl                    2.08928e-06
+ch_trace02_9                       2.08928e-06
+ch_trace02_10_rl                   2.08927e-06
+ch_trace02_10                      2.08927e-06
+ch_trace02_11_rl                   2.08926e-06
+ch_trace02_11                      2.08926e-06
+ch_trace02_12_rl                   2.08925e-06
+ch_trace02_12                      2.08925e-06
+ch_trace02_13_rl                   2.08924e-06
+ch_trace02_13                      2.08924e-06
+ch_trace02_14_rl                   2.08923e-06
+ch_trace02_14                      2.08923e-06
+ch_trace02_15_rl                   2.08921e-06
+ch_trace02_15                      2.08921e-06
+ch_trace02_16_rl                    2.0892e-06
+ch_trace02_16                       2.0892e-06
+ch_trace02_17_rl                   2.08919e-06
+ch_trace02_17                      2.08919e-06
+ch_trace02_18_rl                   2.08918e-06
+ch_trace02_18                      2.08918e-06
+ch_trace02_19_rl                   2.08917e-06
+ch_trace02_19                      2.08917e-06
+ch_trace02_20_rl                   2.08916e-06
+ch_trace02_20                      2.08916e-06
+ch_trace02_21_rl                   2.08915e-06
+ch_trace02_21                      2.08915e-06
+ch_trace02_22_rl                   2.08914e-06
+ch_trace02_22                      2.08914e-06
+ch_trace02_23_rl                   2.08913e-06
+ch_trace02_23                      2.08913e-06
+ch_trace02_24_rl                   2.08912e-06
+ch_trace02_24                      2.08912e-06
+ch_trace02_25_rl                   2.08911e-06
+ch_trace02_25                      2.08911e-06
+ch_trace02_26_rl                   2.08909e-06
+ch_trace02_26                      2.08909e-06
+ch_trace02_27_rl                   2.08908e-06
+ch_trace02_27                      2.08908e-06
+ch_trace02_28_rl                   2.08907e-06
+ch_trace02_28                      2.08907e-06
+ch_trace02_29_rl                   2.08906e-06
+ch_trace02_29                      2.08906e-06
+ch_trace02_30_rl                   2.08905e-06
+ch_trace02_30                      2.08905e-06
+ch_trace02_31_rl                   2.08904e-06
+ch_trace02_31                      2.08904e-06
+ch_trace02_32_rl                   2.08903e-06
+ch_trace02_32                      2.08903e-06
+ch_trace02_33_rl                   2.08902e-06
+ch_trace02_33                      2.08902e-06
+ch_trace02_34_rl                   2.08901e-06
+ch_trace02_34                      2.08901e-06
+ch_trace02_35_rl                     2.089e-06
+ch_trace02_35                        2.089e-06
+ch_trace02_36_rl                   2.08899e-06
+ch_trace02_36                      2.08899e-06
+ch_trace02_37_rl                   2.08897e-06
+ch_trace02_37                      2.08897e-06
+ch_trace02_38_rl                   2.08896e-06
+ch_trace02_38                      2.08896e-06
+ch_trace02_39_rl                   2.08895e-06
+ch_trace02_39                      2.08895e-06
+ch_trace02_40_rl                   2.08894e-06
+ch_trace02_40                      2.08894e-06
+ch_trace02_41_rl                   2.08893e-06
+ch_trace02_41                      2.08893e-06
+ch_trace02_42_rl                   2.08892e-06
+ch_trace02_42                      2.08892e-06
+ch_trace02_43_rl                   2.08891e-06
+ch_trace02_43                      2.08891e-06
+ch_trace02_44_rl                    2.0889e-06
+ch_trace02_44                       2.0889e-06
+ch_trace02_45_rl                   2.08889e-06
+ch_trace02_45                      2.08889e-06
+ch_trace02_46_rl                   2.08888e-06
+ch_trace02_46                      2.08888e-06
+ch_trace02_47_rl                   2.08887e-06
+ch_trace02_47                      2.08887e-06
+ch_trace02_48_rl                   2.08885e-06
+ch_trace02_48                      2.08885e-06
+ch_trace02_49_rl                   2.08884e-06
+ch_trace02_49                      2.08884e-06
+ch_trace02_50_rl                   2.08883e-06
+ch_trace02_50                      2.08883e-06
+ch_trace02_51_rl                   2.08882e-06
+ch_trace02_51                      2.08882e-06
+ch_trace02_52_rl                   2.08881e-06
+ch_trace02_52                      2.08881e-06
+ch_trace02_53_rl                    2.0888e-06
+ch_trace02_53                       2.0888e-06
+ch_trace02_54_rl                   2.08879e-06
+ch_trace02_54                      2.08879e-06
+ch_trace02_55_rl                   2.08878e-06
+ch_trace02_55                      2.08878e-06
+ch_trace02_56_rl                   2.08877e-06
+ch_trace02_56                      2.08877e-06
+ch_trace02_57_rl                   2.08876e-06
+ch_trace02_57                      2.08876e-06
+ch_trace02_58_rl                   2.08875e-06
+ch_trace02_58                      2.08875e-06
+ch_trace02_59_rl                   2.08873e-06
+ch_trace02_59                      2.08873e-06
+ch_trace02_60_rl                   2.08872e-06
+ch_trace02_60                      2.08872e-06
+ch_trace02_61_rl                   2.08871e-06
+ch_trace02_61                      2.08871e-06
+ch_trace02_62_rl                    2.0887e-06
+ch_trace02_62                       2.0887e-06
+ch_trace02_63_rl                   2.08869e-06
+ch_trace02_63                      2.08869e-06
+ch_trace02_64_rl                   2.08868e-06
+ch_trace02_64                      2.08868e-06
+ch_trace02_65_rl                   2.08867e-06
+ch_trace02_65                      2.08867e-06
+ch_trace02_66_rl                   2.08866e-06
+ch_trace02_66                      2.08866e-06
+ch_trace02_67_rl                   2.08865e-06
+ch_trace02_67                      2.08865e-06
+ch_trace02_68_rl                   2.08864e-06
+ch_trace02_68                      2.08864e-06
+ch_trace02_69_rl                   2.08863e-06
+ch_trace02_69                      2.08863e-06
+ch_trace02_70_rl                   2.08861e-06
+ch_trace02_70                      2.08861e-06
+ch_trace02_71_rl                    2.0886e-06
+ch_trace02_71                       2.0886e-06
+ch_trace02_72_rl                   2.08859e-06
+ch_trace02_72                      2.08859e-06
+ch_trace02_73_rl                   2.08858e-06
+ch_trace02_73                      2.08858e-06
+ch_trace02_74_rl                   2.08857e-06
+ch_trace02_74                      2.08857e-06
+ch_trace02_75_rl                   2.08856e-06
+ch_trace02_75                      2.08856e-06
+ch_trace02_76_rl                   2.08855e-06
+ch_trace02_76                      2.08855e-06
+ch_trace02_77_rl                   2.08854e-06
+ch_trace02_77                      2.08854e-06
+ch_trace02_78_rl                   2.08853e-06
+ch_trace02_78                      2.08853e-06
+ch_trace02_79_rl                   2.08852e-06
+ch_trace02_79                      2.08852e-06
+ch_trace02_80_rl                   2.08851e-06
+after_trace02                      2.08851e-06
+ch_trace03_1_rl                    2.08849e-06
+ch_trace03_1                       2.08849e-06
+ch_trace03_2_rl                    2.08848e-06
+ch_trace03_2                       2.08848e-06
+ch_trace03_3_rl                    2.08847e-06
+ch_trace03_3                       2.08847e-06
+ch_trace03_4_rl                    2.08846e-06
+ch_trace03_4                       2.08846e-06
+ch_trace03_5_rl                    2.08845e-06
+ch_trace03_5                       2.08845e-06
+ch_trace03_6_rl                    2.08844e-06
+ch_trace03_6                       2.08844e-06
+ch_trace03_7_rl                    2.08843e-06
+ch_trace03_7                       2.08843e-06
+ch_trace03_8_rl                    2.08842e-06
+ch_trace03_8                       2.08842e-06
+ch_trace03_9_rl                    2.08841e-06
+ch_trace03_9                       2.08841e-06
+ch_trace03_10_rl                    2.0884e-06
+ch_trace03_10                       2.0884e-06
+ch_trace03_11_rl                   2.08839e-06
+ch_trace03_11                      2.08839e-06
+ch_trace03_12_rl                   2.08837e-06
+ch_trace03_12                      2.08837e-06
+ch_trace03_13_rl                   2.08836e-06
+ch_trace03_13                      2.08836e-06
+ch_trace03_14_rl                   2.08835e-06
+ch_trace03_14                      2.08835e-06
+ch_trace03_15_rl                   2.08834e-06
+ch_trace03_15                      2.08834e-06
+ch_trace03_16_rl                   2.08833e-06
+ch_trace03_16                      2.08833e-06
+ch_trace03_17_rl                   2.08832e-06
+ch_trace03_17                      2.08832e-06
+ch_trace03_18_rl                   2.08831e-06
+ch_trace03_18                      2.08831e-06
+ch_trace03_19_rl                    2.0883e-06
+ch_trace03_19                       2.0883e-06
+ch_trace03_20_rl                   2.08829e-06
+ch_trace03_20                      2.08829e-06
+ch_trace03_21_rl                   2.08828e-06
+ch_trace03_21                      2.08828e-06
+ch_trace03_22_rl                   2.08827e-06
+ch_trace03_22                      2.08827e-06
+ch_trace03_23_rl                   2.08825e-06
+ch_trace03_23                      2.08825e-06
+ch_trace03_24_rl                   2.08824e-06
+ch_trace03_24                      2.08824e-06
+ch_trace03_25_rl                   2.08823e-06
+ch_trace03_25                      2.08823e-06
+ch_trace03_26_rl                   2.08822e-06
+ch_trace03_26                      2.08822e-06
+ch_trace03_27_rl                   2.08821e-06
+ch_trace03_27                      2.08821e-06
+ch_trace03_28_rl                    2.0882e-06
+ch_trace03_28                       2.0882e-06
+ch_trace03_29_rl                   2.08819e-06
+ch_trace03_29                      2.08819e-06
+ch_trace03_30_rl                   2.08818e-06
+ch_trace03_30                      2.08818e-06
+ch_trace03_31_rl                   2.08817e-06
+ch_trace03_31                      2.08817e-06
+ch_trace03_32_rl                   2.08816e-06
+ch_trace03_32                      2.08816e-06
+ch_trace03_33_rl                   2.08815e-06
+ch_trace03_33                      2.08815e-06
+ch_trace03_34_rl                   2.08813e-06
+ch_trace03_34                      2.08813e-06
+ch_trace03_35_rl                   2.08812e-06
+ch_trace03_35                      2.08812e-06
+ch_trace03_36_rl                   2.08811e-06
+ch_trace03_36                      2.08811e-06
+ch_trace03_37_rl                    2.0881e-06
+ch_trace03_37                       2.0881e-06
+ch_trace03_38_rl                   2.08809e-06
+ch_trace03_38                      2.08809e-06
+ch_trace03_39_rl                   2.08808e-06
+ch_trace03_39                      2.08808e-06
+ch_trace03_40_rl                   2.08807e-06
+ch_trace03_40                      2.08807e-06
+ch_trace03_41_rl                   2.08806e-06
+ch_trace03_41                      2.08806e-06
+ch_trace03_42_rl                   2.08805e-06
+ch_trace03_42                      2.08805e-06
+ch_trace03_43_rl                   2.08804e-06
+ch_trace03_43                      2.08804e-06
+ch_trace03_44_rl                   2.08803e-06
+ch_trace03_44                      2.08803e-06
+ch_trace03_45_rl                   2.08801e-06
+ch_trace03_45                      2.08801e-06
+ch_trace03_46_rl                     2.088e-06
+ch_trace03_46                        2.088e-06
+ch_trace03_47_rl                   2.08799e-06
+ch_trace03_47                      2.08799e-06
+ch_trace03_48_rl                   2.08798e-06
+ch_trace03_48                      2.08798e-06
+ch_trace03_49_rl                   2.08797e-06
+ch_trace03_49                      2.08797e-06
+ch_trace03_50_rl                   2.08796e-06
+ch_trace03_50                      2.08796e-06
+ch_trace03_51_rl                   2.08795e-06
+ch_trace03_51                      2.08795e-06
+ch_trace03_52_rl                   2.08794e-06
+ch_trace03_52                      2.08794e-06
+ch_trace03_53_rl                   2.08793e-06
+ch_trace03_53                      2.08793e-06
+ch_trace03_54_rl                   2.08792e-06
+ch_trace03_54                      2.08792e-06
+ch_trace03_55_rl                   2.08791e-06
+ch_trace03_55                      2.08791e-06
+ch_trace03_56_rl                   2.08789e-06
+ch_trace03_56                      2.08789e-06
+ch_trace03_57_rl                   2.08788e-06
+ch_trace03_57                      2.08788e-06
+ch_trace03_58_rl                   2.08787e-06
+ch_trace03_58                      2.08787e-06
+ch_trace03_59_rl                   2.08786e-06
+ch_trace03_59                      2.08786e-06
+ch_trace03_60_rl                   2.08785e-06
+ch_trace03_60                      2.08785e-06
+ch_trace03_61_rl                   2.08784e-06
+ch_trace03_61                      2.08784e-06
+ch_trace03_62_rl                   2.08783e-06
+ch_trace03_62                      2.08783e-06
+ch_trace03_63_rl                   2.08782e-06
+ch_trace03_63                      2.08782e-06
+ch_trace03_64_rl                   2.08781e-06
+ch_trace03_64                      2.08781e-06
+ch_trace03_65_rl                    2.0878e-06
+ch_trace03_65                       2.0878e-06
+ch_trace03_66_rl                   2.08779e-06
+ch_trace03_66                      2.08779e-06
+ch_trace03_67_rl                   2.08777e-06
+ch_trace03_67                      2.08777e-06
+ch_trace03_68_rl                   2.08776e-06
+ch_trace03_68                      2.08776e-06
+ch_trace03_69_rl                   2.08775e-06
+ch_trace03_69                      2.08775e-06
+ch_trace03_70_rl                   2.08774e-06
+ch_trace03_70                      2.08774e-06
+ch_trace03_71_rl                   2.08773e-06
+ch_trace03_71                      2.08773e-06
+ch_trace03_72_rl                   2.08772e-06
+ch_trace03_72                      2.08772e-06
+ch_trace03_73_rl                   2.08771e-06
+ch_trace03_73                      2.08771e-06
+ch_trace03_74_rl                    2.0877e-06
+ch_trace03_74                       2.0877e-06
+ch_trace03_75_rl                   2.08769e-06
+ch_trace03_75                      2.08769e-06
+ch_trace03_76_rl                   2.08768e-06
+ch_trace03_76                      2.08768e-06
+ch_trace03_77_rl                   2.08767e-06
+ch_trace03_77                      2.08767e-06
+ch_trace03_78_rl                   2.08765e-06
+ch_trace03_78                      2.08765e-06
+ch_trace03_79_rl                   2.08764e-06
+ch_trace03_79                      2.08764e-06
+ch_trace03_80_rl                   2.08763e-06
+pad_cascade                        2.08763e-06
+b.xhibiki.b29#branch                         0
+b.xhibiki.b28#branch                         0
+b.xhibiki.b27#branch                         0
+b.xhibiki.b26#branch                         0
+b.xhibiki.b25#branch                         0
+b.xhibiki.b24#branch                         0
+b.xhibiki.b23#branch                         0
+b.xhibiki.b22#branch                         0
+b.xhibiki.b21#branch                         0
+b.xhibiki.b20#branch                         0
+b.xhibiki.b18#branch                         0
+b.xhibiki.b17#branch                         0
+b.xhibiki.b16#branch                         0
+b.xhibiki.b15#branch                         0
+b.xhibiki.b14#branch                         0
+b.xhibiki.b13#branch                         0
+b.xhibiki.b12#branch                      0.01
+b.xhibiki.b11#branch                         0
+b.xhibiki.b10#branch                         0
+lch_trace03_80#branch              1.79968e-09
+lch_trace03_79#branch              1.79968e-09
+lch_trace03_78#branch              1.79968e-09
+lch_trace03_77#branch              1.79968e-09
+lch_trace03_76#branch              1.79968e-09
+lch_trace03_75#branch              1.79968e-09
+lch_trace03_74#branch              1.79968e-09
+lch_trace03_73#branch              1.79968e-09
+lch_trace03_72#branch              1.79968e-09
+lch_trace03_71#branch              1.79968e-09
+lch_trace03_70#branch              1.79968e-09
+lch_trace03_69#branch              1.79968e-09
+lch_trace03_68#branch              1.79968e-09
+lch_trace03_67#branch              1.79968e-09
+lch_trace03_66#branch              1.79968e-09
+lch_trace03_65#branch              1.79968e-09
+lch_trace03_64#branch              1.79968e-09
+lch_trace03_63#branch              1.79968e-09
+lch_trace03_62#branch              1.79968e-09
+lch_trace03_61#branch              1.79968e-09
+lch_trace03_60#branch              1.79968e-09
+lch_trace03_59#branch              1.79968e-09
+lch_trace03_58#branch              1.79968e-09
+lch_trace03_57#branch              1.79968e-09
+lch_trace03_56#branch              1.79968e-09
+lch_trace03_55#branch              1.79968e-09
+lch_trace03_54#branch              1.79968e-09
+lch_trace03_53#branch              1.79968e-09
+lch_trace03_52#branch              1.79968e-09
+lch_trace03_51#branch              1.79968e-09
+lch_trace03_50#branch              1.79968e-09
+lch_trace03_49#branch              1.79968e-09
+lch_trace03_48#branch              1.79968e-09
+lch_trace03_47#branch              1.79968e-09
+lch_trace03_46#branch              1.79968e-09
+lch_trace03_45#branch              1.79968e-09
+lch_trace03_44#branch              1.79968e-09
+lch_trace03_43#branch              1.79968e-09
+lch_trace03_42#branch              1.79968e-09
+lch_trace03_41#branch              1.79968e-09
+lch_trace03_40#branch              1.79968e-09
+lch_trace03_39#branch              1.79968e-09
+lch_trace03_38#branch              1.79968e-09
+lch_trace03_37#branch              1.79968e-09
+lch_trace03_36#branch              1.79968e-09
+lch_trace03_35#branch              1.79968e-09
+lch_trace03_34#branch              1.79968e-09
+lch_trace03_33#branch              1.79968e-09
+lch_trace03_32#branch              1.79968e-09
+lch_trace03_31#branch              1.79968e-09
+lch_trace03_30#branch              1.79968e-09
+lch_trace03_29#branch              1.79968e-09
+lch_trace03_28#branch              1.79968e-09
+lch_trace03_27#branch              1.79968e-09
+lch_trace03_26#branch              1.79968e-09
+lch_trace03_25#branch              1.79968e-09
+lch_trace03_24#branch              1.79968e-09
+lch_trace03_23#branch              1.79968e-09
+lch_trace03_22#branch              1.79968e-09
+lch_trace03_21#branch              1.79968e-09
+lch_trace03_20#branch              1.79968e-09
+lch_trace03_19#branch              1.79968e-09
+lch_trace03_18#branch              1.79968e-09
+lch_trace03_17#branch              1.79968e-09
+lch_trace03_16#branch              1.79968e-09
+lch_trace03_15#branch              1.79968e-09
+lch_trace03_14#branch              1.79968e-09
+lch_trace03_13#branch              1.79968e-09
+lch_trace03_12#branch              1.79968e-09
+lch_trace03_11#branch              1.79968e-09
+lch_trace03_10#branch              1.79968e-09
+lch_trace03_9#branch               1.79968e-09
+lch_trace03_8#branch               1.79968e-09
+lch_trace03_7#branch               1.79968e-09
+lch_trace03_6#branch               1.79968e-09
+lch_trace03_5#branch               1.79968e-09
+lch_trace03_4#branch               1.79968e-09
+lch_trace03_3#branch               1.79968e-09
+lch_trace03_2#branch               1.79968e-09
+lch_trace03_1#branch               1.79968e-09
+lch_trace02_80#branch              1.79968e-09
+lch_trace02_79#branch              1.79968e-09
+lch_trace02_78#branch              1.79968e-09
+lch_trace02_77#branch              1.79968e-09
+lch_trace02_76#branch              1.79968e-09
+lch_trace02_75#branch              1.79968e-09
+lch_trace02_74#branch              1.79968e-09
+lch_trace02_73#branch              1.79968e-09
+lch_trace02_72#branch              1.79968e-09
+lch_trace02_71#branch              1.79968e-09
+lch_trace02_70#branch              1.79968e-09
+lch_trace02_69#branch              1.79968e-09
+lch_trace02_68#branch              1.79968e-09
+lch_trace02_67#branch              1.79968e-09
+lch_trace02_66#branch              1.79968e-09
+lch_trace02_65#branch              1.79968e-09
+lch_trace02_64#branch              1.79968e-09
+lch_trace02_63#branch              1.79968e-09
+lch_trace02_62#branch              1.79968e-09
+lch_trace02_61#branch              1.79968e-09
+lch_trace02_60#branch              1.79968e-09
+lch_trace02_59#branch              1.79968e-09
+lch_trace02_58#branch              1.79968e-09
+lch_trace02_57#branch              1.79968e-09
+lch_trace02_56#branch              1.79968e-09
+lch_trace02_55#branch              1.79968e-09
+lch_trace02_54#branch              1.79968e-09
+lch_trace02_53#branch              1.79968e-09
+lch_trace02_52#branch              1.79968e-09
+lch_trace02_51#branch              1.79968e-09
+lch_trace02_50#branch              1.79968e-09
+lch_trace02_49#branch              1.79968e-09
+lch_trace02_48#branch              1.79968e-09
+lch_trace02_47#branch              1.79968e-09
+lch_trace02_46#branch              1.79968e-09
+lch_trace02_45#branch              1.79968e-09
+lch_trace02_44#branch              1.79968e-09
+lch_trace02_43#branch              1.79968e-09
+lch_trace02_42#branch              1.79968e-09
+lch_trace02_41#branch              1.79968e-09
+lch_trace02_40#branch              1.79968e-09
+lch_trace02_39#branch              1.79968e-09
+lch_trace02_38#branch              1.79968e-09
+lch_trace02_37#branch              1.79968e-09
+lch_trace02_36#branch              1.79968e-09
+lch_trace02_35#branch              1.79968e-09
+lch_trace02_34#branch              1.79968e-09
+lch_trace02_33#branch              1.79968e-09
+lch_trace02_32#branch              1.79968e-09
+lch_trace02_31#branch              1.79968e-09
+lch_trace02_30#branch              1.79968e-09
+lch_trace02_29#branch              1.79968e-09
+lch_trace02_28#branch              1.79968e-09
+lch_trace02_27#branch              1.79968e-09
+lch_trace02_26#branch              1.79968e-09
+lch_trace02_25#branch              1.79968e-09
+lch_trace02_24#branch              1.79968e-09
+lch_trace02_23#branch              1.79968e-09
+lch_trace02_22#branch              1.79968e-09
+lch_trace02_21#branch              1.79968e-09
+lch_trace02_20#branch              1.79968e-09
+lch_trace02_19#branch              1.79968e-09
+lch_trace02_18#branch              1.79968e-09
+lch_trace02_17#branch              1.79968e-09
+lch_trace02_16#branch              1.79968e-09
+lch_trace02_15#branch              1.79968e-09
+lch_trace02_14#branch              1.79968e-09
+lch_trace02_13#branch              1.79968e-09
+lch_trace02_12#branch              1.79968e-09
+lch_trace02_11#branch              1.79968e-09
+lch_trace02_10#branch              1.79968e-09
+lch_trace02_9#branch               1.79968e-09
+lch_trace02_8#branch               1.79968e-09
+lch_trace02_7#branch               1.79968e-09
+lch_trace02_6#branch               1.79968e-09
+lch_trace02_5#branch               1.79968e-09
+lch_trace02_4#branch               1.79968e-09
+lch_trace02_3#branch               1.79968e-09
+lch_trace02_2#branch               1.79968e-09
+lch_trace02_1#branch               1.79968e-09
+lch_trace01_80#branch              1.79968e-09
+lch_trace01_79#branch              1.79968e-09
+lch_trace01_78#branch              1.79968e-09
+lch_trace01_77#branch              1.79968e-09
+lch_trace01_76#branch              1.79968e-09
+lch_trace01_75#branch              1.79968e-09
+lch_trace01_74#branch              1.79968e-09
+lch_trace01_73#branch              1.79968e-09
+lch_trace01_72#branch              1.79968e-09
+lch_trace01_71#branch              1.79968e-09
+lch_trace01_70#branch              1.79968e-09
+lch_trace01_69#branch              1.79968e-09
+lch_trace01_68#branch              1.79968e-09
+lch_trace01_67#branch              1.79968e-09
+lch_trace01_66#branch              1.79968e-09
+lch_trace01_65#branch              1.79968e-09
+lch_trace01_64#branch              1.79968e-09
+lch_trace01_63#branch              1.79968e-09
+lch_trace01_62#branch              1.79968e-09
+lch_trace01_61#branch              1.79968e-09
+lch_trace01_60#branch              1.79968e-09
+lch_trace01_59#branch              1.79968e-09
+lch_trace01_58#branch              1.79968e-09
+lch_trace01_57#branch              1.79968e-09
+lch_trace01_56#branch              1.79968e-09
+lch_trace01_55#branch              1.79968e-09
+lch_trace01_54#branch              1.79968e-09
+lch_trace01_53#branch              1.79968e-09
+lch_trace01_52#branch              1.79968e-09
+lch_trace01_51#branch              1.79968e-09
+lch_trace01_50#branch              1.79968e-09
+lch_trace01_49#branch              1.79968e-09
+lch_trace01_48#branch              1.79968e-09
+lch_trace01_47#branch              1.79968e-09
+lch_trace01_46#branch              1.79968e-09
+lch_trace01_45#branch              1.79968e-09
+lch_trace01_44#branch              1.79968e-09
+lch_trace01_43#branch              1.79968e-09
+lch_trace01_42#branch              1.79968e-09
+lch_trace01_41#branch              1.79968e-09
+lch_trace01_40#branch              1.79968e-09
+lch_trace01_39#branch              1.79968e-09
+lch_trace01_38#branch              1.79968e-09
+lch_trace01_37#branch              1.79968e-09
+lch_trace01_36#branch              1.79968e-09
+lch_trace01_35#branch              1.79968e-09
+lch_trace01_34#branch              1.79968e-09
+lch_trace01_33#branch              1.79968e-09
+lch_trace01_32#branch              1.79968e-09
+lch_trace01_31#branch              1.79968e-09
+lch_trace01_30#branch              1.79968e-09
+lch_trace01_29#branch              1.79968e-09
+lch_trace01_28#branch              1.79968e-09
+lch_trace01_27#branch              1.79968e-09
+lch_trace01_26#branch              1.79968e-09
+lch_trace01_25#branch              1.79968e-09
+lch_trace01_24#branch              1.79968e-09
+lch_trace01_23#branch              1.79968e-09
+lch_trace01_22#branch              1.79968e-09
+lch_trace01_21#branch              1.79968e-09
+lch_trace01_20#branch              1.79968e-09
+lch_trace01_19#branch              1.79968e-09
+lch_trace01_18#branch              1.79968e-09
+lch_trace01_17#branch              1.79968e-09
+lch_trace01_16#branch              1.79968e-09
+lch_trace01_15#branch              1.79968e-09
+lch_trace01_14#branch              1.79968e-09
+lch_trace01_13#branch              1.79968e-09
+lch_trace01_12#branch              1.79968e-09
+lch_trace01_11#branch              1.79968e-09
+lch_trace01_10#branch              1.79968e-09
+lch_trace01_9#branch               1.79968e-09
+lch_trace01_8#branch               1.79968e-09
+lch_trace01_7#branch               1.79968e-09
+lch_trace01_6#branch               1.79968e-09
+lch_trace01_5#branch               1.79968e-09
+lch_trace01_4#branch               1.79968e-09
+lch_trace01_3#branch               1.79968e-09
+lch_trace01_2#branch               1.79968e-09
+lch_trace01_1#branch               1.79968e-09
+l.xhibiki.l1#branch                1.80736e-09
+v.xhibiki.v4#branch                1.53551e-09
+v.xhibiki.v3#branch                          0
+v.xhibiki.v2#branch               -3.34286e-09
+v.xhibiki.v1#branch                          0
+vdd#branch                                   0
+ven#branch                                   0
+vin#branch                                   0
+
+ Reference value :  1.16979e-08
+ Reference value :  1.46679e-08
+ Reference value :  1.76656e-08
+ Reference value :  2.06633e-08
+ Reference value :  2.36370e-08
+ Reference value :  2.66392e-08
+ Reference value :  2.96410e-08
+ Reference value :  3.21447e-08
+ Reference value :  3.48368e-08
+ Reference value :  3.75368e-08
+ Reference value :  4.02270e-08
+ Reference value :  4.29145e-08
+ Reference value :  4.56147e-08
+ Reference value :  4.82992e-08
+ Reference value :  5.09684e-08
+ Reference value :  5.38944e-08
+ Reference value :  5.68844e-08
+ Reference value :  5.98875e-08
+ Reference value :  6.28637e-08
+ Reference value :  6.58637e-08
+ Reference value :  6.88633e-08
+ Reference value :  7.17036e-08
+ Reference value :  7.46814e-08
+ Reference value :  7.76683e-08
+ Reference value :  8.06677e-08
+ Reference value :  8.36644e-08
+ Reference value :  8.66436e-08
+ Reference value :  8.96274e-08
+ Reference value :  9.24629e-08
+ Reference value :  9.54171e-08
+ Reference value :  9.83029e-08
+ Reference value :  1.01288e-07
+ Reference value :  1.04277e-07
+ Reference value :  1.07271e-07
+ Reference value :  1.10225e-07
+ Reference value :  1.12710e-07
+ Reference value :  1.15395e-07
+ Reference value :  1.18086e-07
+ Reference value :  1.20787e-07
+ Reference value :  1.23478e-07
+ Reference value :  1.26168e-07
+ Reference value :  1.28878e-07
+ Reference value :  1.31590e-07
+ Reference value :  1.34573e-07
+ Reference value :  1.37568e-07
+ Reference value :  1.40570e-07
+ Reference value :  1.43564e-07
+ Reference value :  1.46558e-07
+ Reference value :  1.49543e-07
+ Reference value :  1.52395e-07
+ Reference value :  1.55398e-07
+ Reference value :  1.58393e-07
+ Reference value :  1.61405e-07
+ Reference value :  1.64376e-07
+ Reference value :  1.67374e-07
+ Reference value :  1.70317e-07
+ Reference value :  1.73120e-07
+ Reference value :  1.76105e-07
+ Reference value :  1.79105e-07
+ Reference value :  1.82104e-07
+ Reference value :  1.85108e-07
+ Reference value :  1.88107e-07
+ Reference value :  1.90888e-07
+ Reference value :  1.93464e-07
+ Reference value :  1.96167e-07
+ Reference value :  1.98864e-07
+ Reference value :  2.01387e-07
+ Reference value :  2.04087e-07
+ Reference value :  2.06757e-07
+ Reference value :  2.09456e-07
+ Reference value :  2.12145e-07
+ Reference value :  2.14848e-07
+ Reference value :  2.17547e-07
+ Reference value :  2.20256e-07
+ Reference value :  2.22964e-07
+ Reference value :  2.25674e-07
+ Reference value :  2.28326e-07
+
+No. of Data Rows : 207061
+
+Total analysis time (seconds) = 19.4834
+
+Total elapsed time (seconds) = 19.501
+
+Total DRAM available = 32675.219 MB.
+DRAM currently available = 16656.676 MB.
+Maximum ngspice program size =    9.020 MB.
+Current ngspice program size =    9.016 MB.
+
+
+Warning: can't find the initialization file spinit.
+Warning: Value of resistor r.xhibiki.r1 is too small, set to 1.000000e-12

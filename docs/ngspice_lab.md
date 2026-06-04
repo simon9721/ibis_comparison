@@ -32,8 +32,11 @@ The GUI lets you:
 - use always-visible top buttons for `Generate Schematic`, `Run Sim`, and `Save Config`
 - generate a schematic before simulation and view it inside the `Setup` tab as a setup sanity check
 - run ngspice and view results in the `Output` tab
+- watch live ngspice status in the `Log` tab, including stdout/stderr lines, stage messages, and periodic heartbeat messages when ngspice is quiet
+- avoid accidentally launching duplicate simulations; `Run Sim` is disabled while an ngspice run is active
 - switch dynamically between `transient_overlay` and `transient_side_by_side` after a run
-- use embedded waveform-view controls for zooming and horizontal/vertical markers
+- use embedded waveform-view controls for native matplotlib toolbar pan/zoom, mouse-wheel zoom, right/middle-button pan, and draggable horizontal/vertical markers
+- use vertical markers as measurement cursors; they show marker time plus interpolated voltage for visible traces on the selected plot panel
 
 The lossy RLGC ladder channel is discretized as repeated series `R`/`L` and shunt `C`/`G` sections. The GUI exposes length, section count, and per-mm `R`, `L`, `G`, and `C` values.
 
