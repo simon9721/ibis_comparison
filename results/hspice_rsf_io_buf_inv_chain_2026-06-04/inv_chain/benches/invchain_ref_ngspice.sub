@@ -1,0 +1,29 @@
+.lib 'HL18G-S3.7S.lib' tt_tn
+
+.subckt invchain_ref VIN VOUT8 VDD VSS
+
+MPM_inv1 VOUT1 VIN  VDD VDD pch_tn W=2u   L=180n m=1
+MNM_inv1 VOUT1 VIN  VSS VSS nch_tn W=1u   L=180n m=1
+
+MPM_inv2 VOUT2 VOUT1 VDD VDD pch_tn W=2u   L=180n m=2
+MNM_inv2 VOUT2 VOUT1 VSS VSS nch_tn W=1u   L=180n m=2
+
+MPM_inv3 VOUT3 VOUT2 VDD VDD pch_tn W=2u   L=180n m=4
+MNM_inv3 VOUT3 VOUT2 VSS VSS nch_tn W=1u   L=180n m=4
+
+MPM_inv4 VOUT4 VOUT3 VDD VDD pch_tn W=2u   L=180n m=8
+MNM_inv4 VOUT4 VOUT3 VSS VSS nch_tn W=1u   L=180n m=8
+
+MPM_inv5 VOUT5 VOUT4 VDD VDD pch_tn W=2u   L=180n m=16
+MNM_inv5 VOUT5 VOUT4 VSS VSS nch_tn W=1u   L=180n m=16
+
+MPM_inv6 VOUT6 VOUT5 VDD VDD pch_tn W=2u   L=180n m=32
+MNM_inv6 VOUT6 VOUT5 VSS VSS nch_tn W=1u   L=180n m=32
+
+MPM_inv7 VOUT7 VOUT6 VDD VDD pch_tn W=2u   L=180n m=64
+MNM_inv7 VOUT7 VOUT6 VSS VSS nch_tn W=1u   L=180n m=64
+
+MPM_inv8 VOUT8 VOUT7 VDD VDD pch_tn W=2u   L=180n m=128
+MNM_inv8 VOUT8 VOUT7 VSS VSS nch_tn W=1u   L=180n m=128
+
+.ends invchain_ref

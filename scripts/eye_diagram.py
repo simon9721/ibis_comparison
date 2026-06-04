@@ -142,7 +142,7 @@ def _unique_names(names):
 
 def parse_ngspice_raw(filepath):
     """
-    Parse an NGspice binary .raw file.
+    Parse an NGspice .raw file.
 
     Returns
     -------
@@ -154,7 +154,7 @@ def parse_ngspice_raw(filepath):
     marker = b"Binary:"
     idx = data.find(marker)
     if idx < 0:
-        raise ValueError("Could not find Binary marker in ngspice raw file")
+        return parse_ngspice_ascii_raw(filepath)
 
     header = data[:idx].decode('latin1')
     lines = header.splitlines()
@@ -194,6 +194,81 @@ def parse_ngspice_raw(filepath):
     values = struct.unpack("<" + "d" * (nvars * npts), payload[:expected])
     arr = np.asarray(values, dtype=np.float64).reshape((npts, nvars))
 
+    result = {}
+    for i, name in enumerate(variables):
+        result[name] = arr[:, i]
+    return result
+
+
+def parse_ngspice_ascii_raw(filepath):
+    """
+    Parse an NGspice ASCII .raw file.
+
+    Some Windows ngspice.exe batch runs emit a `Values:` raw file rather than
+    the `Binary:` format used by the older local workflow.
+    """
+    filepath = Path(filepath)
+    lines = filepath.read_text(encoding='latin1', errors='replace').splitlines()
+
+    nvars = None
+    npts = None
+    variables = []
+    values_idx = None
+    reading_vars = False
+
+    for idx, line in enumerate(lines):
+        if line.startswith("No. Variables:"):
+            nvars = int(line.split(":", 1)[1])
+        elif line.startswith("No. Points:"):
+            npts = int(line.split(":", 1)[1])
+        elif line.strip() == "Variables:":
+            reading_vars = True
+        elif line.strip() == "Values:":
+            values_idx = idx + 1
+            reading_vars = False
+            break
+        elif reading_vars and line.startswith("\t"):
+            parts = line.split()
+            if len(parts) >= 2:
+                variables.append(parts[1])
+
+    if nvars is None or values_idx is None or len(variables) != nvars:
+        raise ValueError("Could not parse ngspice ASCII raw header")
+
+    rows = []
+    idx = values_idx
+    while idx < len(lines):
+        line = lines[idx].strip()
+        idx += 1
+        if not line:
+            continue
+
+        parts = line.split()
+        values = []
+        start = 0
+        if len(parts) >= 2:
+            try:
+                int(parts[0])
+                start = 1
+            except ValueError:
+                start = 0
+        values.extend(float(token) for token in parts[start:])
+
+        while len(values) < nvars and idx < len(lines):
+            cont = lines[idx].strip()
+            idx += 1
+            if cont:
+                values.extend(float(token) for token in cont.split())
+
+        if len(values) >= nvars:
+            rows.append(values[:nvars])
+        if npts is not None and len(rows) >= npts:
+            break
+
+    if not rows:
+        raise ValueError("No numeric rows found in ngspice ASCII raw file")
+
+    arr = np.asarray(rows, dtype=np.float64)
     result = {}
     for i, name in enumerate(variables):
         result[name] = arr[:, i]

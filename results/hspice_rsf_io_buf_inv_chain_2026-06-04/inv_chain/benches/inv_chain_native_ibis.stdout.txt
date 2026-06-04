@@ -1,0 +1,7 @@
+.exe -i inv_chain_native_ibis.sp -o inv_chain_native_ibis
+.com -i inv_chain_native_ibis.sp -o inv_chain_native_ibis
+C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com -i inv_chain_native_ibis.sp -o inv_chain_native_ibis
+
+>info:         ***** hspice job concluded                                       
+
+>info:         ***** hspice job concluded

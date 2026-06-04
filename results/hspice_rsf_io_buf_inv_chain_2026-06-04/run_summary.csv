@@ -1,0 +1,5 @@
+case,flow,returncode,deck,stdout,tr0
+io_buf,native_ibis,0,io_buf/benches/io_buf_native_ibis.sp,io_buf/benches/io_buf_native_ibis.stdout.txt,io_buf/benches/io_buf_native_ibis.tr0
+io_buf,spice_subckt,0,io_buf/benches/io_buf_spice_subckt.sp,io_buf/benches/io_buf_spice_subckt.stdout.txt,io_buf/benches/io_buf_spice_subckt.tr0
+inv_chain,native_ibis,0,inv_chain/benches/inv_chain_native_ibis.sp,inv_chain/benches/inv_chain_native_ibis.stdout.txt,inv_chain/benches/inv_chain_native_ibis.tr0
+inv_chain,spice_subckt,0,inv_chain/benches/inv_chain_spice_subckt.sp,inv_chain/benches/inv_chain_spice_subckt.stdout.txt,inv_chain/benches/inv_chain_spice_subckt.tr0

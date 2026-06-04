@@ -1,0 +1,7 @@
+.exe -i inv_chain_spice_subckt.sp -o inv_chain_spice_subckt
+.com -i inv_chain_spice_subckt.sp -o inv_chain_spice_subckt
+C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com -i inv_chain_spice_subckt.sp -o inv_chain_spice_subckt
+
+>info:         ***** hspice job concluded                                       
+
+>info:         ***** hspice job concluded

@@ -1,0 +1,20 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "01:17:21 06/04/2026 "
+* "netlist" "inv_chain_native_ibis.sp "
+* "runtitle" "* generated hspice native ibis rsf bench for inv_chain"
+* time =    0.            
+* temperature =   27.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ gc_ref =   0.            
++ in_dig =   0.            
++ ntst_ibis =  40.3547u       
++ pad_ibis =  40.3547u       
++ pc_ref =   1.8000        
++ pd_ref =   0.            
++ pu_ref =   1.8000        
+***   END: Saved Operating Point ***                     

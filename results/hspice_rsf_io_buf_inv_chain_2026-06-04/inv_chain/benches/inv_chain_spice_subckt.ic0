@@ -1,0 +1,26 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "01:17:24 06/04/2026 "
+* "netlist" "inv_chain_spice_subckt.sp "
+* "runtitle" "* generated hspice transistor/subcircuit rsf bench for inv_chain"
+* time =    0.            
+* temperature =   27.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ in_dig =   0.            
++ in_src =   0.            
++ ntst_ref =  13.0808n       
++ pad_ref =  13.0808n       
++ vdd_ref =   1.8000        
++ vdd_ref_src =   1.8000        
++ xref.vout1 =   1.8000        
++ xref.vout2 =  14.4791n       
++ xref.vout3 =   1.8000        
++ xref.vout4 =  14.4791n       
++ xref.vout5 =   1.8000        
++ xref.vout6 =  14.4791n       
++ xref.vout7 =   1.8000        
+***   END: Saved Operating Point ***                     

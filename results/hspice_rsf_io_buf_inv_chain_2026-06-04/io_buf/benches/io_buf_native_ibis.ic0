@@ -1,0 +1,22 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "01:17:15 06/04/2026 "
+* "netlist" "io_buf_native_ibis.sp "
+* "runtitle" "* generated hspice native ibis rsf bench for io_buf"
+* time =    0.            
+* temperature =   27.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ dig_q = 500.0000m       
++ en_sig =   3.3000        
++ gc_ref =   0.            
++ in_dig =   0.            
++ ntst_ibis =   1.3708n       
++ pad_ibis =   1.3708n       
++ pc_ref =   3.3000        
++ pd_ref =   0.            
++ pu_ref =   3.3000        
+***   END: Saved Operating Point ***                     

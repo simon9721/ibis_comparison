@@ -1,0 +1,7 @@
+.exe -i io_buf_spice_subckt.sp -o io_buf_spice_subckt
+.com -i io_buf_spice_subckt.sp -o io_buf_spice_subckt
+C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com -i io_buf_spice_subckt.sp -o io_buf_spice_subckt
+
+>info:         ***** hspice job concluded                                       
+
+>info:         ***** hspice job concluded
