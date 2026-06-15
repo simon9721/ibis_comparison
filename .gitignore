@@ -22,3 +22,13 @@ rsf_compare_log*.txt
 # Scratch workspace copies
 /experiments/
 /results/ngspice_lab_gui_run/
+
+# Local tool/dependency installs used by Codex runs
+/.codex_deps/
+
+# Download caches inside generated studies
+/results/**/cache/*.zip
+
+# Archive sidecar metadata
+__MACOSX/
+._*

@@ -1,0 +1,258 @@
+{
+  "scikit_rf_version": "1.12.0",
+  "input_s2p": "C:\\Users\\sh3qm\\code\\ibis_comparison\\hspice\\sparam\\Clarity_example.S2P",
+  "ports": 2,
+  "points": 40,
+  "frequency_min_hz": 50000000.0,
+  "frequency_max_hz": 2000000000.0,
+  "network_is_passive_at_samples": true,
+  "network_sample_singular": {
+    "max_singular": 0.9981438316324364,
+    "freq_hz": 50000000.0
+  },
+  "dense_high_fmax_hz": 400000000000.0,
+  "enforce_fmax_hz": 400000000000.0,
+  "variants": {
+    "auto_default": {
+      "fit_warnings": [],
+      "unforced_spice": "C:\\Users\\sh3qm\\code\\ibis_comparison\\hspice\\sparam_ngspice\\regenerated_skrf\\auto_default\\Clarity_example_auto_default_unforced.sp",
+      "unforced": {
+        "rms_error": 0.0008010083795988382,
+        "pole_count_array": 6,
+        "model_order": 9,
+        "is_passive": false,
+        "passivity_violation_bands_hz": [
+          [
+            2977215796.7729864,
+            3259196916.993674
+          ],
+          [
+            3259196916.993674,
+            Infinity
+          ]
+        ],
+        "dense_to_input_fmax": {
+          "max_singular": 0.9981751774756603,
+          "freq_hz": 0.0,
+          "f_stop_hz": 2000000000.0,
+          "samples": 1001
+        },
+        "dense_to_high_fmax": {
+          "max_singular": 37.736376955458326,
+          "freq_hz": 7800000000.0,
+          "f_stop_hz": 400000000000.0,
+          "samples": 2001
+        }
+      },
+      "passive_input_band": {
+        "enforce_fmax_hz": 2000000000.0,
+        "enforce_samples": 2000,
+        "enforce_warnings": [
+          "Passivity enforcement: The passivity violations of this model are unbounded. Passivity enforcement might still work, but consider re-fitting with a lower number of poles and/or without the constants (`fit_constant=False`) if the results are not satisfactory.",
+          "Passivity enforcement: Aborting after the max. number of iterations has been exceeded.",
+          "Passivity enforcement was not successful.\nModel is still non-passive in these frequency bands: [[1.33920405e+08 1.55316954e+08]\n [2.28206508e+09 2.38143997e+09]\n [3.71892678e+09 3.75987069e+09]\n [5.84876158e+09 5.85437303e+09]\n [5.85437303e+09            inf]].\nTry running this routine again with a larger number of samples (parameter `n_samples`). This run was using n_samples = 2000. Consider trying again with n_samples > 2090."
+        ],
+        "spice": "C:\\Users\\sh3qm\\code\\ibis_comparison\\hspice\\sparam_ngspice\\regenerated_skrf\\auto_default\\Clarity_example_auto_default_passive_input_band.sp",
+        "fit": {
+          "rms_error": 0.4436517213029697,
+          "pole_count_array": 6,
+          "model_order": 9,
+          "is_passive": false,
+          "passivity_violation_bands_hz": [
+            [
+              133920404.75015245,
+              155316953.56122583
+            ],
+            [
+              2282065082.514141,
+              2381439970.72338
+            ],
+            [
+              3718926777.3679066,
+              3759870694.9870634
+            ],
+            [
+              5848761576.387066,
+              5854373026.118878
+            ],
+            [
+              5854373026.118878,
+              Infinity
+            ]
+          ],
+          "dense_to_input_fmax": {
+            "max_singular": 1.00146298108627,
+            "freq_hz": 144000000.0,
+            "f_stop_hz": 2000000000.0,
+            "samples": 1001
+          },
+          "dense_to_high_fmax": {
+            "max_singular": 19.929595093969933,
+            "freq_hz": 7800000000.0,
+            "f_stop_hz": 400000000000.0,
+            "samples": 2001
+          }
+        }
+      },
+      "passive_high_band": {
+        "enforce_fmax_hz": 400000000000.0,
+        "enforce_samples": 2000,
+        "enforce_warnings": [
+          "Passivity enforcement: The passivity violations of this model are unbounded. Passivity enforcement might still work, but consider re-fitting with a lower number of poles and/or without the constants (`fit_constant=False`) if the results are not satisfactory.",
+          "Passivity enforcement: Aborting after the max. number of iterations has been exceeded.",
+          "Passivity enforcement was not successful.\nModel is still non-passive in these frequency bands: [[1.98869903e+07 2.30041023e+07]\n [2.30041023e+07 3.76362919e+08]\n [3.76362919e+08 3.87179190e+08]\n [5.43857209e+08 5.56917492e+08]\n [5.56917492e+08 1.70775110e+09]\n [1.70775110e+09 1.72975209e+09]\n [2.03892250e+09 2.06433105e+09]\n [2.06433105e+09 4.24219201e+09]\n [4.24219201e+09 4.31355743e+09]\n [5.51515901e+09 5.62837042e+09]\n [5.62837042e+09 8.01945413e+09]\n [8.01945413e+09 8.04175137e+09]\n [8.56956284e+09 8.64829629e+09]\n [8.64829629e+09            inf]].\nTry running this routine again with a larger number of samples (parameter `n_samples`). This run was using n_samples = 2000. Consider trying again with n_samples > 307977."
+        ],
+        "spice": "C:\\Users\\sh3qm\\code\\ibis_comparison\\hspice\\sparam_ngspice\\regenerated_skrf\\auto_default\\Clarity_example_auto_default_passive_high_band.sp",
+        "fit": {
+          "rms_error": 3.691835176118645,
+          "pole_count_array": 6,
+          "model_order": 9,
+          "is_passive": false,
+          "passivity_violation_bands_hz": [
+            [
+              19886990.28422837,
+              23004102.325930696
+            ],
+            [
+              23004102.325930696,
+              376362918.875819
+            ],
+            [
+              376362918.875819,
+              387179189.68470687
+            ],
+            [
+              543857208.8379256,
+              556917491.9005234
+            ],
+            [
+              556917491.9005234,
+              1707751096.284418
+            ],
+            [
+              1707751096.284418,
+              1729752091.9009686
+            ],
+            [
+              2038922499.2072399,
+              2064331046.370527
+            ],
+            [
+              2064331046.370527,
+              4242192006.7796783
+            ],
+            [
+              4242192006.7796783,
+              4313557431.535779
+            ],
+            [
+              5515159012.4179125,
+              5628370422.132958
+            ],
+            [
+              5628370422.132958,
+              8019454133.148752
+            ],
+            [
+              8019454133.148752,
+              8041751373.8488455
+            ],
+            [
+              8569562841.524885,
+              8648296292.500658
+            ],
+            [
+              8648296292.500658,
+              Infinity
+            ]
+          ],
+          "dense_to_input_fmax": {
+            "max_singular": 4.026031163474595,
+            "freq_hz": 146000000.0,
+            "f_stop_hz": 2000000000.0,
+            "samples": 1001
+          },
+          "dense_to_high_fmax": {
+            "max_singular": 3.714537923128715,
+            "freq_hz": 400000000000.0,
+            "f_stop_hz": 400000000000.0,
+            "samples": 2001
+          }
+        }
+      }
+    },
+    "vector_3r3c": {
+      "fit_warnings": [],
+      "unforced_spice": "C:\\Users\\sh3qm\\code\\ibis_comparison\\hspice\\sparam_ngspice\\regenerated_skrf\\vector_3r3c\\Clarity_example_vector_3r3c_unforced.sp",
+      "unforced": {
+        "rms_error": 0.0009750705218759722,
+        "pole_count_array": 6,
+        "model_order": 9,
+        "is_passive": true,
+        "passivity_violation_bands_hz": [],
+        "dense_to_input_fmax": {
+          "max_singular": 0.9983643763329778,
+          "freq_hz": 0.0,
+          "f_stop_hz": 2000000000.0,
+          "samples": 1001
+        },
+        "dense_to_high_fmax": {
+          "max_singular": 0.9983643763329778,
+          "freq_hz": 0.0,
+          "f_stop_hz": 400000000000.0,
+          "samples": 2001
+        }
+      },
+      "passive_input_band": {
+        "enforce_fmax_hz": 2000000000.0,
+        "enforce_samples": 2000,
+        "enforce_warnings": [],
+        "spice": "C:\\Users\\sh3qm\\code\\ibis_comparison\\hspice\\sparam_ngspice\\regenerated_skrf\\vector_3r3c\\Clarity_example_vector_3r3c_passive_input_band.sp",
+        "fit": {
+          "rms_error": 0.0009750705218759722,
+          "pole_count_array": 6,
+          "model_order": 9,
+          "is_passive": true,
+          "passivity_violation_bands_hz": [],
+          "dense_to_input_fmax": {
+            "max_singular": 0.9983643763329778,
+            "freq_hz": 0.0,
+            "f_stop_hz": 2000000000.0,
+            "samples": 1001
+          },
+          "dense_to_high_fmax": {
+            "max_singular": 0.9983643763329778,
+            "freq_hz": 0.0,
+            "f_stop_hz": 400000000000.0,
+            "samples": 2001
+          }
+        }
+      },
+      "passive_high_band": {
+        "enforce_fmax_hz": 400000000000.0,
+        "enforce_samples": 2000,
+        "enforce_warnings": [],
+        "spice": "C:\\Users\\sh3qm\\code\\ibis_comparison\\hspice\\sparam_ngspice\\regenerated_skrf\\vector_3r3c\\Clarity_example_vector_3r3c_passive_high_band.sp",
+        "fit": {
+          "rms_error": 0.0009750705218759722,
+          "pole_count_array": 6,
+          "model_order": 9,
+          "is_passive": true,
+          "passivity_violation_bands_hz": [],
+          "dense_to_input_fmax": {
+            "max_singular": 0.9983643763329778,
+            "freq_hz": 0.0,
+            "f_stop_hz": 2000000000.0,
+            "samples": 1001
+          },
+          "dense_to_high_fmax": {
+            "max_singular": 0.9983643763329778,
+            "freq_hz": 0.0,
+            "f_stop_hz": 400000000000.0,
+            "samples": 2001
+          }
+        }
+      }
+    }
+  }
+}

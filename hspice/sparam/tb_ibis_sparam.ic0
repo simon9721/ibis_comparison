@@ -1,0 +1,22 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "14:17:02 06/07/2026 "
+* "netlist" "tb_ibis_sparam.sp "
+* "runtitle" "* hspice testbench: ibis tx + s-parameter channel (clarity_example.s2p)"
+* time =    0.            
+* temperature =   27.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ dig_q = 500.0000m       
++ en_sig =   3.3000        
++ gc_ref =   0.            
++ in_dig =   0.            
++ pad_ibis =   1.3702n       
++ pc_ref =   3.3000        
++ pd_ref =   0.            
++ pu_ref =   3.3000        
++ rx_node =   1.3680n       
+***   END: Saved Operating Point ***                     

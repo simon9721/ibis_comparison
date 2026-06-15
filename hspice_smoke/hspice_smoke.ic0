@@ -1,0 +1,14 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "00:34:45 06/04/2026 "
+* "netlist" "hspice_smoke\hspice_smoke.sp "
+* "runtitle" "* minimal hspice smoke test"
+* time =    0.            
+* temperature =   25.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ in =   0.            
+***   END: Saved Operating Point ***                     
