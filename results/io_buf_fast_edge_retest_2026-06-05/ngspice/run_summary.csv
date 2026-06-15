@@ -1,0 +1,3 @@
+deck,raw,log,return_code
+results/io_buf_fast_edge_retest_2026-06-05/ngspice/benches/tb_ibis_vs_pybis_rsf_12n_batch.sp,results/io_buf_fast_edge_retest_2026-06-05/ngspice/benches/tb_ibis_vs_pybis_rsf_12n_batch.raw,results/io_buf_fast_edge_retest_2026-06-05/ngspice/benches/tb_ibis_vs_pybis_rsf_12n_batch.log,0
+results/io_buf_fast_edge_retest_2026-06-05/ngspice/benches/tb_refspice_rsf_14n_batch.sp,results/io_buf_fast_edge_retest_2026-06-05/ngspice/benches/tb_refspice_rsf_14n_batch.raw,results/io_buf_fast_edge_retest_2026-06-05/ngspice/benches/tb_refspice_rsf_14n_batch.log,0

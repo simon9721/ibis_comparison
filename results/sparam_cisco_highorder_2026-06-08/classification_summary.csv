@@ -1,0 +1,5 @@
+category,class,count
+metric_channel_class,FAIL,1
+hspice_channel_class,NO_AUDIT,1
+edge_channel_class,NO_AUDIT,1
+overall_channel_class,FAIL,1

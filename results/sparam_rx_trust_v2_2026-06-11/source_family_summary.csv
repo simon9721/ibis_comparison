@@ -1,0 +1,5 @@
+source_family,selected_channels,failed_channels,independent_pass,independent_warn,independent_fail,hspice_pass,hspice_warn,hspice_fail,hspice_error
+cisco,144,36,0,144,0,0,68,0,13
+extra,0,1,0,0,0,0,0,0,0
+repo_local,1,0,0,1,0,0,0,0,0
+skrf_tests,4,19,0,2,2,5,0,7,0

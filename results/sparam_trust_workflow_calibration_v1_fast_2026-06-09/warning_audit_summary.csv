@@ -1,0 +1,11 @@
+warning_reason,selected_channels,audit_rows,hspice_pass,hspice_warn,hspice_fail,hspice_error
+passivity_margin_low,2,6,4,2,0,0
+reduced_4p_not_full_matrix,145,6,0,3,3,0
+rx_edge_ringing_threshold_ambiguous,29,3,0,0,3,0
+rx_low_swing_metric_floor,145,6,0,3,3,0
+rx_overshoot_margin,4,9,5,2,2,0
+rx_settling_margin,138,6,0,3,3,0
+rx_undershoot_margin,4,9,5,2,2,0
+threshold_delay_confidence_low,147,12,4,5,3,0
+tx_edge_ringing_threshold_ambiguous,2,6,4,2,0,0
+voltage_shape_ok_threshold_delay_low,147,12,4,5,3,0

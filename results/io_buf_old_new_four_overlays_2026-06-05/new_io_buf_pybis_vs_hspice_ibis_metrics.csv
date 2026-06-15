@@ -1,0 +1,2 @@
+model,reference,threshold_v,model_minus_reference_rise_50_ps,model_minus_reference_fall_50_ps,rmse_mv,maxabs_mv
+ngspice_pybis,hspice_native_ibis,0.770000003651,16.131193791579364,2.8100212121988593,17.28501937627066,405.4635951359533

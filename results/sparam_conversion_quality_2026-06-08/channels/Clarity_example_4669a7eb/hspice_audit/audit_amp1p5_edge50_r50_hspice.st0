@@ -1,0 +1,54 @@
+****** PrimeSim HSPICE -- T-2022.06 win64 (May 20 2022 7637141) ******
+Input File: audit_amp1p5_edge50_r50_hspice.sp
+lic:
+lic: FLEXlm: SDK_12.10
+lic: USER:   sh3qm                HOSTNAME: rd78ece-emclab
+lic: HOSTID: 00ff89f5aa52         PID:      20628
+lic: Using FLEXlm license file:
+lic: 1704@synopsys.lic.mst.edu
+lic: Checkout 1 hspice
+lic: License/Maintenance for hspice will expire on 26-may-2027/2026.03
+lic: 1(in_use)/50(total) FLOATING license(s) on SERVER 1704@synopsys.lic.mst.edu
+lic:
+
+ init: begin read circuit files, cpu clock= 1.34E-01
+       option search = C:/synopsys/Hspice_T-2022.06/parts/behave/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/AD/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/XILINX/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/TLINE/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/TI/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/SIGNET/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/PCI/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/LIN_TECH/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/PET/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/DI0/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/COMLINE/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/BURR_BRM/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/BJT/
+       option post =     2.00
+       option probe
+       option accurate
+ init: end read circuit files, cpu clock= 1.54E-01 peak memory=      71 mb
+ init: begin check errors, cpu clock= 1.54E-01
+ init: end check errors, cpu clock= 1.72E-01 peak memory=      71 mb
+ init: begin setup matrix, pivot=     0 cpu clock= 1.72E-01
+       establish matrix -- done, cpu clock= 1.72E-01 peak memory=      71 mb
+       re-order matrix -- done, cpu clock= 1.72E-01 peak memory=      71 mb
+ init: end setup matrix, cpu clock= 1.72E-01 peak memory=      71 mb
+ dcop: begin dcop, cpu clock= 1.85E-01
+ dcop: end dcop, cpu clock= 1.87E-01 peak memory=      71 mb tot_iter=       3
+ output: audit_amp1p5_edge50_r50_hspice.tr0
+ sweep: tran tran0    begin, stop_t=  1.20E-08 #sweeps=1201 cpu clock= 1.89E-01
+ tran: time= 1.2029E-09 tot_iter=      60 conv_iter=      30 cpu clock= 1.90E-01
+ tran: time= 2.4834E-09 tot_iter=     110 conv_iter=      55 cpu clock= 1.90E-01
+ tran: time= 3.7940E-09 tot_iter=     124 conv_iter=      62 cpu clock= 1.90E-01
+ tran: time= 4.9394E-09 tot_iter=     130 conv_iter=      65 cpu clock= 1.90E-01
+ tran: time= 6.4694E-09 tot_iter=     136 conv_iter=      68 cpu clock= 1.91E-01
+ tran: time= 7.6610E-09 tot_iter=     140 conv_iter=      70 cpu clock= 1.91E-01
+ tran: time= 8.8610E-09 tot_iter=     144 conv_iter=      72 cpu clock= 1.91E-01
+ tran: time= 9.6102E-09 tot_iter=     240 conv_iter=     120 cpu clock= 1.91E-01
+ tran: time= 1.0825E-08 tot_iter=     270 conv_iter=     135 cpu clock= 1.92E-01
+ tran: time= 1.2000E-08 tot_iter=     280 conv_iter=     140 cpu clock= 1.92E-01
+ sweep: tran tran0    end, cpu clock= 1.92E-01 peak memory=      71 mb
+>info:         ***** hspice job concluded
+ lic: Release hspice token(s)

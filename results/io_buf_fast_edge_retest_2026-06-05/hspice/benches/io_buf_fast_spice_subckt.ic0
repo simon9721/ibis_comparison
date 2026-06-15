@@ -1,0 +1,29 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "00:21:23 06/05/2026 "
+* "netlist" "io_buf_fast_spice_subckt.sp "
+* "runtitle" "* generated hspice transistor/subcircuit rsf bench for io_buf regenerated tr/tf=5ps"
+* time =    0.            
+* temperature =   27.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ in_dig =   0.            
++ in_sense_ref =   3.3000        
++ in_src =   0.            
++ ntst_ref =   6.2349n       
++ oe_ref =   3.3000        
++ oe_ref_src =   3.3000        
++ pad_ref =   6.2349n       
++ vdd_ref =   3.3000        
++ vdd_ref_src =   3.3000        
++ xref.n1 =   3.3000        
++ xref.n2 =   3.3000        
++ xref.n3 =   3.3000        
++ xref.n_int1 =   2.6705        
++ xref.n_int2 =  65.1386n       
++ xref.nand_n3 = 130.2773n       
++ xref.oe_b =  34.1865n       
+***   END: Saved Operating Point ***                     

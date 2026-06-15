@@ -1,0 +1,4 @@
+case,return_code,raw,log,points,v(p1)_max_v,v(p3)_max_v
+audit_amp1p5_edge5_r50,0,results/sparam_cisco_delay_parallel_2026-06-08/Ch9_33_5F3N_t/ngspice/audit_amp1p5_edge5_r50.raw,results/sparam_cisco_delay_parallel_2026-06-08/Ch9_33_5F3N_t/ngspice/audit_amp1p5_edge5_r50.log,7038,0.75,0.6751745951040907
+audit_amp1p5_edge50_r50,0,results/sparam_cisco_delay_parallel_2026-06-08/Ch9_33_5F3N_t/ngspice/audit_amp1p5_edge50_r50.raw,results/sparam_cisco_delay_parallel_2026-06-08/Ch9_33_5F3N_t/ngspice/audit_amp1p5_edge50_r50.log,7027,0.75,0.6751731744855053
+audit_amp1p5_edge500_r50,0,results/sparam_cisco_delay_parallel_2026-06-08/Ch9_33_5F3N_t/ngspice/audit_amp1p5_edge500_r50.raw,results/sparam_cisco_delay_parallel_2026-06-08/Ch9_33_5F3N_t/ngspice/audit_amp1p5_edge500_r50.log,7020,0.75,0.6751524513932282

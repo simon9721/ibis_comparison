@@ -1,0 +1,4 @@
+view,ready,warn,fail,selected_models,ready_label_count,hspice_pass,hspice_warn,hspice_fail,hspice_error
+rx,0,3,0,3,0,0,3,0,0
+reflection,0,0,3,0,0,3,0,0,0
+full_model,0,3,0,0,0,0,3,0,0

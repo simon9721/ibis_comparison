@@ -1,0 +1,154 @@
+ ****** PrimeSim HSPICE -- T-2022.06 win64 (May 20 2022 7637141) ******
+  Copyright (c) 1986 - 2026 by Synopsys, Inc. All Rights Reserved.
+  This software and the associated documentation are proprietary
+  to Synopsys, Inc. This software may only be used in accordance
+  with the terms and conditions of a written license agreement with
+  Synopsys, Inc. All other use, reproduction, or distribution of
+  this software is strictly prohibited.
+  Input File: audit_amp1p5_edge5_r50_hspice.sp                                  
+  Command line options: C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com -i audit_amp1p5_edge5_r50_hspice.sp -o audit_amp1p5_edge5_r50_hspice
+  Start time: Tue Jun  9 14:33:59 2026
+  lic:  
+  lic: FLEXlm: SDK_12.10 
+  lic: USER:   sh3qm                HOSTNAME: rd78ece-emclab 
+  lic: HOSTID: 00ff89f5aa52         PID:      10204 
+  lic: Using FLEXlm license file: 
+  lic: 1704@synopsys.lic.mst.edu 
+  lic: Checkout 1 hspice 
+  lic: License/Maintenance for hspice will expire on 26-may-2027/2026.03 
+  lic: 1(in_use)/50(total) FLOATING license(s) on SERVER 1704@synopsys.lic.mst.e
+ du 
+  lic:   
+  **warning** (audit_amp1p5_edge5_r50_hspice.sp:2) runlvl smaller than 5, reset to 5 when accurate turned on
+
+ **warning**  runlvl smaller than 5, reset to 5 when accurate turned on
+  **info** (audit_amp1p5_edge5_r50_hspice.sp:4) DC voltage reset to initial transient source value in source 0:vin. new dc=0.0000D+00
+ 
+
+Touchstone File [../../../../hspice/sparam/Clarity_example.S2P] 2 port s-params: 40 pts 5e+07Hz - 2e+09Hz
+   No noise parameter read. 
+
+ S-Parameters file is passive.
+ HYBRID interpolation data preparation: S[1][1]
+ HYBRID interpolation data preparation: S[1][2]
+ HYBRID interpolation data preparation: S[2][1]
+ HYBRID interpolation data preparation: S[2][2]
+ s-model [ch_model] delay estimation at S[2][1]: 2.80762e-10 sec
+ s-model [ch_model] s-parameter S-par state space stamping
+ 
+
+Touchstone File [../../../../hspice/sparam/Clarity_example.S2P] 2 port s-params: 40 pts 5e+07Hz - 2e+09Hz
+   No noise parameter read. 
+
+ S-Parameters file is passive.
+ HYBRID interpolation data preparation: S[1][1]
+ HYBRID interpolation data preparation: S[1][2]
+ HYBRID interpolation data preparation: S[2][1]
+ HYBRID interpolation data preparation: S[2][2]
+  
+      
+ Sampling parameter from: ../../../../hspice/sparam/Clarity_example.S2P
+ generating rational functions for [ch_model] (solver: 2) ... 
+ [ch_model] S-parameter RATIONAL_FUNC fitting begins
+ s-model [ch_model] delay estimation at S[2][1]: 2.80762e-10 sec
+ S parameters are passive
+ -----------
+ Fitting iteration
+ Rational fitting RMS error = 0.00234023
+ Rational fitting pole count = 14
+ Rational fitting port count = 2
+ S model [ch_model]: Rational model is passive
+ No DC frequency point in the original data
+ [ch_model] Fitted touchstone file saved to ".\ch_model_fit.s2p"
+ Time for rational function generation: 0.038 wall sec w/ 
+ Rational function data have been written into [.\ch_model.srf]  
+  
+ *****************************************************************
+ ******  option summary
+ ******
+ runlvl  = 5         bypass  = 2.0000    
+ 
+
+Touchstone File [../../../../hspice/sparam/Clarity_example.S2P] 2 port s-params: 40 pts 5e+07Hz - 2e+09Hz
+   No noise parameter read. 
+
+ S-Parameters file is passive.
+ HYBRID interpolation data preparation: S[1][1]
+ HYBRID interpolation data preparation: S[1][2]
+ HYBRID interpolation data preparation: S[2][1]
+ HYBRID interpolation data preparation: S[2][2]
+ s-model [ch_model] delay estimation at S[2][1]: 2.80762e-10 sec
+ s-model [ch_model] s-parameter S-par state space stamping
+ 
+
+Touchstone File [../../../../hspice/sparam/Clarity_example.S2P] 2 port s-params: 40 pts 5e+07Hz - 2e+09Hz
+   No noise parameter read. 
+
+ S-Parameters file is passive.
+ HYBRID interpolation data preparation: S[1][1]
+ HYBRID interpolation data preparation: S[1][2]
+ HYBRID interpolation data preparation: S[2][1]
+ HYBRID interpolation data preparation: S[2][2]
+ reading rational function data from [.\ch_model.srf]
+  
+ rational function data read from [.\ch_model.srf]  
+  **warning** Fitted S-parameter file is unchanged because of re-using SRF file. Remove SRF file and rerun to obtain new fitted s-parameters output.
+  
+ **info** dc convergence successful at Newton-Raphson method 
+1****** PrimeSim HSPICE -- T-2022.06 win64 (May 20 2022 7637141) ******
+ ******  
+ * hspice native s-parameter audit: audit_amp1p5_edge5_r50
+
+ ****** operating point information tnom=  25.000 temp=  27.000 ******
+ ****** operating point status is voltage   simulation time is     0.     
+    node    =voltage      node    =voltage      node    =voltage
+
+ +0:p1      =   0.      0:p2      =   0.      0:src     =   0.     
+
+
+          ***** job concluded
+ ******  
+ * hspice native s-parameter audit: audit_amp1p5_edge5_r50
+
+ ****** job statistics summary tnom=  25.000 temp=  27.000 ******
+
+  ******  PrimeSim HSPICE Threads Information  ******
+
+  Command Line Threads Count :     1
+  Available CPU Count        :    12
+  Actual Threads Count       :     1
+
+
+  ******  Circuit Statistics  ******
+  # nodes       =      34 # elements   =       4
+  # resistors   =       2 # capacitors =       0 # inductors   =       0
+  # mutual_inds =       0 # vccs       =       0 # vcvs        =       0
+  # cccs        =       0 # ccvs       =       0 # volt_srcs   =       1
+  # curr_srcs   =       0 # diodes     =       0 # bjts        =       0
+  # jfets       =       0 # mosfets    =       0 # U elements  =       0
+  # T elements  =       0 # W elements =       0 # B elements  =       0
+  # S elements  =       1 # P elements =       0 # va device   =       0
+  # vector_srcs =       0 # N elements =       0
+
+
+  ******  Runtime Statistics (seconds)  ******
+
+  analysis           time    # points   tot. iter  conv.iter
+  op point           0.00           1           3
+  transient          0.00        1201         274         137 rev=         6
+  readin             0.02
+  errchk             0.06
+  setup              0.00
+  output             0.00
+
+
+           peak memory used         76.17 megabytes
+           total cpu time            0.11 seconds
+           total elapsed time        0.24 seconds
+           job started at     14:33:59 06/09/2026
+           job ended   at     14:33:59 06/09/2026
+           job total runtime         0.24 seconds
+
+
+  lic: Release hspice token(s) 
+ lic: total license checkout elapse time:        0.11(s)

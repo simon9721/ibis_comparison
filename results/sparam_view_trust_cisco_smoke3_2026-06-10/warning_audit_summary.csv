@@ -1,0 +1,6 @@
+warning_reason,selected_channels,audit_rows,hspice_pass,hspice_warn,hspice_fail,hspice_error
+reduced_4p_not_full_matrix,1,0,0,0,0,0
+rx_low_swing_metric_floor,1,0,0,0,0,0
+rx_settling_margin,1,0,0,0,0,0
+threshold_delay_confidence_low,1,0,0,0,0,0
+voltage_shape_ok_threshold_delay_low,1,0,0,0,0,0

@@ -1,0 +1,3 @@
+case,kind,return_code,stdout
+io_buf_fast,native_ibis,0,results/io_buf_fast_edge_retest_2026-06-05/hspice/benches/io_buf_fast_native_ibis.stdout.txt
+io_buf_fast,spice_subckt,0,results/io_buf_fast_edge_retest_2026-06-05/hspice/benches/io_buf_fast_spice_subckt.stdout.txt

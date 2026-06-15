@@ -1,0 +1,9 @@
+candidate_family,candidate_rows,candidate_pass,candidate_warn,candidate_fail,selected_channels,selected_pass,selected_warn,selected_fail,hspice_pass,hspice_warn,hspice_fail,hspice_error
+full_vector_fit,40,0,4,36,4,0,2,2,5,0,4,0
+full_vector_fit_enforced,27,0,0,27,0,0,0,0,0,0,0,0
+reduced_4p_reflection_s11_rc,185,0,145,40,0,0,0,0,0,0,0,0
+reduced_4p_rx_delayeq_rc_ring,185,0,145,40,5,0,5,0,0,15,0,0
+reduced_4p_rx_dominant_delay_rc,185,0,145,40,140,0,140,0,0,53,3,13
+reduced_s2p_reflection_s11_rc,20,0,0,20,0,0,0,0,0,0,0,0
+reduced_s2p_rx_delay_rc_ring,20,0,0,20,0,0,0,0,0,0,0,0
+reduced_s2p_rx_delayeq_rc_ring,20,0,0,20,0,0,0,0,0,0,0,0

@@ -1,0 +1,4 @@
+independent_class,hspice_pass,hspice_fail,hspice_error,total,false_pass_rate
+PASS,1,2,0,3,0.6666666666666666
+WARN,0,0,0,0,
+FAIL,0,0,0,0,

@@ -1,0 +1,2 @@
+channel_id,channel_path,ports,points,f_min_hz,f_max_hz,max_low_freq_start_hz,low_freq_coverage_ok,low_freq_coverage_ratio,min_frequency_points,frequency_point_count_ok,high_fmax_hz,sampled_max_sv,sampled_max_sv_freq_hz,sampled_is_passive,selected_candidate,status,independent_trust_class,reason
+ch_model_fit_c02b8fb1,hspice/sparam/ch_model_fit.s2p,2,40,50000000.0,2000000000.0,5000000000.0,True,0.01,8,True,400000000000.0,0.9973807543638006,50000000.0,True,,no_candidate_passed,FAIL,no candidate passed independent qualification gates

@@ -1,0 +1,11 @@
+category,class,count
+metric_channel_class,FAIL,18
+metric_channel_class,PASS,6
+hspice_channel_class,NO_AUDIT,17
+hspice_channel_class,PASS,6
+hspice_channel_class,FAIL,1
+overall_channel_class,FAIL,18
+overall_channel_class,PASS,6
+hspice_case_class,PASS,18
+hspice_case_class,FAIL,3
+hspice_case_class,NO_AUDIT,3

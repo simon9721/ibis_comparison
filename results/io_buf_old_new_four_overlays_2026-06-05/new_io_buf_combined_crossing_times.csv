@@ -1,0 +1,5 @@
+trace,label,threshold_v,rise_50_ns,fall_50_ns
+ngspice_pybis,ngspice pybis from new io_buf.ibs,0.770000003651,2.760960693124037,9.231525004692251
+ngspice_refspice,ngspice refspice io_buf.sp,0.770000003651,2.6795684891163116,9.225775256475028
+hspice_native_ibis,HSPICE native IBIS from new io_buf.ibs,0.770000003651,2.7448294993324573,9.228714983480053
+hspice_refspice,HSPICE SPICE subckt io_buf.sp,0.770000003651,2.524574261405981,9.215158602511702

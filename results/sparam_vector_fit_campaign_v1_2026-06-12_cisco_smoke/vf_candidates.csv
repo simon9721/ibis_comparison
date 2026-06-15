@@ -1,0 +1,2 @@
+candidate,kind,n_poles_real,n_poles_cmplx,init_pole_spacing,target_error,model_order_max
+vector_3r3c,fixed,3,3,lin,,

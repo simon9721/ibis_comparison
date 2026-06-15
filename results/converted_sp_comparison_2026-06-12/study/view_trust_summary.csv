@@ -1,0 +1,6 @@
+view,ready,warn,fail,selected_models,ready_label_count,hspice_pass,hspice_warn,hspice_fail,hspice_error
+rx_voltage_shape,3,0,0,3,1,0,0,0,0
+rx_timing,1,2,0,3,1,0,0,0,0
+rx,1,2,0,3,1,0,0,0,0
+reflection,0,0,3,0,0,0,0,0,0
+full_model,1,2,0,1,1,0,0,0,0

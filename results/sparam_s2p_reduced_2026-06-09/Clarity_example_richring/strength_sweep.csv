@@ -1,0 +1,2 @@
+s11_strength,case_count,pass_count,fail_count,rx_active_rmse_mean_v,rx_active_rmse_max_v,rx_active_maxabs_max_v,tx_active_rmse_mean_v,tx_active_rmse_max_v,max_abs_rx_edge_delta_ps,selection_score,strength_dir,model
+0.25,3,2,1,0.012473221331056444,0.023173891209077008,0.19823548802578317,0.011821758622993206,0.012294927261189177,310.7010343920786,105.78402575479397,results/sparam_s2p_reduced_2026-06-09/Clarity_example_richring/s11_strength_0p25,results/sparam_s2p_reduced_2026-06-09/Clarity_example_richring/s11_strength_0p25/models/s_equivalent_s2p_reduced.sp

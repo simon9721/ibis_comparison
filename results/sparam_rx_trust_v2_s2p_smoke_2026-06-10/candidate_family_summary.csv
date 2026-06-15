@@ -1,0 +1,9 @@
+candidate_family,candidate_rows,candidate_pass,candidate_warn,candidate_fail,selected_channels,selected_pass,selected_warn,selected_fail,hspice_pass,hspice_warn,hspice_fail,hspice_error
+full_vector_fit,2,0,1,1,1,0,1,0,1,0,2,0
+full_vector_fit_enforced,1,0,0,1,0,0,0,0,0,0,0,0
+reduced_4p_reflection_s11_rc,1,0,0,1,0,0,0,0,0,0,0,0
+reduced_4p_rx_delayeq_rc_ring,1,0,0,1,0,0,0,0,0,0,0,0
+reduced_4p_rx_dominant_delay_rc,1,0,0,1,0,0,0,0,0,0,0,0
+reduced_s2p_reflection_s11_rc,1,0,0,1,0,0,0,0,0,0,0,0
+reduced_s2p_rx_delay_rc_ring,1,0,0,1,0,0,0,0,0,0,0,0
+reduced_s2p_rx_delayeq_rc_ring,1,0,0,1,0,0,0,0,0,0,0,0

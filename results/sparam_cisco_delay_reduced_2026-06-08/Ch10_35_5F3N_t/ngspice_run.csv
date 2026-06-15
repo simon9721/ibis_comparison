@@ -1,0 +1,4 @@
+case,return_code,run_error,raw,log
+audit_amp1p5_edge5_r50,-999,[WinError 5] Access is denied,results/sparam_cisco_delay_reduced_2026-06-08/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge5_r50.raw,results/sparam_cisco_delay_reduced_2026-06-08/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge5_r50.log
+audit_amp1p5_edge50_r50,-999,[WinError 5] Access is denied,results/sparam_cisco_delay_reduced_2026-06-08/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge50_r50.raw,results/sparam_cisco_delay_reduced_2026-06-08/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge50_r50.log
+audit_amp1p5_edge500_r50,-999,[WinError 5] Access is denied,results/sparam_cisco_delay_reduced_2026-06-08/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge500_r50.raw,results/sparam_cisco_delay_reduced_2026-06-08/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge500_r50.log

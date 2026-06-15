@@ -1,0 +1,3 @@
+candidate_family,candidate_rows,candidate_pass,candidate_warn,candidate_fail,selected_channels,selected_pass,selected_warn,selected_fail,hspice_pass,hspice_warn,hspice_fail,hspice_error
+reduced_4p_reflection,3,0,3,0,0,0,0,0,0,0,0,0
+reduced_4p_rx_dominant_delay_rc,3,0,3,0,3,0,3,0,0,3,0,0

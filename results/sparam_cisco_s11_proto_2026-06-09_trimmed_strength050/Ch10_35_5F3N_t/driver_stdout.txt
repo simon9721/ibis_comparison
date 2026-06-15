@@ -1,0 +1,4 @@
+C:\Users\sh3qm\code\ibis_comparison\results\sparam_cisco_s11_proto_2026-06-09_trimmed_strength050\Ch10_35_5F3N_t
+audit_amp1p5_edge5_r50 PASS rx_rmse 0.011240062899530074 tx_rmse 0.020648101499770255
+audit_amp1p5_edge50_r50 PASS rx_rmse 0.010933411890140004 tx_rmse 0.02004919664071414
+audit_amp1p5_edge500_r50 PASS rx_rmse 0.010073950557419022 tx_rmse 0.01816255874789993

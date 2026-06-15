@@ -1,0 +1,6 @@
+C:\Users\sh3qm\code\ibis_comparison\results\sparam_cisco_delay_parallel_batch_2026-06-08\Ch7_28_5F3N_t
+delay_ns 7.397575176846491 taus_ns [0.06953801 0.15432383 0.23139591 1.28161755] gains [0.27844073 0.06613326 0.43702718 0.09098222]
+tail_fast_ns [0.87505267] tail_slow_ns [2.210056] tail_gains [0.02616523]
+audit_amp1p5_edge5_r50 PASS rx_rmse 0.012469944000523116 rise_delta_ps 17.12259585923981
+audit_amp1p5_edge50_r50 PASS rx_rmse 0.012032222416594513 rise_delta_ps 1.6190828152513603
+audit_amp1p5_edge500_r50 PASS rx_rmse 0.012612407826574424 rise_delta_ps 10.442521194839571

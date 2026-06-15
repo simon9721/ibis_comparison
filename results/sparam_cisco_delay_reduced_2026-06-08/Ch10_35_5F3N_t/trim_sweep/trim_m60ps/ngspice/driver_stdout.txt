@@ -1,0 +1,4 @@
+C:\Users\sh3qm\code\ibis_comparison\results\sparam_cisco_delay_reduced_2026-06-08\Ch10_35_5F3N_t\trim_sweep\trim_m60ps\ngspice\ngspice_model_audit.csv
+audit_amp1p5_edge5_r50 rc= 0 finite= True rxmax= 0.6585156242526765 trouble= 
+audit_amp1p5_edge50_r50 rc= 0 finite= True rxmax= 0.6585156241759728 trouble= 
+audit_amp1p5_edge500_r50 rc= 0 finite= True rxmax= 0.6585156232648325 trouble= 

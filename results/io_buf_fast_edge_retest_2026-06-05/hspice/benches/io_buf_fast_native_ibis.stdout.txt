@@ -1,0 +1,7 @@
+.exe -i io_buf_fast_native_ibis.sp -o io_buf_fast_native_ibis
+.com -i io_buf_fast_native_ibis.sp -o io_buf_fast_native_ibis
+C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com -i io_buf_fast_native_ibis.sp -o io_buf_fast_native_ibis
+
+>info:         ***** hspice job concluded                                       
+
+>info:         ***** hspice job concluded

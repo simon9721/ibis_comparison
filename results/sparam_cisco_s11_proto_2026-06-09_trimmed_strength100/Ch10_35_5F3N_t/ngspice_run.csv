@@ -1,0 +1,4 @@
+case,return_code,raw,log,points,v(p1)_max_v,v(p3)_max_v
+audit_amp1p5_edge5_r50,0,results/sparam_cisco_s11_proto_2026-06-09_trimmed_strength100/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge5_r50.raw,results/sparam_cisco_s11_proto_2026-06-09_trimmed_strength100/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge5_r50.log,7096,0.7603394509366946,0.659302792431876
+audit_amp1p5_edge50_r50,0,results/sparam_cisco_s11_proto_2026-06-09_trimmed_strength100/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge50_r50.raw,results/sparam_cisco_s11_proto_2026-06-09_trimmed_strength100/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge50_r50.log,7071,0.760294763347386,0.659302604511929
+audit_amp1p5_edge500_r50,0,results/sparam_cisco_s11_proto_2026-06-09_trimmed_strength100/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge500_r50.raw,results/sparam_cisco_s11_proto_2026-06-09_trimmed_strength100/Ch10_35_5F3N_t/ngspice/audit_amp1p5_edge500_r50.log,7050,0.7598504800145567,0.659287827622203

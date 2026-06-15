@@ -1,0 +1,4 @@
+C:\Users\sh3qm\code\ibis_comparison\results\sparam_cisco_delay_parallel_batch_2026-06-08\Ch1_10_5F3N_t\hspice_native\native_hspice_audit.csv
+audit_amp1p5_edge5_r50 rc= reused tr0= True rise_delay_ps= 2426.511947595265 fit_rms=  poles= 
+audit_amp1p5_edge50_r50 rc= reused tr0= True rise_delay_ps= 2431.804035715941 fit_rms=  poles= 
+audit_amp1p5_edge500_r50 rc= reused tr0= True rise_delay_ps= 2437.151920264317 fit_rms=  poles= 

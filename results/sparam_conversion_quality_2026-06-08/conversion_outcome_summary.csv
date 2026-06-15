@@ -1,0 +1,7 @@
+metric,value
+channels_total,24
+selected,8
+no_candidate_passed,16
+hspice_correlation_rows,24
+hspice_correlation_ok,21
+hspice_correlation_missing_raw,3

@@ -1,0 +1,2 @@
+channel_id,source,path,relative_path,bytes,ports_from_suffix,status,ports,points,f_min_hz,f_max_hz,z0_summary,supported_v1
+Clarity_example_4669a7eb,repo_local,C:\Users\sh3qm\code\ibis_comparison\hspice\sparam\Clarity_example.S2P,hspice/sparam/Clarity_example.S2P,6728,2,ok,2,40,50000000.0,2000000000.0,50;50;50;50;50;50;50;50...,True

@@ -1,0 +1,11 @@
+candidate,kind,n_poles_real,n_poles_cmplx,init_pole_spacing,target_error,model_order_max
+vector_3r3c,fixed,3,3,lin,,
+vector_3r3c,fixed,3,3,log,,
+vector_5r5c,fixed,5,5,lin,,
+vector_5r5c,fixed,5,5,log,,
+vector_8r8c,fixed,8,8,lin,,
+vector_8r8c,fixed,8,8,log,,
+vector_10r10c,fixed,10,10,lin,,
+vector_10r10c,fixed,10,10,log,,
+vector_12r12c,fixed,12,12,lin,,
+vector_12r12c,fixed,12,12,log,,
