@@ -39,6 +39,7 @@ with physical clock-folded eye plots generated from the transient output.
 
 ## Where To Start
 
+- Current consolidated master report: [docs/MASTER_WORK_REPORT_2026-06-25.md](docs/MASTER_WORK_REPORT_2026-06-25.md)
 - AI-agent handoff/reference: [docs/AI_AGENT_REFERENCE.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/AI_AGENT_REFERENCE.md)
 - Current plan: [ibis_comparison_plan.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/ibis_comparison_plan.md)
 - Detailed progress report: [docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md)

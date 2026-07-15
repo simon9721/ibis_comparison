@@ -20,14 +20,17 @@ rsf_compare_log*.txt
 /eye/
 
 # Scratch workspace copies
+/.tmp/
 /experiments/
 /results/ngspice_lab_gui_run/
+/results/tmp_coeff_state_check/
 
 # Local tool/dependency installs used by Codex runs
 /.codex_deps/
 
 # Download caches inside generated studies
 /results/**/cache/*.zip
+/results/_golden_hspice_cache/
 
 # Archive sidecar metadata
 __MACOSX/
