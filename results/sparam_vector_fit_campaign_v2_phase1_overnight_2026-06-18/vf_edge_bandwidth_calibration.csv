@@ -1,0 +1,5 @@
+edge_ps,required_bandwidth_hz,bandwidth_class,hspice_pass,hspice_warn,hspice_fail,hspice_error,total,selected_hspice_pass,selected_hspice_warn,selected_hspice_fail,selected_hspice_error,selected_total
+5.0,70000000000.0,FAIL,0,12,6,0,18,0,4,2,0,6
+50.0,6999999999.999999,PASS,12,0,0,0,12,4,0,0,0,4
+50.0,6999999999.999999,WARN,0,0,6,0,6,0,0,2,0,2
+500.0,699999999.9999999,PASS,18,0,0,0,18,6,0,0,0,6

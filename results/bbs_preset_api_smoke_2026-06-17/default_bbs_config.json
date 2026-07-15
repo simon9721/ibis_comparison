@@ -1,0 +1,34 @@
+{
+  "_comment": "Delete any section to disable it. Values shown are defaults.",
+  "reciprocity_enforcement": {
+    "_comment": "Recover S_ij = S_ji symmetry.",
+    "type": "Average"
+  },
+  "sparameter_smoothing": {
+    "_comment": "matrix: All|Diagonal|Upper|Lower; fitting: mean|2nd|4th.",
+    "matrix": "All",
+    "fitting": "mean",
+    "window_width": 2
+  },
+  "low_frequency_extrapolation": {
+    "_comment": "Extrapolate toward DC using the lowest N sampling points.",
+    "sampling_points": 14
+  },
+  "abandon_lower_frequency": {
+    "_comment": "Discard data below this many MHz before extrapolation.",
+    "below_mhz": 1.0
+  },
+  "specify_dc_values": {
+    "_comment": "Provide DC values from a separate Touchstone file.",
+    "touchstone_file": ""
+  },
+  "interpolation": {
+    "_comment": "Add sampling points adaptively.",
+    "max_amplitude_change": 0.1,
+    "max_phase_change": 45.0
+  },
+  "causality_enforcement": {
+    "_comment": "matrix: All|Diagonal|Upper|Lower.",
+    "matrix": "All"
+  }
+}

@@ -1,0 +1,2 @@
+hspice_audit_class,channel_id,case,overlay_plot,hspice_audit_reason
+FAIL,Clarity_example_4e655cc2,audit_amp1p5_edge5_r50,results/sparam_bbs_integration_v1_2026-06-16/channels/Clarity_example_4e655cc2/plots/audit_amp1p5_edge5_r50_hspice_vs_ngspice.png,rx_active_rmse;rx_active_maxabs

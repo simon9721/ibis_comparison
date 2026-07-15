@@ -1,0 +1,16 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "23:16:20 06/17/2026 "
+* "netlist" "debug_local_lower.sp "
+* "runtitle" "* hspice clarity path debug"
+* time =    0.            
+* temperature =   27.0000        
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc=   1.0000p       
+.nodeset
++ p1 =   0.            
++ p2 =   0.            
++ src =   0.            
+***   END: Saved Operating Point ***                     

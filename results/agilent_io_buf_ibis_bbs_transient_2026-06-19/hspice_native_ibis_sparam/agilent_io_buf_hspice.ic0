@@ -1,0 +1,24 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "16:09:58 06/19/2026 "
+* "netlist" "agilent_io_buf_hspice.sp "
+* "runtitle" "* hspice: io_buf native ibis driving agilent_e5071b.s4p"
+* time =  0.000e+00       
+* temperature =  2.700e+01       
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc= 1.000e-12       
+.nodeset
++ dig_q = 5.000e-01       
++ en_sig = 3.300e+00       
++ gc_ref = 0.000e+00       
++ in_dig = 0.000e+00       
++ p1 = 2.017e-09       
++ p2 = 2.182e-11       
++ p3 =-1.046e-25       
++ p4 =-6.329e-13       
++ pc_ref = 3.300e+00       
++ pd_ref = 0.000e+00       
++ pu_ref = 3.300e+00       
+***   END: Saved Operating Point ***                     

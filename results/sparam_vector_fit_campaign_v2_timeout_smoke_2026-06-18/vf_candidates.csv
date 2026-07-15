@@ -1,0 +1,2 @@
+candidate,candidate_id_example,kind,n_poles_real,n_poles_cmplx,init_pole_spacing,target_error,model_order_max,fit_constant,fit_proportional,enforce_dc,auto_n_poles_init_real,auto_n_poles_init_cmplx,auto_n_poles_add,auto_iters_start,auto_iters_inter,auto_iters_final,auto_alpha,auto_gamma,auto_nu_samples,diagnostic_only
+vector_3r3c,<preprocess>_vector_3r3c_lin,fixed,3,3,lin,,,True,False,True,,,,,,,,,,False

@@ -1,0 +1,10 @@
+validation_split,independent_class,hspice_pass,hspice_warn,hspice_fail,hspice_error,total,false_pass_rate
+all,PASS,1,0,2,0,3,0.6666666666666666
+all,WARN,0,0,0,0,0,
+all,FAIL,1,0,2,0,3,
+calibration,PASS,1,0,2,0,3,0.6666666666666666
+calibration,WARN,0,0,0,0,0,
+calibration,FAIL,1,0,2,0,3,
+holdout,PASS,0,0,0,0,0,
+holdout,WARN,0,0,0,0,0,
+holdout,FAIL,0,0,0,0,0,

@@ -1,0 +1,16 @@
+candidate,candidate_id_example,kind,n_poles_real,n_poles_cmplx,init_pole_spacing,target_error,model_order_max,fit_constant,fit_proportional,enforce_dc,auto_n_poles_init_real,auto_n_poles_init_cmplx,auto_n_poles_add,auto_iters_start,auto_iters_inter,auto_iters_final,auto_alpha,auto_gamma,auto_nu_samples,diagnostic_only
+auto_fit_default,<preprocess>_auto_fit_default,auto,,,,0.01,100,True,False,True,,,,,,,,,,False
+auto_fit_tight,<preprocess>_auto_fit_tight,auto,,,,0.005,80,True,False,True,,,,,,,,,,False
+auto_fit_low_order,<preprocess>_auto_fit_low_order,auto,,,,0.01,40,True,False,True,2,2,2,2,2,3,,,,False
+auto_fit_high_order,<preprocess>_auto_fit_high_order,auto,,,,0.002,120,True,False,True,4,4,4,3,4,6,,,,False
+vector_3r3c,<preprocess>_vector_3r3c_lin,fixed,3,3,lin,,,True,False,True,,,,,,,,,,False
+vector_3r3c,<preprocess>_vector_3r3c_log,fixed,3,3,log,,,True,False,True,,,,,,,,,,False
+vector_5r5c,<preprocess>_vector_5r5c_lin,fixed,5,5,lin,,,True,False,True,,,,,,,,,,False
+vector_5r5c,<preprocess>_vector_5r5c_log,fixed,5,5,log,,,True,False,True,,,,,,,,,,False
+vector_8r8c,<preprocess>_vector_8r8c_lin,fixed,8,8,lin,,,True,False,True,,,,,,,,,,False
+vector_8r8c,<preprocess>_vector_8r8c_log,fixed,8,8,log,,,True,False,True,,,,,,,,,,False
+vector_12r12c,<preprocess>_vector_12r12c_lin,fixed,12,12,lin,,,True,False,True,,,,,,,,,,False
+vector_12r12c,<preprocess>_vector_12r12c_log,fixed,12,12,log,,,True,False,True,,,,,,,,,,False
+vector_0r4c,<preprocess>_vector_0r4c_lin,fixed,,4,lin,,,True,False,True,,,,,,,,,,False
+vector_2r6c,<preprocess>_vector_2r6c_lin,fixed,2,6,lin,,,True,False,True,,,,,,,,,,False
+vector_4r8c,<preprocess>_vector_4r8c_lin,fixed,4,8,lin,,,True,False,True,,,,,,,,,,False

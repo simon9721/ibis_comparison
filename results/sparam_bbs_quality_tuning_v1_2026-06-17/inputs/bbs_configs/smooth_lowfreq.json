@@ -1,0 +1,10 @@
+{
+  "low_frequency_extrapolation": {
+    "sampling_points": 14
+  },
+  "sparameter_smoothing": {
+    "fitting": "mean",
+    "matrix": "All",
+    "window_width": 2
+  }
+}

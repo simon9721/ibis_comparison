@@ -1,0 +1,9 @@
+candidate,kind,n_poles_real,n_poles_cmplx,init_pole_spacing,target_error,model_order_max
+auto_fit_default,auto,,,,0.01,100
+auto_fit_tight,auto,,,,0.005,80
+vector_3r3c,fixed,3,3,lin,,
+vector_3r3c,fixed,3,3,log,,
+vector_5r5c,fixed,5,5,lin,,
+vector_5r5c,fixed,5,5,log,,
+vector_8r8c,fixed,8,8,lin,,
+vector_8r8c,fixed,8,8,log,,

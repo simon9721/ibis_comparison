@@ -20,6 +20,7 @@ import matplotlib
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MultipleLocator
 import numpy as np
 
 
@@ -29,15 +30,32 @@ if str(SCRIPT_DIR) not in sys.path:
     sys.path.insert(0, str(SCRIPT_DIR))
 
 from eye_diagram import parse_hspice_tr0, parse_ngspice_raw  # noqa: E402
+from bbs_extract import run_extraction as run_bbs_extraction  # noqa: E402
+from hspice_reference_cache import cache_dir, reference_signature, restore as restore_hspice_cache, save as save_hspice_cache  # noqa: E402
+from spice_tool_paths import default_hspice, default_ngspice  # noqa: E402
 
 
 DEFAULT_STUDY_DIR = ROOT / "results" / "sparam_conversion_quality_2026-06-08"
-DEFAULT_NGSPICE = Path(
-    r"\\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\ngspice-46_64\Spice64\bin\ngspice_con.exe"
-)
-DEFAULT_HSPICE = Path(r"C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com")
+DEFAULT_NGSPICE = default_ngspice(console=True)
+DEFAULT_HSPICE = default_hspice()
+DEFAULT_BBS = Path(r"C:\Cadence\Sigrity2024.1\tools\bin\BroadbandSPICE.exe")
 TOUCHSTONE_RE = re.compile(r"\.[sS](\d+)[pP]$")
 DERIVED_TOUCHSTONE_NAMES = {"ch_model_fit.s2p"}
+BBS_PRESET_CONFIGS: dict[str, dict[str, object]] = {
+    "clean": {},
+    "reciprocity": {"reciprocity_enforcement": {"type": "Average"}},
+    "lowfreq": {"low_frequency_extrapolation": {"sampling_points": 14}},
+    "smoothing": {"sparameter_smoothing": {"matrix": "All", "fitting": "mean", "window_width": 2}},
+    "causality": {"causality_enforcement": {"matrix": "All"}},
+    "recip_lowfreq": {
+        "reciprocity_enforcement": {"type": "Average"},
+        "low_frequency_extrapolation": {"sampling_points": 14},
+    },
+    "smooth_lowfreq": {
+        "sparameter_smoothing": {"matrix": "All", "fitting": "mean", "window_width": 2},
+        "low_frequency_extrapolation": {"sampling_points": 14},
+    },
+}
 TRUST_CLASS_RANK = {"PASS": 0, "WARN": 1, "FAIL": 2}
 REDUCED_CANDIDATES = {
     "reduced_s2p_delay_rc",
@@ -531,6 +549,11 @@ def candidate_specs(selected: str | None = None) -> list[tuple[str, int | None]]
 
 
 def candidate_specs_for_channel(args: argparse.Namespace, nports: int) -> list[tuple[str, int | None]]:
+    if getattr(args, "enable_bbs", False) and not args.candidates and not args.fast_calibration_profile:
+        if nports == 4:
+            return candidate_specs("reduced_4p_rx_dominant_delay_rc,reduced_4p_rx_delayeq_rc_ring,reduced_4p_reflection_s11_rc")
+        if nports == 2:
+            return candidate_specs("vector_3r3c,reduced_s2p_rx_delayeq_rc_ring,reduced_s2p_reflection_s11_rc")
     if not args.fast_calibration_profile:
         return candidate_specs(args.candidates)
     if args.candidates:
@@ -1503,6 +1526,12 @@ def audit_cases(stop_ns: float = 12.0) -> list[SmokeCase]:
     ]
 
 
+def selected_audit_cases(args: argparse.Namespace) -> list[SmokeCase]:
+    cases = audit_cases(args.audit_stop_ns)
+    max_cases = int(getattr(args, "max_audit_cases", 0) or 0)
+    return cases[:max_cases] if max_cases > 0 else cases
+
+
 def source_lines(case: SmokeCase, drive_node: str = "p1") -> tuple[list[str], str]:
     edge = case.edge_ps * 1e-12
     amp = case.amplitude_v
@@ -1896,7 +1925,11 @@ def smoke_prefix_gate_warnings(row: dict[str, object], args: argparse.Namespace,
 def write_hspice_deck(deck: Path, touchstone: Path, nports: int, case: SmokeCase) -> None:
     src, _ = source_lines(case, "p1")
     stop = case.stop_ns * 1e-9
-    tstone = os.path.relpath(touchstone.resolve(), deck.parent.resolve()).replace("\\", "/")
+    deck.parent.mkdir(parents=True, exist_ok=True)
+    local_touchstone = deck.parent / f"input_channel.s{nports}p"
+    if touchstone.resolve() != local_touchstone.resolve():
+        shutil.copy2(touchstone, local_touchstone)
+    tstone = local_touchstone.name
     if nports == 2:
         channel = ["Schannel  p1  p2  0  MNAME=ch_model", "Rterm  p2  0  50"]
         probes = ".probe tran V(p1) V(p2) V(src)"
@@ -1931,7 +1964,6 @@ def write_hspice_deck(deck: Path, touchstone: Path, nports: int, case: SmokeCase
             "",
         ]
     )
-    deck.parent.mkdir(parents=True, exist_ok=True)
     deck.write_text(text, encoding="ascii")
 
 
@@ -1939,6 +1971,34 @@ def run_hspice_case(hspice: Path, touchstone: Path, nports: int, out_dir: Path, 
     deck = out_dir / f"{case.name}_hspice.sp"
     prefix = out_dir / f"{case.name}_hspice"
     write_hspice_deck(deck, touchstone, nports, case)
+    deck_text = deck.read_text(encoding="ascii")
+    signature_id, signature = reference_signature(
+        deck_text,
+        [touchstone],
+        {
+            "family": "sparam_native_s",
+            "case": case.name,
+            "nports": nports,
+        },
+    )
+    h_cache = cache_dir("sparam_native_s", f"{safe_id(touchstone)}_{case.name}", signature_id)
+    if restore_hspice_cache(h_cache, out_dir, prefix.name, deck_text):
+        return {
+            "case": case.name,
+            "hspice_return_code": 0,
+            "hspice_reference": "cache",
+            "hspice_tr0": rel(prefix.with_suffix(".tr0")),
+            "hspice_lis": rel(prefix.with_suffix(".lis")),
+        }
+    if prefix.with_suffix(".tr0").exists():
+        save_hspice_cache(h_cache, out_dir, prefix.name, deck_text, signature)
+        return {
+            "case": case.name,
+            "hspice_return_code": 0,
+            "hspice_reference": "existing",
+            "hspice_tr0": rel(prefix.with_suffix(".tr0")),
+            "hspice_lis": rel(prefix.with_suffix(".lis")),
+        }
     try:
         completed = subprocess.run(
             [str(hspice), "-i", deck.name, "-o", prefix.name],
@@ -1951,7 +2011,15 @@ def run_hspice_case(hspice: Path, touchstone: Path, nports: int, out_dir: Path, 
         rc = completed.returncode
     except Exception as exc:
         return {"case": case.name, "hspice_return_code": -999, "hspice_error": str(exc), "hspice_tr0": rel(prefix.with_suffix(".tr0"))}
-    return {"case": case.name, "hspice_return_code": rc, "hspice_tr0": rel(prefix.with_suffix(".tr0")), "hspice_lis": rel(prefix.with_suffix(".lis"))}
+    if rc == 0:
+        save_hspice_cache(h_cache, out_dir, prefix.name, deck_text, signature)
+    return {
+        "case": case.name,
+        "hspice_return_code": rc,
+        "hspice_reference": "run",
+        "hspice_tr0": rel(prefix.with_suffix(".tr0")),
+        "hspice_lis": rel(prefix.with_suffix(".lis")),
+    }
 
 
 def common_grid_error(t_ref: np.ndarray, y_ref: np.ndarray, t_dut: np.ndarray, y_dut: np.ndarray) -> tuple[float, float]:
@@ -2498,6 +2566,58 @@ def plot_transient_overlay(h_tr0: Path, n_raw: Path, nports: int, path: Path, ti
     plt.close(fig)
 
 
+def voltage_axis_limits(values: list[np.ndarray], min_tick_v: float = 0.001) -> tuple[float, float, float]:
+    chunks = [np.asarray(v, dtype=float)[np.isfinite(v)] for v in values if len(v)]
+    if not chunks:
+        return -min_tick_v, min_tick_v, min_tick_v
+    finite_values = np.concatenate(chunks)
+    if finite_values.size == 0:
+        return -min_tick_v, min_tick_v, min_tick_v
+    vmin = float(np.nanmin(finite_values))
+    vmax = float(np.nanmax(finite_values))
+    span = max(vmax - vmin, min_tick_v)
+    padding = max(0.08 * span, min_tick_v)
+    lo = math.floor((vmin - padding) / min_tick_v) * min_tick_v
+    hi = math.ceil((vmax + padding) / min_tick_v) * min_tick_v
+    tick = max(min_tick_v, math.ceil(((hi - lo) / 8.0) / min_tick_v) * min_tick_v)
+    return lo, hi, tick
+
+
+def plot_transient_side_overlay(
+    h_tr0: Path,
+    n_raw: Path,
+    nports: int,
+    path: Path,
+    title: str,
+    side: str,
+    dut_label: str = "ngspice converted",
+) -> None:
+    h = parse_hspice_tr0(h_tr0)
+    n = parse_ngspice_raw(n_raw)
+    if side == "rx":
+        sig = "v(p2)" if nports == 2 else "v(p3)"
+        side_title = "RX / Output Port"
+    elif side == "tx":
+        sig = "v(p1)"
+        side_title = "TX / Input Port"
+    else:
+        raise ValueError(side)
+    fig, ax = plt.subplots(figsize=(9, 4.8), constrained_layout=True)
+    ax.plot(h["time"] * 1e9, h[sig], label="HSPICE native S", linewidth=1.9)
+    ax.plot(n["time"] * 1e9, n[sig], "--", label=dut_label, linewidth=1.6)
+    lo, hi, tick = voltage_axis_limits([h[sig], n[sig]], 0.001)
+    ax.set_ylim(lo, hi)
+    ax.yaxis.set_major_locator(MultipleLocator(tick))
+    ax.set_title(f"{title} - {side_title}", loc="left", fontweight="bold")
+    ax.set_xlabel("Time (ns)")
+    ax.set_ylabel("Voltage (V)")
+    ax.grid(True, color="#d7dde6")
+    ax.legend(frameon=False)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(path, dpi=170)
+    plt.close(fig)
+
+
 def write_audit_overlay_pdfs(study_dir: Path, corr: list[dict[str, object]]) -> None:
     from matplotlib.backends.backend_pdf import PdfPages
 
@@ -2992,7 +3112,318 @@ def copy_selected_model(source_text: object, destination: Path) -> str:
     return rel(destination)
 
 
-def run_channel(args: argparse.Namespace, manifest_row: dict[str, str], all_metrics: list[dict[str, object]], smoke_rows_all: list[dict[str, object]], ranking_rows: list[dict[str, object]], corr_rows: list[dict[str, object]]) -> None:
+def csv_tokens(value: object, default: tuple[str, ...]) -> list[str]:
+    text = str(value or "").strip()
+    if not text:
+        return list(default)
+    return [item.strip() for item in text.split(",") if item.strip()]
+
+
+def bbs_preset_tokens(value: object) -> list[str]:
+    presets = csv_tokens(value, ("clean",))
+    unknown = [preset for preset in presets if preset not in BBS_PRESET_CONFIGS]
+    if unknown:
+        raise StudyError(f"Unknown BBS preset(s): {', '.join(unknown)}. Known presets: {', '.join(sorted(BBS_PRESET_CONFIGS))}")
+    return presets
+
+
+def write_bbs_preset_config(study_dir: Path, preset: str) -> tuple[Path, dict[str, object]]:
+    if preset not in BBS_PRESET_CONFIGS:
+        raise StudyError(f"Unknown BBS preset: {preset}")
+    config = BBS_PRESET_CONFIGS[preset]
+    config_dir = study_dir / "inputs" / "bbs_configs"
+    config_dir.mkdir(parents=True, exist_ok=True)
+    path = config_dir / f"{preset}.json"
+    path.write_text(json.dumps(config, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return path, config
+
+
+def find_subckt_name(spice_file: Path) -> str:
+    pattern = re.compile(r"^\s*\.subckt\s+(\S+)", re.IGNORECASE)
+    for line in spice_file.read_text(encoding="utf-8", errors="replace").splitlines():
+        match = pattern.match(line)
+        if match:
+            return match.group(1)
+    raise StudyError(f"No .subckt found in BBS SPICE file: {spice_file}")
+
+
+def write_bbs_ngspice_wrapper(wrapper: Path, bbs_spice: Path, nports: int) -> str:
+    subckt = find_subckt_name(bbs_spice)
+    include = str(bbs_spice.resolve()).replace("\\", "/")
+    if nports == 2:
+        pins = "p1 p2"
+        xline = f"Xbbs p1 p2 0 {subckt}"
+    elif nports == 4:
+        pins = "p1 p2 p3 p4"
+        xline = f"Xbbs p1 p2 p3 p4 0 {subckt}"
+    else:
+        raise ValueError(nports)
+    text = "\n".join(
+        [
+            "* ngspice wrapper for BroadbandSPICE General SPICE output",
+            f".include '{include}'",
+            f".subckt s_equivalent {pins}",
+            xline,
+            ".ends s_equivalent",
+            "",
+        ]
+    )
+    wrapper.parent.mkdir(parents=True, exist_ok=True)
+    wrapper.write_text(text, encoding="ascii")
+    return subckt
+
+
+def count_bbs_model_order(spice_file: Path) -> int:
+    try:
+        text = spice_file.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return 999
+    cap_states = sum(1 for line in text.splitlines() if re.match(r"^\s*C\S+", line, re.IGNORECASE))
+    laplace_terms = sum(1 for line in text.splitlines() if "LAPLACE" in line.upper())
+    controlled_terms = sum(1 for line in text.splitlines() if re.match(r"^\s*[GFEH]\S+", line, re.IGNORECASE))
+    return max(1, cap_states + laplace_terms, controlled_terms)
+
+
+def interpolate_s_matrices(src_freqs: np.ndarray, src_s: np.ndarray, target_freqs: np.ndarray) -> np.ndarray:
+    if len(src_freqs) == len(target_freqs) and np.allclose(src_freqs, target_freqs):
+        return np.asarray(src_s, dtype=complex)
+    out = np.empty((len(target_freqs), src_s.shape[1], src_s.shape[2]), dtype=complex)
+    for i in range(src_s.shape[1]):
+        for j in range(src_s.shape[2]):
+            path = np.asarray(src_s[:, i, j], dtype=complex)
+            out[:, i, j] = np.interp(target_freqs, src_freqs, path.real) + 1j * np.interp(target_freqs, src_freqs, path.imag)
+    return out
+
+
+def bbs_fitted_metrics(nw, fitted_touchstone: Path | None, high_fmax: float, dense_samples: int) -> dict[str, object]:
+    if fitted_touchstone is None or not fitted_touchstone.exists():
+        return {
+            "fit_complex_rms": float("inf"),
+            "fit_complex_max": float("inf"),
+            "max_sv_input_samples": float("inf"),
+            "max_sv_high": float("inf"),
+            "math_fail_reasons_extra": "bbs_fitted_touchstone_missing",
+        }
+    skrf, _ = ensure_skrf()
+    fitted = skrf.Network(str(fitted_touchstone))
+    if fitted.nports != nw.nports:
+        return {
+            "fit_complex_rms": float("inf"),
+            "fit_complex_max": float("inf"),
+            "max_sv_input_samples": float("inf"),
+            "max_sv_high": float("inf"),
+            "math_fail_reasons_extra": "bbs_fitted_touchstone_port_mismatch",
+        }
+    freqs = np.asarray(nw.frequency.f, dtype=float)
+    fitted_freqs = np.asarray(fitted.frequency.f, dtype=float)
+    fitted_at_samples = interpolate_s_matrices(fitted_freqs, np.asarray(fitted.s), freqs)
+    row = frequency_metrics(nw, fitted_at_samples)
+    rx_out, rx_in = dominant_rx_path(nw.nports)
+    refl_out, refl_in = input_reflection_path(nw.nports)
+    row.update(
+        prefixed_metrics(
+            "rx",
+            one_path_frequency_metrics(freqs, np.asarray(nw.s[:, rx_out, rx_in], dtype=complex), fitted_at_samples[:, rx_out, rx_in]),
+        )
+    )
+    row.update(
+        prefixed_metrics(
+            "reflection",
+            one_path_frequency_metrics(freqs, np.asarray(nw.s[:, refl_out, refl_in], dtype=complex), fitted_at_samples[:, refl_out, refl_in]),
+        )
+    )
+    sample_sv, sample_idx = max_singular_from_mats(fitted_at_samples)
+    row["max_sv_input_samples"] = sample_sv
+    row["max_sv_input_sample_freq_hz"] = float(freqs[sample_idx])
+    dense_freqs = np.linspace(float(freqs[0]), min(high_fmax, float(freqs[-1])), max(2, min(dense_samples, len(freqs) * 4)))
+    dense_mats = interpolate_s_matrices(fitted_freqs, np.asarray(fitted.s), dense_freqs)
+    dense_sv, dense_idx = max_singular_from_mats(dense_mats)
+    row["max_sv_high"] = dense_sv
+    row["max_sv_high_freq_hz"] = float(dense_freqs[dense_idx])
+    row["sampled_is_passive"] = bool(sample_sv <= 1.0 + 1e-9)
+    row["is_passive"] = bool(dense_sv <= 1.0 + 1e-9)
+    row["math_fail_reasons_extra"] = ""
+    return row
+
+
+def bbs_mode_candidate(mode: str, circuit_type: str, preset: str) -> str:
+    return f"bbs_{mode}_{circuit_type}_{preset}"
+
+
+def build_bbs_candidate_rows(
+    args: argparse.Namespace,
+    channel_path: Path,
+    nports: int,
+    base: dict[str, object],
+    nw,
+    high_fmax: float,
+    channel_id: str,
+    channel_dir: Path,
+) -> tuple[list[dict[str, object]], list[dict[str, object]]]:
+    if not getattr(args, "enable_bbs", False):
+        return [], []
+    modes = csv_tokens(getattr(args, "bbs_modes", ""), ("passivity2",))
+    circuit_types = csv_tokens(getattr(args, "bbs_circuit_types", ""), ("hspice", "gspice"))
+    presets = bbs_preset_tokens(getattr(args, "bbs_preset_grid", "clean"))
+    preset_configs = {
+        preset: write_bbs_preset_config(args.study_dir.resolve(), preset)
+        for preset in presets
+    }
+    candidate_rows: list[dict[str, object]] = []
+    extraction_rows: list[dict[str, object]] = []
+    for preset in presets:
+        config_path, config_data = preset_configs[preset]
+        config_arg = None if preset == "clean" else config_path
+        config_json = json.dumps(config_data, sort_keys=True)
+        for mode in modes:
+            for circuit_type in circuit_types:
+                candidate = bbs_mode_candidate(mode, circuit_type, preset)
+                work_dir = channel_dir / "bbs" / preset / mode / circuit_type
+                work_dir.mkdir(parents=True, exist_ok=True)
+                local_touchstone = work_dir / channel_path.name
+                shutil.copy2(channel_path, local_touchstone)
+                manifest_path = work_dir / "bbs_manifest.csv"
+                started = time.perf_counter()
+                try:
+                    rows = run_bbs_extraction(
+                        local_touchstone,
+                        mode=mode,
+                        circuit_type=circuit_type,
+                        max_iter=args.bbs_max_iter,
+                        error=args.bbs_error,
+                        config=config_arg,
+                        exe=args.bbs_exe,
+                        manifest=manifest_path,
+                        timeout=args.bbs_timeout,
+                    )
+                    bbs_raw = rows[0] if rows else {"success": False, "return_code": -999, "stderr": "no BBS result row"}
+                except Exception as exc:
+                    bbs_raw = {
+                        "input": str(local_touchstone),
+                        "mode": mode,
+                        "circuit_type": circuit_type,
+                        "return_code": -999,
+                        "success": False,
+                        "result_dir": str(work_dir),
+                        "circuit_file": "",
+                        "fitted_touchstone": "",
+                        "error_order_file": "",
+                        "generated_files": "",
+                        "stderr": str(exc),
+                        "elapsed_s": time.perf_counter() - started,
+                    }
+                circuit_file = Path(str(bbs_raw.get("circuit_file", ""))) if bbs_raw.get("circuit_file") else None
+                fitted_touchstone = Path(str(bbs_raw.get("fitted_touchstone", ""))) if bbs_raw.get("fitted_touchstone") else None
+                error_order_file = Path(str(bbs_raw.get("error_order_file", ""))) if bbs_raw.get("error_order_file") else None
+                selected_copy = ""
+                if circuit_file and circuit_file.exists():
+                    selected_copy = copy_selected_model(circuit_file, args.study_dir.resolve() / "selected_models" / "bbs" / channel_id / candidate / circuit_file.name)
+                bbs_row: dict[str, object] = {
+                    **base,
+                    "candidate": candidate,
+                    "bbs_mode": mode,
+                    "bbs_circuit_type": circuit_type,
+                    "bbs_preset": preset,
+                    "bbs_config_file": rel(config_path),
+                    "bbs_config_json": config_json,
+                    "bbs_status": "ok" if bbs_raw.get("success") else "failed",
+                    "bbs_return_code": bbs_raw.get("return_code", ""),
+                    "bbs_timed_out": bbs_raw.get("timed_out", ""),
+                    "bbs_elapsed_s": bbs_raw.get("elapsed_s", ""),
+                    "bbs_exe": bbs_raw.get("exe", str(args.bbs_exe)),
+                    "bbs_input_copy": rel(local_touchstone),
+                    "bbs_manifest": rel(manifest_path) if manifest_path.exists() else "",
+                    "bbs_result_dir": rel(Path(str(bbs_raw.get("result_dir", work_dir)))),
+                    "bbs_circuit_file": rel(circuit_file) if circuit_file and circuit_file.exists() else "",
+                    "bbs_selected_model_copy": selected_copy,
+                    "bbs_fitted_touchstone": rel(fitted_touchstone) if fitted_touchstone and fitted_touchstone.exists() else "",
+                    "bbs_error_order_file": rel(error_order_file) if error_order_file and error_order_file.exists() else "",
+                    "bbs_generated_files": ";".join(rel(Path(p)) for p in str(bbs_raw.get("generated_files", "")).split(";") if p),
+                    "bbs_stdout_tail": bbs_raw.get("stdout", ""),
+                    "bbs_stderr_tail": bbs_raw.get("stderr", ""),
+                }
+                extraction_rows.append(bbs_row)
+                if circuit_type != "gspice" or not circuit_file or not circuit_file.exists():
+                    continue
+                wrapper = channel_dir / "models" / candidate / f"{channel_id}_{candidate}_ngspice_wrapper.sp"
+                try:
+                    subckt_name = write_bbs_ngspice_wrapper(wrapper, circuit_file, nports)
+                    bbs_row["bbs_subckt_name"] = subckt_name
+                    bbs_row["ngspice_model_spice"] = rel(wrapper)
+                    metrics = bbs_fitted_metrics(nw, fitted_touchstone, high_fmax, args.dense_samples)
+                    model_order = count_bbs_model_order(circuit_file)
+                    row = {
+                        **base,
+                        "candidate": candidate,
+                        "candidate_family": "bbs_full_model",
+                        "stage": "raw",
+                        "fit_source": "broadband_spice",
+                        "use_scope": "general_multiport",
+                        "view_role": "full_model",
+                        "bbs_mode": mode,
+                        "bbs_circuit_type": circuit_type,
+                        "bbs_preset": preset,
+                        "bbs_config_file": rel(config_path),
+                        "bbs_config_json": config_json,
+                        "bbs_subckt_name": subckt_name,
+                        "bbs_circuit_file": rel(circuit_file),
+                        "bbs_selected_model_copy": selected_copy,
+                        "bbs_fitted_touchstone": rel(fitted_touchstone) if fitted_touchstone and fitted_touchstone.exists() else "",
+                        "bbs_error_order_file": rel(error_order_file) if error_order_file and error_order_file.exists() else "",
+                        "spice_file": rel(wrapper),
+                        "model_order": model_order,
+                        "fit_warnings": "",
+                    }
+                    row.update(metrics)
+                    row["math_pass"] = candidate_passes_math(
+                        row,
+                        args.rms_threshold,
+                        args.mag_db_max_threshold,
+                        args.group_delay_rms_ps_threshold,
+                        args.max_low_freq_start_hz,
+                        args.min_frequency_points,
+                        args.max_sv_high_threshold,
+                    ) and not row.get("math_fail_reasons_extra")
+                    failures = math_gate_failures(
+                        row,
+                        args.rms_threshold,
+                        args.mag_db_max_threshold,
+                        args.group_delay_rms_ps_threshold,
+                        args.max_low_freq_start_hz,
+                        args.min_frequency_points,
+                        args.max_sv_high_threshold,
+                    )
+                    if row.get("math_fail_reasons_extra"):
+                        failures.append(str(row["math_fail_reasons_extra"]))
+                    row["math_fail_reasons"] = ";".join(sorted(set(failures)))
+                except Exception as exc:
+                    row = {
+                        **base,
+                        "candidate": candidate,
+                        "candidate_family": "bbs_full_model",
+                        "stage": "raw",
+                        "fit_source": "broadband_spice",
+                        "use_scope": "general_multiport",
+                        "view_role": "full_model",
+                        "bbs_mode": mode,
+                        "bbs_circuit_type": circuit_type,
+                        "bbs_preset": preset,
+                        "bbs_config_file": rel(config_path),
+                        "bbs_config_json": config_json,
+                        "bbs_circuit_file": rel(circuit_file),
+                        "math_pass": False,
+                        "math_fail_reasons": "bbs_wrapper_error",
+                        "fit_error": str(exc),
+                        "spice_file": "",
+                        "model_order": 999,
+                        "fit_complex_rms": float("inf"),
+                        "max_sv_high": float("inf"),
+                    }
+                candidate_rows.append(row)
+    return candidate_rows, extraction_rows
+
+
+def run_channel(args: argparse.Namespace, manifest_row: dict[str, str], all_metrics: list[dict[str, object]], smoke_rows_all: list[dict[str, object]], ranking_rows: list[dict[str, object]], corr_rows: list[dict[str, object]], bbs_candidate_rows: list[dict[str, object]] | None = None) -> None:
     skrf, _ = ensure_skrf(args.skrf_target)
     channel_path = Path(manifest_row["path"]).resolve()
     channel_id = manifest_row["channel_id"]
@@ -3123,19 +3554,63 @@ def run_channel(args: argparse.Namespace, manifest_row: dict[str, str], all_metr
             family = name if name in NAMED_NON_VECTOR_CANDIDATES else "full_vector_fit"
             candidate_rows.append({**base, "candidate": name, "candidate_family": family, "stage": "raw", "math_pass": False, "math_fail_reasons": "fit_error", "fit_error": str(exc)})
 
+    bbs_rows, bbs_extractions = build_bbs_candidate_rows(args, channel_path, nports, base, nw, high_fmax, channel_id, channel_dir)
+    candidate_rows.extend(bbs_rows)
+    if bbs_candidate_rows is not None:
+        bbs_candidate_rows.extend(bbs_extractions)
+
+    bbs_smoke_top_n = int(getattr(args, "bbs_smoke_top_n", 4) or 0)
+    bbs_smoke_candidates: set[str] = set()
+    bbs_candidate_metric_rows = [
+        row
+        for row in candidate_rows
+        if str(row.get("candidate_family", "")).startswith("bbs_")
+        and row.get("spice_file")
+    ]
+    if bbs_candidate_metric_rows and bbs_smoke_top_n > 0:
+        bbs_smoke_candidates = {
+            str(row.get("candidate", ""))
+            for row in sorted(
+                bbs_candidate_metric_rows,
+                key=lambda item: (
+                    0 if bool(item.get("math_pass")) else 1,
+                    len([part for part in str(item.get("math_fail_reasons", "") or "").split(";") if part]),
+                    quality_score(item),
+                    finite_metric(item, "model_order", 999.0),
+                ),
+            )[:bbs_smoke_top_n]
+        }
+    else:
+        bbs_smoke_candidates = {str(row.get("candidate", "")) for row in bbs_candidate_metric_rows}
+
     for row in candidate_rows:
         row_smoke_rows: list[dict[str, object]] = []
         view_math_ok = any(
             not view_math_gate_failures(row, args, view)
             for view in ("rx", "reflection", "full_model")
         ) or not rx_voltage_shape_math_failures(row, args)
-        if (row.get("math_pass") or view_math_ok) and not args.skip_ngspice:
+        spice_text = str(row.get("spice_file", "") or "")
+        family = str(row.get("candidate_family", "") or "")
+        is_bbs = family.startswith("bbs_")
+        bbs_not_smoked = (
+            is_bbs
+            and bool(spice_text)
+            and not args.skip_ngspice
+            and str(row.get("candidate", "")) not in bbs_smoke_candidates
+        )
+        should_run_ngspice = (
+            bool(spice_text)
+            and not args.skip_ngspice
+            and (bool(row.get("math_pass")) or view_math_ok or is_bbs)
+            and not bbs_not_smoked
+        )
+        if should_run_ngspice:
             smoke_dir = channel_dir / "ngspice_smoke" / str(row["candidate"])
             case_stop_ns = max(args.smoke_stop_ns, float(row.get("delay_estimate_ns") or 0.0) + 12.0)
             smoke_rows = run_ngspice_cases(args.ngspice.resolve(), ROOT / str(row["spice_file"]), nports, smoke_dir, smoke_cases(case_stop_ns), args.sim_timeout)
             for smoke in smoke_rows:
                 annotate_smoke_confidence(smoke, args)
-                smoke_rows_all.append({**base, "candidate": row["candidate"], **smoke})
+                smoke_rows_all.append({**base, "candidate": row["candidate"], "candidate_family": row.get("candidate_family", ""), **smoke})
             row_smoke_rows = smoke_rows
             row["ngspice_pass"] = all(not smoke_gate_failures(smoke, args) for smoke in smoke_rows)
             row["ngspice_cases"] = len(smoke_rows)
@@ -3184,7 +3659,12 @@ def run_channel(args: argparse.Namespace, manifest_row: dict[str, str], all_metr
             )
         else:
             row["ngspice_pass"] = False if not row.get("math_pass") else "skipped"
-        row["ngspice_fail_reasons"] = "" if row_smoke_rows else ("ngspice_skipped" if row.get("math_pass") else "")
+        if bbs_not_smoked:
+            row["ngspice_pass"] = "skipped_bbs_not_top_n"
+            row["math_fail_reasons"] = append_reason(row.get("math_fail_reasons", ""), "bbs_smoke_not_in_top_n")
+            row["ngspice_fail_reasons"] = "bbs_smoke_not_in_top_n"
+        else:
+            row["ngspice_fail_reasons"] = "" if row_smoke_rows else ("ngspice_skipped" if row.get("math_pass") else "")
         trust_class, trust_failures, trust_warnings = classify_candidate(row, row_smoke_rows, args)
         row["trust_class"] = trust_class
         row["trust_fail_reasons"] = trust_failures
@@ -3371,7 +3851,7 @@ def run_channel(args: argparse.Namespace, manifest_row: dict[str, str], all_metr
         audit_touchstone = audit_dir / f"channel.s{nports}p"
         audit_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(channel_path, audit_touchstone)
-        for case in audit_cases(args.audit_stop_ns):
+        for case in selected_audit_cases(args):
             h_row = run_hspice_case(args.hspice.resolve(), audit_touchstone, nports, audit_dir, case, args.sim_timeout)
             ng_dir = audit_dir / "ngspice"
             ng_rows = run_ngspice_cases(args.ngspice.resolve(), ROOT / str(selected["spice_file"]), nports, ng_dir, [case], args.sim_timeout)
@@ -3441,11 +3921,21 @@ def write_study_outputs(
     smoke_rows: list[dict[str, object]],
     ranking_rows: list[dict[str, object]],
     corr_rows: list[dict[str, object]],
+    bbs_candidate_rows: list[dict[str, object]] | None = None,
 ) -> None:
     write_csv(study_dir / "metrics.csv", all_metrics)
     write_csv(study_dir / "ngspice_smoke.csv", smoke_rows)
     write_csv(study_dir / "ranking.csv", ranking_rows)
     write_csv(study_dir / "hspice_correlation.csv", corr_rows)
+    if bbs_candidate_rows is not None:
+        write_csv(study_dir / "bbs_candidates.csv", bbs_candidate_rows)
+        write_csv(study_dir / "bbs_ranking.csv", bbs_ranking_rows(all_metrics, bbs_candidate_rows))
+    bbs_rows = bbs_metric_rows(all_metrics)
+    if bbs_rows:
+        write_csv(study_dir / "bbs_metrics.csv", bbs_rows)
+    bbs_smoke_rows = [row for row in smoke_rows if str(row.get("candidate_family", "")).startswith("bbs_")]
+    if bbs_smoke_rows:
+        write_csv(study_dir / "bbs_ngspice_smoke.csv", bbs_smoke_rows)
     if corr_rows:
         write_csv(study_dir / "calibration_summary.csv", calibration_summary_rows(ranking_rows, corr_rows))
         write_audit_overlay_pdfs(study_dir, corr_rows)
@@ -3468,10 +3958,12 @@ def run_study(args: argparse.Namespace) -> int:
     smoke_path = study_dir / "ngspice_smoke.csv"
     ranking_path = study_dir / "ranking.csv"
     corr_path = study_dir / "hspice_correlation.csv"
+    bbs_path = study_dir / "bbs_candidates.csv"
     all_metrics: list[dict[str, object]] = [dict(row) for row in read_csv(metrics_path)] if args.resume and metrics_path.exists() else []
     smoke_rows: list[dict[str, object]] = [dict(row) for row in read_csv(smoke_path)] if args.resume and smoke_path.exists() else []
     ranking_rows: list[dict[str, object]] = [dict(row) for row in read_csv(ranking_path)] if args.resume and ranking_path.exists() else []
     corr_rows: list[dict[str, object]] = [dict(row) for row in read_csv(corr_path)] if args.resume and corr_path.exists() else []
+    bbs_candidate_rows: list[dict[str, object]] = [dict(row) for row in read_csv(bbs_path)] if args.resume and bbs_path.exists() else []
     if args.resume:
         completed = {str(row.get("channel_id", "")) for row in ranking_rows if row.get("channel_id")}
         supported = [row for row in supported if str(row.get("channel_id", "")) not in completed]
@@ -3480,10 +3972,10 @@ def run_study(args: argparse.Namespace) -> int:
 
     for idx, row in enumerate(supported, start=1):
         print(f"[{idx}/{len(supported)}] {row['channel_id']} ({row['relative_path']})")
-        run_channel(args, row, all_metrics, smoke_rows, ranking_rows, corr_rows)
-        write_study_outputs(study_dir, all_metrics, smoke_rows, ranking_rows, corr_rows)
+        run_channel(args, row, all_metrics, smoke_rows, ranking_rows, corr_rows, bbs_candidate_rows)
+        write_study_outputs(study_dir, all_metrics, smoke_rows, ranking_rows, corr_rows, bbs_candidate_rows)
 
-    write_study_outputs(study_dir, all_metrics, smoke_rows, ranking_rows, corr_rows)
+    write_study_outputs(study_dir, all_metrics, smoke_rows, ranking_rows, corr_rows, bbs_candidate_rows)
     print(f"Wrote study outputs under {study_dir}")
     return 0
 
@@ -3491,6 +3983,184 @@ def run_study(args: argparse.Namespace) -> int:
 def qualify_study(args: argparse.Namespace) -> int:
     args.skip_hspice = True
     return run_study(args)
+
+
+def bbs_metric_rows(metrics: list[dict[str, object]]) -> list[dict[str, object]]:
+    return [row for row in metrics if str(row.get("candidate_family", "")).startswith("bbs_")]
+
+
+def bbs_ngspice_rank(row: dict[str, object]) -> int:
+    status = str(row.get("ngspice_pass", ""))
+    if status == "True" or row.get("ngspice_pass") is True:
+        return 0
+    if status == "False" or row.get("ngspice_pass") is False:
+        return 1
+    return 2
+
+
+def bbs_ranking_rows(metrics: list[dict[str, object]], bbs_candidates: list[dict[str, object]]) -> list[dict[str, object]]:
+    metric_by_channel: dict[str, list[dict[str, object]]] = {}
+    extraction_by_channel: dict[str, list[dict[str, object]]] = {}
+    for row in bbs_metric_rows(metrics):
+        metric_by_channel.setdefault(str(row.get("channel_id", "")), []).append(row)
+    for row in bbs_candidates:
+        extraction_by_channel.setdefault(str(row.get("channel_id", "")), []).append(row)
+
+    rows: list[dict[str, object]] = []
+    for channel_id in sorted(set(metric_by_channel) | set(extraction_by_channel)):
+        metrics_for_channel = metric_by_channel.get(channel_id, [])
+        extractions = extraction_by_channel.get(channel_id, [])
+        if metrics_for_channel:
+            best = sorted(
+                metrics_for_channel,
+                key=lambda row: (
+                    TRUST_CLASS_RANK.get(str(row.get("trust_class", "FAIL")), 3),
+                    bbs_ngspice_rank(row),
+                    warning_count(row),
+                    quality_score(row),
+                    int(float(row.get("model_order") or 999)),
+                ),
+            )[0]
+            rows.append(
+                {
+                    "channel_id": channel_id,
+                    "channel_path": best.get("channel_path", ""),
+                    "ports": best.get("ports", ""),
+                    "best_bbs_candidate": best.get("candidate", ""),
+                    "best_bbs_mode": best.get("bbs_mode", ""),
+                    "best_bbs_preset": best.get("bbs_preset", ""),
+                    "best_bbs_trust_class": best.get("trust_class", ""),
+                    "best_bbs_rx_trust_class": best.get("rx_trust_class", ""),
+                    "best_bbs_reflection_trust_class": best.get("reflection_trust_class", ""),
+                    "best_bbs_full_model_trust_class": best.get("full_model_trust_class", ""),
+                    "best_bbs_independent_score": best.get("independent_score", ""),
+                    "best_bbs_fit_complex_rms": best.get("fit_complex_rms", ""),
+                    "best_bbs_mag_db_max_above_m40": best.get("fit_mag_db_max_above_m40", ""),
+                    "best_bbs_group_delay_rms_ps": best.get("fit_group_delay_rms_ps", ""),
+                    "best_bbs_max_sv_high": best.get("max_sv_high", ""),
+                    "best_bbs_ngspice_pass": best.get("ngspice_pass", ""),
+                    "best_bbs_ngspice_cases_passed": best.get("ngspice_cases_passed", ""),
+                    "best_bbs_spice_file": best.get("spice_file", ""),
+                    "best_bbs_circuit_file": best.get("bbs_circuit_file", ""),
+                    "best_bbs_fitted_touchstone": best.get("bbs_fitted_touchstone", ""),
+                    "status": "best_bbs_metric_candidate",
+                    "extraction_rows": len(extractions),
+                    "successful_extractions": sum(1 for row in extractions if row.get("bbs_status") == "ok"),
+                    "timeout_extractions": sum(1 for row in extractions if str(row.get("bbs_timed_out", "")).lower() == "true"),
+                }
+            )
+            continue
+        rows.append(
+            {
+                "channel_id": channel_id,
+                "channel_path": extractions[0].get("channel_path", "") if extractions else "",
+                "ports": extractions[0].get("ports", "") if extractions else "",
+                "best_bbs_candidate": "",
+                "best_bbs_trust_class": "FAIL",
+                "best_bbs_rx_trust_class": "FAIL",
+                "best_bbs_reflection_trust_class": "FAIL",
+                "best_bbs_full_model_trust_class": "FAIL",
+                "status": "no_successful_bbs_gspice_model",
+                "extraction_rows": len(extractions),
+                "successful_extractions": sum(1 for row in extractions if row.get("bbs_status") == "ok"),
+                "timeout_extractions": sum(1 for row in extractions if str(row.get("bbs_timed_out", "")).lower() == "true"),
+                "failed_candidates": ";".join(str(row.get("candidate", "")) for row in extractions if row.get("bbs_status") != "ok"),
+            }
+        )
+    return rows
+
+
+def resolve_artifact_path(text: object) -> Path | None:
+    value = str(text or "").strip()
+    if not value:
+        return None
+    path = Path(value)
+    if not path.is_absolute():
+        path = ROOT / path
+    return path
+
+
+def copy_artifact(src_text: object, dest: Path) -> str:
+    src = resolve_artifact_path(src_text)
+    if not src or not src.exists() or not src.is_file():
+        return ""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(src, dest)
+    return rel(dest)
+
+
+def write_bbs_audit_share_pack(study_dir: Path, bbs_corr_rows: list[dict[str, object]]) -> list[dict[str, object]]:
+    if not bbs_corr_rows:
+        return []
+    out_root = study_dir / "bbs_audit_share_pack"
+    index_rows: list[dict[str, object]] = []
+    for row in bbs_corr_rows:
+        channel_id = str(row.get("channel_id", "") or "channel")
+        candidate = str(row.get("candidate", "") or "candidate")
+        case = str(row.get("case", "") or "case")
+        case_dir = out_root / channel_id / candidate / case
+        copied: dict[str, str] = {}
+        copied["rx_overlay"] = copy_artifact(row.get("rx_overlay_plot", ""), case_dir / "rx_overlay.png")
+        copied["tx_overlay"] = copy_artifact(row.get("tx_overlay_plot", ""), case_dir / "tx_overlay.png")
+        copied["two_panel_overlay"] = copy_artifact(row.get("overlay_plot", ""), case_dir / "overlay_two_panel.png")
+        copied["bbs_gspice_model"] = copy_artifact(row.get("bbs_circuit_file", ""), case_dir / "bbs_gspice_model.txt")
+        copied["ngspice_wrapper"] = copy_artifact(row.get("ngspice_model_spice", ""), case_dir / "ngspice_wrapper.sp")
+        copied["hspice_tr0"] = copy_artifact(row.get("hspice_tr0", ""), case_dir / "hspice.tr0")
+        copied["hspice_lis"] = copy_artifact(row.get("hspice_lis", ""), case_dir / "hspice.lis")
+        copied["ngspice_raw"] = copy_artifact(row.get("ngspice_raw", ""), case_dir / "ngspice.raw")
+        copied["ngspice_log"] = copy_artifact(row.get("ngspice_log", ""), case_dir / "ngspice.log")
+
+        h_tr0 = resolve_artifact_path(row.get("hspice_tr0", ""))
+        if h_tr0:
+            copied["hspice_deck"] = copy_artifact(h_tr0.with_suffix(".sp"), case_dir / "hspice_native_s_element.sp")
+            touchstone = h_tr0.parent / f"channel.s{row.get('ports', '')}p"
+            copied["audit_touchstone"] = copy_artifact(touchstone, case_dir / touchstone.name)
+        n_raw = resolve_artifact_path(row.get("ngspice_raw", ""))
+        if n_raw:
+            copied["ngspice_deck"] = copy_artifact(n_raw.with_suffix(".sp"), case_dir / "ngspice_bbs_model.sp")
+
+        readme = [
+            f"# {channel_id} - {candidate} - {case}",
+            "",
+            "## Classification",
+            "",
+            f"- HSPICE audit: `{row.get('hspice_audit_class', '')}`",
+            f"- RX audit: `{row.get('rx_hspice_audit_class', '')}`",
+            f"- Reflection/TX audit: `{row.get('reflection_hspice_audit_class', '')}`",
+            f"- BBS preset: `{row.get('bbs_preset', '')}`",
+            "",
+            "## Metrics",
+            "",
+            f"- RX active RMSE: `{row.get('rx_active_rmse_v', '')}` V",
+            f"- RX active max error: `{row.get('rx_active_maxabs_v', '')}` V",
+            f"- TX active RMSE: `{row.get('tx_active_rmse_v', '')}` V",
+            f"- TX active max error: `{row.get('tx_active_maxabs_v', '')}` V",
+            f"- RX-minus-TX rise 50% delay delta: `{row.get('rx_minus_tx_rise50_ps_delta_ps', '')}` ps",
+            "",
+            "## Files",
+            "",
+        ]
+        for key in sorted(copied):
+            if copied[key]:
+                readme.append(f"- `{key}`: `{copied[key]}`")
+        case_dir.mkdir(parents=True, exist_ok=True)
+        (case_dir / "README.md").write_text("\n".join(readme) + "\n", encoding="utf-8")
+        index_rows.append(
+            {
+                "channel_id": channel_id,
+                "candidate": candidate,
+                "case": case,
+                "hspice_audit_class": row.get("hspice_audit_class", ""),
+                "rx_hspice_audit_class": row.get("rx_hspice_audit_class", ""),
+                "reflection_hspice_audit_class": row.get("reflection_hspice_audit_class", ""),
+                "rx_active_rmse_v": row.get("rx_active_rmse_v", ""),
+                "tx_active_rmse_v": row.get("tx_active_rmse_v", ""),
+                "share_dir": rel(case_dir),
+                **{f"{key}_copy": value for key, value in copied.items() if value},
+            }
+        )
+    write_csv(study_dir / "bbs_audit_share_pack_index.csv", index_rows)
+    return index_rows
 
 
 def csv_filter_values(values: list[str] | None) -> set[str]:
@@ -3548,6 +4218,152 @@ def audit_row_is_retryable_error(row: dict[str, object]) -> bool:
     )
 
 
+def audit_bbs_hspice(args: argparse.Namespace, study_dir: Path) -> None:
+    bbs_path = study_dir / "bbs_candidates.csv"
+    if not bbs_path.exists():
+        return
+    top_n = int(getattr(args, "bbs_audit_top_n", 2) or 2)
+    selected_pairs: set[tuple[str, str]] = set()
+    metrics_path = study_dir / "metrics.csv"
+    if metrics_path.exists():
+        metrics_by_channel: dict[str, list[dict[str, object]]] = {}
+        for metric in bbs_metric_rows([dict(row) for row in read_csv(metrics_path)]):
+            metrics_by_channel.setdefault(str(metric.get("channel_id", "")), []).append(metric)
+        for channel_id, channel_metrics in metrics_by_channel.items():
+            for metric in sorted(
+                channel_metrics,
+                key=lambda row: (
+                    TRUST_CLASS_RANK.get(str(row.get("trust_class", "FAIL")), 3),
+                    bbs_ngspice_rank(row),
+                    warning_count(row),
+                    quality_score(row),
+                    int(float(row.get("model_order") or 999)),
+                ),
+            )[:top_n]:
+                selected_pairs.add((channel_id, str(metric.get("candidate", ""))))
+    rows = [
+        row
+        for row in read_csv(bbs_path)
+        if row.get("bbs_circuit_type") == "gspice"
+        and row.get("bbs_status") == "ok"
+        and row.get("bbs_circuit_file")
+        and (not selected_pairs or (str(row.get("channel_id", "")), str(row.get("candidate", ""))) in selected_pairs)
+    ]
+    if not rows:
+        return
+    if args.max_channels:
+        seen: set[str] = set()
+        limited: list[dict[str, str]] = []
+        for row in rows:
+            channel_id = str(row.get("channel_id", ""))
+            if channel_id not in seen and len(seen) >= args.max_channels:
+                continue
+            seen.add(channel_id)
+            limited.append(row)
+        rows = limited
+
+    corr_path = study_dir / "bbs_hspice_correlation.csv"
+    corr_rows: list[dict[str, object]] = [dict(row) for row in read_csv(corr_path)] if args.resume and corr_path.exists() else []
+    completed_cases = {
+        (str(row.get("channel_id", "")), str(row.get("candidate", "")), str(row.get("case", "")))
+        for row in corr_rows
+        if row.get("channel_id") and row.get("candidate") and row.get("case")
+    }
+    for idx, row in enumerate(rows, start=1):
+        channel_id = row["channel_id"]
+        candidate = row["candidate"]
+        channel_path = Path(row["channel_path"])
+        if not channel_path.is_absolute():
+            channel_path = ROOT / channel_path
+        nports = int(row["ports"])
+        model_path = Path(row.get("ngspice_model_spice") or "")
+        if not model_path.is_absolute():
+            model_path = ROOT / model_path
+        if not model_path.exists():
+            # Backfill from the normal metrics table when bbs_candidates.csv came
+            # from an older qualify run.
+            metrics = [
+                metric
+                for metric in read_csv(study_dir / "metrics.csv")
+                if metric.get("channel_id") == channel_id and metric.get("candidate") == candidate
+            ]
+            if metrics:
+                model_path = Path(metrics[0].get("spice_file", ""))
+                if not model_path.is_absolute():
+                    model_path = ROOT / model_path
+        if not model_path.exists():
+            continue
+        audit_dir = study_dir / "channels" / channel_id / "bbs_hspice_audit" / candidate
+        audit_touchstone = audit_dir / f"channel.s{nports}p"
+        audit_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(channel_path, audit_touchstone)
+        print(f"[BBS {idx}/{len(rows)}] HSPICE audit {channel_id} {candidate}")
+        for case in selected_audit_cases(args):
+            if args.resume and (channel_id, candidate, case.name) in completed_cases:
+                continue
+            h_row = run_hspice_case(args.hspice.resolve(), audit_touchstone, nports, audit_dir, case, args.sim_timeout)
+            ng_dir = audit_dir / "ngspice"
+            ng_rows = run_ngspice_cases(args.ngspice.resolve(), model_path, nports, ng_dir, [case], args.sim_timeout)
+            ng_row = ng_rows[0] if ng_rows else {}
+            corr: dict[str, object] = {
+                "channel_id": channel_id,
+                "source": row.get("source", ""),
+                "source_family": row.get("source_family", ""),
+                "validation_split": row.get("validation_split", ""),
+                "channel_path": row.get("channel_path", ""),
+                "ports": nports,
+                "candidate": candidate,
+                "candidate_family": "bbs_full_model",
+                "bbs_mode": row.get("bbs_mode", ""),
+                "bbs_preset": row.get("bbs_preset", ""),
+                "bbs_config_file": row.get("bbs_config_file", ""),
+                "bbs_circuit_file": row.get("bbs_circuit_file", ""),
+                "ngspice_model_spice": rel(model_path),
+                "case": case.name,
+                **h_row,
+                "ngspice_raw": ng_row.get("raw", ""),
+                "ngspice_log": ng_row.get("log", ""),
+                "ngspice_return_code": ng_row.get("return_code", ""),
+            }
+            h_tr0 = Path(str(h_row.get("hspice_tr0", "")))
+            if not h_tr0.is_absolute():
+                h_tr0 = ROOT / h_tr0
+            n_raw = Path(str(ng_row.get("raw", "")))
+            if not n_raw.is_absolute():
+                n_raw = ROOT / n_raw
+            if h_tr0.exists() and n_raw.exists():
+                corr.update(compare_hspice_ngspice(h_tr0, n_raw, nports))
+                try:
+                    overlay = study_dir / "plots" / "bbs_overlays" / channel_id / f"{candidate}_{case.name}.png"
+                    plot_transient_overlay(h_tr0, n_raw, nports, overlay, f"{channel_id}: {candidate} {case.name}")
+                    corr["overlay_plot"] = rel(overlay)
+                    rx_overlay = study_dir / "plots" / "bbs_overlays" / channel_id / "rx" / f"{candidate}_{case.name}_rx.png"
+                    tx_overlay = study_dir / "plots" / "bbs_overlays" / channel_id / "tx" / f"{candidate}_{case.name}_tx.png"
+                    plot_transient_side_overlay(h_tr0, n_raw, nports, rx_overlay, f"{channel_id}: {candidate} {case.name}", "rx", "ngspice BBS")
+                    plot_transient_side_overlay(h_tr0, n_raw, nports, tx_overlay, f"{channel_id}: {candidate} {case.name}", "tx", "ngspice BBS")
+                    corr["rx_overlay_plot"] = rel(rx_overlay)
+                    corr["tx_overlay_plot"] = rel(tx_overlay)
+                except Exception as exc:
+                    corr["plot_error"] = str(exc)
+            else:
+                corr["correlation_status"] = "missing_raw"
+            h_class, h_reason = classify_hspice_row(corr, args)
+            corr["hspice_audit_class"] = h_class
+            corr["hspice_audit_reason"] = h_reason
+            rx_h_class, rx_h_reason = classify_hspice_row_view(corr, args, "rx")
+            corr["rx_hspice_audit_class"] = rx_h_class
+            corr["rx_hspice_audit_reason"] = rx_h_reason
+            reflection_h_class, reflection_h_reason = classify_hspice_row_view(corr, args, "reflection")
+            corr["reflection_hspice_audit_class"] = reflection_h_class
+            corr["reflection_hspice_audit_reason"] = reflection_h_reason
+            corr["full_model_hspice_audit_class"] = h_class
+            corr["full_model_hspice_audit_reason"] = h_reason
+            corr_rows.append(corr)
+            completed_cases.add((channel_id, candidate, case.name))
+            write_csv(corr_path, corr_rows)
+    write_csv(corr_path, corr_rows)
+
+
 def audit_hspice(args: argparse.Namespace) -> int:
     ensure_skrf(args.skrf_target)
     study_dir = args.study_dir.resolve()
@@ -3585,7 +4401,7 @@ def audit_hspice(args: argparse.Namespace) -> int:
         audit_dir.mkdir(parents=True, exist_ok=True)
         shutil.copy2(channel_path, audit_touchstone)
         print(f"[{idx}/{len(selected)}] HSPICE audit {channel_id}")
-        for case in audit_cases(args.audit_stop_ns):
+        for case in selected_audit_cases(args):
             if args.resume and (channel_id, case.name) in completed_cases:
                 continue
             h_row = run_hspice_case(args.hspice.resolve(), audit_touchstone, nports, audit_dir, case, args.sim_timeout)
@@ -3667,6 +4483,7 @@ def audit_hspice(args: argparse.Namespace) -> int:
     write_audit_overlay_pdfs(study_dir, corr_rows)
     metrics = read_csv(study_dir / "metrics.csv") if (study_dir / "metrics.csv").exists() else []
     write_derived_summary_csvs(study_dir, metrics, ranking, corr_rows)
+    audit_bbs_hspice(args, study_dir)
     write_report_from_files(study_dir)
     print(f"Wrote {corr_path}")
     print(f"Wrote {study_dir / 'calibration_summary.csv'}")
@@ -3718,6 +4535,16 @@ def write_report(study_dir: Path, metrics: list[dict[str, object]], ranking: lis
     view_summary_rows = read_csv(view_summary_path) if view_summary_path.exists() else []
     view_calibration_path = study_dir / "view_calibration_summary.csv"
     view_calibration_rows = read_csv(view_calibration_path) if view_calibration_path.exists() else []
+    bbs_candidates_path = study_dir / "bbs_candidates.csv"
+    bbs_candidates_rows = read_csv(bbs_candidates_path) if bbs_candidates_path.exists() else []
+    bbs_smoke_path = study_dir / "bbs_ngspice_smoke.csv"
+    bbs_smoke_rows = read_csv(bbs_smoke_path) if bbs_smoke_path.exists() else []
+    bbs_corr_path = study_dir / "bbs_hspice_correlation.csv"
+    bbs_corr_rows = read_csv(bbs_corr_path) if bbs_corr_path.exists() else []
+    bbs_metric_rows = [row for row in metrics if str(row.get("candidate_family", "")).startswith("bbs_")]
+    bbs_ranking_path = study_dir / "bbs_ranking.csv"
+    bbs_ranking = read_csv(bbs_ranking_path) if bbs_ranking_path.exists() else bbs_ranking_rows(metrics, bbs_candidates_rows)
+    bbs_share_rows = write_bbs_audit_share_pack(study_dir, [dict(row) for row in bbs_corr_rows]) if bbs_corr_rows else []
     lines = [
         "# ngspice S-parameter Trust Workflow",
         "",
@@ -3736,6 +4563,10 @@ def write_report(study_dir: Path, metrics: list[dict[str, object]], ranking: lis
         f"- Failed channels: {len(failed)}",
         f"- HSPICE correlation rows: {len(corr)}",
         f"- Successful HSPICE correlations: {len(ok_corr)}",
+        f"- BBS extraction rows: {len(bbs_candidates_rows)}",
+        f"- BBS candidate metric rows: {len(bbs_metric_rows)}",
+        f"- BBS ngspice smoke rows: {len(bbs_smoke_rows)}",
+        f"- BBS HSPICE audit rows: {len(bbs_corr_rows)}",
         "- HSPICE is optional audit data only; it is not used by `qualify` model selection.",
         "",
         "## Key Files",
@@ -3755,6 +4586,13 @@ def write_report(study_dir: Path, metrics: list[dict[str, object]], ranking: lis
         "- `candidate_family_summary.csv`: candidate-family selection and audit outcomes",
         "- `warning_audit_summary.csv`: warning reason vs HSPICE audit outcomes",
         "- `audit_overlay_groups/`: optional grouped HSPICE-vs-ngspice overlay PDFs",
+        "- `bbs_candidates.csv`: BroadbandSPICE extraction outputs",
+        "- `bbs_ngspice_smoke.csv`: ngspice smoke metrics for BBS General SPICE models",
+        "- `bbs_hspice_correlation.csv`: optional BBS HSPICE native S-element audit",
+        "- `bbs_audit_share_pack/`: per-plotted-case BBS models, testbenches, outputs, and RX/TX plots",
+        "- `bbs_audit_share_pack_index.csv`: index of the BBS share-pack files",
+        "- `selected_models/bbs/`: archived BBS HSPICE and General SPICE netlists",
+        "- `plots/bbs_overlays/`: BBS HSPICE-vs-ngspice overlays",
         "",
         "## Candidate Families",
         "",
@@ -3780,6 +4618,75 @@ def write_report(study_dir: Path, metrics: list[dict[str, object]], ranking: lis
         for split in sorted(split_counts):
             counts = split_counts[split]
             lines.append(f"- `{split}`: PASS `{counts.get('PASS', 0)}`, WARN `{counts.get('WARN', 0)}`, FAIL `{counts.get('FAIL', 0)}`")
+    if bbs_candidates_rows or bbs_metric_rows:
+        bbs_extract_ok = sum(1 for row in bbs_candidates_rows if row.get("bbs_status") == "ok")
+        bbs_gspice_ok = sum(1 for row in bbs_candidates_rows if row.get("bbs_status") == "ok" and row.get("bbs_circuit_type") == "gspice")
+        bbs_hspice_ok = sum(1 for row in bbs_candidates_rows if row.get("bbs_status") == "ok" and row.get("bbs_circuit_type") == "hspice")
+        bbs_class_counts = {
+            klass: sum(1 for row in bbs_metric_rows if row.get("trust_class") == klass)
+            for klass in ("PASS", "WARN", "FAIL")
+        }
+        bbs_audit_counts = {
+            klass: sum(1 for row in bbs_corr_rows if row.get("hspice_audit_class") == klass)
+            for klass in ("PASS", "WARN", "FAIL", "ERROR")
+        }
+        bbs_timeout_count = sum(1 for row in bbs_candidates_rows if str(row.get("bbs_timed_out", "")).lower() == "true")
+        preset_counts: dict[str, dict[str, int]] = {}
+        for row in bbs_candidates_rows:
+            preset = str(row.get("bbs_preset", "") or "unknown")
+            status = "ok" if row.get("bbs_status") == "ok" else "failed"
+            preset_counts.setdefault(preset, {"ok": 0, "failed": 0, "timeout": 0})
+            preset_counts[preset][status] += 1
+            if str(row.get("bbs_timed_out", "")).lower() == "true":
+                preset_counts[preset]["timeout"] += 1
+        lines.extend(
+            [
+                "",
+                "## Broadband SPICE Integration",
+                "",
+                f"- BBS extraction success: `{bbs_extract_ok}/{len(bbs_candidates_rows)}` rows",
+                f"- BBS extraction timeouts: `{bbs_timeout_count}`",
+                f"- BBS HSPICE-compatible outputs: `{bbs_hspice_ok}`",
+                f"- BBS General SPICE outputs: `{bbs_gspice_ok}`",
+                f"- BBS independent PASS/WARN/FAIL: `{bbs_class_counts['PASS']}/{bbs_class_counts['WARN']}/{bbs_class_counts['FAIL']}`",
+                f"- BBS HSPICE audit P/W/F/E: `{bbs_audit_counts['PASS']}/{bbs_audit_counts['WARN']}/{bbs_audit_counts['FAIL']}/{bbs_audit_counts['ERROR']}`",
+                f"- BBS audit share-pack cases: `{len(bbs_share_rows)}`",
+                "- BBS remains a full-model candidate family; HSPICE audit results are reported separately and do not affect `qualify` ranking.",
+            ]
+        )
+        if preset_counts:
+            lines.extend(["", "### BBS Preset Extraction Summary", ""])
+            for preset in sorted(preset_counts):
+                counts = preset_counts[preset]
+                lines.append(f"- `{preset}`: ok `{counts['ok']}`, failed `{counts['failed']}`, timeout `{counts['timeout']}`")
+        if bbs_ranking:
+            lines.extend(["", "### Best BBS Candidate Per Channel", ""])
+            for row in bbs_ranking[:30]:
+                lines.append(
+                    f"- `{row.get('channel_id', '')}`: `{row.get('best_bbs_candidate', '') or 'none'}` "
+                    f"({row.get('status', '')}), mode `{row.get('best_bbs_mode', '')}`, preset `{row.get('best_bbs_preset', '')}`, "
+                    f"independent `{row.get('best_bbs_trust_class', '')}`, RX `{row.get('best_bbs_rx_trust_class', '')}`, "
+                    f"reflection `{row.get('best_bbs_reflection_trust_class', '')}`, full `{row.get('best_bbs_full_model_trust_class', '')}`, "
+                    f"ngspice pass `{row.get('best_bbs_ngspice_pass', '')}`, extractions `{row.get('successful_extractions', 0)}/{row.get('extraction_rows', 0)}`"
+                )
+        lines.extend(["", "### BBS Candidate Metric Rows", ""])
+        for row in bbs_metric_rows[:20]:
+            lines.append(
+                f"- `{row.get('channel_id', '')}` `{row.get('candidate', '')}`: independent `{row.get('trust_class', '')}`, "
+                f"RX `{row.get('rx_trust_class', '')}`, reflection `{row.get('reflection_trust_class', '')}`, "
+                f"full `{row.get('full_model_trust_class', '')}`, wrapper `{row.get('spice_file', '')}`"
+            )
+        if bbs_corr_rows:
+            lines.extend(["", "### BBS HSPICE Audit Overlays", ""])
+            for row in bbs_corr_rows[:30]:
+                lines.append(
+                    f"- `{row.get('channel_id', '')}` `{row.get('candidate', '')}` `{row.get('case', '')}`: "
+                    f"HSPICE audit `{row.get('hspice_audit_class', '')}`, RX `{row.get('rx_hspice_audit_class', '')}`, "
+                    f"reflection `{row.get('reflection_hspice_audit_class', '')}`, "
+                    f"RX active RMSE `{row.get('rx_active_rmse_v', '')}` V, TX active RMSE `{row.get('tx_active_rmse_v', '')}` V, "
+                    f"rise delay delta `{row.get('rx_minus_tx_rise50_ps_delta_ps', '')}` ps, "
+                    f"RX plot `{row.get('rx_overlay_plot', '')}`, TX plot `{row.get('tx_overlay_plot', '')}`"
+                )
     if view_summary_rows:
         lines.extend(["", "## Path-Level Readiness", ""])
         lines.append(
@@ -3874,6 +4781,12 @@ def write_report_from_files(study_dir: Path) -> int:
     metrics = read_csv(study_dir / "metrics.csv") if (study_dir / "metrics.csv").exists() else []
     ranking = read_csv(study_dir / "ranking.csv") if (study_dir / "ranking.csv").exists() else []
     corr = read_csv(study_dir / "hspice_correlation.csv") if (study_dir / "hspice_correlation.csv").exists() else []
+    bbs_candidates = read_csv(study_dir / "bbs_candidates.csv") if (study_dir / "bbs_candidates.csv").exists() else []
+    bbs_rows = bbs_metric_rows([dict(row) for row in metrics])
+    if bbs_rows:
+        write_csv(study_dir / "bbs_metrics.csv", bbs_rows)
+    if bbs_candidates:
+        write_csv(study_dir / "bbs_ranking.csv", bbs_ranking_rows([dict(row) for row in metrics], [dict(row) for row in bbs_candidates]))
     if corr and not (study_dir / "calibration_summary.csv").exists():
         write_csv(study_dir / "calibration_summary.csv", calibration_summary_rows(ranking, corr))
     if corr:
@@ -3901,6 +4814,16 @@ def add_qualification_args(parser: argparse.ArgumentParser) -> None:
     add_inventory_args(parser)
     parser.add_argument("--ngspice", type=Path, default=Path(os.environ.get("NGSPICE_EXE", DEFAULT_NGSPICE)))
     parser.add_argument("--skip-ngspice", action="store_true")
+    parser.add_argument("--enable-bbs", action="store_true", help="Generate BroadbandSPICE HSPICE/GSPICE models as first-class candidate artifacts.")
+    parser.add_argument("--bbs-exe", type=Path, default=Path(os.environ.get("BBS_EXE", DEFAULT_BBS)))
+    parser.add_argument("--bbs-modes", default="passivity2", help="Comma-separated BBS extraction modes, e.g. passivity2,precision.")
+    parser.add_argument("--bbs-circuit-types", default="hspice,gspice", help="Comma-separated BBS output types, e.g. hspice,gspice.")
+    parser.add_argument("--bbs-preset-grid", default="clean", help="Comma-separated BBS tuning presets, e.g. clean,reciprocity,lowfreq,smoothing.")
+    parser.add_argument("--bbs-max-iter", type=int, default=200)
+    parser.add_argument("--bbs-error", type=float, default=0.02)
+    parser.add_argument("--bbs-config", type=Path, default=None, help="Optional BBS tuning config JSON. Omit for clean extraction.")
+    parser.add_argument("--bbs-timeout", type=int, default=600, help="BroadbandSPICE extraction timeout per channel/mode/circuit-type.")
+    parser.add_argument("--bbs-smoke-top-n", type=int, default=4, help="Run ngspice smoke only for the top N BBS GSPICE candidates per channel. Use 0 for all.")
     parser.add_argument("--max-channels", type=int, default=0)
     parser.add_argument("--resume", action="store_true", help="Skip channels already present in ranking.csv and append to existing CSV outputs.")
     parser.add_argument("--fast-calibration-profile", action="store_true", help="Use a faster global profile: reduced candidates for .s4p and a small vector/reduced set for .s2p.")
@@ -3959,6 +4882,8 @@ def add_hspice_audit_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--full-model-trust-class", action="append", help="Audit only rows with this independent full-model class.")
     parser.add_argument("--sim-timeout", type=int, default=180)
     parser.add_argument("--audit-stop-ns", type=float, default=12.0)
+    parser.add_argument("--max-audit-cases", type=int, default=0, help="Limit audit cases per model; 0 runs all cases.")
+    parser.add_argument("--bbs-audit-top-n", type=int, default=2, help="Audit the top N BBS GSPICE candidates per channel.")
     parser.add_argument("--hspice-rx-active-rmse-pass-v", type=float, default=0.02)
     parser.add_argument("--hspice-rx-active-maxabs-pass-v", type=float, default=0.075)
     parser.add_argument("--hspice-tx-active-rmse-pass-v", type=float, default=0.05)
@@ -4006,6 +4931,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--hspice-tx-active-rmse-pass-v", type=float, default=0.05)
     p_run.add_argument("--hspice-delay-pass-ps", type=float, default=25.0)
     p_run.add_argument("--hspice-min-delay-confidence-swing-v", type=float, default=0.02)
+    p_run.add_argument("--max-audit-cases", type=int, default=0, help="Limit audit cases per model; 0 runs all cases.")
     p_run.set_defaults(func=run_study)
 
     return parser

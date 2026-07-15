@@ -1,0 +1,55 @@
+****** PrimeSim HSPICE -- T-2022.06 win64 (May 20 2022 7637141) ******
+Input File: agilent_io_buf_hspice.sp
+lic:
+lic: FLEXlm: SDK_12.10
+lic: USER:   sh3qm                HOSTNAME: rd78ece-emclab
+lic: HOSTID: 00ff89f5aa52         PID:      23108
+lic: Using FLEXlm license file:
+lic: 1704@synopsys.lic.mst.edu
+lic: Checkout 1 hspice
+lic: License/Maintenance for hspice will expire on 26-may-2027/2026.03
+lic: 1(in_use)/50(total) FLOATING license(s) on SERVER 1704@synopsys.lic.mst.edu
+lic:
+
+ init: begin read circuit files, cpu clock= 1.34E+00
+       option search = C:/synopsys/Hspice_T-2022.06/parts/behave/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/AD/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/XILINX/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/TLINE/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/TI/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/SIGNET/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/PCI/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/LIN_TECH/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/PET/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/DI0/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/COMLINE/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/BURR_BRM/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/BJT/
+       option post =     2.00
+       option probe
+       option accurate
+       option ingold =     2.00
+ init: end read circuit files, cpu clock= 1.39E+00 peak memory=      72 mb
+ init: begin check errors, cpu clock= 1.39E+00
+ init: end check errors, cpu clock= 4.30E+00 peak memory=      80 mb
+ init: begin setup matrix, pivot=     0 cpu clock= 4.30E+00
+       establish matrix -- done, cpu clock= 4.34E+00 peak memory=      80 mb
+       re-order matrix -- done, cpu clock= 4.34E+00 peak memory=      80 mb
+ init: end setup matrix, cpu clock= 4.39E+00 peak memory=      80 mb
+ dcop: begin dcop, cpu clock= 5.23E+00
+ dcop: end dcop, cpu clock= 5.28E+00 peak memory=      81 mb tot_iter=       4
+ output: agilent_io_buf_hspice.tr0
+ sweep: tran tran0    begin, stop_t=  1.20E-08 #sweeps=6001 cpu clock= 5.30E+00
+ tran: time= 1.2166E-09 tot_iter=      58 conv_iter=      29 cpu clock= 5.39E+00
+ tran: time= 2.4166E-09 tot_iter=     130 conv_iter=      65 cpu clock= 5.39E+00
+ tran: time= 3.6207E-09 tot_iter=     226 conv_iter=     113 cpu clock= 5.40E+00
+ tran: time= 4.8017E-09 tot_iter=     324 conv_iter=     162 cpu clock= 5.40E+00
+ tran: time= 6.0019E-09 tot_iter=     420 conv_iter=     210 cpu clock= 5.41E+00
+ tran: time= 7.2278E-09 tot_iter=     504 conv_iter=     252 cpu clock= 5.41E+00
+ tran: time= 8.4127E-09 tot_iter=     586 conv_iter=     293 cpu clock= 5.41E+00
+ tran: time= 9.6300E-09 tot_iter=     700 conv_iter=     350 cpu clock= 5.42E+00
+ tran: time= 1.0805E-08 tot_iter=     778 conv_iter=     389 cpu clock= 5.42E+00
+ tran: time= 1.2000E-08 tot_iter=     902 conv_iter=     450 cpu clock= 5.42E+00
+ sweep: tran tran0    end, cpu clock= 5.43E+00 peak memory=      81 mb
+>info:         ***** hspice job concluded
+ lic: Release hspice token(s)

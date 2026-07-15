@@ -1,0 +1,20 @@
+FIT_TOL.                        // Fitting error tolerance. Default value = 1.0e-5. 
+1e-05
+FIT_RESIDUEITERMAX.             // Max vector fitting steps. Default value = 20. 
+20
+PE_MAXITERATION.                // Maximum number of iterations for passivity enforcement. 
+100
+FIT_NOFLIP.                     // Enforce stability of fitted model. 0 = stable model; 1 = unstable model. 
+0
+PE_PROCESS.                     // Enforce passivity of fitted model. 0 = No passivity enforcement; 1 = Passivity enforcement. 
+1
+FIT_RECIPROCITY.                // 0 = Asymmetric fitting; 1 = symmetric fitting. 
+1
+FIT_VFWEIGHT.                   // Fitting weight. 0 = mixed weight; 1 = absolute weight; 2 = relative weight. 
+0
+FIT_LARGESPARAM.                // Fast fitting for large S-parameters. Default value (port numbers) = 100. 
+100
+PE_SMAXTOL.                     // Passivity violation is ignored below the threshold. Default value = 1.0e-9. 
+1e-09
+FIT_DCACFREQUENCY.              // Enforce the passivity below the frequency threshold. Default value = 200.0e6. 
+2e+08

@@ -1,0 +1,8 @@
+{
+  "low_frequency_extrapolation": {
+    "sampling_points": 14
+  },
+  "reciprocity_enforcement": {
+    "type": "Average"
+  }
+}
