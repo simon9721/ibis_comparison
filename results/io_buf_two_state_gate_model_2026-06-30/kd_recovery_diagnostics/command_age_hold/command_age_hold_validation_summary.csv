@@ -1,0 +1,2 @@
+fit_intercept_ns,fit_slope_ns_per_ns,train_rms_ns,train_rms_ps,heldout_case_id,heldout_command_age_ns,heldout_predicted_t_hold_50_ns,heldout_measured_t_hold_50_ns,heldout_error_ps,tolerance_ps,verdict
+1.715333023264479,0.31192841892993556,0.021468033733110205,21.468033733110204,short_pulse_1p5ns_high,1.5,2.183225651659382,2.133807439177807,49.41821248157518,30.0,FAIL

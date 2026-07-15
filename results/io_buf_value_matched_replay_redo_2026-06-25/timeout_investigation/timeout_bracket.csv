@@ -1,0 +1,11 @@
+stop_ns,raw,raw_mb,status,n_rows,tmax_ns,dt_min_ns,dt_median_ns,rows_after_7ns,rows_7p2_to_7p25ns
+6.9,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_6p9ns\short_pulse_2ns_value_matched_stop_6p9ns.raw,5.716248,complete,9074,6.900000000000001,8.400238772132695e-06,0.0009999999999998899,0,0
+7.01,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_7p01ns\short_pulse_2ns_value_matched_stop_7p01ns.raw,5.93514,complete,9422,7.010000000000001,8.465432177473531e-08,0.0009999999999998899,97,0
+7.05,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_7p05ns\short_pulse_2ns_value_matched_stop_7p05ns.raw,6.132017,complete,9735,7.049999999999999,2.000888343900442e-11,0.0009999999999998899,410,0
+7.1,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_7p1ns\short_pulse_2ns_value_matched_stop_7p1ns.raw,7.755892,complete,12313,7.1,9.237055564881302e-14,0.0009999999999990017,2988,0
+7.25,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_7p25ns\short_pulse_2ns_value_matched_stop_7p25ns.raw,123.46436,complete,195732,7.25,4.440892098500626e-15,2.305711177541525e-12,186407,130047
+7.5,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_7p5ns\short_pulse_2ns_value_matched_stop_7p5ns.raw,441.388642,partial_unusable,1,0.0,,,,
+8.0,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_8ns\short_pulse_2ns_value_matched_stop_8ns.raw,452.093612,partial_unusable,1,0.0,,,,
+9.0,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_9ns\short_pulse_2ns_value_matched_stop_9ns.raw,449.611733,partial_unusable,1,0.0,,,,
+10.0,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_10ns\short_pulse_2ns_value_matched_stop_10ns.raw,462.725963,partial_unusable,1,0.0,,,,
+14.0,results\io_buf_value_matched_replay_redo_2026-06-25\debug_timeout\stop_14ns\short_pulse_2ns_value_matched_stop_14ns.raw,464.016027,partial_unusable,1,0.0,,,,

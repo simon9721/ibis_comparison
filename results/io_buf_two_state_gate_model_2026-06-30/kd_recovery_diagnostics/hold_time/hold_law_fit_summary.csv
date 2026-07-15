@@ -1,0 +1,2 @@
+source,h1_constant_ns,h1_spread_fraction,h1_residual_rms_ns,h2_intercept_ns,h2_slope_ns_per_ns,h2_residual_rms_ns,h2_improvement_ratio,verdict
+hspice,2.0792495120160708,0.2298090701475968,0.1957026012226336,1.715333023264479,0.31192841892993556,0.021468033733110205,0.10969723242813678,HOLD_PLUS_WIDTH_DRIFT_PREFERRED

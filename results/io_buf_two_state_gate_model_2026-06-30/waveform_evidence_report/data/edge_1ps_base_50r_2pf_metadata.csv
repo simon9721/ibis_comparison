@@ -1,0 +1,9 @@
+case_id,flow,label,color,included_in_ku_kd_panels,included_in_pad_panel,data_available,time_ns
+edge_1ps_base_50r_2pf,hspice_native_ibis,HSPICE native IBIS,#000000,True,True,True,
+edge_1ps_base_50r_2pf,ngspice_legacy,legacy pybis,#e68613,True,True,True,
+edge_1ps_base_50r_2pf,ngspice_value_match_v2,value-match v2,#7b2cbf,True,True,True,
+edge_1ps_base_50r_2pf,ngspice_two_state_directional_residual,directional + residual,#d62728,True,True,True,
+edge_1ps_base_50r_2pf,ngspice_two_state_directional_residual_recover_mean,recover mean,#2ca02c,True,True,True,
+edge_1ps_base_50r_2pf,hspice_transistor_sp,HSPICE transistor io_buf.sp,#8a8a8a,False,True,True,
+edge_1ps_base_50r_2pf,edge_1,rise,#444444,True,True,True,5.0005
+edge_1ps_base_50r_2pf,edge_2,fall,#444444,True,True,True,15.0005

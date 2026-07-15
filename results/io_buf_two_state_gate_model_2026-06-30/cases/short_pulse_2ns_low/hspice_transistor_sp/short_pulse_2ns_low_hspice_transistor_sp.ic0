@@ -1,0 +1,27 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "00:02:12 07/01/2026 "
+* "netlist" "short_pulse_2ns_low_hspice_transistor_sp.sp "
+* "runtitle" "io_buf hspice transistor io_buf.sp pad reference short_pulse_2ns_low"
+* time =  0.000e+00       
+* temperature =  2.700e+01       
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc= 1.000e-12       
+.nodeset
++ in_dig = 0.000e+00       
++ in_sense_sp = 3.300e+00       
++ oe_ref = 3.300e+00       
++ oe_src = 3.300e+00       
++ pad_sp = 6.235e-09       
++ vdd_ref = 3.300e+00       
++ vdd_src = 3.300e+00       
++ xsp.n1 = 3.300e+00       
++ xsp.n2 = 3.300e+00       
++ xsp.n3 = 3.300e+00       
++ xsp.n_int1 = 2.670e+00       
++ xsp.n_int2 = 6.514e-08       
++ xsp.nand_n3 = 1.303e-07       
++ xsp.oe_b = 3.419e-08       
+***   END: Saved Operating Point ***                     

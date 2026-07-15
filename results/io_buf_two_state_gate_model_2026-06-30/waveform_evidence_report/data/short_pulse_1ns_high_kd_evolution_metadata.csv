@@ -1,0 +1,9 @@
+case_id,flow,label,color,data_available,panel_order
+short_pulse_1ns_high,hspice_native_ibis,HSPICE native IBIS,#000000,True,0
+short_pulse_1ns_high,ngspice_legacy,legacy pybis,#e68613,True,1
+short_pulse_1ns_high,ngspice_value_match_v2,value-match v2,#7b2cbf,True,2
+short_pulse_1ns_high,ngspice_two_state_identity,two-state identity,#1b9e77,True,3
+short_pulse_1ns_high,ngspice_two_state_pwl,two-state PWL,#66a61e,True,4
+short_pulse_1ns_high,ngspice_two_state_directional,two-state directional,#1f77b4,True,5
+short_pulse_1ns_high,ngspice_two_state_directional_residual,directional + residual,#d62728,True,6
+short_pulse_1ns_high,ngspice_two_state_directional_residual_recover_mean,recover mean,#2ca02c,True,7

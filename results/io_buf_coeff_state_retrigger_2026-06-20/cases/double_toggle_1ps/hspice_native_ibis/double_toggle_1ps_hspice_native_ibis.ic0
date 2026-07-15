@@ -1,0 +1,23 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "00:20:33 06/21/2026 "
+* "netlist" "double_toggle_1ps_hspice_native_ibis.sp "
+* "runtitle" "io_buf hspice native ibis ku/kd extraction double_toggle_1ps"
+* time =  0.000e+00       
+* temperature =  2.700e+01       
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc= 1.000e-12       
+.nodeset
++ dig_q = 5.000e-01       
++ en_sig = 3.300e+00       
++ gc_ref = 0.000e+00       
++ in_dig = 0.000e+00       
++ kd = 1.000e+00       
++ ku = 0.000e+00       
++ pad_ibis = 1.371e-09       
++ pc_ref = 3.300e+00       
++ pd_ref = 0.000e+00       
++ pu_ref = 3.300e+00       
+***   END: Saved Operating Point ***                     

@@ -1,0 +1,15 @@
+{
+  "deck_sha256": "b1c79b2576b550723e67a0eab59665cd6355ebccb5efff494aa72939db479b3f",
+  "extra": {
+    "case_id": "double_toggle_1ps",
+    "family": "io_buf_native_ibis",
+    "reference": "native_ibis"
+  },
+  "inputs": [
+    {
+      "name": "io_buf.ibs",
+      "sha256": "6c4b8b0a75c4000626d17a3cf1006cb26cb92d619d22d0e3b9860fb948d6076a",
+      "size": 574684
+    }
+  ]
+}

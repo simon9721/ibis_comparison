@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "49d1084221e83635068284d6118e8a64ce57aa8ad0b622405ad84141e5730cce",
+  "extra": {
+    "case_id": "short_pulse_2ns_high",
+    "family": "io_buf_transistor_sp",
+    "reference": "transistor_sp"
+  },
+  "inputs": [
+    {
+      "name": "io_buf.sp",
+      "sha256": "1567b3cae6390433ab4f6cc22133f017cd86a607fbb8b06bfb3fd75408bf581a",
+      "size": 2203
+    },
+    {
+      "name": "hspice_ngspice.mod",
+      "sha256": "9e37aaa69cb8723859caccd7e0a3e37bc8ed72ba7e2cf59a387acee373f1ccee",
+      "size": 5759
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+case_id,flow,label,color,included_in_ku_kd_panels,included_in_pad_panel,data_available,time_ns,start_ns,end_ns
+short_pulse_1ns_high,hspice_native_ibis,HSPICE native IBIS,#000000,True,True,True,,,
+short_pulse_1ns_high,ngspice_legacy,legacy pybis,#e68613,True,True,True,,,
+short_pulse_1ns_high,ngspice_value_match_v2,value-match v2,#7b2cbf,True,True,True,,,
+short_pulse_1ns_high,ngspice_two_state_directional_residual,directional + residual,#d62728,True,True,True,,,
+short_pulse_1ns_high,ngspice_two_state_directional_residual_recover_mean,recover mean,#2ca02c,True,True,True,,,
+short_pulse_1ns_high,hspice_transistor_sp,HSPICE transistor io_buf.sp,#8a8a8a,False,True,True,,,
+short_pulse_1ns_high,edge_1,rise,#444444,True,True,True,5.0005,,
+short_pulse_1ns_high,edge_2,reverse/fall,#444444,True,True,True,6.0005,,
+short_pulse_1ns_high,native_kd_hold_region,native-IBIS Kd hold region,#f2c14e,True,True,True,,6.0005,8.057456796447054

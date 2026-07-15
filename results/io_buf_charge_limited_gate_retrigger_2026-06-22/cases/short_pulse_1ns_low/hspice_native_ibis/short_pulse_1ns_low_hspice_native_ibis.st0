@@ -1,0 +1,55 @@
+****** PrimeSim HSPICE -- T-2022.06 win64 (May 20 2022 7637141) ******
+Input File: short_pulse_1ns_low_hspice_native_ibis.sp
+lic:
+lic: FLEXlm: SDK_12.10
+lic: USER:   sh3qm                HOSTNAME: rd78ece-emclab
+lic: HOSTID: 00ff89f5aa52         PID:      6164
+lic: Using FLEXlm license file:
+lic: 1704@synopsys.lic.mst.edu
+lic: Checkout 1 hspice
+lic: License/Maintenance for hspice will expire on 26-may-2027/2026.03
+lic: 1(in_use)/50(total) FLOATING license(s) on SERVER 1704@synopsys.lic.mst.edu
+lic:
+
+ init: begin read circuit files, cpu clock= 1.97E-01
+       option search = C:/synopsys/Hspice_T-2022.06/parts/behave/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/AD/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/XILINX/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/TLINE/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/TI/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/SIGNET/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/PCI/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/LIN_TECH/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/PET/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/DI0/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/COMLINE/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/BURR_BRM/
+       option search = C:/synopsys/Hspice_T-2022.06/parts/BJT/
+       option post =     2.00
+       option probe
+       option accurate
+       option ingold =     2.00
+ init: end read circuit files, cpu clock= 2.42E-01 peak memory=      72 mb
+ init: begin check errors, cpu clock= 2.42E-01
+ init: end check errors, cpu clock= 2.49E-01 peak memory=      73 mb
+ init: begin setup matrix, pivot=     0 cpu clock= 2.49E-01
+       establish matrix -- done, cpu clock= 2.49E-01 peak memory=      73 mb
+       re-order matrix -- done, cpu clock= 2.49E-01 peak memory=      73 mb
+ init: end setup matrix, cpu clock= 2.50E-01 peak memory=      73 mb
+ dcop: begin dcop, cpu clock= 2.54E-01
+ dcop: end dcop, cpu clock= 2.56E-01 peak memory=      73 mb tot_iter=       5
+ output: short_pulse_1ns_low_hspice_native_ibis.tr0
+ sweep: tran tran0    begin, stop_t=  1.65E-08 #sweeps=**** cpu clock= 2.58E-01
+ tran: time= 2.1386E-09 tot_iter=      16 conv_iter=       8 cpu clock= 2.58E-01
+ tran: time= 3.3078E-09 tot_iter=      72 conv_iter=      36 cpu clock= 2.59E-01
+ tran: time= 4.9566E-09 tot_iter=     208 conv_iter=     104 cpu clock= 2.60E-01
+ tran: time= 6.6321E-09 tot_iter=     330 conv_iter=     165 cpu clock= 2.61E-01
+ tran: time= 8.2531E-09 tot_iter=     426 conv_iter=     213 cpu clock= 2.62E-01
+ tran: time= 9.9179E-09 tot_iter=     632 conv_iter=     316 cpu clock= 2.66E-01
+ tran: time= 1.1577E-08 tot_iter=     771 conv_iter=     385 cpu clock= 2.67E-01
+ tran: time= 1.3550E-08 tot_iter=     819 conv_iter=     409 cpu clock= 2.68E-01
+ tran: time= 1.5200E-08 tot_iter=     823 conv_iter=     411 cpu clock= 2.68E-01
+ tran: time= 1.6500E-08 tot_iter=     827 conv_iter=     413 cpu clock= 2.68E-01
+ sweep: tran tran0    end, cpu clock= 2.68E-01 peak memory=      73 mb
+>info:         ***** hspice job concluded
+ lic: Release hspice token(s)

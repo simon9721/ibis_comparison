@@ -1,0 +1,2 @@
+settled_high_v,pad_at_reverse_hspice_v,pad_at_reverse_ngspice_v,hspice_pad_peak_v,hspice_pad_peak_time_ns,ngspice_pad_peak_v,ngspice_pad_peak_time_ns,hspice_ku_peak,hspice_ku_peak_time_ns,ngspice_ku_peak,ngspice_ku_peak_time_ns,hspice_kd_min,ngspice_kd_min,kd_recovery_delta_ps
+1.544746,0.2655690618705031,0.2602084214506629,0.8250917,7.424741,1.5213845112415332,7.440078,0.5431727,7.371482,1.012537321335477,7.19504,-0.07198926,-0.07240746584312961,360.4351117555833

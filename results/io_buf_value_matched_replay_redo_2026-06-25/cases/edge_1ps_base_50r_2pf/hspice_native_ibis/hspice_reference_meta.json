@@ -1,0 +1,15 @@
+{
+  "deck_sha256": "b2c293c3e13c77a9f233b2a801dcccaa5d53a366fc15e40867c74c3ed81f1650",
+  "extra": {
+    "case_id": "edge_1ps_base_50r_2pf",
+    "family": "io_buf_native_ibis",
+    "reference": "native_ibis"
+  },
+  "inputs": [
+    {
+      "name": "io_buf.ibs",
+      "sha256": "6c4b8b0a75c4000626d17a3cf1006cb26cb92d619d22d0e3b9860fb948d6076a",
+      "size": 574684
+    }
+  ]
+}

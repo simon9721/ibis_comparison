@@ -33,6 +33,83 @@ def find_ngspice_bin():
 
 class TestPybis2Spice(unittest.TestCase):
 
+    def test_value_matched_replay_v2_aliases(self):
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Value-Matched-Replay-V2-Hybrid"),
+            "InputDrivenValueMatchedReplayV2Hybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenValueMatchedReplayV2Balanced"),
+            "InputDrivenValueMatchedReplayV2Hybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Value-Matched-Replay-V2-Split-Ku-Kd"),
+            "InputDrivenValueMatchedReplayV2SplitKuKd",
+        )
+
+    def test_two_state_gate_aliases(self):
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Pwl-Full"),
+            "InputDrivenTwoStateGatePwlFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Identity-Full"),
+            "InputDrivenTwoStateGateIdentityFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Pwl-Hybrid"),
+            "InputDrivenTwoStateGatePwlHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Directional-Full"),
+            "InputDrivenTwoStateGateDirectionalFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenTwoStateGateDirectionalPwlFull"),
+            "InputDrivenTwoStateGateDirectionalFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Directional-Residual-Full"),
+            "InputDrivenTwoStateGateDirectionalResidualFull",
+        )
+
+    def test_value_matched_replay_v2_uses_fresh_timer(self):
+        class IbisData:
+            model_type = "output"
+            enable = "active-high"
+
+        kr = np.asarray(
+            [
+                [0.0, 0.0, 1.0],
+                [1e-9, 0.5, 0.5],
+                [2e-9, 1.0, 0.0],
+            ]
+        )
+        kf = np.asarray(
+            [
+                [0.0, 1.0, 0.0],
+                [1e-9, 0.5, 0.5],
+                [2e-9, 0.0, 1.0],
+            ]
+        )
+        text = subcircuit.create_ngspice_value_matched_replay_v2_input_control_netlist(
+            kr,
+            kf,
+            IbisData(),
+            mode="hybrid_balanced",
+        )
+        self.assertIn("VMELAPSED", text)
+        self.assertIn("VMSTART_LATCH", text)
+        self.assertIn("KUPRE", text)
+        self.assertIn("KDPRE", text)
+        self.assertIn("HVMHOLDTARGET", text)
+        self.assertIn("HVMPENDING", text)
+        self.assertIn("V(HVMPENDING) > 0.05", text)
+        self.assertIn("V(KUPRE) - V(KUSAMP)", text)
+        self.assertIn("V(KDPRE) - V(KDSAMP)", text)
+        self.assertIn("B37A VMARG 0 V = V(VMSTART_LATCH) + V(VMELAPSED)", text)
+        self.assertNotIn("VMARG 0 V = V(VMSTART) + V(HNX)", text)
+
     def test_extract_range_param(self):
         # Test an empty TypMinMax object
         data = TypMinMax()
@@ -61,7 +138,12 @@ class TestPybis2Spice(unittest.TestCase):
         component = ibis.get_component_by_name('74HCT1G08_GW')
         model = ibis.get_model_by_name('HCT1G08_IN_50')
         self.assertEqual(pybis2spice.extract_range_param(model.pullup_reference), None)
-        np.testing.assert_equal(pybis2spice.extract_range_param(model.c_comp), [2.8774e-12, 1.2578e-12, 5.2328e-12])
+        np.testing.assert_allclose(
+            pybis2spice.extract_range_param(model.c_comp),
+            [2.8774e-12, 1.2578e-12, 5.2328e-12],
+            rtol=1e-14,
+            atol=0,
+        )
         np.testing.assert_equal(pybis2spice.extract_range_param(component.package.r_pkg),
                                 [8.353E-02, 8.341E-02, 8.366E-02])
 
@@ -77,16 +159,24 @@ class TestPybis2Spice(unittest.TestCase):
                                 [[1, 0, 0, 0],
                                  [2, 0, 0, 0]])
 
-        np.testing.assert_equal(pybis2spice.extract_iv_table(model.pullup),
-                                [[-5.0e+00,  1.0e-04,  8.0e-05,  1.2e-04],
+        np.testing.assert_allclose(pybis2spice.extract_iv_table(model.pullup),
+                                   [[-5.0e+00,  1.0e-04,  8.0e-05,  1.2e-04],
                                 [-1.0e+00,  3.0e-05,  2.5e-05,  4.0e-05],
                                 [0.0e+00,  0.0e+00,  0.0e+00,  0.0e+00],
                                 [1.0e+00, -3.0e-05, -2.5e-05, -4.0e-05],
                                 [3.0e+00, -5.0e-05, -4.5e-05, -5.0e-05],
                                 [5.0e+00, -1.0e-04, -8.0e-05, -1.2e-04],
-                                [1.0e+01, -1.2e-04, -9.0e-05, -1.5e-04]])
+                                    [1.0e+01, -1.2e-04, -9.0e-05, -1.5e-04]],
+                                   rtol=1e-14,
+                                   atol=0)
 
-        np.testing.assert_equal(pybis2spice.extract_iv_table(model.gnd_clamp),
+        actual_gnd_clamp = pybis2spice.extract_iv_table(model.gnd_clamp)
+        # ecdtools versions differ on whether missing min/max corners remain
+        # NaN or inherit the typical value. Normalize both forms here.
+        for corner in (2, 3):
+            inherited = np.isclose(actual_gnd_clamp[:, corner], actual_gnd_clamp[:, 1], equal_nan=False)
+            actual_gnd_clamp[inherited, corner] = np.nan
+        np.testing.assert_equal(actual_gnd_clamp,
                                 [[-2.0, -6.158e+17, np.nan, np.nan],
                                 [-1.9, -1.697e+16, np.nan, np.nan],
                                 [-1.8, -467900000000000.0, np.nan, np.nan],
@@ -110,7 +200,7 @@ class TestPybis2Spice(unittest.TestCase):
                                 [0.0, 0.0, np.nan, np.nan],
                                 [5.0, 0.0, np.nan, np.nan]])
 
-        np.testing.assert_equal(pybis2spice.extract_iv_table(model.gnd_clamp),
+        np.testing.assert_equal(actual_gnd_clamp,
                                 [[-2.0, -6.158e+17, np.nan, np.nan],
                                  [-1.9, -1.697e+16, np.nan, np.nan],
                                  [-1.8, -467900000000000.0, np.nan, np.nan],
@@ -324,13 +414,531 @@ class TestPybis2Spice(unittest.TestCase):
             text = output_path.read_text()
             self.assertIn('.SUBCKT HCT1G08_IN_50_Input_Typical', text)
             self.assertNotIn('OUT IN EN VCC VSS', text)
-            self.assertIn('pwl(', text)
+            self.assertIn('C2 DIE 0 {C_comp}', text)
 
     def test_input_driven_aliases_normalize(self):
         self.assertEqual(subcircuit.normalize_subcircuit_type("InputDriven"), "InputDriven")
         self.assertEqual(subcircuit.normalize_subcircuit_type("Input-Driven"), "InputDriven")
         self.assertEqual(subcircuit.normalize_subcircuit_type("NgSpiceInputDriven"), "InputDriven")
         self.assertEqual(subcircuit.normalize_subcircuit_type("NgSpiceExternalInput"), "InputDriven")
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenStateContinuous"),
+            "InputDrivenStateContinuous",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-State-Continuous"),
+            "InputDrivenStateContinuous",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenCoeffState"),
+            "InputDrivenCoeffState",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Coeff-State"),
+            "InputDrivenCoeffState",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenShortPulseHybrid"),
+            "InputDrivenShortPulseHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Short-Pulse-Hybrid"),
+            "InputDrivenShortPulseHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenShortPulseHybridMainSlope"),
+            "InputDrivenShortPulseHybridMainSlope",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenShortPulseHybridConstrained"),
+            "InputDrivenShortPulseHybridConstrained",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenGateStateHybrid"),
+            "InputDrivenGateStateHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Gate-State-Hybrid"),
+            "InputDrivenGateStateHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenGateStateFull"),
+            "InputDrivenGateStateFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenDirectionalGateStateHybrid"),
+            "InputDrivenDirectionalGateStateHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Directional-Gate-State-Hybrid"),
+            "InputDrivenDirectionalGateStateHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenDirectionalGateStateFull"),
+            "InputDrivenDirectionalGateStateFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenChargeLimitedGateHybrid"),
+            "InputDrivenChargeLimitedGateHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Charge-Limited-Gate-Hybrid"),
+            "InputDrivenChargeLimitedGateHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenChargeLimitedGateFull"),
+            "InputDrivenChargeLimitedGateFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenChargeLimitedGateFastRecover"),
+            "InputDrivenChargeLimitedGateFastRecover",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenValueMatchedReplayHybrid"),
+            "InputDrivenValueMatchedReplayHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Value-Matched-Replay-Hybrid"),
+            "InputDrivenValueMatchedReplayHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenValueMatchedReplayBalanced"),
+            "InputDrivenValueMatchedReplayHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenValueMatchedReplayFull"),
+            "InputDrivenValueMatchedReplayFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenValueMatchedReplayKuOnly"),
+            "InputDrivenValueMatchedReplayKuOnly",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenValueMatchedReplayKdOnly"),
+            "InputDrivenValueMatchedReplayKdOnly",
+        )
+
+    def test_generate_input_driven_state_continuous_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            output_path = Path(temp_dir) / 'ng_input_driven_state.sub'
+            ret = subcircuit.generate_spice_model(io_type="Output",
+                                                  subcircuit_type="InputDrivenStateContinuous",
+                                                  ibis_data=ibis_data,
+                                                  corner="Typical",
+                                                  output_filepath=str(output_path))
+            self.assertEqual(ret, 0)
+
+            text = output_path.read_text()
+            self.assertIn('.SUBCKT LVC2T45_IO_A_18_OutputInput_Typical OUT IN EN VCC VSS', text)
+            self.assertIn('InputDrivenStateContinuous exposes OUT IN EN VCC VSS pins', text)
+            self.assertIn('PSTATE', text)
+            self.assertIn('KUTARGET', text)
+            self.assertIn('KDTARGET', text)
+            self.assertIn('rise_duration_ns', text)
+            self.assertIn('fall_duration_ns', text)
+            self.assertIn('coeff_tau=1p', text)
+            self.assertIn('pwl(min(max(V(KRARG), 0),', text)
+            self.assertIn('pwl(min(max(V(KFARG), 0),', text)
+
+    def test_generate_input_driven_coeff_state_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_coeff_state.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenCoeffState",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('.SUBCKT LVC2T45_IO_A_18_OutputInput_Typical OUT IN EN VCC VSS', text)
+        self.assertIn('InputDrivenCoeffState exposes OUT IN EN VCC VSS pins', text)
+        self.assertIn('Coefficient-state input-driven waveform coefficient control', text)
+        self.assertIn('KUTARGET', text)
+        self.assertIn('KDTARGET', text)
+        self.assertIn('B22 Ku 0 I = -{coeff_c} * (V(KUTARGET) - V(Ku)) / coeff_tau', text)
+        self.assertIn('B23 Kd 0 I = -{coeff_c} * (V(KDTARGET) - V(Kd)) / coeff_tau', text)
+        self.assertIn('Td=', text)
+        self.assertNotIn('PSTATE', text)
+
+    def test_generate_input_driven_short_pulse_hybrid_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_short_pulse_hybrid.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenShortPulseHybrid",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('.SUBCKT LVC2T45_IO_A_18_OutputInput_Typical OUT IN EN VCC VSS', text)
+        self.assertIn('InputDrivenShortPulseHybrid exposes OUT IN EN VCC VSS pins', text)
+        self.assertIn('Short-pulse hybrid input-driven waveform coefficient control', text)
+        self.assertIn('KULEG', text)
+        self.assertIn('KDLEG', text)
+        self.assertIn('KUCOR', text)
+        self.assertIn('KDCOR', text)
+        self.assertIn('HSHORT', text)
+        self.assertIn('short_pulse_window_ns', text)
+        self.assertIn('KUTARGET', text)
+        self.assertIn('KDTARGET', text)
+
+    def test_legacy_input_driven_does_not_include_short_pulse_hybrid(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_legacy_no_hybrid.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDriven",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('NgSpiceInputDriven exposes OUT IN EN VCC VSS pins', text)
+        self.assertNotIn('Short-pulse hybrid input-driven waveform coefficient control', text)
+        self.assertNotIn('HSHORT', text)
+        self.assertNotIn('Gate-state input-driven waveform coefficient control', text)
+        self.assertNotIn('GUP', text)
+        self.assertNotIn('Directional gate-state input-driven waveform coefficient control', text)
+        self.assertNotIn('KU_ON', text)
+        self.assertNotIn('Charge-limited gate-state input-driven waveform coefficient control', text)
+        self.assertNotIn('QPU', text)
+        self.assertNotIn('Value-matched replay input-driven waveform coefficient control', text)
+        self.assertNotIn('KUSAMP', text)
+
+    def test_generate_input_driven_gate_state_hybrid_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_gate_state_hybrid.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenGateStateHybrid",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('.SUBCKT LVC2T45_IO_A_18_OutputInput_Typical OUT IN EN VCC VSS', text)
+        self.assertIn('InputDrivenGateState exposes OUT IN EN VCC VSS pins', text)
+        self.assertIn('Gate-state input-driven waveform coefficient control', text)
+        self.assertIn('GUP', text)
+        self.assertIn('GDN', text)
+        self.assertIn('KUGATE', text)
+        self.assertIn('KDGATE', text)
+        self.assertIn('KULEG', text)
+        self.assertIn('KDLEG', text)
+        self.assertIn('HINTERRUPT', text)
+        self.assertIn('KOVERLAP', text)
+
+    def test_generate_input_driven_gate_state_full_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_gate_state_full.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenGateStateFull",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('Gate-state mode: full', text)
+        self.assertIn('B42 KUTARGET 0 V = V(KUGATE)', text)
+
+    def test_generate_input_driven_two_state_gate_pwl_full_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_two_state_gate_pwl_full.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenTwoStateGatePwlFull",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('InputDrivenTwoStateGate exposes OUT IN EN VCC VSS pins', text)
+        self.assertIn('Two-state gate input-driven waveform coefficient control', text)
+        self.assertIn('Two-state gate mode: pwl_full', text)
+        self.assertIn('GUP', text)
+        self.assertIn('GDN', text)
+        self.assertIn('GUPTARGET', text)
+        self.assertIn('GDNTARGET', text)
+        self.assertIn('KUGATE', text)
+        self.assertIn('KDGATE', text)
+        self.assertIn('KULEG', text)
+        self.assertIn('KDLEG', text)
+        self.assertIn('KOVERLAP', text)
+        self.assertIn('B42 KUTARGET 0 V = V(KUGATE)', text)
+        self.assertIn('B43 KDTARGET 0 V = V(KDGATE)', text)
+
+    def test_generate_input_driven_two_state_gate_identity_and_hybrid_output_models(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        for subckt_type, expected in [
+            ("InputDrivenTwoStateGateIdentityFull", "Two-state gate mode: identity_full"),
+            ("InputDrivenTwoStateGatePwlHybrid", "Two-state gate mode: pwl_hybrid"),
+        ]:
+            output_path = tmp_base / f'{subckt_type}.sub'
+            ret = subcircuit.generate_spice_model(io_type="Output",
+                                                  subcircuit_type=subckt_type,
+                                                  ibis_data=ibis_data,
+                                                  corner="Typical",
+                                                  output_filepath=str(output_path))
+            self.assertEqual(ret, 0)
+            text = output_path.read_text()
+            self.assertIn(expected, text)
+            self.assertIn('Two-state gate input-driven waveform coefficient control', text)
+            self.assertIn('GUPTARGET', text)
+            self.assertIn('GDNTARGET', text)
+
+    def test_generate_input_driven_two_state_gate_directional_output_models(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        for subckt_type, expected in [
+            ("InputDrivenTwoStateGateDirectionalFull", "Two-state gate mode: directional_full"),
+            ("InputDrivenTwoStateGateDirectionalResidualFull", "Two-state gate mode: directional_residual_full"),
+            ("InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull", "Two-state gate mode: directional_residual_recover_mean_full"),
+            ("InputDrivenTwoStateGateDirectionalResidualRecoverFastFull", "Two-state gate mode: directional_residual_recover_fast_full"),
+        ]:
+            output_path = tmp_base / f'{subckt_type}.sub'
+            ret = subcircuit.generate_spice_model(io_type="Output",
+                                                  subcircuit_type=subckt_type,
+                                                  ibis_data=ibis_data,
+                                                  corner="Typical",
+                                                  output_filepath=str(output_path))
+            self.assertEqual(ret, 0)
+            text = output_path.read_text()
+            self.assertIn(expected, text)
+            self.assertIn('KUGATE_ON', text)
+            self.assertIn('KUGATE_OFF', text)
+            self.assertIn('KDGATE_ON', text)
+            self.assertIn('KDGATE_OFF', text)
+            self.assertIn('GDNRATE', text)
+            self.assertIn('KDRES', text)
+            if "Recover" in subckt_type:
+                self.assertIn('Retrigger-aware PD recovery delay', text)
+                self.assertIn('PDRECOVEREDGE', text)
+                self.assertIn('PDONP_RECOVER', text)
+                self.assertIn('HSHORT_HIGH_RECOVERY', text)
+
+    def test_generate_input_driven_directional_gate_state_hybrid_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_directional_gate_state_hybrid.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenDirectionalGateStateHybrid",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('.SUBCKT LVC2T45_IO_A_18_OutputInput_Typical OUT IN EN VCC VSS', text)
+        self.assertIn('InputDrivenDirectionalGateState exposes OUT IN EN VCC VSS pins', text)
+        self.assertIn('Directional gate-state input-driven waveform coefficient control', text)
+        self.assertIn('KU_ON', text)
+        self.assertIn('KU_OFF', text)
+        self.assertIn('KD_OFF', text)
+        self.assertIn('KD_ON', text)
+        self.assertIn('KUDIR', text)
+        self.assertIn('KDDIR', text)
+        self.assertIn('HFALL_AFTER_RISE', text)
+        self.assertIn('HRISE_AFTER_FALL', text)
+        self.assertIn('HDIRACTIVE', text)
+        self.assertIn('HALIGN', text)
+        self.assertIn('KOVERLAP', text)
+
+    def test_generate_input_driven_directional_gate_state_full_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_directional_gate_state_full.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenDirectionalGateStateFull",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('Directional mode: full', text)
+        self.assertIn('BHALIGN HALIGN 0 V = 1.0', text)
+
+    def test_generate_input_driven_charge_limited_gate_hybrid_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_charge_limited_gate_hybrid.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenChargeLimitedGateHybrid",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('.SUBCKT LVC2T45_IO_A_18_OutputInput_Typical OUT IN EN VCC VSS', text)
+        self.assertIn('InputDrivenChargeLimitedGate exposes OUT IN EN VCC VSS pins', text)
+        self.assertIn('Charge-limited gate-state input-driven waveform coefficient control', text)
+        self.assertIn('QPU', text)
+        self.assertIn('QPD', text)
+        self.assertIn('QPUTARGET', text)
+        self.assertIn('QPDTARGET', text)
+        self.assertIn('KUCHG', text)
+        self.assertIn('KDCHG', text)
+        self.assertIn('HFALL_AFTER_RISE', text)
+        self.assertIn('HRISE_AFTER_FALL', text)
+        self.assertIn('HCHGACTIVE', text)
+        self.assertIn('HAD_RISE', text)
+        self.assertIn('HAD_FALL', text)
+        self.assertIn('KOVERLAP', text)
+        self.assertNotIn('KU_ON', text)
+        self.assertNotIn('KU_OFF', text)
+
+    def test_generate_input_driven_charge_limited_gate_full_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_charge_limited_gate_full.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenChargeLimitedGateFull",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('Charge-limited mode: full', text)
+        self.assertIn('BHCHGACTIVE HCHGACTIVE 0 V = 1.0', text)
+
+    def test_generate_input_driven_charge_limited_gate_fast_recover_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_charge_limited_gate_fast.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenChargeLimitedGateFastRecover",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('Charge-limited mode: fast_recover', text)
+        self.assertIn('Fast recovery delay', text)
+
+    def test_generate_input_driven_value_matched_replay_hybrid_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_value_matched_replay_hybrid.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenValueMatchedReplayHybrid",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('.SUBCKT LVC2T45_IO_A_18_OutputInput_Typical OUT IN EN VCC VSS', text)
+        self.assertIn('InputDrivenValueMatchedReplay exposes OUT IN EN VCC VSS pins', text)
+        self.assertIn('Value-matched replay input-driven waveform coefficient control', text)
+        self.assertIn('KUSAMP', text)
+        self.assertIn('KDSAMP', text)
+        self.assertIn('TR_KU', text)
+        self.assertIn('TR_KD', text)
+        self.assertIn('TF_KU', text)
+        self.assertIn('TF_KD', text)
+        self.assertIn('TR_START', text)
+        self.assertIn('TF_START', text)
+        self.assertIn('VMSTART', text)
+        self.assertIn('MATCH_ERR_KU', text)
+        self.assertIn('MATCH_ERR_KD', text)
+        self.assertIn('MATCH_AMBIGUOUS', text)
+        self.assertIn('HVMATCH', text)
+        self.assertIn('policy=balanced', text)
+
+    def test_generate_input_driven_value_matched_replay_full_output_model(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        output_path = tmp_base / 'ng_input_driven_value_matched_replay_full.sub'
+        ret = subcircuit.generate_spice_model(io_type="Output",
+                                              subcircuit_type="InputDrivenValueMatchedReplayFull",
+                                              ibis_data=ibis_data,
+                                              corner="Typical",
+                                              output_filepath=str(output_path))
+        self.assertEqual(ret, 0)
+
+        text = output_path.read_text()
+        self.assertIn('Value-matched mode: full_balanced', text)
+        self.assertIn('B48 HVMATCH 0 V = 1.0', text)
+
+    def test_generate_input_driven_value_matched_replay_policy_variants(self):
+        ibis = load_test_ibis('sn74lvc2t45.ibs')
+        ibis_data = pybis2spice.DataModel(ibis, 'LVC2T45_IO_A_18', 'LVC2T45_DCT')
+
+        tmp_base = Path(__file__).resolve().parents[3] / '.tmp' / 'pybis2spice_tests'
+        tmp_base.mkdir(parents=True, exist_ok=True)
+        for subckt_type, expected in [
+            ("InputDrivenValueMatchedReplayKuOnly", "policy=ku_only"),
+            ("InputDrivenValueMatchedReplayKdOnly", "policy=kd_only"),
+        ]:
+            output_path = tmp_base / f'{subckt_type}.sub'
+            ret = subcircuit.generate_spice_model(io_type="Output",
+                                                  subcircuit_type=subckt_type,
+                                                  ibis_data=ibis_data,
+                                                  corner="Typical",
+                                                  output_filepath=str(output_path))
+            self.assertEqual(ret, 0)
+            self.assertIn(expected, output_path.read_text())
 
     def test_generate_ngspice_generic_model_uses_pwl_syntax(self):
         ibis = load_test_ibis('hct1g08.ibs')

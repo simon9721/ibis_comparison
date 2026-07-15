@@ -1,0 +1,15 @@
+{
+  "deck_sha256": "07579188792e9db248c27e2e60432e0c844364ee937d295a2e07746dcd6c8a3f",
+  "extra": {
+    "case_id": "short_pulse_500ps_low",
+    "family": "io_buf_native_ibis",
+    "reference": "native_ibis"
+  },
+  "inputs": [
+    {
+      "name": "io_buf.ibs",
+      "sha256": "6c4b8b0a75c4000626d17a3cf1006cb26cb92d619d22d0e3b9860fb948d6076a",
+      "size": 574684
+    }
+  ]
+}
