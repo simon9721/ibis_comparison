@@ -47,6 +47,226 @@ class TestPybis2Spice(unittest.TestCase):
             "InputDrivenValueMatchedReplayV2SplitKuKd",
         )
 
+    def test_pad_matched_replay_aliases(self):
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Pad-Matched-Replay-V1"),
+            "InputDrivenPadMatchedReplayV1",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type(
+                "Input-Driven-Pad-Matched-Replay-V1-Slew-Aware"
+            ),
+            "InputDrivenPadMatchedReplayV1SlewAware",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Pad-Matched-Replay-V2"),
+            "InputDrivenPadMatchedReplayV2",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type(
+                "Input-Driven-Pad-Matched-Replay-V2-Delayed"
+            ),
+            "InputDrivenPadMatchedReplayV2Delayed",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type(
+                "Input-Driven-Pad-Matched-Replay-V2-Slew-Aware"
+            ),
+            "InputDrivenPadMatchedReplayV2SlewAware",
+        )
+
+    def test_inverse_time_lookup_occurrence_policy(self):
+        time = np.asarray([0.0, 1e-9, 2e-9, 3e-9])
+        values = np.asarray([0.0, 0.5, 0.5, 1.0])
+        early_x, early_t = subcircuit.inverse_time_lookup_table(
+            time, values, point_count=3, occurrence="earliest"
+        )
+        late_x, late_t = subcircuit.inverse_time_lookup_table(
+            time, values, point_count=3, occurrence="latest"
+        )
+        self.assertAlmostEqual(float(early_x[1]), 0.5)
+        self.assertAlmostEqual(float(early_t[1]), 1.0)
+        self.assertAlmostEqual(float(late_t[1]), 2.0)
+
+    def test_inverse_trajectory_lookup_finds_distinct_ring_crossings(self):
+        time = np.asarray([0.0, 1e-9, 2e-9, 3e-9])
+        values = np.asarray([0.0, 1.0, 0.4, 1.1])
+        early_x, early_t = subcircuit.inverse_trajectory_time_lookup_table(
+            time, values, point_count=12, occurrence="earliest"
+        )
+        late_x, late_t = subcircuit.inverse_trajectory_time_lookup_table(
+            time, values, point_count=12, occurrence="latest"
+        )
+        target_index = int(np.argmin(np.abs(early_x - 0.7)))
+        self.assertLess(float(early_t[target_index]), 1.0)
+        self.assertGreater(float(late_t[target_index]), 2.0)
+        self.assertGreater(
+            float(late_t[target_index] - early_t[target_index]), 1.0
+        )
+
+    def test_pad_matched_replay_uses_one_latched_pad_start(self):
+        class IbisData:
+            model_type = "output"
+            enable = "active-high"
+
+        kr = np.asarray(
+            [[0.0, 0.0, 1.0], [1e-9, 0.5, 0.5], [2e-9, 1.0, 0.0]]
+        )
+        kf = np.asarray(
+            [[0.0, 1.0, 0.0], [1e-9, 0.5, 0.5], [2e-9, 0.0, 1.0]]
+        )
+        reference = {
+            "load_ohm": 50.0,
+            "load_pf": 2.0,
+            "rising": {"time_ns": [0.0, 1.0, 2.0], "pad_v": [0.0, 0.5, 1.0]},
+            "falling": {"time_ns": [0.0, 1.0, 2.0], "pad_v": [1.0, 0.5, 0.0]},
+        }
+        text = subcircuit.create_ngspice_pad_matched_replay_input_control_netlist(
+            kr, kf, IbisData(), reference, mode="voltage_only"
+        )
+        self.assertIn("PADSAMP", text)
+        self.assertIn("PADSTART_LATCH", text)
+        self.assertIn("PMELAPSED", text)
+        self.assertIn("PADARG", text)
+        self.assertIn("PADMAPACTIVE", text)
+        self.assertIn("KUPADMATCH", text)
+        self.assertIn("KDPADMATCH", text)
+        self.assertNotIn("V(OUT,VSS)-V(PADPRE,VSS))/0.01) * V(OUT", text)
+
+        v2_text = subcircuit.create_ngspice_pad_matched_replay_input_control_netlist(
+            kr, kf, IbisData(), reference, mode="voltage_only_v2"
+        )
+        self.assertIn("HPMALPHA", v2_text)
+        self.assertIn("B50A HPMHOLD 0 V =", v2_text)
+        self.assertIn("B50B HPMALPHA 0 V =", v2_text)
+        self.assertIn("KUSAMP", v2_text)
+        self.assertIn("KDSAMP", v2_text)
+        self.assertIn("(1-V(HPMALPHA))*V(KULEG)", v2_text)
+        self.assertIn("B53 Ku 0 V = V(KUTARGET)", v2_text)
+        self.assertNotIn("B53 Ku 0 I =", v2_text)
+        self.assertNotIn("RPADPRE OUT PADPRE", v2_text)
+        self.assertIn("B53 Ku 0 I =", text)
+
+        delayed_text = subcircuit.create_ngspice_pad_matched_replay_input_control_netlist(
+            kr, kf, IbisData(), reference, mode="voltage_only_delayed_v2"
+        )
+        self.assertIn("HREVERSE_SAMPLE", delayed_text)
+        self.assertIn("PMSAMPLE_DELAY", delayed_text)
+        self.assertIn("CHFALL_SAMPLET0", delayed_text)
+        self.assertIn("CHRISE_SAMPLET0", delayed_text)
+        self.assertIn("CHFALL_SAMPLEARM", delayed_text)
+        self.assertIn("V(HFALL_SAMPLE_ARM)>0.5", delayed_text)
+        self.assertIn("time*{time_scale}-V(HFALL_SAMPLE_T0)", delayed_text)
+        self.assertNotIn("THFALL_SAMPLE ", delayed_text)
+        self.assertNotIn("THRISE_SAMPLE ", delayed_text)
+        self.assertIn("V(HREVERSE_SAMPLE)", delayed_text)
+        self.assertIn("IBIS-derived reverse sampling delay", delayed_text)
+        self.assertNotIn(
+            "BPMSAMPLE PMSAMPLE 0 V = max(0,min(max(V(HREVERSE_EDGE)",
+            delayed_text,
+        )
+
+        slew_text = subcircuit.create_ngspice_pad_matched_replay_input_control_netlist(
+            kr, kf, IbisData(), reference, mode="slew_aware"
+        )
+        self.assertIn("PADSLEWSAMP", slew_text)
+        self.assertIn("TR_PAD_SCORE", slew_text)
+        self.assertIn("TF_PAD_SCORE", slew_text)
+        self.assertIn("TR_PAD_SCORE_LATE", slew_text)
+        self.assertIn("TF_PAD_SCORE_LATE", slew_text)
+        self.assertIn("RPADPRE OUT PADPRE 1k", slew_text)
+        self.assertIn(
+            "abs(V(TR_PAD_SCORE_LATE)-V(TR_PAD_SCORE))", slew_text
+        )
+
+    def _coefficient_table(self, times, ku, kd):
+        return np.column_stack([
+            np.asarray(times, dtype=float),
+            np.asarray(ku, dtype=float),
+            np.asarray(kd, dtype=float),
+        ])
+
+    def test_settled_coefficient_value_rejects_boundary_impulse(self):
+        # A settled prefix preceded by a single spurious first sample, of the
+        # kind a fast characterization edge produces via C_comp*dV/dt.
+        times = np.linspace(0.0, 1e-9, 51)
+        ku = np.full(51, -0.01)
+        ku[0] = 0.6232
+        value, drift = subcircuit.settled_coefficient_value(times, ku, at_start=True)
+        self.assertAlmostEqual(value, -0.01, places=6)
+        self.assertLess(drift, 0.01)
+
+    def test_settled_coefficient_value_reports_drift_when_not_settled(self):
+        # A boundary that is already in transition must advertise large drift so
+        # the opposite boundary wins when the two rails are combined.
+        times = np.linspace(0.0, 1e-9, 51)
+        value, drift = subcircuit.settled_coefficient_value(
+            times, np.linspace(1.0, 0.0, 51), at_start=True
+        )
+        self.assertGreater(drift, 0.01)
+
+    def test_gate_state_endpoints_recover_rails_from_one_clean_boundary(self):
+        # Rising table settles cleanly at both ends; falling table has no
+        # settled prefix at all. The rails must still come out near 0 and 1.
+        times = np.linspace(0.0, 1e-9, 101)
+        step = np.clip((np.arange(101) - 40) / 20.0, 0.0, 1.0)
+        kr = self._coefficient_table(times, step, 1.0 - step)
+        falling_ku = np.linspace(1.0, 0.0, 101)
+        kf = self._coefficient_table(times, falling_ku, 1.0 - falling_ku)
+        kr[0, 1], kr[0, 2] = 0.62, 0.57
+        kf[0, 1], kf[0, 2] = -0.39, 0.77
+
+        ku_off, ku_on, kd_on, kd_off, quality = subcircuit.gate_state_endpoints(kr, kf)
+        self.assertLess(abs(ku_off), 0.05)
+        self.assertLess(abs(ku_on - 1.0), 0.05)
+        self.assertLess(abs(kd_off), 0.05)
+        self.assertLess(abs(kd_on - 1.0), 0.05)
+        self.assertGreater(quality["ku_range"], 0.9)
+        self.assertGreater(quality["kd_range"], 0.9)
+        self.assertFalse(quality["degenerate"])
+
+    def test_gate_state_endpoints_flag_degenerate_tables(self):
+        # Neither coefficient carries a usable on/off range; this must be
+        # reported rather than silently producing an unnormalized map.
+        times = np.linspace(0.0, 1e-9, 21)
+        flat = self._coefficient_table(times, np.full(21, 0.3), np.full(21, 0.4))
+        _, _, _, _, quality = subcircuit.gate_state_endpoints(flat, flat)
+        self.assertTrue(quality["degenerate"])
+
+    def test_main_transition_crossing_ignores_boundary_spike(self):
+        # A one-sample spike at the origin crosses every level instantly. Onset
+        # must come from the real transition body, not from that spike.
+        t = np.linspace(0.0, 1.0, 101)
+        progress = np.clip((np.arange(101) - 50) / 20.0, 0.0, 1.0)
+        progress[0] = 0.95
+        naive = subcircuit.crossing_time_ns(t, progress, 0.05)
+        robust = subcircuit.main_transition_crossing_ns(t, progress, 0.05)
+        self.assertLess(naive, 0.05)
+        self.assertGreater(robust, 0.4)
+
+    def test_main_transition_crossing_matches_first_crossing_when_clean(self):
+        # No artifact means no behaviour change; clean tables must keep the
+        # timing they had before the robust estimator existed.
+        t = np.linspace(0.0, 1.0, 101)
+        progress = np.clip((np.arange(101) - 30) / 40.0, 0.0, 1.0)
+        for level in (0.05, 0.632, 0.90):
+            self.assertAlmostEqual(
+                subcircuit.main_transition_crossing_ns(t, progress, level),
+                subcircuit.crossing_time_ns(t, progress, level),
+                places=9,
+                msg=f"level {level} changed on a clean trace",
+            )
+
+    def test_main_transition_crossing_survives_single_sample_jump(self):
+        # A fast trace can step from below the anchor to above the requested
+        # level in one sample. The bracketing interval must be retained, or the
+        # estimate collapses onto the end of the table.
+        t = np.linspace(0.0, 1.0, 11)
+        progress = np.array([0.0, 0.0, 0.0, 0.0, 0.3, 0.95, 1.0, 1.0, 1.0, 1.0, 1.0])
+        crossing = subcircuit.main_transition_crossing_ns(t, progress, 0.632)
+        self.assertGreater(crossing, t[4])
+        self.assertLess(crossing, t[5] + 1e-9)
+
     def test_two_state_gate_aliases(self):
         self.assertEqual(
             subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Pwl-Full"),
@@ -71,6 +291,44 @@ class TestPybis2Spice(unittest.TestCase):
         self.assertEqual(
             subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Directional-Residual-Full"),
             "InputDrivenTwoStateGateDirectionalResidualFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type(
+                "Input-Driven-Two-State-Gate-Directional-Residual-Stable-Full"
+            ),
+            "InputDrivenTwoStateGateDirectionalResidualStableFull",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Directional-Residual-Hybrid"),
+            "InputDrivenTwoStateGateDirectionalResidualHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Two-State-Gate-Directional-Dual-Residual-Hybrid"),
+            "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Hybrid-V2-State-Initialized-Replay"),
+            "InputDrivenHybridV2StateInitializedReplay",
+        )
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("Input-Driven-Hybrid-V3-Aligned-Replay"),
+            "InputDrivenHybridV3AlignedReplay",
+        )
+
+    def test_hybrid_v2_progress_is_forward_and_bounded(self):
+        time = np.asarray([0.0, 1e-9, 2e-9, 3e-9, 4e-9])
+        values = np.asarray([0.0, -0.2, 0.7, 0.5, 1.0])
+        _, progress = subcircuit.monotonic_coefficient_progress(
+            time, values, values[0], values[-1]
+        )
+        self.assertTrue(np.all(progress >= 0.0))
+        self.assertTrue(np.all(progress <= 1.0))
+        self.assertTrue(np.all(np.diff(progress) >= 0.0))
+        self.assertEqual(progress[0], 0.0)
+        self.assertEqual(progress[-1], 1.0)
+        self.assertEqual(
+            subcircuit.normalize_subcircuit_type("InputDrivenTwoStateGateStateInitializedReplayHybrid"),
+            "InputDrivenHybridV2StateInitializedReplay",
         )
 
     def test_value_matched_replay_v2_uses_fresh_timer(self):
@@ -729,6 +987,15 @@ class TestPybis2Spice(unittest.TestCase):
         for subckt_type, expected in [
             ("InputDrivenTwoStateGateDirectionalFull", "Two-state gate mode: directional_full"),
             ("InputDrivenTwoStateGateDirectionalResidualFull", "Two-state gate mode: directional_residual_full"),
+            (
+                "InputDrivenTwoStateGateDirectionalResidualStableFull",
+                "Two-state gate mode: directional_residual_stable_full",
+            ),
+            ("InputDrivenTwoStateGateDirectionalResidualHybrid", "Two-state gate mode: directional_residual_hybrid"),
+            ("InputDrivenTwoStateGateDirectionalDualResidualFull", "Two-state gate mode: directional_dual_residual_full"),
+            ("InputDrivenTwoStateGateDirectionalDualResidualHybrid", "Two-state gate mode: directional_dual_residual_hybrid"),
+            ("InputDrivenHybridV2StateInitializedReplay", "Two-state gate mode: state_initialized_replay_hybrid"),
+            ("InputDrivenHybridV3AlignedReplay", "Two-state gate mode: aligned_replay_hybrid"),
             ("InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull", "Two-state gate mode: directional_residual_recover_mean_full"),
             ("InputDrivenTwoStateGateDirectionalResidualRecoverFastFull", "Two-state gate mode: directional_residual_recover_fast_full"),
         ]:
@@ -747,6 +1014,65 @@ class TestPybis2Spice(unittest.TestCase):
             self.assertIn('KDGATE_OFF', text)
             self.assertIn('GDNRATE', text)
             self.assertIn('KDRES', text)
+            if "Stable" in subckt_type:
+                self.assertIn('Stable direction selector', text)
+                self.assertIn('(V(GUPTARGET) > 0.5)', text)
+                self.assertIn('(V(GDNTARGET) > 0.5)', text)
+            if "DualResidual" in subckt_type or "HybridV3AlignedReplay" in subckt_type:
+                self.assertIn('GUPRATE', text)
+                self.assertIn('KURES_R', text)
+                self.assertIn('KURES_F', text)
+                self.assertIn('KURES_TABLE', text)
+                self.assertIn('KURES', text)
+                self.assertIn('BKUGATE KUGATE 0 V = V(KUGATE_BASE) + V(KURES)', text)
+            else:
+                self.assertNotIn('KURES_TABLE', text)
+            if "Hybrid" in subckt_type:
+                self.assertIn('HHYBRIDACTIVE', text)
+                self.assertIn('HFALL_AFTER_RISE', text)
+                self.assertIn('HRISE_AFTER_FALL', text)
+                self.assertIn('HSETTLED', text)
+                self.assertIn('coeff_tau=1p', text)
+                self.assertIn('hybrid_recovery_ns', text)
+                if "StateInitializedReplay" in subckt_type:
+                    self.assertIn('Hybrid V2 samples the post-reversal directional gate-map value once', text)
+                    self.assertIn('CV2KUSAMP V2KUSAMP', text)
+                    self.assertIn('CV2KDSAMP V2KDSAMP', text)
+                    self.assertIn('V(V2SAMPLE)', text)
+                    self.assertIn('V2KUSAMP', text)
+                    self.assertIn('V2KDSAMP', text)
+                    self.assertIn('V2KUPROGRESS', text)
+                    self.assertIn('V2KDPROGRESS', text)
+                    self.assertIn('V2KUREPLAY', text)
+                    self.assertIn('V2KDREPLAY', text)
+                    self.assertIn('HHYBRIDV2ACTIVE', text)
+                    self.assertIn('B44 Ku 0 V = V(KUTARGET)', text)
+                    self.assertNotIn('inverse coefficient-to-time', text)
+                elif "HybridV3AlignedReplay" in subckt_type:
+                    self.assertIn('Hybrid V3 aligned replay', text)
+                    self.assertIn('BV3KUPRE V3KUPRE', text)
+                    self.assertIn('BV3KDPRE V3KDPRE', text)
+                    self.assertIn('TV3LATCH V3REVEDGE', text)
+                    self.assertIn('V3KUVISSAMP', text)
+                    self.assertIn('V3KDVISSAMP', text)
+                    self.assertIn('V3GATEALIGNED', text)
+                    self.assertIn('V3KUANCHOR', text)
+                    self.assertIn('V3KDANCHOR', text)
+                    self.assertIn('V3TRKU', text)
+                    self.assertIn('V3TFKD', text)
+                    self.assertIn('V3KUSTART', text)
+                    self.assertIn('V3KDSTART', text)
+                    self.assertIn('V3KUARG', text)
+                    self.assertIn('V3KDARG', text)
+                    self.assertIn('The start-value correction guarantees continuity', text)
+                    self.assertIn('time*{time_scale} - V(V3T0) - v3_replay_delay_ns', text)
+                    self.assertNotIn('BV3ELAPSED V3ELAPSED 0 V = max(V(HNX)', text)
+                    self.assertNotIn('V(V3KUEND) - V(V3KUANCHOR)', text)
+                    self.assertIn('B44 Ku 0 V = V(KUTARGET)', text)
+                    self.assertIn('B45 Kd 0 V = V(KDTARGET)', text)
+                else:
+                    self.assertIn('B44 Ku 0 V = (V(HHYBRIDACTIVE)', text)
+                    self.assertIn('(1.0 - V(HHYBRIDACTIVE)) * V(KULEG)', text)
             if "Recover" in subckt_type:
                 self.assertIn('Retrigger-aware PD recovery delay', text)
                 self.assertIn('PDRECOVEREDGE', text)

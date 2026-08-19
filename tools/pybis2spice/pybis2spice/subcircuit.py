@@ -13,6 +13,7 @@
 import os.path
 import re
 import tempfile
+import warnings
 
 import numpy as np
 from pybis2spice import pybis2spice
@@ -92,6 +93,21 @@ def normalize_subcircuit_type(subcircuit_type):
         "Input-Driven-Value-Matched-Replay-V2-Kd-Only": "InputDrivenValueMatchedReplayV2KdOnly",
         "InputDrivenValueMatchedReplayV2SplitKuKd": "InputDrivenValueMatchedReplayV2SplitKuKd",
         "Input-Driven-Value-Matched-Replay-V2-Split-Ku-Kd": "InputDrivenValueMatchedReplayV2SplitKuKd",
+        "InputDrivenPadMatchedReplayV1": "InputDrivenPadMatchedReplayV1",
+        "Input-Driven-Pad-Matched-Replay-V1": "InputDrivenPadMatchedReplayV1",
+        "NgSpiceInputDrivenPadMatchedReplayV1": "InputDrivenPadMatchedReplayV1",
+        "InputDrivenPadMatchedReplayV1SlewAware": "InputDrivenPadMatchedReplayV1SlewAware",
+        "Input-Driven-Pad-Matched-Replay-V1-Slew-Aware": "InputDrivenPadMatchedReplayV1SlewAware",
+        "NgSpiceInputDrivenPadMatchedReplayV1SlewAware": "InputDrivenPadMatchedReplayV1SlewAware",
+        "InputDrivenPadMatchedReplayV2": "InputDrivenPadMatchedReplayV2",
+        "Input-Driven-Pad-Matched-Replay-V2": "InputDrivenPadMatchedReplayV2",
+        "NgSpiceInputDrivenPadMatchedReplayV2": "InputDrivenPadMatchedReplayV2",
+        "InputDrivenPadMatchedReplayV2Delayed": "InputDrivenPadMatchedReplayV2Delayed",
+        "Input-Driven-Pad-Matched-Replay-V2-Delayed": "InputDrivenPadMatchedReplayV2Delayed",
+        "NgSpiceInputDrivenPadMatchedReplayV2Delayed": "InputDrivenPadMatchedReplayV2Delayed",
+        "InputDrivenPadMatchedReplayV2SlewAware": "InputDrivenPadMatchedReplayV2SlewAware",
+        "Input-Driven-Pad-Matched-Replay-V2-Slew-Aware": "InputDrivenPadMatchedReplayV2SlewAware",
+        "NgSpiceInputDrivenPadMatchedReplayV2SlewAware": "InputDrivenPadMatchedReplayV2SlewAware",
         "InputDrivenTwoStateGatePwlFull": "InputDrivenTwoStateGatePwlFull",
         "Input-Driven-Two-State-Gate-Pwl-Full": "InputDrivenTwoStateGatePwlFull",
         "NgSpiceInputDrivenTwoStateGatePwlFull": "InputDrivenTwoStateGatePwlFull",
@@ -108,6 +124,25 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenTwoStateGateDirectionalResidualFull": "InputDrivenTwoStateGateDirectionalResidualFull",
         "Input-Driven-Two-State-Gate-Directional-Residual-Full": "InputDrivenTwoStateGateDirectionalResidualFull",
         "NgSpiceInputDrivenTwoStateGateDirectionalResidualFull": "InputDrivenTwoStateGateDirectionalResidualFull",
+        "InputDrivenTwoStateGateDirectionalResidualStableFull": "InputDrivenTwoStateGateDirectionalResidualStableFull",
+        "Input-Driven-Two-State-Gate-Directional-Residual-Stable-Full": "InputDrivenTwoStateGateDirectionalResidualStableFull",
+        "NgSpiceInputDrivenTwoStateGateDirectionalResidualStableFull": "InputDrivenTwoStateGateDirectionalResidualStableFull",
+        "InputDrivenTwoStateGateDirectionalResidualHybrid": "InputDrivenTwoStateGateDirectionalResidualHybrid",
+        "Input-Driven-Two-State-Gate-Directional-Residual-Hybrid": "InputDrivenTwoStateGateDirectionalResidualHybrid",
+        "NgSpiceInputDrivenTwoStateGateDirectionalResidualHybrid": "InputDrivenTwoStateGateDirectionalResidualHybrid",
+        "InputDrivenTwoStateGateDirectionalDualResidualFull": "InputDrivenTwoStateGateDirectionalDualResidualFull",
+        "Input-Driven-Two-State-Gate-Directional-Dual-Residual-Full": "InputDrivenTwoStateGateDirectionalDualResidualFull",
+        "NgSpiceInputDrivenTwoStateGateDirectionalDualResidualFull": "InputDrivenTwoStateGateDirectionalDualResidualFull",
+        "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
+        "Input-Driven-Two-State-Gate-Directional-Dual-Residual-Hybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
+        "NgSpiceInputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
+        "InputDrivenHybridV2StateInitializedReplay": "InputDrivenHybridV2StateInitializedReplay",
+        "Input-Driven-Hybrid-V2-State-Initialized-Replay": "InputDrivenHybridV2StateInitializedReplay",
+        "NgSpiceInputDrivenHybridV2StateInitializedReplay": "InputDrivenHybridV2StateInitializedReplay",
+        "InputDrivenTwoStateGateStateInitializedReplayHybrid": "InputDrivenHybridV2StateInitializedReplay",
+        "InputDrivenHybridV3AlignedReplay": "InputDrivenHybridV3AlignedReplay",
+        "Input-Driven-Hybrid-V3-Aligned-Replay": "InputDrivenHybridV3AlignedReplay",
+        "NgSpiceInputDrivenHybridV3AlignedReplay": "InputDrivenHybridV3AlignedReplay",
         "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull": "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull",
         "Input-Driven-Two-State-Gate-Directional-Residual-Recover-Mean-Full": "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull",
         "NgSpiceInputDrivenTwoStateGateDirectionalResidualRecoverMeanFull": "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull",
@@ -133,7 +168,8 @@ def model_type_matches_io(model_type, io_type):
     return False
 
 
-def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_filepath):
+def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_filepath,
+                         pad_replay_reference=None):
     """
     Wrapper around the subcircuit file creation functions. Calls the relevant function i.e. LTSpice or Generic
 
@@ -194,6 +230,31 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 short_pulse_hybrid=strategy,
             )
         return create_ngspice_model(ibis_data, corner, io_type, output_filepath)
+    if subcircuit_type in {
+        "InputDrivenPadMatchedReplayV1",
+        "InputDrivenPadMatchedReplayV1SlewAware",
+        "InputDrivenPadMatchedReplayV2",
+        "InputDrivenPadMatchedReplayV2Delayed",
+        "InputDrivenPadMatchedReplayV2SlewAware",
+    }:
+        if io_type == "Output" and pad_replay_reference is not None:
+            return create_ngspice_input_driven_output_model(
+                ibis_data,
+                corner,
+                io_type,
+                output_filepath,
+                pad_matched_replay_mode={
+                    "InputDrivenPadMatchedReplayV1": "voltage_only",
+                    "InputDrivenPadMatchedReplayV1SlewAware": "slew_aware",
+                    "InputDrivenPadMatchedReplayV2": "voltage_only_v2",
+                    "InputDrivenPadMatchedReplayV2Delayed": "voltage_only_delayed_v2",
+                    "InputDrivenPadMatchedReplayV2SlewAware": "slew_aware_v2",
+                }[subcircuit_type],
+                pad_replay_reference=pad_replay_reference,
+            )
+        return 1 if io_type == "Output" else create_ngspice_model(
+            ibis_data, corner, io_type, output_filepath
+        )
     if subcircuit_type in {"InputDrivenGateStateHybrid", "InputDrivenGateStateFull"}:
         if io_type == "Output":
             return create_ngspice_input_driven_output_model(
@@ -283,6 +344,12 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenTwoStateGatePwlHybrid",
         "InputDrivenTwoStateGateDirectionalFull",
         "InputDrivenTwoStateGateDirectionalResidualFull",
+        "InputDrivenTwoStateGateDirectionalResidualStableFull",
+        "InputDrivenTwoStateGateDirectionalResidualHybrid",
+        "InputDrivenTwoStateGateDirectionalDualResidualFull",
+        "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
+        "InputDrivenHybridV2StateInitializedReplay",
+        "InputDrivenHybridV3AlignedReplay",
         "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull",
         "InputDrivenTwoStateGateDirectionalResidualRecoverFastFull",
     }:
@@ -293,6 +360,12 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenTwoStateGatePwlHybrid": "pwl_hybrid",
                 "InputDrivenTwoStateGateDirectionalFull": "directional_full",
                 "InputDrivenTwoStateGateDirectionalResidualFull": "directional_residual_full",
+                "InputDrivenTwoStateGateDirectionalResidualStableFull": "directional_residual_stable_full",
+                "InputDrivenTwoStateGateDirectionalResidualHybrid": "directional_residual_hybrid",
+                "InputDrivenTwoStateGateDirectionalDualResidualFull": "directional_dual_residual_full",
+                "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "directional_dual_residual_hybrid",
+                "InputDrivenHybridV2StateInitializedReplay": "state_initialized_replay_hybrid",
+                "InputDrivenHybridV3AlignedReplay": "aligned_replay_hybrid",
                 "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull": "directional_residual_recover_mean_full",
                 "InputDrivenTwoStateGateDirectionalResidualRecoverFastFull": "directional_residual_recover_fast_full",
             }[subcircuit_type]
@@ -577,14 +650,13 @@ def create_ngspice_k_lookup_source_from_elapsed(source_name, node_name, elapsed_
     return f'{source_name} {node_name} 0 V = pwl(min(max(V({elapsed_node}), 0), {last_time}), {table_str})\n'
 
 
-def inverse_time_lookup_table(time_values, values, point_count=81):
+def inverse_time_lookup_table(time_values, values, point_count=81, occurrence="earliest"):
     """
     Builds a monotonic-x coefficient-to-time lookup for value-matched replay.
 
-    IBIS-derived Ku/Kd curves are not guaranteed to be strictly monotonic, so
-    duplicate/near-duplicate coefficient values are collapsed to their earliest
-    table time. The result is a safe PWL x-axis in coefficient space; y is the
-    matched replay time in ns.
+    IBIS-derived curves are not guaranteed to be strictly monotonic, so
+    duplicate/near-duplicate values are collapsed to their earliest or latest
+    table time. The result is a safe PWL x-axis; y is matched replay time in ns.
     """
     time_ns = np.asarray(time_values, dtype=float) * 1e9
     coeff = np.asarray(values, dtype=float)
@@ -607,7 +679,10 @@ def inverse_time_lookup_table(time_values, values, point_count=81):
             unique_x.append(value)
             unique_t.append(time_value)
         else:
-            unique_t[-1] = min(unique_t[-1], time_value)
+            if occurrence == "latest":
+                unique_t[-1] = max(unique_t[-1], time_value)
+            else:
+                unique_t[-1] = min(unique_t[-1], time_value)
 
     if len(unique_x) == 1:
         x0 = unique_x[0]
@@ -623,6 +698,64 @@ def inverse_time_lookup_table(time_values, values, point_count=81):
     return grid, matched_time
 
 
+def inverse_trajectory_time_lookup_table(
+    time_values, values, point_count=161, occurrence="earliest"
+):
+    """Builds a value-to-time lookup from all crossings of a trajectory.
+
+    Pad trajectories may ring and revisit nearly the same voltage without
+    containing bit-identical samples.  For every lookup-grid value, find all
+    segment crossings in original time order and retain the earliest or latest
+    one.  This is deliberately separate from the coefficient-table inverse.
+    """
+    time_ns = np.asarray(time_values, dtype=float) * 1e9
+    trajectory = np.asarray(values, dtype=float)
+    mask = np.isfinite(time_ns) & np.isfinite(trajectory)
+    time_ns = time_ns[mask]
+    trajectory = trajectory[mask]
+    if len(time_ns) == 0:
+        return np.asarray([0.0, 1.0]), np.asarray([0.0, 0.0])
+
+    order = np.argsort(time_ns)
+    time_ns = time_ns[order]
+    trajectory = trajectory[order]
+    unique_time = np.concatenate(([True], np.diff(time_ns) > 1e-15))
+    time_ns = time_ns[unique_time]
+    trajectory = trajectory[unique_time]
+    if len(time_ns) == 1:
+        value = float(trajectory[0])
+        return np.asarray([value - 1e-6, value + 1e-6]), np.asarray([time_ns[0], time_ns[0]])
+
+    value_min = float(np.min(trajectory))
+    value_max = float(np.max(trajectory))
+    if abs(value_max - value_min) < 1e-12:
+        return (
+            np.asarray([value_min - 1e-6, value_max + 1e-6]),
+            np.asarray([time_ns[0], time_ns[-1]]),
+        )
+
+    grid = np.linspace(value_min, value_max, point_count)
+    matched_time = []
+    for target in grid:
+        crossings = []
+        for index in range(len(time_ns) - 1):
+            t0, t1 = float(time_ns[index]), float(time_ns[index + 1])
+            y0, y1 = float(trajectory[index]), float(trajectory[index + 1])
+            if abs(y1 - y0) < 1e-15:
+                if abs(target - y0) <= 1e-12:
+                    crossings.extend((t0, t1))
+                continue
+            fraction = (target - y0) / (y1 - y0)
+            if -1e-12 <= fraction <= 1.0 + 1e-12:
+                crossings.append(t0 + min(1.0, max(0.0, fraction)) * (t1 - t0))
+        if not crossings:
+            distance = np.abs(trajectory - target)
+            nearest = time_ns[np.isclose(distance, np.min(distance), rtol=0.0, atol=1e-12)]
+            crossings = [float(value) for value in nearest]
+        matched_time.append(max(crossings) if occurrence == "latest" else min(crossings))
+    return grid, np.asarray(matched_time, dtype=float)
+
+
 def create_inverse_time_lookup_source(source_name, node_name, sample_node, time, k_param):
     """
     Creates a coefficient-to-table-time behavioral lookup in ns.
@@ -632,6 +765,33 @@ def create_inverse_time_lookup_source(source_name, node_name, sample_node, time,
     return (
         f'{source_name} {node_name} 0 V = '
         f'pwl(min(max(V({sample_node}), {float(inv_x[0]):.16g}), {float(inv_x[-1]):.16g}), {table_str})\n'
+    )
+
+
+def create_inverse_time_lookup_source_with_policy(source_name, node_name, sample_node,
+                                                  time, values, occurrence="earliest"):
+    """Creates an inverse PWL lookup using the requested repeated-value policy."""
+    inv_x, inv_t = inverse_time_lookup_table(time, values, occurrence=occurrence)
+    table_str = convert_iv_table_to_str(inv_x, inv_t)
+    return (
+        f'{source_name} {node_name} 0 V = '
+        f'pwl(min(max(V({sample_node}), {float(inv_x[0]):.16g}), '
+        f'{float(inv_x[-1]):.16g}), {table_str})\n'
+    )
+
+
+def create_inverse_trajectory_time_lookup_source_with_policy(
+    source_name, node_name, sample_node, time, values, occurrence="earliest"
+):
+    """Creates a value-to-time source using trajectory crossing order."""
+    inv_x, inv_t = inverse_trajectory_time_lookup_table(
+        time, values, occurrence=occurrence
+    )
+    table_str = convert_iv_table_to_str(inv_x, inv_t)
+    return (
+        f'{source_name} {node_name} 0 V = '
+        f'pwl(min(max(V({sample_node}), {float(inv_x[0]):.16g}), '
+        f'{float(inv_x[-1]):.16g}), {table_str})\n'
     )
 
 
@@ -922,6 +1082,24 @@ def coefficient_progress(time_values, values, start_value, end_value):
     return time_ns, np.clip(progress, -0.5, 1.5)
 
 
+def monotonic_coefficient_progress(time_values, values, start_value, end_value):
+    """
+    Returns bounded forward progress for state-initialized table replay.
+
+    The original coefficient can contain overshoot and small reversals. Reusing
+    those absolute excursions after an arbitrary gate-derived start can amplify
+    them beyond the source table's coefficient range. Hybrid V2 therefore uses
+    each table only as an independent 0..1 timing/shape coordinate. Residual
+    replay, if desired, must be added as a separately bounded model term.
+    """
+    time_ns, progress = coefficient_progress(time_values, values, start_value, end_value)
+    progress = np.maximum.accumulate(np.clip(progress, 0.0, 1.0))
+    if len(progress):
+        progress[0] = 0.0
+        progress[-1] = 1.0
+    return time_ns, progress
+
+
 def coefficient_onset_delay_ns(time_values, values, start_value, end_value, level=0.05):
     """
     Estimates the first meaningful coefficient movement from an IBIS-derived
@@ -1009,14 +1187,71 @@ def hybrid_adjusted_delays(kr, kf, ku_low, ku_high, kd_low, kd_high, strategy):
     )
 
 
+def main_transition_crossing_ns(time_ns, progress, level, anchor=0.5):
+    """
+    Returns a crossing time measured relative to the main transition body.
+
+    ``crossing_time_ns`` takes the first crossing anywhere in the record, which
+    a boundary artifact defeats: a one-sample spike crosses 5%, 63% and 90%
+    within picoseconds, so the fitted onset collapses to the table origin. This
+    locates the main transition first, then reads low levels by walking back
+    from it and high levels by walking forward.
+
+    For a clean monotonic trace this is identical to the first crossing, so
+    well-formed tables keep the timing they had before this existed.
+    """
+    time_ns = np.asarray(time_ns, dtype=float)
+    progress = np.asarray(progress, dtype=float)
+    mask = np.isfinite(time_ns) & np.isfinite(progress)
+    time_ns = time_ns[mask]
+    progress = progress[mask]
+    if len(time_ns) == 0:
+        return 0.0
+    order = np.argsort(time_ns)
+    time_ns = time_ns[order]
+    progress = progress[order]
+
+    # The transition body is the first point where the coefficient stays above
+    # the anchor, not merely touches it. Requiring persistence rejects an
+    # isolated boundary spike, which can exceed the anchor on its own and would
+    # otherwise be mistaken for the transition.
+    above = progress >= anchor
+    pivot = None
+    run_needed = min(3, len(progress))
+    for index in range(len(progress) - run_needed + 1):
+        if bool(np.all(above[index:index + run_needed])):
+            pivot = index
+            break
+    if pivot is None:
+        reached = np.nonzero(above)[0]
+        if len(reached) == 0:
+            return crossing_time_ns(time_ns, progress, level)
+        pivot = int(reached[0])
+
+    if level < anchor:
+        # Walk back from the transition body to the last sample still below
+        # `level`; the crossing immediately after it is the true onset.
+        below = np.nonzero(progress[: pivot + 1] <= level)[0]
+        if len(below) == 0:
+            return float(time_ns[0])
+        start = int(below[-1])
+        return crossing_time_ns(time_ns[start:], progress[start:], level)
+    # Start one sample early so the interval that brackets the anchor is kept.
+    # A fast trace can step from below `anchor` to above `level` in a single
+    # sample; slicing exactly at the pivot would drop that bracket and leave no
+    # crossing to find, collapsing the estimate onto the end of the table.
+    start = max(pivot - 1, 0)
+    return crossing_time_ns(time_ns[start:], progress[start:], level)
+
+
 def coefficient_transition_timing(time_values, values, start_value, end_value):
     """
     Estimates onset and time constants for a coefficient transition.
     """
     time_ns, progress = coefficient_progress(time_values, values, start_value, end_value)
-    t05 = crossing_time_ns(time_ns, progress, 0.05)
-    t63 = crossing_time_ns(time_ns, progress, 0.632)
-    t90 = crossing_time_ns(time_ns, progress, 0.90)
+    t05 = main_transition_crossing_ns(time_ns, progress, 0.05)
+    t63 = main_transition_crossing_ns(time_ns, progress, 0.632)
+    t90 = main_transition_crossing_ns(time_ns, progress, 0.90)
     delay = max(0.0, t05)
     tau = max(0.02, t63 - delay)
     if t90 > delay:
@@ -1065,14 +1300,132 @@ def gate_transfer_curve(rise_time, rise_values, fall_time, fall_values,
     return grid, mapped
 
 
-def gate_state_fit(kr, kf):
+_ENDPOINT_DRIFT_FLOOR = 0.005
+_ENDPOINT_SETTLED_TOLERANCE = 0.05
+
+
+def settled_coefficient_value(time_values, values, at_start=True, window_fraction=0.02,
+                              min_samples=7):
     """
-    Fits a compact hidden-gate-state model from IBIS-derived Ku/Kd tables.
+    Estimates a settled Ku/Kd rail at one end of an IBIS-derived table.
+
+    Returns ``(value, drift)``. ``value`` is the median of a short window at the
+    requested boundary, which rejects the isolated spike that appears there.
+    ``drift`` is how much that window is still moving, in coefficient units, and
+    tells the caller whether the boundary is settled at all.
+
+    Two distinct defects motivate this. pybis forms the ``C_comp*dV/dt`` term
+    with a forward difference, so a fast characterization edge concentrates a
+    large capacitive impulse into the first coefficient sample; and a fast edge
+    can leave a table with no settled prefix whatsoever. Fast-edge ``io_buf``
+    shows both: its rising table is clean from the second sample, while its
+    falling table already decays from ``Ku=1.05`` at 24 ps with no plateau.
+    Taking the raw first/last sample yields ``ku_off=0.312, ku_on=0.302`` --
+    no usable on/off range at all.
     """
-    ku_off = float(np.nanmean([kr[0, _KU], kf[-1, _KU]]))
-    ku_on = float(np.nanmean([kr[-1, _KU], kf[0, _KU]]))
-    kd_on = float(np.nanmean([kr[0, _KD], kf[-1, _KD]]))
-    kd_off = float(np.nanmean([kr[-1, _KD], kf[0, _KD]]))
+    time_ns = np.asarray(time_values, dtype=float) * 1e9
+    values = np.asarray(values, dtype=float)
+    mask = np.isfinite(time_ns) & np.isfinite(values)
+    time_ns = time_ns[mask]
+    values = values[mask]
+    if len(values) == 0:
+        return float("nan"), float("inf")
+    if len(values) < 3:
+        return float(values[0] if at_start else values[-1]), float("inf")
+
+    order = np.argsort(time_ns)
+    time_ns = time_ns[order]
+    values = values[order]
+    if not at_start:
+        # Mirror the trace so the same forward walk handles both boundaries.
+        values = values[::-1]
+        time_ns = time_ns[-1] - time_ns[::-1]
+
+    duration = float(time_ns[-1] - time_ns[0])
+    if duration <= 0.0:
+        return float(np.nanmedian(values)), float("inf")
+
+    # The window must stay several samples wide even on coarse tables: the
+    # drift metric compares half-medians, and a one- or two-sample impulse can
+    # move the leading median if the window is too narrow to outvote it.
+    count = int(np.count_nonzero((time_ns - time_ns[0]) <= duration * window_fraction))
+    count = max(min_samples, min(count, max(min_samples, len(values) // 10)))
+    count = min(count, len(values))
+    window = values[:count]
+
+    half = max(1, count // 2)
+    value = float(np.nanmedian(window))
+    drift = float(abs(np.nanmedian(window[half:]) - np.nanmedian(window[:half])))
+    if not np.isfinite(drift):
+        drift = float("inf")
+    return value, drift
+
+
+def _rail_candidate(time_values, values, at_start, tolerance=_ENDPOINT_SETTLED_TOLERANCE):
+    """
+    Returns ``(value, settled)`` for one boundary's view of a Ku/Kd rail.
+
+    A boundary is treated as settled when its raw sample agrees with the local
+    median and that window is not drifting. Settled boundaries report the raw
+    sample, so well-formed tables keep exactly the endpoints they had before
+    this check existed. Only a boundary that fails both tests falls back to the
+    median, and it is then excluded from the rail whenever the opposite
+    boundary is usable.
+    """
+    values = np.asarray(values, dtype=float)
+    if len(values) == 0:
+        return float("nan"), False
+    raw = float(values[0] if at_start else values[-1])
+    median, drift = settled_coefficient_value(time_values, values, at_start=at_start)
+    if not np.isfinite(median):
+        return raw, False
+    settled = abs(raw - median) <= tolerance and drift <= tolerance
+    return (raw if settled else median), settled
+
+
+def _combine_rail(candidate_a, candidate_b):
+    """
+    Merges two estimates of the same settled rail.
+
+    Both boundaries nominally observe the same physical state, so when both are
+    settled this is the plain average pybis has always used. When only one is
+    settled the other is discarded rather than averaged in, which is what
+    rescues a table whose falling side never settles at all.
+    """
+    usable = [(v, s) for v, s in (candidate_a, candidate_b) if np.isfinite(v)]
+    if not usable:
+        return float("nan"), False
+    settled = [v for v, s in usable if s]
+    if settled:
+        return float(np.mean(settled)), True
+    return float(np.mean([v for v, _ in usable])), False
+
+
+def gate_state_endpoints(kr, kf):
+    """
+    Returns the four settled Ku/Kd endpoints plus a quality diagnostic.
+
+    ``quality`` reports how far the estimated endpoints sit from the ideal
+    ``0``/``1`` rails, and whether Ku and Kd retain a usable on/off range. A
+    degenerate range means the source table cannot support the gate-state
+    normalization and the caller should not trust the resulting maps.
+    """
+    ku_off, ku_off_settled = _combine_rail(
+        _rail_candidate(kr[:, _TIME], kr[:, _KU], at_start=True),
+        _rail_candidate(kf[:, _TIME], kf[:, _KU], at_start=False),
+    )
+    ku_on, ku_on_settled = _combine_rail(
+        _rail_candidate(kr[:, _TIME], kr[:, _KU], at_start=False),
+        _rail_candidate(kf[:, _TIME], kf[:, _KU], at_start=True),
+    )
+    kd_on, kd_on_settled = _combine_rail(
+        _rail_candidate(kr[:, _TIME], kr[:, _KD], at_start=True),
+        _rail_candidate(kf[:, _TIME], kf[:, _KD], at_start=False),
+    )
+    kd_off, kd_off_settled = _combine_rail(
+        _rail_candidate(kr[:, _TIME], kr[:, _KD], at_start=False),
+        _rail_candidate(kf[:, _TIME], kf[:, _KD], at_start=True),
+    )
     if not np.isfinite(ku_off):
         ku_off = 0.0
     if not np.isfinite(ku_on):
@@ -1081,6 +1434,45 @@ def gate_state_fit(kr, kf):
         kd_on = 1.0
     if not np.isfinite(kd_off):
         kd_off = 0.0
+
+    ku_range = ku_on - ku_off
+    kd_range = kd_on - kd_off
+    quality = {
+        "ku_range": ku_range,
+        "kd_range": kd_range,
+        "ku_off_error": abs(ku_off - 0.0),
+        "ku_on_error": abs(ku_on - 1.0),
+        "kd_off_error": abs(kd_off - 0.0),
+        "kd_on_error": abs(kd_on - 1.0),
+    }
+    quality["degenerate"] = bool(ku_range < 0.5 or kd_range < 0.5)
+    quality["all_rails_settled"] = bool(
+        ku_off_settled and ku_on_settled and kd_on_settled and kd_off_settled
+    )
+    quality["max_rail_error"] = max(
+        quality["ku_off_error"], quality["ku_on_error"],
+        quality["kd_off_error"], quality["kd_on_error"],
+    )
+    return ku_off, ku_on, kd_on, kd_off, quality
+
+
+def gate_state_fit(kr, kf):
+    """
+    Fits a compact hidden-gate-state model from IBIS-derived Ku/Kd tables.
+    """
+    ku_off, ku_on, kd_on, kd_off, endpoint_quality = gate_state_endpoints(kr, kf)
+    if endpoint_quality["degenerate"]:
+        warnings.warn(
+            "gate-state endpoint extraction is degenerate: "
+            f"Ku range {endpoint_quality['ku_range']:.4f}, "
+            f"Kd range {endpoint_quality['kd_range']:.4f} "
+            f"(ku_off={ku_off:.4f} ku_on={ku_on:.4f} "
+            f"kd_off={kd_off:.4f} kd_on={kd_on:.4f}). "
+            "The source coefficient tables do not settle at usable 0/1 rails, "
+            "so the gate-state maps will not be normalized correctly.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
 
     pu_on_delay, pu_on_tau = coefficient_transition_timing(kr[:, _TIME], kr[:, _KU], ku_off, ku_on)
     pu_off_delay, pu_off_tau = coefficient_transition_timing(kf[:, _TIME], kf[:, _KU], ku_on, ku_off)
@@ -1117,6 +1509,7 @@ def gate_state_fit(kr, kf):
         "ku_on": ku_on,
         "kd_off": kd_off,
         "kd_on": kd_on,
+        "endpoint_quality": endpoint_quality,
         "pu_on_delay": pu_on_delay,
         "pu_off_delay": pu_off_delay,
         "pd_on_delay": pd_on_delay,
@@ -1190,7 +1583,11 @@ def directional_gate_transfer_curve(time_values, values, delay_ns, tau_ns, start
 
 def two_state_directional_gate_fit(kr, kf):
     """
-    Fits separate on/off gate maps plus a Kd rate residual candidate.
+    Fits separate on/off gate maps plus independent Ku/Kd residual candidates.
+
+    The established directional-residual modes consume only the Kd terms. The
+    dual-residual modes additionally consume the Ku terms, so adding these fit
+    products does not change existing generated models.
     """
     fit = dict(gate_state_fit(kr, kf))
     tr = np.asarray(kr[:, _TIME], dtype=float) * 1e9
@@ -1212,6 +1609,26 @@ def two_state_directional_gate_fit(kr, kf):
         kf[:, _TIME], kf[:, _KD], fit["pd_on_delay"], fit["pd_on_tau"], 0.0, 1.0,
         fit["kd_off"], fit["kd_on"]
     )
+
+    gup_rise = gate_response(tr, fit["pu_on_delay"], fit["pu_on_tau"], 0.0, 1.0)
+    gup_fall = gate_response(tf, fit["pu_off_delay"], fit["pu_off_tau"], 1.0, 0.0)
+    ku_rise_base = np.interp(gup_rise, ku_on_x, ku_on_y)
+    ku_fall_base = np.interp(gup_fall, ku_off_x, ku_off_y)
+    ku_rise_residual = np.asarray(kr[:, _KU], dtype=float) - ku_rise_base
+    ku_fall_residual = np.asarray(kf[:, _KU], dtype=float) - ku_fall_base
+    ku_residual = np.concatenate([
+        ku_rise_residual,
+        ku_fall_residual,
+    ])
+    ku_rate = np.concatenate([
+        gate_state_rate(tr, fit["pu_on_delay"], fit["pu_on_tau"], 0.0, 1.0),
+        gate_state_rate(tf, fit["pu_off_delay"], fit["pu_off_tau"], 1.0, 0.0),
+    ])
+    mask = np.isfinite(ku_residual) & np.isfinite(ku_rate) & (np.abs(ku_rate) > 1e-6)
+    denom = float(np.dot(ku_rate[mask], ku_rate[mask])) if np.any(mask) else 0.0
+    ku_rate_gain_ns = float(np.dot(ku_rate[mask], ku_residual[mask]) / denom) if denom > 1e-18 else 0.0
+    if not np.isfinite(ku_rate_gain_ns):
+        ku_rate_gain_ns = 0.0
 
     gdn_rise = gate_response(tr, fit["pd_off_delay"], fit["pd_off_tau"], 1.0, 0.0)
     gdn_fall = gate_response(tf, fit["pd_on_delay"], fit["pd_on_tau"], 0.0, 1.0)
@@ -1242,6 +1659,9 @@ def two_state_directional_gate_fit(kr, kf):
         "kd_off_map_y": kd_off_y,
         "kd_on_map_x": kd_on_x,
         "kd_on_map_y": kd_on_y,
+        "ku_rise_residual": ku_rise_residual,
+        "ku_fall_residual": ku_fall_residual,
+        "ku_rate_gain_ns": ku_rate_gain_ns,
         "kd_rise_residual": kd_rise_residual,
         "kd_fall_residual": kd_fall_residual,
         "kd_rate_gain_ns": kd_rate_gain_ns,
@@ -1977,18 +2397,35 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
 
     residual_modes = {
         "directional_residual_full",
+        "directional_residual_stable_full",
+        "directional_residual_hybrid",
+        "directional_dual_residual_full",
+        "directional_dual_residual_hybrid",
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
+        "aligned_replay_hybrid",
+    }
+    dual_residual_modes = {
+        "directional_dual_residual_full",
+        "directional_dual_residual_hybrid",
+        "aligned_replay_hybrid",
     }
     recover_modes = {
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
     }
-    use_directional_map = mode in {"directional_full"} | residual_modes
+    state_initialized_replay = mode == "state_initialized_replay_hybrid"
+    aligned_replay = mode == "aligned_replay_hybrid"
+    use_directional_map = mode in {"directional_full"} | residual_modes or state_initialized_replay
+    use_stable_direction = mode == "directional_residual_stable_full"
     fit = two_state_directional_gate_fit(kr, kf) if use_directional_map else gate_state_fit(kr, kf)
     use_identity_map = mode == "identity_full"
+    reversal_hybrid = mode in {
+        "directional_residual_hybrid",
+        "directional_dual_residual_hybrid",
+    } or state_initialized_replay or aligned_replay
     full_mode = mode in {"pwl_full", "identity_full"}
-    if use_directional_map:
+    if use_directional_map and not reversal_hybrid:
         full_mode = True
     ku_table = convert_iv_table_to_str(fit["ku_map_x"], fit["ku_map_y"])
     kd_table = convert_iv_table_to_str(fit["kd_map_x"], fit["kd_map_y"])
@@ -1997,12 +2434,34 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         ku_off_table = convert_iv_table_to_str(fit["ku_off_map_x"], fit["ku_off_map_y"])
         kd_off_table = convert_iv_table_to_str(fit["kd_off_map_x"], fit["kd_off_map_y"])
         kd_on_table = convert_iv_table_to_str(fit["kd_on_map_x"], fit["kd_on_map_y"])
+    if state_initialized_replay:
+        _, ku_rise_progress = monotonic_coefficient_progress(
+            kr[:, _TIME], kr[:, _KU], kr[0, _KU], kr[-1, _KU]
+        )
+        _, kd_rise_progress = monotonic_coefficient_progress(
+            kr[:, _TIME], kr[:, _KD], kr[0, _KD], kr[-1, _KD]
+        )
+        _, ku_fall_progress = monotonic_coefficient_progress(
+            kf[:, _TIME], kf[:, _KU], kf[0, _KU], kf[-1, _KU]
+        )
+        _, kd_fall_progress = monotonic_coefficient_progress(
+            kf[:, _TIME], kf[:, _KD], kf[0, _KD], kf[-1, _KD]
+        )
+        rise_replay_end_ns = float(np.nanmax(kr[:, _TIME])) * 1e9
+        fall_replay_end_ns = float(np.nanmax(kf[:, _TIME])) * 1e9
 
     st = ""
     st += "* Two-state gate input-driven waveform coefficient control\n"
     st += "* GUP/GDN are continuous pullup/pulldown hidden gate states.\n"
     st += "* Complete-edge Ku/Kd tables are used only to fit delays, taus, and maps.\n"
-    st += "* Final Ku/Kd are generated from GUP/GDN, not by elapsed-time table replay.\n"
+    if state_initialized_replay:
+        st += "* Hybrid V2: GUP/GDN provide only the interrupted-event starting values.\n"
+        st += "* Independent normalized legacy Ku(t)/Kd(t) shapes own the subsequent replay.\n"
+    elif aligned_replay:
+        st += "* Hybrid V3: pre-edge visible Ku/Kd are sampled from the previous-direction legacy tables.\n"
+        st += "* Gate-map anchors are accepted only when aligned; a dedicated timer owns replay.\n"
+    else:
+        st += "* Final Ku/Kd are generated from GUP/GDN, not by elapsed-time table replay.\n"
     st += f"* Two-state gate mode: {mode}\n"
     st += (
         f"* PU on/off delay={fit['pu_on_delay']:.6g}/{fit['pu_off_delay']:.6g}ns "
@@ -2017,7 +2476,54 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         f"kd_off={fit['kd_off']:.6g} kd_on={fit['kd_on']:.6g}\n"
     )
     if use_directional_map:
-        st += f"* Direction-specific maps enabled. Kd rate gain={fit['kd_rate_gain_ns']:.6g} ns\n"
+        if mode in dual_residual_modes:
+            st += (
+                "* Direction-specific maps and dual residuals enabled. "
+                f"Ku/Kd rate gain={fit['ku_rate_gain_ns']:.6g}/"
+                f"{fit['kd_rate_gain_ns']:.6g} ns\n"
+            )
+        else:
+            st += f"* Direction-specific maps enabled. Kd rate gain={fit['kd_rate_gain_ns']:.6g} ns\n"
+    if use_stable_direction:
+        st += "* Stable direction selector: delayed command target selects on/off tau and map.\n"
+    hybrid_window_ns = min(
+        4.0,
+        max(
+            fit["pu_on_delay"] + 3.0 * fit["pu_on_tau"],
+            fit["pu_off_delay"] + 3.0 * fit["pu_off_tau"],
+            fit["pd_on_delay"] + 3.0 * fit["pd_on_tau"],
+            fit["pd_off_delay"] + 3.0 * fit["pd_off_tau"],
+        ),
+    )
+    hybrid_recovery_ns = min(
+        8.0,
+        max(
+            fit["pu_on_delay"] + 5.0 * fit["pu_on_tau"],
+            fit["pu_off_delay"] + 5.0 * fit["pu_off_tau"],
+            fit["pd_on_delay"] + 5.0 * fit["pd_on_tau"],
+            fit["pd_off_delay"] + 5.0 * fit["pd_off_tau"],
+        ),
+    )
+    if reversal_hybrid:
+        if state_initialized_replay:
+            st += (
+                "* State-initialized replay hybrid: legacy Ku/Kd normally; an interrupted "
+                "edge samples directional gate-map Ku/Kd once and starts fresh table progress.\n"
+            )
+        elif aligned_replay:
+            st += (
+                "* Hybrid V3 aligned replay: delayed visible Ku/Kd preserve continuity; "
+                "a dedicated timer owns interrupted replay.\n"
+            )
+        else:
+            st += (
+                "* Reversal hybrid: legacy Ku/Kd normally; gate-state Ku/Kd only after "
+                "an interrupted reverse edge and until the new state settles.\n"
+            )
+        st += (
+            f"* Hybrid reverse-edge window={hybrid_window_ns:.6g}ns "
+            f"model-derived recovery interval={hybrid_recovery_ns:.6g}ns\n"
+        )
     pd_recover_delay = fit["pd_on_delay"]
     if mode == "directional_residual_recover_mean_full":
         pd_recover_delay = 0.5 * (fit["pd_on_delay"] + fit["pd_off_delay"])
@@ -2025,7 +2531,15 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         pd_recover_delay = min(fit["pd_on_delay"], fit["pd_off_delay"])
     if mode in recover_modes:
         st += f"* Retrigger-aware PD recovery delay={pd_recover_delay:.6g}ns for short-high fall-after-rise events.\n"
-    st += ".param coeff_c=1p coeff_tau=5p gate_c=1p retrigger_window_ns=4.0\n"
+    coeff_tau = "1p" if reversal_hybrid else "5p"
+    st += (
+        f".param coeff_c=1p coeff_tau={coeff_tau} gate_c=1p age_c=1p latch_c=1p "
+        "v2_latch_width=20p v2_sample_tau=5p v2_start_delay_ns=0.025 "
+        "v3_latch_width=20p v3_latch_delay=20p v3_replay_delay_ns=0.10 "
+        "v3_sample_tau=2p v3_state_tau=5p v3_alignment_tol=0.02 "
+        f"retrigger_window_ns={hybrid_window_ns:.16g} "
+        f"hybrid_recovery_ns={hybrid_recovery_ns:.16g}\n"
+    )
     st += "B10 NINX 0 V = (V(IN,VSS) > {input_threshold}) ? 1.0 : 0.0\n"
     st += f"B11 NENABLE 0 V = {enable_expr} ? 1.0 : 0.0\n"
     st += "B12 HNI 0 V = V(NINX) - 0.5\n"
@@ -2110,16 +2624,28 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     st += "BGDNCMDON GDNCMD 0 I = -{gate_c} * V(PDONP) / edge_delay\n"
     st += "BGUPTARGET GUPTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GUPCMD), 0), 1) : 0.0\n"
     st += "BGDNTARGET GDNTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GDNCMD), 0), 1) : 0.0\n"
-    st += (
-        f"BGUP GUP 0 I = -{{gate_c}} * (V(GUPTARGET) - V(GUP)) / "
-        f"((V(GUPTARGET) > V(GUP)) ? {format_spice_ns(fit['pu_on_tau'])} : {format_spice_ns(fit['pu_off_tau'])})\n"
-    )
+    if use_stable_direction:
+        st += (
+            f"BGUP GUP 0 I = -{{gate_c}} * (V(GUPTARGET) - V(GUP)) / "
+            f"((V(GUPTARGET) > 0.5) ? {format_spice_ns(fit['pu_on_tau'])} : {format_spice_ns(fit['pu_off_tau'])})\n"
+        )
+    else:
+        st += (
+            f"BGUP GUP 0 I = -{{gate_c}} * (V(GUPTARGET) - V(GUP)) / "
+            f"((V(GUPTARGET) > V(GUP)) ? {format_spice_ns(fit['pu_on_tau'])} : {format_spice_ns(fit['pu_off_tau'])})\n"
+        )
     st += "CGUP GUP 0 {gate_c} ic=0\n"
     st += "RGUP GUP 0 1e12\n"
-    st += (
-        f"BGDN GDN 0 I = -{{gate_c}} * (V(GDNTARGET) - V(GDN)) / "
-        f"((V(GDNTARGET) > V(GDN)) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})\n"
-    )
+    if use_stable_direction:
+        st += (
+            f"BGDN GDN 0 I = -{{gate_c}} * (V(GDNTARGET) - V(GDN)) / "
+            f"((V(GDNTARGET) > 0.5) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})\n"
+        )
+    else:
+        st += (
+            f"BGDN GDN 0 I = -{{gate_c}} * (V(GDNTARGET) - V(GDN)) / "
+            f"((V(GDNTARGET) > V(GDN)) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})\n"
+        )
     st += "CGDN GDN 0 {gate_c} ic=1\n"
     st += "BGDNBASE GDNBASE 0 V = 1.0\n"
     st += "RGDN GDN GDNBASE 1e12\n\n"
@@ -2127,25 +2653,51 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     if use_directional_map:
         st += f"BKUGATE_ON KUGATE_ON 0 V = pwl(min(max(V(GUP), 0), 1), {ku_on_table})\n"
         st += f"BKUGATE_OFF KUGATE_OFF 0 V = pwl(min(max(V(GUP), 0), 1), {ku_off_table})\n"
-        st += "BKUGATE_BASE KUGATE_BASE 0 V = (V(GUPTARGET) >= V(GUP)) ? V(KUGATE_ON) : V(KUGATE_OFF)\n"
+        if use_stable_direction:
+            st += "BKUGATE_BASE KUGATE_BASE 0 V = (V(GUPTARGET) > 0.5) ? V(KUGATE_ON) : V(KUGATE_OFF)\n"
+        else:
+            st += "BKUGATE_BASE KUGATE_BASE 0 V = (V(GUPTARGET) >= V(GUP)) ? V(KUGATE_ON) : V(KUGATE_OFF)\n"
         st += f"BKDGATE_OFF KDGATE_OFF 0 V = pwl(min(max(V(GDN), 0), 1), {kd_off_table})\n"
         st += f"BKDGATE_ON KDGATE_ON 0 V = pwl(min(max(V(GDN), 0), 1), {kd_on_table})\n"
-        st += "BKDGATE_BASE KDGATE_BASE 0 V = (V(GDNTARGET) >= V(GDN)) ? V(KDGATE_ON) : V(KDGATE_OFF)\n"
+        if use_stable_direction:
+            st += "BKDGATE_BASE KDGATE_BASE 0 V = (V(GDNTARGET) > 0.5) ? V(KDGATE_ON) : V(KDGATE_OFF)\n"
+        else:
+            st += "BKDGATE_BASE KDGATE_BASE 0 V = (V(GDNTARGET) >= V(GDN)) ? V(KDGATE_ON) : V(KDGATE_OFF)\n"
+        if mode in dual_residual_modes:
+            st += create_ngspice_k_lookup_source_from_elapsed("BKURES_R", "KURES_R", "HNX", kr[:, _TIME], fit["ku_rise_residual"])
+            st += create_ngspice_k_lookup_source_from_elapsed("BKURES_F", "KURES_F", "HNX", kf[:, _TIME], fit["ku_fall_residual"])
+            st += "BKURES_TABLE KURES_TABLE 0 V = (V(HN6) > 0.5) ? ((V(HNI) > 0 && V(HN2) > -0.1) ? V(KURES_R) : V(KURES_F)) : 0.0\n"
         if mode in residual_modes:
             st += create_ngspice_k_lookup_source_from_elapsed("BKDRESR", "KDRES_R", "HNX", kr[:, _TIME], fit["kd_rise_residual"])
             st += create_ngspice_k_lookup_source_from_elapsed("BKDRESF", "KDRES_F", "HNX", kf[:, _TIME], fit["kd_fall_residual"])
             st += "BKDRES_TABLE KDRES_TABLE 0 V = (V(HN6) > 0.5) ? ((V(HNI) > 0 && V(HN2) > -0.1) ? V(KDRES_R) : V(KDRES_F)) : 0.0\n"
         else:
             st += "BKDRES_TABLE KDRES_TABLE 0 V = 0.0\n"
-        st += (
-            f"BGDNRATE GDNRATE 0 V = ((V(GDNTARGET) - V(GDN)) / "
-            f"((V(GDNTARGET) > V(GDN)) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})) * 1e-9\n"
-        )
+        if mode in dual_residual_modes:
+            st += (
+                f"BGUPRATE GUPRATE 0 V = ((V(GUPTARGET) - V(GUP)) / "
+                f"((V(GUPTARGET) > V(GUP)) ? {format_spice_ns(fit['pu_on_tau'])} : {format_spice_ns(fit['pu_off_tau'])})) * 1e-9\n"
+            )
+        if use_stable_direction:
+            st += (
+                f"BGDNRATE GDNRATE 0 V = ((V(GDNTARGET) - V(GDN)) / "
+                f"((V(GDNTARGET) > 0.5) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})) * 1e-9\n"
+            )
+        else:
+            st += (
+                f"BGDNRATE GDNRATE 0 V = ((V(GDNTARGET) - V(GDN)) / "
+                f"((V(GDNTARGET) > V(GDN)) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})) * 1e-9\n"
+            )
+        if mode in dual_residual_modes:
+            st += f"BKURES KURES 0 V = V(KURES_TABLE) + {fit['ku_rate_gain_ns']:.16g} * V(GUPRATE)\n"
         if mode in residual_modes:
             st += f"BKDRES KDRES 0 V = V(KDRES_TABLE) + {fit['kd_rate_gain_ns']:.16g} * V(GDNRATE)\n"
         else:
             st += "BKDRES KDRES 0 V = 0.0\n"
-        st += "BKUGATE KUGATE 0 V = V(KUGATE_BASE)\n"
+        if mode in dual_residual_modes:
+            st += "BKUGATE KUGATE 0 V = V(KUGATE_BASE) + V(KURES)\n"
+        else:
+            st += "BKUGATE KUGATE 0 V = V(KUGATE_BASE)\n"
         st += "BKDGATE KDGATE 0 V = V(KDGATE_BASE) + V(KDRES)\n"
     elif use_identity_map:
         st += f"BKUGATE KUGATE 0 V = {fit['ku_off']:.16g} + ({fit['ku_on'] - fit['ku_off']:.16g}) * min(max(V(GUP), 0), 1)\n"
@@ -2161,15 +2713,216 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     if full_mode:
         st += "B42 KUTARGET 0 V = V(KUGATE)\n"
         st += "B43 KDTARGET 0 V = V(KDGATE)\n"
+    elif reversal_hybrid:
+        st += "* Reverse-edge detector and persistent gate-state recovery selector.\n"
+        st += "BHIGHAGE HIGHAGE 0 I = -{age_c} * ((V(NENABLE) > 0.5 && V(NINX) > 0.5) ? 1e9 : 0.0)\n"
+        st += "BHIGHRESET HIGHAGE 0 I = {age_c} * V(RISEEDGE) * V(HIGHAGE) / edge_delay\n"
+        st += "CHIGHAGE HIGHAGE 0 {age_c} ic=0\n"
+        st += "RHIGHAGE HIGHAGE 0 1e15\n"
+        st += "BLOWAGE LOWAGE 0 I = -{age_c} * "
+        st += "((V(NENABLE) > 0.5 && V(NINX) < 0.5 && V(HAD_RISE) > 0.5) ? 1e9 : 0.0)\n"
+        st += "BLOWRESET LOWAGE 0 I = {age_c} * V(FALLEDGE) * V(LOWAGE) / edge_delay\n"
+        st += "CLOWAGE LOWAGE 0 {age_c} ic=0\n"
+        st += "RLOWAGE LOWAGE 0 1e15\n"
+        st += "CHADRISE HAD_RISE 0 {latch_c} ic=0\n"
+        st += "RHADRISE HAD_RISE 0 1e15\n"
+        st += "BHADRISE HAD_RISE 0 I = -{latch_c} * V(RISEEDGE) * (1.0 - V(HAD_RISE)) / (0.1 * edge_delay)\n"
+        st += "CHADFALL HAD_FALL 0 {latch_c} ic=0\n"
+        st += "RHADFALL HAD_FALL 0 1e15\n"
+        st += "BHADFALL HAD_FALL 0 I = -{latch_c} * V(FALLEDGE) * (1.0 - V(HAD_FALL)) / (0.1 * edge_delay)\n"
+        st += "BHFALL_AFTER_RISE HFALL_AFTER_RISE 0 V = "
+        st += "(V(NENABLE) > 0.5 && V(NINX) < 0.5 && V(HAD_RISE) > 0.5 && "
+        st += "V(HIGHAGE) > 0.01 && V(HIGHAGE) < retrigger_window_ns) ? 1.0 : 0.0\n"
+        st += "BHRISE_AFTER_FALL HRISE_AFTER_FALL 0 V = "
+        st += "(V(NENABLE) > 0.5 && V(NINX) > 0.5 && V(HAD_FALL) > 0.5 && "
+        st += "V(LOWAGE) > 0.01 && V(LOWAGE) < retrigger_window_ns) ? 1.0 : 0.0\n"
+        st += "BHREVERSERAW HREVERSERAW 0 V = "
+        st += "(V(HFALL_AFTER_RISE) > 0.5 || V(HRISE_AFTER_FALL) > 0.5) ? 1.0 : 0.0\n"
+        st += "* Continuous settling progress is diagnostic only; no min/max threshold loop.\n"
+        st += "BHSETTLED HSETTLED 0 V = (V(NINX) > 0.5) ? "
+        st += "0.5*(V(GUP)+1.0-V(GDN)) : 0.5*(1.0-V(GUP)+V(GDN))\n"
+        if aligned_replay:
+            st += "* Hybrid V3 aligned replay. Previous-direction legacy tables are the continuity reference.\n"
+            st += "BV3REVEDGE V3REVEDGE 0 V = (V(HREVERSERAW) > 0.5 && (V(RISEEDGE) > 0.5 || V(FALLEDGE) > 0.5)) ? 1.0 : 0.0\n"
+            st += "BV3KUPRE V3KUPRE 0 V = (V(HFALL_AFTER_RISE) > 0.5) ? V(HKUR0) : ((V(HRISE_AFTER_FALL) > 0.5) ? V(HKUF0) : V(KULEG))\n"
+            st += "BV3KDPRE V3KDPRE 0 V = (V(HFALL_AFTER_RISE) > 0.5) ? V(HKDR0) : ((V(HRISE_AFTER_FALL) > 0.5) ? V(HKDF0) : V(KDLEG))\n"
+            st += "TV3LATCH V3REVEDGE 0 V3LATCHRAW 0 Z0=50 Td={v3_latch_delay}\n"
+            st += "RV3LATCH V3LATCHRAW 0 50\n"
+            st += "BV3LATCHPULSE V3LATCHPULSE 0 V = min(max(V(V3LATCHRAW), 0), 1)\n"
+            st += "TV3ACTIVATE V3LATCHPULSE 0 V3ACTIVATE 0 Z0=50 Td={v3_latch_width}\n"
+            st += "RV3ACTIVATE V3ACTIVATE 0 50\n\n"
+
+            st += f"CV3KUVISSAMP V3KUVISSAMP 0 {{latch_c}} ic={fit['ku_off']:.16g}\n"
+            st += "RV3KUVISSAMP V3KUVISSAMP 0 1e15\n"
+            st += "BV3KUVISSAMPLE V3KUVISSAMP 0 I = -{latch_c} * V(V3REVEDGE) * (V(V3KUPRE) - V(V3KUVISSAMP)) / v3_sample_tau\n"
+            st += f"CV3KDVISSAMP V3KDVISSAMP 0 {{latch_c}} ic={fit['kd_on']:.16g}\n"
+            st += "BV3KDVISSAMPBASE V3KDVISSAMPBASE 0 V = 1.0\n"
+            st += "RV3KDVISSAMP V3KDVISSAMP V3KDVISSAMPBASE 1e15\n"
+            st += "BV3KDVISSAMPLE V3KDVISSAMP 0 I = -{latch_c} * V(V3REVEDGE) * (V(V3KDPRE) - V(V3KDVISSAMP)) / v3_sample_tau\n"
+            st += f"CV3KUGATESAMP V3KUGATESAMP 0 {{latch_c}} ic={fit['ku_off']:.16g}\n"
+            st += "RV3KUGATESAMP V3KUGATESAMP 0 1e15\n"
+            st += "BV3KUGATESAMPLE V3KUGATESAMP 0 I = -{latch_c} * V(V3REVEDGE) * (V(KUGATE) - V(V3KUGATESAMP)) / v3_sample_tau\n"
+            st += f"CV3KDGATESAMP V3KDGATESAMP 0 {{latch_c}} ic={fit['kd_on']:.16g}\n"
+            st += "BV3KDGATESAMPBASE V3KDGATESAMPBASE 0 V = 1.0\n"
+            st += "RV3KDGATESAMP V3KDGATESAMP V3KDGATESAMPBASE 1e15\n"
+            st += "BV3KDGATESAMPLE V3KDGATESAMP 0 I = -{latch_c} * V(V3REVEDGE) * (V(KDGATE) - V(V3KDGATESAMP)) / v3_sample_tau\n"
+            st += "BV3ALIGNERRKU V3ALIGNERRKU 0 V = abs(V(V3KUGATESAMP) - V(V3KUVISSAMP))\n"
+            st += "BV3ALIGNERRKD V3ALIGNERRKD 0 V = abs(V(V3KDGATESAMP) - V(V3KDVISSAMP))\n"
+            st += "BV3GATEALIGNED V3GATEALIGNED 0 V = (V(V3ALIGNERRKU) <= v3_alignment_tol && V(V3ALIGNERRKD) <= v3_alignment_tol) ? 1.0 : 0.0\n"
+            st += "BV3KUANCHOR V3KUANCHOR 0 V = (V(V3GATEALIGNED) > 0.5) ? V(V3KUGATESAMP) : V(V3KUVISSAMP)\n"
+            st += "BV3KDANCHOR V3KDANCHOR 0 V = (V(V3GATEALIGNED) > 0.5) ? V(V3KDGATESAMP) : V(V3KDVISSAMP)\n\n"
+
+            st += "CV3DIR V3DIR 0 {latch_c} ic=0\n"
+            st += "RV3DIR V3DIR 0 1e15\n"
+            st += "BV3DIRSAMPLE V3DIR 0 I = -{latch_c} * V(V3LATCHPULSE) * (V(NINX) - V(V3DIR)) / v3_sample_tau\n"
+            st += "* Map each sampled coefficient independently onto the latest crossing of the new-direction table.\n"
+            st += create_inverse_time_lookup_source_with_policy(
+                "BV3TRKU", "V3TRKU", "V3KUANCHOR", kr[:, _TIME], kr[:, _KU], occurrence="latest"
+            )
+            st += create_inverse_time_lookup_source_with_policy(
+                "BV3TRKD", "V3TRKD", "V3KDANCHOR", kr[:, _TIME], kr[:, _KD], occurrence="latest"
+            )
+            st += create_inverse_time_lookup_source_with_policy(
+                "BV3TFKU", "V3TFKU", "V3KUANCHOR", kf[:, _TIME], kf[:, _KU], occurrence="latest"
+            )
+            st += create_inverse_time_lookup_source_with_policy(
+                "BV3TFKD", "V3TFKD", "V3KDANCHOR", kf[:, _TIME], kf[:, _KD], occurrence="latest"
+            )
+            st += "BV3KUSTARTCMD V3KUSTARTCMD 0 V = (V(NINX) > 0.5) ? V(V3TRKU) : V(V3TFKU)\n"
+            st += "BV3KDSTARTCMD V3KDSTARTCMD 0 V = (V(NINX) > 0.5) ? V(V3TRKD) : V(V3TFKD)\n"
+            st += "CV3KUSTART V3KUSTART 0 {latch_c} ic=0\n"
+            st += "RV3KUSTART V3KUSTART 0 1e15\n"
+            st += "BV3KUSTARTSAMPLE V3KUSTART 0 I = -{latch_c} * V(V3LATCHPULSE) * (V(V3KUSTARTCMD) - V(V3KUSTART)) / v3_sample_tau\n"
+            st += "CV3KDSTART V3KDSTART 0 {latch_c} ic=0\n"
+            st += "RV3KDSTART V3KDSTART 0 1e15\n"
+            st += "BV3KDSTARTSAMPLE V3KDSTART 0 I = -{latch_c} * V(V3LATCHPULSE) * (V(V3KDSTARTCMD) - V(V3KDSTART)) / v3_sample_tau\n"
+            st += "CV3T0 V3T0 0 {latch_c} ic=0\n"
+            st += "RV3T0 V3T0 0 1e15\n"
+            st += "BV3T0SAMPLE V3T0 0 I = -{latch_c} * V(V3LATCHPULSE) * (time*{time_scale} - V(V3T0)) / v3_sample_tau\n"
+            st += "BV3ELAPSED V3ELAPSED 0 V = (V(HV3ACTIVE) > 0.05) ? max(0, time*{time_scale} - V(V3T0) - v3_replay_delay_ns) : 0.0\n"
+            st += "BV3KUARG V3KUARG 0 V = V(V3KUSTART) + V(V3ELAPSED)\n"
+            st += "BV3KDARG V3KDARG 0 V = V(V3KDSTART) + V(V3ELAPSED)\n"
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KURAW_R", "V3KURAW_R", "V3KUARG", kr[:, _TIME], kr[:, _KU]
+            )
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KDRAW_R", "V3KDRAW_R", "V3KDARG", kr[:, _TIME], kr[:, _KD]
+            )
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KURAW_F", "V3KURAW_F", "V3KUARG", kf[:, _TIME], kf[:, _KU]
+            )
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KDRAW_F", "V3KDRAW_F", "V3KDARG", kf[:, _TIME], kf[:, _KD]
+            )
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KUSTARTVAL_R", "V3KUSTARTVAL_R", "V3KUSTART", kr[:, _TIME], kr[:, _KU]
+            )
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KDSTARTVAL_R", "V3KDSTARTVAL_R", "V3KDSTART", kr[:, _TIME], kr[:, _KD]
+            )
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KUSTARTVAL_F", "V3KUSTARTVAL_F", "V3KUSTART", kf[:, _TIME], kf[:, _KU]
+            )
+            st += create_ngspice_k_lookup_source_from_arg(
+                "BV3KDSTARTVAL_F", "V3KDSTARTVAL_F", "V3KDSTART", kf[:, _TIME], kf[:, _KD]
+            )
+            st += "BV3KURAW V3KURAW 0 V = (V(V3DIR) > 0.5) ? V(V3KURAW_R) : V(V3KURAW_F)\n"
+            st += "BV3KDRAW V3KDRAW 0 V = (V(V3DIR) > 0.5) ? V(V3KDRAW_R) : V(V3KDRAW_F)\n"
+            st += "BV3KUSTARTVAL V3KUSTARTVAL 0 V = (V(V3DIR) > 0.5) ? V(V3KUSTARTVAL_R) : V(V3KUSTARTVAL_F)\n"
+            st += "BV3KDSTARTVAL V3KDSTARTVAL 0 V = (V(V3DIR) > 0.5) ? V(V3KDSTARTVAL_R) : V(V3KDSTARTVAL_F)\n"
+            st += (
+                f"BV3ENDTIME V3ENDTIME 0 V = (V(V3DIR) > 0.5) ? "
+                f"{float(np.nanmax(kr[:, _TIME])) * 1e9:.16g} : {float(np.nanmax(kf[:, _TIME])) * 1e9:.16g}\n"
+            )
+            st += "BV3KUPROGRESS V3KUPROGRESS 0 V = min(max(V(V3ELAPSED) / max(V(V3ENDTIME) - V(V3KUSTART), 1e-6), 0), 1)\n"
+            st += "BV3KDPROGRESS V3KDPROGRESS 0 V = min(max(V(V3ELAPSED) / max(V(V3ENDTIME) - V(V3KDSTART), 1e-6), 0), 1)\n"
+            st += "* The start-value correction guarantees continuity and decays to zero at the table endpoint.\n"
+            st += "BV3KUREPLAY V3KUREPLAY 0 V = V(V3KURAW) + (V(V3KUANCHOR) - V(V3KUSTARTVAL)) * (1.0 - V(V3KUPROGRESS))\n"
+            st += "BV3KDREPLAY V3KDREPLAY 0 V = V(V3KDRAW) + (V(V3KDANCHOR) - V(V3KDSTARTVAL)) * (1.0 - V(V3KDPROGRESS))\n"
+            st += "BV3ENDERRKU V3ENDERRKU 0 V = abs(V(V3KUREPLAY) - V(KULEG))\n"
+            st += "BV3ENDERRKD V3ENDERRKD 0 V = abs(V(V3KDREPLAY) - V(KDLEG))\n"
+            st += "BV3DONE V3DONE 0 V = (V(V3KUPROGRESS) > 0.999 && V(V3KDPROGRESS) > 0.999 && V(V3ENDERRKU) <= v3_alignment_tol && V(V3ENDERRKD) <= v3_alignment_tol) ? 1.0 : 0.0\n"
+            st += "CV3ACTIVE HV3ACTIVE 0 {latch_c} ic=0\n"
+            st += "RV3ACTIVE HV3ACTIVE 0 1e15\n"
+            st += "BV3ACTIVECMD V3ACTIVECMD 0 V = (V(V3ACTIVATE) > 0.5) ? 1.0 : ((V(HV3ACTIVE) > 0.05 && V(V3DONE) < 0.5) ? 1.0 : 0.0)\n"
+            st += "BV3ACTIVE HV3ACTIVE 0 I = -{latch_c} * (V(V3ACTIVECMD) - V(HV3ACTIVE)) / v3_state_tau\n"
+            st += "CV3PENDING HV3PENDING 0 {latch_c} ic=0\n"
+            st += "RV3PENDING HV3PENDING 0 1e15\n"
+            st += "BV3PENDINGCMD V3PENDINGCMD 0 V = (V(V3REVEDGE) > 0.5) ? 1.0 : ((V(HV3ACTIVE) > 0.05) ? 0.0 : V(HV3PENDING))\n"
+            st += "BV3PENDING HV3PENDING 0 I = -{latch_c} * (V(V3PENDINGCMD) - V(HV3PENDING)) / v3_state_tau\n"
+            st += "BHHYBRIDACTIVE HHYBRIDACTIVE 0 V = V(HV3ACTIVE)\n"
+            st += "BV3PREHOLD V3PREHOLD 0 V = (V(V3REVEDGE) > 0.05 || V(V3LATCHPULSE) > 0.05 || V(V3ACTIVATE) > 0.05 || V(HV3PENDING) > 0.05) ? 1.0 : 0.0\n"
+            st += "BV3KUPENDING V3KUPENDING 0 V = (V(V3REVEDGE) > 0.05) ? V(V3KUPRE) : V(V3KUVISSAMP)\n"
+            st += "BV3KDPENDING V3KDPENDING 0 V = (V(V3REVEDGE) > 0.05) ? V(V3KDPRE) : V(V3KDVISSAMP)\n"
+            st += "B42 KUTARGET 0 V = (V(HV3ACTIVE) > 0.05) ? V(V3KUREPLAY) : ((V(V3PREHOLD) > 0.5) ? V(V3KUPENDING) : V(KULEG))\n"
+            st += "B43 KDTARGET 0 V = (V(HV3ACTIVE) > 0.05) ? V(V3KDREPLAY) : ((V(V3PREHOLD) > 0.5) ? V(V3KDPENDING) : V(KDLEG))\n"
+        elif state_initialized_replay:
+            st += "* Hybrid V2 samples the post-reversal directional gate-map value once.\n"
+            st += "* A 20 ps sampling window is followed by a fresh replay coordinate; the held anchor does not track GUP/GDN afterward.\n"
+            st += "BV2REVEDGE V2REVEDGE 0 V = (V(HREVERSERAW) > 0.5 && (V(RISEEDGE) > 0.5 || V(FALLEDGE) > 0.5)) ? 1.0 : 0.0\n"
+            st += "TV2SAMPLEDELAY V2REVEDGE 0 V2REVEDGE_DLY 0 Z0=50 Td={edge_delay}\n"
+            st += "RV2SAMPLEDELAY V2REVEDGE_DLY 0 50\n"
+            st += "BV2SAMPLE V2SAMPLE 0 V = (V(V2REVEDGE) > 0.5 || V(V2REVEDGE_DLY) > 0.5) ? 1.0 : 0.0\n"
+            st += f"CV2KUSAMP V2KUSAMP 0 {{latch_c}} ic={fit['ku_off']:.16g}\n"
+            st += "RV2KUSAMP V2KUSAMP 0 1e15\n"
+            st += "BV2KUSAMPLE V2KUSAMP 0 I = -{latch_c} * V(V2SAMPLE) * (V(KUGATE_BASE) - V(V2KUSAMP)) / v2_sample_tau\n"
+            st += f"CV2KDSAMP V2KDSAMP 0 {{latch_c}} ic={fit['kd_off']:.16g}\n"
+            st += "RV2KDSAMP V2KDSAMP 0 1e15\n"
+            st += "BV2KDSAMPLE V2KDSAMP 0 I = -{latch_c} * V(V2SAMPLE) * (V(KDGATE_BASE) - V(V2KDSAMP)) / v2_sample_tau\n"
+            st += "BV2DIR V2DIR 0 V = V(NINX)\n"
+            st += "BV2ELAPSED V2ELAPSED 0 V = max(V(HNX) - v2_start_delay_ns, 0.0)\n"
+            st += f"BV2END V2END 0 V = (V(NINX) > 0.5) ? {rise_replay_end_ns:.16g} : {fall_replay_end_ns:.16g}\n"
+            st += "BHHYBRIDV2ACTIVE HHYBRIDV2ACTIVE 0 V = (V(HREVERSERAW) > 0.5 && V(HNX) >= v2_start_delay_ns && V(V2ELAPSED) < V(V2END)) ? 1.0 : 0.0\n"
+            st += "BHHYBRIDACTIVE HHYBRIDACTIVE 0 V = V(HHYBRIDV2ACTIVE)\n"
+            st += create_ngspice_k_lookup_source_from_elapsed(
+                "BV2PKUR", "V2PKUR", "V2ELAPSED", kr[:, _TIME], ku_rise_progress
+            )
+            st += create_ngspice_k_lookup_source_from_elapsed(
+                "BV2PKDR", "V2PKDR", "V2ELAPSED", kr[:, _TIME], kd_rise_progress
+            )
+            st += create_ngspice_k_lookup_source_from_elapsed(
+                "BV2PKUF", "V2PKUF", "V2ELAPSED", kf[:, _TIME], ku_fall_progress
+            )
+            st += create_ngspice_k_lookup_source_from_elapsed(
+                "BV2PKDF", "V2PKDF", "V2ELAPSED", kf[:, _TIME], kd_fall_progress
+            )
+            st += "BV2KUPROGRESS V2KUPROGRESS 0 V = (V(NINX) > 0.5) ? V(V2PKUR) : V(V2PKUF)\n"
+            st += "BV2KDPROGRESS V2KDPROGRESS 0 V = (V(NINX) > 0.5) ? V(V2PKDR) : V(V2PKDF)\n"
+            st += (
+                f"BV2KUEND V2KUEND 0 V = (V(NINX) > 0.5) ? "
+                f"{float(kr[-1, _KU]):.16g} : {float(kf[-1, _KU]):.16g}\n"
+            )
+            st += (
+                f"BV2KDEND V2KDEND 0 V = (V(NINX) > 0.5) ? "
+                f"{float(kr[-1, _KD]):.16g} : {float(kf[-1, _KD]):.16g}\n"
+            )
+            st += "BV2KUREPLAY V2KUREPLAY 0 V = V(V2KUSAMP) + (V(V2KUEND) - V(V2KUSAMP)) * V(V2KUPROGRESS)\n"
+            st += "BV2KDREPLAY V2KDREPLAY 0 V = V(V2KDSAMP) + (V(V2KDEND) - V(V2KDSAMP)) * V(V2KDPROGRESS)\n"
+            st += "BV2STARTERRKU V2STARTERRKU 0 V = abs(V(V2KUSAMP) - V(KULEG))\n"
+            st += "BV2STARTERRKD V2STARTERRKD 0 V = abs(V(V2KDSAMP) - V(KDLEG))\n"
+            st += "B42 KUTARGET 0 V = (V(HHYBRIDV2ACTIVE) > 0.5) ? V(V2KUREPLAY) : V(KULEG)\n"
+            st += "B43 KDTARGET 0 V = (V(HHYBRIDV2ACTIVE) > 0.5) ? V(V2KDREPLAY) : V(KDLEG)\n"
+        else:
+            st += "BHHYBRIDACTIVE HHYBRIDACTIVE 0 V = "
+            st += "(V(HREVERSERAW) > 0.5 && V(HNX) < hybrid_recovery_ns) ? 1.0 : 0.0\n"
+            st += "B42 KUTARGET 0 V = V(HHYBRIDACTIVE) * V(KUGATE) + (1.0 - V(HHYBRIDACTIVE)) * V(KULEG)\n"
+            st += "B43 KDTARGET 0 V = V(HHYBRIDACTIVE) * V(KDGATE) + (1.0 - V(HHYBRIDACTIVE)) * V(KDLEG)\n"
     else:
         st += "B42 KUTARGET 0 V = V(H2STATEACTIVE) * V(KUGATE) + (1.0 - V(H2STATEACTIVE)) * V(KULEG)\n"
         st += "B43 KDTARGET 0 V = V(H2STATEACTIVE) * V(KDGATE) + (1.0 - V(H2STATEACTIVE)) * V(KDLEG)\n"
-    st += "B44 Ku 0 I = -{coeff_c} * (V(KUTARGET) - V(Ku)) / coeff_tau\n"
-    st += f"Cku Ku 0 {{coeff_c}} ic={fit['ku_off']:.16g}\n"
-    st += "Rku Ku 0 1e12\n"
-    st += "B45 Kd 0 I = -{coeff_c} * (V(KDTARGET) - V(Kd)) / coeff_tau\n"
-    st += f"Ckd Kd 0 {{coeff_c}} ic={fit['kd_on']:.16g}\n"
-    st += "Rkd Kd 0 1e12\n\n"
+    if state_initialized_replay or aligned_replay:
+        st += "B44 Ku 0 V = V(KUTARGET)\n"
+        st += "B45 Kd 0 V = V(KDTARGET)\n\n"
+    elif reversal_hybrid:
+        st += "B44 Ku 0 V = (V(HHYBRIDACTIVE) > 0.5) ? V(KUGATE) : V(KULEG)\n"
+        st += "B45 Kd 0 V = (V(HHYBRIDACTIVE) > 0.5) ? V(KDGATE) : V(KDLEG)\n\n"
+    else:
+        st += "B44 Ku 0 I = -{coeff_c} * (V(KUTARGET) - V(Ku)) / coeff_tau\n"
+        st += f"Cku Ku 0 {{coeff_c}} ic={fit['ku_off']:.16g}\n"
+        st += "Rku Ku 0 1e12\n"
+        st += "B45 Kd 0 I = -{coeff_c} * (V(KDTARGET) - V(Kd)) / coeff_tau\n"
+        st += f"Ckd Kd 0 {{coeff_c}} ic={fit['kd_on']:.16g}\n"
+        st += "Rkd Kd 0 1e12\n\n"
     return st
 
 
@@ -2491,6 +3244,290 @@ def create_ngspice_value_matched_replay_v2_input_control_netlist(kr, kf, ibis_da
     return st
 
 
+def normalize_pad_replay_reference(reference):
+    """Validates and normalizes an offline legacy-pad calibration reference."""
+    if reference is None:
+        raise ValueError("pad replay requires an offline pad reference")
+    result = {}
+    for direction in ("rising", "falling"):
+        section = reference.get(direction, {})
+        time_ns = np.asarray(section.get("time_ns", []), dtype=float)
+        pad_v = np.asarray(section.get("pad_v", []), dtype=float)
+        if len(time_ns) < 3 or len(time_ns) != len(pad_v):
+            raise ValueError(f"invalid {direction} pad replay reference")
+        mask = np.isfinite(time_ns) & np.isfinite(pad_v)
+        time_ns = time_ns[mask]
+        pad_v = pad_v[mask]
+        order = np.argsort(time_ns)
+        time_ns = time_ns[order]
+        pad_v = pad_v[order]
+        unique = np.concatenate(([True], np.diff(time_ns) > 1e-12))
+        time_ns = time_ns[unique]
+        pad_v = pad_v[unique]
+        if len(time_ns) < 3:
+            raise ValueError(f"invalid {direction} pad replay time axis")
+        time_ns = time_ns - time_ns[0]
+        slew = np.gradient(pad_v, time_ns, edge_order=1)
+        # A small symmetric smoother prevents timestep noise from dominating
+        # the optional slew-aware lookup score.
+        if len(slew) >= 7:
+            kernel = np.ones(7, dtype=float) / 7.0
+            slew = np.convolve(slew, kernel, mode="same")
+        result[direction] = {
+            "time_ns": time_ns,
+            "pad_v": pad_v,
+            "slew_v_per_ns": slew,
+        }
+    result["load_ohm"] = float(reference.get("load_ohm", 50.0))
+    result["load_pf"] = float(reference.get("load_pf", 2.0))
+    return result
+
+
+def create_ngspice_pad_matched_replay_input_control_netlist(
+    kr, kf, ibis_data, pad_reference, mode="voltage_only"
+):
+    """Creates interrupted replay retimed from one latched pad-voltage snapshot.
+
+    The reference trajectories are generated offline from legacy pybis under a
+    declared calibration load. Runtime pad voltage is sampled only once at the
+    reverse edge. Ku and Kd then replay from one shared opposite-table time.
+    """
+    if ibis_data.model_type.lower() == "open_drain":
+        raise ValueError("pad-matched replay v1 currently supports push-pull models only")
+    reference = normalize_pad_replay_reference(pad_reference)
+    rising = reference["rising"]
+    falling = reference["falling"]
+    if str(getattr(ibis_data, "enable", "")).lower() == "active-low":
+        enable_expr = "(V(EN,VSS) < {enable_threshold})"
+    else:
+        enable_expr = "(V(EN,VSS) > {enable_threshold})"
+
+    all_pad = np.concatenate((rising["pad_v"], falling["pad_v"]))
+    pad_low = float(np.percentile(all_pad, 2.0))
+    pad_high = float(np.percentile(all_pad, 98.0))
+    pad_swing = max(1e-6, pad_high - pad_low)
+    rise_slew_scale = max(1e-6, float(np.percentile(np.abs(rising["slew_v_per_ns"]), 95.0)))
+    fall_slew_scale = max(1e-6, float(np.percentile(np.abs(falling["slew_v_per_ns"]), 95.0)))
+    score_weight = 0.25
+    rise_score = (
+        (rising["pad_v"] - pad_low) / pad_swing
+        + score_weight * np.abs(rising["slew_v_per_ns"]) / rise_slew_scale
+    )
+    fall_score = (
+        (falling["pad_v"] - pad_low) / pad_swing
+        + score_weight * np.abs(falling["slew_v_per_ns"]) / fall_slew_scale
+    )
+    use_slew = mode.startswith("slew_aware")
+    exact_legacy_bypass = mode.endswith("_v2")
+    delayed_sample = mode == "voltage_only_delayed_v2"
+    if delayed_sample:
+        delay_fit = two_state_directional_gate_fit(kr, kf)
+        # Match the first output-stage action used by the directional gate model.
+        # A falling reverse edge starts PU-off/PD-on; a rising reverse edge starts
+        # PU-on/PD-off. One pad snapshot uses the earlier action in each pair.
+        fall_sample_delay_ns = min(
+            delay_fit["pu_off_delay"], delay_fit["pd_on_delay"]
+        )
+        rise_sample_delay_ns = min(
+            delay_fit["pu_on_delay"], delay_fit["pd_off_delay"]
+        )
+    else:
+        fall_sample_delay_ns = 0.0
+        rise_sample_delay_ns = 0.0
+    max_replay_time_ns = max(
+        float(np.nanmax(kr[:, _TIME])), float(np.nanmax(kf[:, _TIME]))
+    ) * 1e9
+    interrupt_window = max(0.25, min(5.0, 0.35 * max_replay_time_ns))
+    # Runtime initial state is a settled logic low. Some very fast extracted
+    # coefficient tables begin after a dynamic spike and are not valid DC ICs.
+    ku_low = 0.0
+    kd_low = 1.0
+
+    st = ""
+    st += "* Pad-voltage-matched interrupted table replay\n"
+    st += "* Offline reference: legacy pybis, declared calibration load only.\n"
+    st += "* Runtime OUT is sampled once at reversal; there is no continuous pad feedback.\n"
+    st += f"* Pad-match mode={mode}; load={reference['load_ohm']:.16g} ohm || {reference['load_pf']:.16g} pF\n"
+    if delayed_sample:
+        st += (
+            "* IBIS-derived reverse sampling delay uses the first directional "
+            "output-stage action.\n"
+        )
+        st += (
+            f"* Reverse sample delay rise/fall={rise_sample_delay_ns:.6g}/"
+            f"{fall_sample_delay_ns:.6g}ns\n"
+        )
+    st += (
+        ".param coeff_c=1p coeff_tau=5p sample_c=1p sample_tau=2p "
+        "match_tau=5p pm_latch_width=20p pm_latch_delay=20p "
+        "pm_edge_delay_ns=0.01 pad_slew_delay=10p "
+        f"interrupt_window_ns={interrupt_window:.16g} pm_end_ns={max_replay_time_ns:.16g}\n"
+    )
+    st += "B10 NINX 0 V = (V(IN,VSS) > {input_threshold}) ? 1.0 : 0.0\n"
+    st += f"B11 NENABLE 0 V = {enable_expr} ? 1.0 : 0.0\n"
+    st += "B12 HNI 0 V = V(NINX) - 0.5\n"
+    st += "B13 HN2 0 V = V(HNI,HN9) * 8\n"
+    st += "B14 HN3 0 V = abs(V(HN2))\n"
+    st += "B15 HN4 0 V = (V(HN3) > 0.5) ? 1 : -1\n"
+    st += "B16 HN5 0 V = (V(HN4) > 0) ? time*{time_scale} : 0\n"
+    st += "B17 HN6 0 V = (V(HN4) > 0) ? V(HN5) : V(HN8)\n"
+    st += "B18 HNX 0 V = (V(HN6) >= 1.0) ? time*{time_scale} - V(HN8) : 0.0\n"
+    st += "T1 HN6 0 HN8 0 Z0=50 Td={edge_delay}\n"
+    st += "T2 HNI 0 HN9 0 Z0=50 Td={edge_delay}\n"
+    st += "R5 HN8 0 50\nR6 HN9 0 50\n\n"
+
+    st += create_ngspice_k_lookup_source_from_elapsed("B20", "HKUR0", "HNX", kr[:, _TIME], kr[:, _KU])
+    st += create_ngspice_k_lookup_source_from_elapsed("B21", "HKDR0", "HNX", kr[:, _TIME], kr[:, _KD])
+    st += create_ngspice_k_lookup_source_from_elapsed("B22", "HKUF0", "HNX", kf[:, _TIME], kf[:, _KU])
+    st += create_ngspice_k_lookup_source_from_elapsed("B23", "HKDF0", "HNX", kf[:, _TIME], kf[:, _KD])
+    st += "B24 HNKUF 0 V = (V(HN6) > 0.5) ? ((V(HNI) > 0 || V(HN2) < -0.1) ? 1 : V(HKUF0)) : 0\n"
+    st += "B25 HNKDF 0 V = (V(HN6) > 0.5) ? ((V(HNI) > 0 || V(HN2) < -0.1) ? 0 : V(HKDF0)) : 1\n"
+    st += "B26 HNKUR 0 V = (V(HN6) > 0.5) ? ((V(HNI) > 0 && V(HN3) < 0.1) ? V(HKUR0) : 0) : 0\n"
+    st += "B27 HNKDR 0 V = (V(HN6) > 0.5) ? ((V(HNI) > 0 && V(HN3) < 0.1) ? V(HKDR0) : 1) : 1\n"
+    st += "B28 KULEG 0 V = (V(NENABLE) > 0.5) ? ((V(HN6) > 0.5) ? ((V(HNI) > 0 && V(HN2) > -0.1) ? V(HNKUR) : V(HNKUF)) : 0) : 0\n"
+    st += "B29 KDLEG 0 V = (V(NENABLE) > 0.5) ? ((V(HN6) > 0.5) ? ((V(HNI) > 0 && V(HN2) > -0.1) ? V(HNKDR) : V(HNKDF)) : 1) : 0\n\n"
+
+    st += "BRISEEDGE RISEEDGE 0 V = (V(NENABLE)>0.5 && V(NINX)>0.5 && V(HN2)>0.5) ? 1.0 : 0.0\n"
+    st += "BFALLEDGE FALLEDGE 0 V = (V(NENABLE)>0.5 && V(NINX)<0.5 && V(HN2)<-0.5) ? 1.0 : 0.0\n"
+    st += "CHADFALL HAD_FALL 0 {sample_c} ic=0\nRHADFALL HAD_FALL 0 1e15\n"
+    st += "BHADFALL HAD_FALL 0 I = -{sample_c}*V(FALLEDGE)*(1-V(HAD_FALL))/match_tau\n"
+    st += "BHINTWINDOW HINTWINDOW 0 V = (V(HNX) < interrupt_window_ns) ? 1.0 : 0.0\n"
+    st += "BFALLAFTRISE HFALL_AFTER_RISE 0 V = (V(FALLEDGE)>0.5 && V(HINTWINDOW)>0.5) ? 1.0 : 0.0\n"
+    st += "BRISEAFTFALL HRISE_AFTER_FALL 0 V = (V(RISEEDGE)>0.5 && V(HAD_FALL)>0.5 && V(HINTWINDOW)>0.5) ? 1.0 : 0.0\n"
+    st += "BHREVERSE HREVERSE_EDGE 0 V = (V(HFALL_AFTER_RISE)>0.5 || V(HRISE_AFTER_FALL)>0.5) ? 1.0 : 0.0\n"
+    if delayed_sample:
+        # Latch the reverse-edge timestamp and schedule the sample from that
+        # timestamp. A transport line with the same very short delay (1.65 ps
+        # for io_buf) forces ngspice to use tens-of-femtoseconds timesteps for
+        # the whole deck, even though the delayed event occurs only once.
+        for name, source, delay_ns in (
+            ("HFALL_SAMPLE", "HFALL_AFTER_RISE", fall_sample_delay_ns),
+            ("HRISE_SAMPLE", "HRISE_AFTER_FALL", rise_sample_delay_ns),
+        ):
+            st += f"C{name}T0 {name}_T0 0 {{sample_c}} ic=-1\n"
+            st += f"R{name}T0 {name}_T0 0 1e15\n"
+            st += f"C{name}ARM {name}_ARM 0 {{sample_c}} ic=0\n"
+            st += f"R{name}ARM {name}_ARM 0 1e15\n"
+            st += (
+                f"B{name}ARM {name}_ARM 0 I = -{{sample_c}}*V({source})*"
+                f"(1-V({name}_ARM))/sample_tau\n"
+            )
+            st += (
+                f"B{name}T0 {name}_T0 0 I = -{{sample_c}}*V({source})*"
+                f"(time*{{time_scale}}-V({name}_T0))/sample_tau\n"
+            )
+            st += (
+                f"B{name} {name} 0 V = "
+                f"(V({name}_ARM)>0.5 && time*{{time_scale}}-V({name}_T0)>="
+                f"{delay_ns:.16g} && time*{{time_scale}}-V({name}_T0)<"
+                f"{delay_ns + 0.020:.16g}) ? 1.0 : 0.0\n"
+            )
+        st += "BHREVSAMPLE HREVERSE_SAMPLE 0 V = max(V(HFALL_SAMPLE),V(HRISE_SAMPLE))\n"
+        st += (
+            f"BPMSAMPLEDELAY PMSAMPLE_DELAY 0 V = (V(NINX)>0.5) ? "
+            f"{rise_sample_delay_ns:.16g} : {fall_sample_delay_ns:.16g}\n"
+        )
+        reverse_fall_node = "HFALL_SAMPLE"
+        reverse_rise_node = "HRISE_SAMPLE"
+    else:
+        st += "BHREVSAMPLE HREVERSE_SAMPLE 0 V = V(HREVERSE_EDGE)\n"
+        st += "BPMSAMPLEDELAY PMSAMPLE_DELAY 0 V = 0.0\n"
+        reverse_fall_node = "HFALL_AFTER_RISE"
+        reverse_rise_node = "HRISE_AFTER_FALL"
+    st += (
+        f"BPREKU KUPRE 0 V = (V({reverse_fall_node})>0.5) ? V(HKUR0) : "
+        f"((V({reverse_rise_node})>0.5) ? V(HKUF0) : V(KULEG))\n"
+    )
+    st += (
+        f"BPREKD KDPRE 0 V = (V({reverse_fall_node})>0.5) ? V(HKDR0) : "
+        f"((V({reverse_rise_node})>0.5) ? V(HKDF0) : V(KDLEG))\n"
+    )
+    st += "TREVEDGE HREVERSE_SAMPLE 0 HREVERSE_DLY 0 Z0=50 Td={pm_latch_width}\nRHREVEDGE HREVERSE_DLY 0 50\n"
+    st += "BPMSAMPLE PMSAMPLE 0 V = max(0,min(max(V(HREVERSE_SAMPLE),0),1)-min(max(V(HREVERSE_DLY),0),1))\n"
+    st += "TPMLATCH PMSAMPLE 0 PMLATCHRAW 0 Z0=50 Td={pm_latch_delay}\nRPMLATCH PMLATCHRAW 0 50\n"
+    st += "BPMLATCH PMLATCHPULSE 0 V = min(max(V(PMLATCHRAW),0),1)\n"
+    st += "TPMACT PMLATCHPULSE 0 PMACTIVATE 0 Z0=50 Td={pm_latch_width}\nRPMACT PMACTIVATE 0 50\n\n"
+
+    if use_slew:
+        # The slew-aware diagnostic needs one delayed pad sample. Keep this RC
+        # explicit because it is a real (though small) 10 fF observation load.
+        st += "RPADPRE OUT PADPRE 1k\nCPADPRE PADPRE VSS 10f\n"
+        st += "BPADSLEW PADSLEWPRE 0 V = abs((V(OUT,VSS)-V(PADPRE,VSS))/0.01)\n"
+    else:
+        # Voltage-only replay must not alter an inactive driver/load bench.
+        st += "BPADSLEW PADSLEWPRE 0 V = 0\n"
+    st += f"CPADSAMP PADSAMP 0 {{sample_c}} ic={pad_low:.16g}\nRPADSAMP PADSAMP 0 1e15\n"
+    st += "BPADSAMPLE PADSAMP 0 I = -{sample_c}*V(PMSAMPLE)*(V(OUT,VSS)-V(PADSAMP))/sample_tau\n"
+    st += "CPADSLEWSAMP PADSLEWSAMP 0 {sample_c} ic=0\nRPADSLEWSAMP PADSLEWSAMP 0 1e15\n"
+    st += "BPADSLEWSAMPLE PADSLEWSAMP 0 I = -{sample_c}*V(PMSAMPLE)*(V(PADSLEWPRE)-V(PADSLEWSAMP))/sample_tau\n\n"
+
+    rise_time_s = rising["time_ns"] * 1e-9
+    fall_time_s = falling["time_ns"] * 1e-9
+    st += create_inverse_trajectory_time_lookup_source_with_policy("B30", "TR_PAD_EARLY", "PADSAMP", rise_time_s, rising["pad_v"], "earliest")
+    st += create_inverse_trajectory_time_lookup_source_with_policy("B31", "TF_PAD_EARLY", "PADSAMP", fall_time_s, falling["pad_v"], "earliest")
+    st += create_inverse_trajectory_time_lookup_source_with_policy("B32", "TR_PAD_LATE", "PADSAMP", rise_time_s, rising["pad_v"], "latest")
+    st += create_inverse_trajectory_time_lookup_source_with_policy("B33", "TF_PAD_LATE", "PADSAMP", fall_time_s, falling["pad_v"], "latest")
+    if use_slew:
+        st += f"B34 TR_SCORESAMP 0 V = (V(PADSAMP)-({pad_low:.16g}))/({pad_swing:.16g}) + {score_weight:.16g}*V(PADSLEWSAMP)/({rise_slew_scale:.16g})\n"
+        st += f"B35 TF_SCORESAMP 0 V = (V(PADSAMP)-({pad_low:.16g}))/({pad_swing:.16g}) + {score_weight:.16g}*V(PADSLEWSAMP)/({fall_slew_scale:.16g})\n"
+        st += create_inverse_trajectory_time_lookup_source_with_policy("B36", "TR_PAD_SCORE", "TR_SCORESAMP", rise_time_s, rise_score, "earliest")
+        st += create_inverse_trajectory_time_lookup_source_with_policy("B37", "TF_PAD_SCORE", "TF_SCORESAMP", fall_time_s, fall_score, "earliest")
+        st += create_inverse_trajectory_time_lookup_source_with_policy("B36L", "TR_PAD_SCORE_LATE", "TR_SCORESAMP", rise_time_s, rise_score, "latest")
+        st += create_inverse_trajectory_time_lookup_source_with_policy("B37L", "TF_PAD_SCORE_LATE", "TF_SCORESAMP", fall_time_s, fall_score, "latest")
+        start_expr = "(V(NINX)>0.5) ? V(TR_PAD_SCORE) : V(TF_PAD_SCORE)"
+        span_expr = "(V(NINX)>0.5) ? abs(V(TR_PAD_SCORE_LATE)-V(TR_PAD_SCORE)) : abs(V(TF_PAD_SCORE_LATE)-V(TF_PAD_SCORE))"
+    else:
+        start_expr = "(V(NINX)>0.5) ? V(TR_PAD_EARLY) : V(TF_PAD_EARLY)"
+        span_expr = "(V(NINX)>0.5) ? abs(V(TR_PAD_LATE)-V(TR_PAD_EARLY)) : abs(V(TF_PAD_LATE)-V(TF_PAD_EARLY))"
+    st += f"B38 PADSTARTCMD 0 V = {start_expr}\n"
+    st += f"B39 PADSTARTSPAN 0 V = {span_expr}\n"
+    st += "B40 PADMATCH_AMBIGUOUS 0 V = (V(PADSTARTSPAN)>0.5) ? 1.0 : 0.0\n"
+    st += "CPADSTART PADSTART_LATCH 0 {sample_c} ic=0\nRPADSTART PADSTART_LATCH 0 1e15\n"
+    st += "BPADSTART PADSTART_LATCH 0 I = -{sample_c}*V(PMLATCHPULSE)*(V(PADSTARTCMD)-V(PADSTART_LATCH))/match_tau\n"
+    st += "CPMT0 PMT0 0 {sample_c} ic=0\nRPMT0 PMT0 0 1e15\n"
+    st += "BPMT0 PMT0 0 I = -{sample_c}*V(PMLATCHPULSE)*(time*{time_scale}-V(PMT0))/match_tau\n"
+    st += "B41 PMELAPSED 0 V = (V(HPMATCH)>0.05) ? max(0,time*{time_scale}-V(PMT0)-pm_edge_delay_ns) : 0\n"
+    st += "B42 PADARG 0 V = V(PADSTART_LATCH)+V(PMELAPSED)\n"
+    st += create_ngspice_k_lookup_source_from_arg("B43", "KURM", "PADARG", kr[:, _TIME], kr[:, _KU])
+    st += create_ngspice_k_lookup_source_from_arg("B44", "KDRM", "PADARG", kr[:, _TIME], kr[:, _KD])
+    st += create_ngspice_k_lookup_source_from_arg("B45", "KUFM", "PADARG", kf[:, _TIME], kf[:, _KU])
+    st += create_ngspice_k_lookup_source_from_arg("B46", "KDFM", "PADARG", kf[:, _TIME], kf[:, _KD])
+    st += "B47 KUPADMATCH 0 V = (V(NINX)>0.5) ? V(KURM) : V(KUFM)\n"
+    st += "B48 KDPADMATCH 0 V = (V(NINX)>0.5) ? V(KDRM) : V(KDFM)\n"
+    st += "B49 HPMATCHCMD 0 V = (V(PMACTIVATE)>0.5) ? 1.0 : ((V(HPMATCH)>0.05 && V(PADARG)<pm_end_ns) ? 1.0 : 0.0)\n"
+    st += "CHPMATCH HPMATCH 0 {sample_c} ic=0\nRHPMATCH HPMATCH 0 1e15\n"
+    st += "BHPMATCH HPMATCH 0 I = -{sample_c}*(V(HPMATCHCMD)-V(HPMATCH))/match_tau\n"
+    st += "B50 PADMAPACTIVE 0 V = V(HPMATCH)\n"
+    if exact_legacy_bypass:
+        # V1 filtered Ku/Kd continuously, including ordinary complete edges.
+        # V2 holds only the pre-reversal value during the sample/latch window,
+        # blends into/out of replay with HPMATCH, and is exactly KULEG/KDLEG
+        # whenever no pad replay transaction is active.
+        st += f"CKUSAMP KUSAMP 0 {{sample_c}} ic={ku_low:.16g}\nRKUSAMP KUSAMP 0 1e15\n"
+        st += f"CKDSAMP KDSAMP 0 {{sample_c}} ic={kd_low:.16g}\nRKDSAMP KDSAMP 0 1e15\n"
+        st += "BKUSAMPLE KUSAMP 0 I = -{sample_c}*V(PMSAMPLE)*(V(KUPRE)-V(KUSAMP))/sample_tau\n"
+        st += "BKDSAMPLE KDSAMP 0 I = -{sample_c}*V(PMSAMPLE)*(V(KDPRE)-V(KDSAMP))/sample_tau\n"
+        st += "B50A HPMHOLD 0 V = (V(PMSAMPLE)>0.05 || V(PMLATCHPULSE)>0.05 || V(PMACTIVATE)>0.05) ? 1.0 : 0.0\n"
+        st += "B50B HPMALPHA 0 V = min(max(V(HPMATCH),0),1)\n"
+        st += "B51 KUTARGET 0 V = (V(PMSAMPLE)>0.05) ? V(KUPRE) : ((V(HPMHOLD)>0.5) ? V(KUSAMP) : ((1-V(HPMALPHA))*V(KULEG)+V(HPMALPHA)*V(KUPADMATCH)))\n"
+        st += "B52 KDTARGET 0 V = (V(PMSAMPLE)>0.05) ? V(KDPRE) : ((V(HPMHOLD)>0.5) ? V(KDSAMP) : ((1-V(HPMALPHA))*V(KDLEG)+V(HPMALPHA)*V(KDPADMATCH)))\n"
+        st += "B53 Ku 0 V = V(KUTARGET)\n"
+        st += "B54 Kd 0 V = V(KDTARGET)\n"
+        st += "B55 COEFF_JUMP_KU 0 V = abs(V(KUTARGET)-V(KULEG))\n"
+        st += "B56 COEFF_JUMP_KD 0 V = abs(V(KDTARGET)-V(KDLEG))\n\n"
+    else:
+        st += "B51 KUTARGET 0 V = (V(HPMATCH)>0.05) ? V(KUPADMATCH) : V(KULEG)\n"
+        st += "B52 KDTARGET 0 V = (V(HPMATCH)>0.05) ? V(KDPADMATCH) : V(KDLEG)\n"
+        st += f"Cku Ku 0 {{coeff_c}} ic={ku_low:.16g}\nRku Ku 0 1e15\n"
+        st += "B53 Ku 0 I = -{coeff_c}*(V(KUTARGET)-V(Ku))/coeff_tau\n"
+        st += f"Ckd Kd 0 {{coeff_c}} ic={kd_low:.16g}\n"
+        st += "BKDBASE KDBASE 0 V=1\nRkd Kd KDBASE 1e15\n"
+        st += "B54 Kd 0 I = -{coeff_c}*(V(KDTARGET)-V(Kd))/coeff_tau\n"
+        st += "B55 COEFF_JUMP_KU 0 V = abs(V(KUTARGET)-V(Ku))\n"
+        st += "B56 COEFF_JUMP_KD 0 V = abs(V(KDTARGET)-V(Kd))\n\n"
+    return st
+
+
 def create_ngspice_input_control_netlist(kr, kf, ibis_data):
     """
     Creates SPISim-style input edge timing and K-coefficient selection logic.
@@ -2646,7 +3683,9 @@ def create_ngspice_input_driven_output_model(ibis_data, corner, io_type, output_
                                              charge_limited_gate_mode=None,
                                              value_matched_replay_mode=None,
                                              value_matched_replay_v2_mode=None,
-                                             two_state_gate_mode=None):
+                                             two_state_gate_mode=None,
+                                             pad_matched_replay_mode=None,
+                                             pad_replay_reference=None):
     """
     Creates an ngspice output model with a real input pin.
 
@@ -2679,7 +3718,10 @@ def create_ngspice_input_driven_output_model(ibis_data, corner, io_type, output_
         threshold = estimate_input_threshold(ibis_data, corner)
         subckt_name = sanitize_ngspice_identifier(f'{ibis_data.model_name}-OutputInput-{corner}')
 
-        if two_state_gate_mode is not None:
+        if pad_matched_replay_mode is not None:
+            extra_info = "* Note: InputDrivenPadMatchedReplay exposes OUT IN EN VCC VSS pins.\n"
+            extra_info += "* Reverse edges sample OUT once and replay aligned Ku/Kd from an offline pad map.\n"
+        elif two_state_gate_mode is not None:
             extra_info = "* Note: InputDrivenTwoStateGate exposes OUT IN EN VCC VSS pins.\n"
             extra_info += "* IN drives continuous GUP/GDN hidden gate states mapped to Ku/Kd.\n"
         elif value_matched_replay_v2_mode is not None:
@@ -2717,7 +3759,15 @@ def create_ngspice_input_driven_output_model(ibis_data, corner, io_type, output_
         spice_text += spice_rlc_netlist_with_supply(ibis_data, corner, pin_name="OUT")
         spice_text += define_pwr_and_gnd_clamps_with_supply(ibis_data, corner)
         spice_text += define_pullup_and_pulldown_devices_with_supply(ibis_data, corner)
-        if two_state_gate_mode is not None:
+        if pad_matched_replay_mode is not None:
+            spice_text += create_ngspice_pad_matched_replay_input_control_netlist(
+                kr,
+                kf,
+                ibis_data,
+                pad_replay_reference,
+                mode=pad_matched_replay_mode,
+            )
+        elif two_state_gate_mode is not None:
             spice_text += create_ngspice_two_state_gate_input_control_netlist(
                 kr,
                 kf,
