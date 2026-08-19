@@ -27,6 +27,7 @@ rsf_compare_log*.txt
 
 # Local tool/dependency installs used by Codex runs
 /.codex_deps/
+/tools/presentation_kit/mathjax/node_modules/
 
 # Download caches inside generated studies
 /results/**/cache/*.zip

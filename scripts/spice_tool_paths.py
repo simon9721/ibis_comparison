@@ -42,8 +42,8 @@ def default_hspice() -> Path:
         return Path(env_value)
     return first_existing(
         [
+            Path(r"C:\synopsys\Hspice_T-2022.06\WIN64\hspice.exe"),
             Path(r"C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com"),
             Path("hspice"),
         ]
     )
-

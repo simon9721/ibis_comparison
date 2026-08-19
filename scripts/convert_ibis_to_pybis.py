@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
 
@@ -21,6 +22,7 @@ def convert(
     io_type: str,
     subcircuit_type: str,
     corner: str,
+    pad_replay_reference: dict | None = None,
 ) -> Path:
     ibis = pybis2spice.get_ibis_model_ecdtools(str(ibis_path))
     data_model = pybis2spice.DataModel(ibis, model_name=model_name, component_name=component_name)
@@ -34,6 +36,7 @@ def convert(
         ibis_data=data_model,
         corner=corner,
         output_filepath=str(output_path),
+        pad_replay_reference=pad_replay_reference,
     )
     if ret != 0:
         raise RuntimeError(f"pybis2spice conversion failed with return code {ret}")
@@ -49,6 +52,11 @@ def main() -> int:
     parser.add_argument("--io-type", default="Output", choices=["Input", "Output"])
     parser.add_argument("--subcircuit-type", default="InputDriven")
     parser.add_argument("--corner", default="Typical", choices=["Typical", "WeakSlow", "FastStrong"])
+    parser.add_argument(
+        "--pad-replay-reference",
+        type=Path,
+        help="JSON legacy-pad calibration used by InputDrivenPadMatchedReplay modes",
+    )
     parser.add_argument("--list", action="store_true", help="Print parsed components/models before converting")
     args = parser.parse_args()
 
@@ -65,6 +73,11 @@ def main() -> int:
         io_type=args.io_type,
         subcircuit_type=args.subcircuit_type,
         corner=args.corner,
+        pad_replay_reference=(
+            json.loads(args.pad_replay_reference.read_text(encoding="utf-8"))
+            if args.pad_replay_reference is not None
+            else None
+        ),
     )
     print(output_path)
     return 0

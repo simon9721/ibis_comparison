@@ -16,6 +16,25 @@ The purpose is to make every later short-pulse experiment answer one clean quest
 - Main baseline result folder: `results/io_buf_switching_coeff_sweep_2026-06-19`
 - Main interrupted-switching demo: `results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo`
 
+## Reference Integrity Update: 2026-07-23
+
+The frozen studies above use the old slow-characterized `hspice/sparam/io_buf.ibs`. They remain valid measurements of how pybis and HSPICE replay that specific file, but they are not yet a production baseline for the regenerated 5 ps IBIS.
+
+A controlled HSPICE sweep in `results/io_buf_hspice_capacitance_driver_strength_2026-07-23` found two stale-reference effects:
+
+- The native-IBIS short-pulse reference selected the old slow-edge file. The regenerated file is `results/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`.
+- The previous transistor reference used `models/hspice_ngspice.mod`, which was modified for ngspice. The IBIS source transistor uses the original HSPICE card `../s2ibispy/tests/hspice.mod`.
+
+With `50 ohm || 2 pF`, the old IBIS is `511.3 ps` later than the correct source transistor on the rising edge. The regenerated 5 ps IBIS differs from that transistor by only `9.0 ps` on rise and `3.9 ps` on fall. Their loaded strength also agrees: `56.81 ohm` versus `56.82 ohm` effective pullup resistance.
+
+The 1 fF through 10 pF sweep shows that external capacitance is not the cause. The regenerated IBIS and source transistor have nearly the same delay-versus-capacitance slope. The first regenerated V-T table and direct 5 ps transistor characterization also cross 50% within `0.5 ps`.
+
+Therefore:
+
+- Keep the 2026-06-19 and later old-file studies as reproducible algorithm-history evidence.
+- Do not reinterpret their HSPICE native-IBIS coefficient traces as transistor truth.
+- Before promoting any short-pulse algorithm, repeat the core baseline using the regenerated 5 ps IBIS and the original HSPICE transistor model card.
+
 ## The Problem
 
 ### Long Enough Step Pulse
@@ -610,7 +629,8 @@ This writes:
 
 Keep these fixed unless the experiment explicitly says otherwise:
 
-- IBIS file: `hspice/sparam/io_buf.ibs`
+- For reproduction of the frozen old-file study: `hspice/sparam/io_buf.ibs`.
+- For the next production rebaseline: `results/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`.
 - Component/model: `MCM Driver 1` / `driver`
 - HSPICE native IBIS settings
 - Input PWL timing for the selected case
@@ -628,10 +648,138 @@ The candidate experiment should change only:
 
 ## Current Baseline Conclusion
 
-The baseline is healthy for normal complete switching and unhealthy for interrupted switching.
+The frozen old-file baseline is healthy for normal complete switching and unhealthy for interrupted switching.
 
 - Long-enough pulse: ngspice+legacy-pybis matches HSPICE well.
 - Short pulse: ngspice+legacy-pybis replays coefficient behavior as if too much of the transition can complete, especially in `Ku`.
 - Therefore, the short-pulse problem is specifically a state/history problem in the pybis input-driven coefficient model.
+- The same conclusion must now be rechecked against the regenerated 5 ps IBIS before it is treated as a production-model conclusion.
 
 This document should be used as the fixed baseline reference before rerunning one of the experimental short-pulse algorithms.
+
+## 2026-08-04: Ku/Kd Excursion Investigation
+
+`Ku` and `Kd` are extracted current multipliers. They are not literal normalized
+MOS gate voltages, so a small excursion outside `[0,1]` is not automatically a
+model error.
+
+The cached three-buffer audit separates three effects:
+
+1. **Native extracted-coefficient excursion.** HSPICE native IBIS itself can
+   produce negative values or values above one. This is strongest for the fast
+   `io_buf`, moderate for `ex2`, and small for `inv_chain`.
+2. **Legitimate replay of the native envelope.** A pybis candidate may reproduce
+   an out-of-range table value without inventing a new artifact. Global clipping
+   to `[0,1]` would erase that behavior and is therefore not the acceptance rule.
+3. **Algorithm-created reversal artifact.** A candidate is suspect when it
+   exceeds the native envelope or introduces a new reversal-local discontinuity
+   beyond both HSPICE native IBIS and legacy pybis.
+
+The clearest generated artifact is the fast `io_buf` hybrid at the 1 ns
+short-high reversal. Its Kd changes by about `-0.969` in one step and reaches
+about `-1.210`, while native HSPICE Kd is about `+0.483` at the same instant.
+The directional base contributes about `-0.423` and the signed rate residual
+about `-0.786`. Those terms are indexed by different progress variables during
+retrigger, so their sum is not a consistent physical state.
+
+Evidence:
+
+- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/README.md`
+- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/coefficient_ranges_by_case.csv`
+- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/io_buf_hybrid_excursion_summary.csv`
+- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/plots/02_io_buf_hybrid_kd_excursion_decomposition.png`
+- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning/README.md`
+
+The exact offline 2x2 solve is not near singular. At the worst fast-`io_buf`
+falling sample, `Ku=2.193`, matrix condition is `2.919`, capacitive current is
+`45.7 mA`, and fixture current is `23.3 mA`. The dynamic required-current vector,
+not matrix conditioning, is the primary source of that native excursion.
+
+## 2026-08-04: Pad-Voltage-Matched Replay Baseline
+
+This experiment asks whether the pad voltage itself can identify where replay
+should begin on the opposite complete-transition table.
+
+### Offline Work
+
+For each buffer and slow/fast IBIS profile:
+
+1. Run legacy pybis once at the declared calibration load `50 ohm || 2 pF`.
+2. Save the complete rising and falling pad trajectories.
+3. Compute a smoothed pad slew trajectory.
+4. Build value-to-time inverse maps from **all trajectory crossings**. A ringing
+   pad waveform may cross one voltage more than once, so the model records both
+   earliest and latest valid times instead of sorting samples as if the waveform
+   were monotonic.
+5. Embed the calibration trajectories and inverse maps in the generated SPICE
+   subcircuit. HSPICE data is not used for this calibration.
+
+### Runtime Work
+
+At an interrupted reverse edge:
+
+1. `PADSAMP` latches the external pad voltage once.
+2. The slew-aware variant also latches `PADSLEWSAMP` from an explicit
+   `1 kohm / 10 fF` RC history node. It is a small but real observation load and
+   is treated as diagnostic.
+3. `PADSTART_LATCH` stores one matched start time on the opposite trajectory.
+   The same start is used for Ku and Kd so their original table alignment is not
+   broken.
+4. `PMELAPSED` starts at zero for the new edge.
+5. `PADARG = PADSTART_LATCH + PMELAPSED` advances monotonically through the
+   original Ku/Kd table pair.
+6. Outside an interrupted interval, `KUTARGET/KDTARGET` come from legacy pybis.
+   There is no continuous pad feedback loop.
+
+Diagnostic modes:
+
+- `InputDrivenPadMatchedReplayV1`: voltage-only inverse map.
+- `InputDrivenPadMatchedReplayV1SlewAware`: voltage plus absolute slew score.
+- `InputDrivenPadMatchedReplayV2`: voltage-only replay with a direct inactive
+  legacy path and no pad-history RC.
+- `InputDrivenPadMatchedReplayV2SlewAware`: V2 handoff with the diagnostic slew RC.
+
+### Nominal-Load Finding
+
+The result is directional:
+
+- There are 14 short-pulse rows where pad, Ku, and Kd all improve numerically;
+  11 improve all three by at least 5%.
+- Every all-three improvement is a **short-low** case. No short-high case passes
+  all three checks.
+- `ex2` at 250 ps and 500 ps short-low is the strongest result.
+- Voltage plus slew does not consistently outperform voltage alone and does not
+  remove all multi-crossing ambiguity.
+- Long-pulse preservation is not global: fast `io_buf` has numeric failure in
+  both pad modes, and the final coefficient filter changes some nontriggered
+  controls.
+
+Therefore pad matching is a useful diagnostic baseline and a partial short-low
+result, not a general replacement for legacy pybis.
+
+Evidence and implementation:
+
+- `scripts/run_three_buffer_pad_matched_replay.py`
+- `scripts/analyze_three_buffer_pad_matched_replay.py`
+- `results/three_buffer_pad_matched_replay_2026-08-04/README.md`
+- `results/three_buffer_pad_matched_replay_2026-08-04/event_evidence/README.md`
+- `results/three_buffer_pad_matched_replay_2026-08-04/event_evidence/case_outcomes.csv`
+
+### V2 Finding
+
+V2 removes the continuous final-coefficient filter used by V1. Long controls
+complete without numeric failure; the median/worst per-row error ratio versus
+legacy is `1.019 / 1.143`. The remaining worst control is the timestep-sensitive
+fast `io_buf` coefficient spike.
+
+For short pulses, 12 of 96 rows improve all three metrics numerically, but only
+6 improve all three by at least 5%. All six material improvements are short-low;
+no short-high row materially improves pad, Ku, and Kd together. V2 therefore
+fixes the V1 bypass implementation but does not make pad voltage a general state
+coordinate.
+
+V2 evidence:
+
+- `results/three_buffer_pad_matched_replay_v2_2026-08-04/README.md`
+- `results/three_buffer_pad_matched_replay_v2_2026-08-04/event_evidence/README.md`
+- `results/three_buffer_pad_matched_replay_v2_2026-08-04/v1_vs_v2/README.md`

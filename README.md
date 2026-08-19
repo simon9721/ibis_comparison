@@ -24,6 +24,12 @@ with physical clock-folded eye plots generated from the transient output.
   Converted pybis/minimum-modification benches and outputs.
 - `scripts/`
   Runners, plotting tools, regression checks, and analysis helpers.
+- `tools/presentation_kit/`
+  Reusable green PowerPoint scripting helpers and cached MathJax equation
+  rendering for project-independent slide decks.
+- `tools/figure_editor/`
+  CSV-backed desktop figure editor with reusable JSON recipes and
+  PNG/SVG/PDF export.
 - `results/`
   Accepted comparison bundles and generated review artifacts.
 - `plots/`
@@ -47,6 +53,8 @@ with physical clock-folded eye plots generated from the transient output.
 - Transient/eye review summary: [docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md)
 - Reusable transient plotting tool: [docs/TRANSIENT_PLOT_TOOL.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/TRANSIENT_PLOT_TOOL.md)
 - Reusable ngspice CLI/GUI testbench tool: [docs/ngspice_lab.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/ngspice_lab.md)
+- Reusable PowerPoint toolkit: [tools/presentation_kit/README.md](tools/presentation_kit/README.md)
+- Reusable data figure editor: [tools/figure_editor/README.md](tools/figure_editor/README.md)
 - Current review plot bundle: [results/transient_review_plots_2026-05-13/README.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/results/transient_review_plots_2026-05-13/README.md)
 - Accepted benchmark bundle: [results/final_prbs_rlgc_comparison_2026-05-11/README.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/results/final_prbs_rlgc_comparison_2026-05-11/README.md)
 - Xyce pybis ladder bundle: [results/xyce_pybis_minmod_ladder_2026-05-11/README.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/results/xyce_pybis_minmod_ladder_2026-05-11/README.md)
