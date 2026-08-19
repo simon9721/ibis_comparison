@@ -1,0 +1,2 @@
+device,direction,anchor,target_percent,pulse_width_ps,case_id,stage,log
+io_buf,short_high,transistor,70.0,1852.558,short_high_swing70_search0_1852558fs,gate_state,results\three_buffer_transistor_anchored_refresh_2026-08-19\ngspice_runs\io_buf\edge_50ps\fast_5ps\cases\short_high_swing70_search0_1852558fs\ngspice_gate_state\ngspice_stdout.log

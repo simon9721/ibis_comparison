@@ -1,0 +1,2 @@
+device,direction,anchor,target_percent,pulse_width_ps,case_id,stage,log
+ex2,short_high,native,90.0,910.2470000000001,short_high_swing90_search0_910247fs,gate_state,results\three_buffer_native_anchored_stress_sweep_2026-08-19\ngspice_runs\ex2\edge_50ps\fast_5ps\cases\short_high_swing90_search0_910247fs\ngspice_gate_state\ngspice_stdout.log

@@ -1,0 +1,23 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "15:41:43 08/19/2026 "
+* "netlist" "run.sp "
+* "runtitle" "inv_chain transistor short_low_swing60_search1_90918fs"
+* time =  0.000e+00       
+* temperature =  2.700e+01       
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc= 1.000e-12       
+.nodeset
++ in_dig = 0.000e+00       
++ pad_sp = 1.308e-08       
++ vdd = 1.800e+00       
++ xdut.vout1 = 1.800e+00       
++ xdut.vout2 = 1.448e-08       
++ xdut.vout3 = 1.800e+00       
++ xdut.vout4 = 1.448e-08       
++ xdut.vout5 = 1.800e+00       
++ xdut.vout6 = 1.448e-08       
++ xdut.vout7 = 1.800e+00       
+***   END: Saved Operating Point ***                     

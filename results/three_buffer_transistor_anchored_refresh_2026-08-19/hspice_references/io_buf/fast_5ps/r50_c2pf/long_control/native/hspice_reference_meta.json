@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "eb9d99ce204ae28f5929d3e30e9d7c57f57683d6e73b81ae584b0579e7466b1e",
+  "extra": {
+    "case_id": "long_control",
+    "device": "io_buf",
+    "edge_ns": 0.05,
+    "family": "pad_match_io_buf_fast_5ps_r50_c2pf_native",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "rise_fall",
+    "pulse_width_ns": 10.0
+  },
+  "inputs": [
+    {
+      "name": "io_buf_fast_50ps.ibs",
+      "sha256": "dfc2b1d10ef95d11860205e728b4c221aec77aba6df1a9735a67e420a4c249ae",
+      "size": 574778
+    }
+  ]
+}
