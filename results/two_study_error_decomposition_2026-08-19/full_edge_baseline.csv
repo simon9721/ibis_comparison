@@ -1,0 +1,4 @@
+device,native_vs_transistor_rmse_mv,swing_ratio
+io_buf,71.14,0.9731
+inv_chain,21.65,0.9977
+ex2,18.98,0.9964
