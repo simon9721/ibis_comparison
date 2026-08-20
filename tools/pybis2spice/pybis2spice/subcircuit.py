@@ -1637,10 +1637,26 @@ def delay_command_block(fit):
     it had reached.
 
     A command that is a delayed copy of the input level has neither problem. It
-    is exactly 0 or 1 in steady state by construction, needs no restoring term
-    and no settle gate, and a pulse shorter than the delay difference is
-    swallowed or stretched exactly as an asymmetric buffer would do it -- which
-    is what a predriver stage physically is.
+    is exactly 0 or 1 in steady state by construction, and needs no restoring
+    term and no settle gate.
+
+    One caveat, measured rather than assumed. Combining two delayed copies of a
+    level reproduces an asymmetric delay only for pulses of one polarity. On
+    `io_buf` short-low, whose pullup delays are 0.993 and 0.068 ns, a 307 ps low
+    pulse should take the command down at 10.068 ns and back up at 11.300; the
+    AND instead yields two separate intervals, [10.068, 10.375] and
+    [10.993, 11.300], and the pad visibly dips twice. A pulse narrower than the
+    difference between the two delays can therefore be split rather than
+    swallowed, which no real buffer does.
+
+    Latching the delayed edge events instead was tried and does not work as
+    written: those pulses are a couple of timesteps wide, so a latch driven over
+    edge_delay charges partway and stops, leaving the command stranded around
+    0.77 instead of at a rail. Correcting this needs a mechanism that does not
+    depend on the event pulse width, not a different constant. Even with the
+    splitting, this form beats the edge-integrating block on all 28 stress cases
+    both solve, and on io_buf short-low reaches 123 mV against native IBIS's
+    286.
 
     Turn-on and turn-off propagate at different speeds, so the two directions
     carry their own delays. ``GDNCMD`` is asserted when the input is low, so its
