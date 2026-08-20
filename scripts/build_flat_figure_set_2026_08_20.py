@@ -139,17 +139,11 @@ def pad_figure(path, label, d, edge_ns, t_rev, pad_match, target_v=None):
         traces.append(pad_match["pybis_pad"])
     axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.6, label="reverse edge", zorder=1)
     if target_v is not None:
-        # State what the transistor actually reached alongside the target it was
-        # selected for. They agree to about 20 mV on ex2 and inv_chain; io_buf is
-        # offset because its widths were searched against a superseded model card
-        # and have not been re-derived. Printing both keeps that visible on the
-        # figure instead of leaving it to be discovered.
-        window = (t >= edge_ns) & (t <= t_rev + 2.0)
-        sil = d["silicon_pad"][window]
-        reached = float(np.max(sil)) if target_v > 0.5 * (
-            float(np.max(d["silicon_pad"])) + float(np.min(d["silicon_pad"]))) else float(np.min(sil))
+        # The title already names the target as a percentage; the line only needs
+        # identifying. It sits on the transistor peak now that io_buf's widths
+        # are re-derived, so the numbers that documented the mismatch are gone.
         axis.axhline(target_v, color="#AE4E19", ls=":", lw=2.0,
-                     label=f"target {target_v:.3f} V · transistor {reached:.3f} V", zorder=1)
+                     label="target voltage", zorder=1)
     axis.set_xlim(*active_window(t, traces, edge_ns, t_rev))
     axis.set_xlabel("Time (ns)", fontsize=12)
     axis.set_ylabel("Pad voltage (V)", fontsize=12)
