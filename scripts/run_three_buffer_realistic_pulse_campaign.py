@@ -127,7 +127,12 @@ DEVICES = (
         # ngspice on this study's stimuli; 50 ps is the fastest edge that
         # converges. See results/io_buf_fast_edge_regen_2026-08-19/README.md
         ROOT / "results" / "io_buf_fast_edge_regen_2026-08-19" / "source" / "io_buf_fast_50ps.ibs",
-        (ROOT / "models" / "io_buf.sp", ROOT / "models" / "hspice_ngspice.mod"),
+        # Stock card, not hspice_ngspice.mod. The RDSW=0 variant exists to stop
+        # ngspice stalling on the small devices, but this reference runs under
+        # HSPICE and zeroing RDSW makes the output stage ~12% stronger than the
+        # I-V tables io_buf.ibs was characterised from -- a settled Kd of 1.118
+        # that we were reading as a defect in the IBIS file.
+        (ROOT / "models" / "io_buf.sp", ROOT / "models" / "hspice.mod"),
         ("v(xdut.n2)", "v(xdut.n3)"),
     ),
     Device(
@@ -387,7 +392,7 @@ def hspice_cache_run(
 def transistor_deck(device: Device, case: PulseCase) -> str:
     probes = " ".join(device.transistor_probe_nodes)
     if device.device_id == "io_buf":
-        include = """.include 'hspice_ngspice.mod'
+        include = """.include 'hspice.mod'
 .subckt SPICE_BUF in oe out in_sense vdd vss
 .include 'io_buf.sp'
 .ends SPICE_BUF
@@ -471,6 +476,19 @@ def ngspice_deck(device: Device, case: PulseCase, subckt_type: str) -> str:
             " V(xdrv.hreverseraw) V(xdrv.hsettled) V(xdrv.hhybridactive)"
             " V(xdrv.kures) V(xdrv.kdres) V(xdrv.guprate) V(xdrv.gdnrate)"
         )
+    if subckt_type == "InputDrivenTwoStateGateLevelCommandFull":
+        # The level-command block replaces the edge-integrating one, so its
+        # nodes are absent from the shared diagnostic list above. Without them a
+        # divergence can only be inferred from downstream signals.
+        diagnostics += " V(xdrv.gupcmd) V(xdrv.gdncmd) V(xdrv.ninx) V(xdrv.hnx)"
+    if subckt_type == "InputDrivenTwoStateGateDelayCommandFull":
+        # Both delayed copies as well as the command, so a mistimed command can
+        # be attributed to the delay line or to the way the two are combined.
+        diagnostics += (
+            " V(xdrv.gupcmd) V(xdrv.gdncmd) V(xdrv.ninx)"
+            " V(xdrv.pucmda) V(xdrv.pucmdb) V(xdrv.pucmdlvl)"
+            " V(xdrv.pdcmda) V(xdrv.pdcmdb) V(xdrv.pdcmdlvl)"
+        )
     if subckt_type == "InputDrivenHybridV3AlignedReplay":
         diagnostics += (
             " V(xdrv.v3revedge) V(xdrv.v3latchpulse) V(xdrv.v3activate)"
@@ -509,7 +527,7 @@ Cload pad 0 {fmt(LOAD_PF)}p
 
 def copy_transistor_inputs(device: Device, out_dir: Path) -> None:
     if device.device_id == "io_buf":
-        names = ("io_buf.sp", "hspice_ngspice.mod")
+        names = ("io_buf.sp", "hspice.mod")
     elif device.device_id == "inv_chain":
         names = ("invchain_ref_ngspice.sub", "HL18G-S3.7S.lib")
     else:

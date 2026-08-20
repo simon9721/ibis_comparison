@@ -62,6 +62,11 @@ DEFAULT_OUT = ROOT / "results" / "silicon_anchored_shortpulse_2026-08-19"
 GATE_STATE_MODE = os.environ.get("PYBIS_GATE_MODE", "InputDrivenTwoStateGateDirectionalDualResidualFull")
 LOAD = (50.0, 2.0)
 DEPTH_TARGETS = (0.25, 0.50, 0.75)
+# Pad-matched replay indexes its coefficients off a recorded pad trajectory, so
+# the reference has to be measured and baked into the subcircuit before the
+# model can be built at all. Every other mode is a pure function of the IBIS
+# file and needs none of this.
+NEEDS_PAD_REFERENCE = "PadMatchedReplay" in GATE_STATE_MODE
 
 SILICON = "#111111"
 NATIVE = "#2b6ca3"
@@ -178,8 +183,22 @@ def main() -> int:
         )
         model_path = out / "generated_models" / device.device_id / f"{device.subckt}.sub"
         if not model_path.exists():
+            reference = None
+            if NEEDS_PAD_REFERENCE:
+                # The reference is a clean full-edge pad trajectory from legacy
+                # pybis at the nominal load, which is what the replay maps
+                # against. It comes from the model, not from silicon: the method
+                # is about reusing a known edge shape, not about importing truth.
+                pad.OUT = out
+                legacy = out / "generated_models" / device.device_id / "legacy" / f"{device.subckt}.sub"
+                if not legacy.exists():
+                    convert_ibis_to_pybis(device.fast_ibis, legacy, device.component,
+                                          device.model, "Output", "InputDriven", "Typical")
+                reference, _ = pad.build_pad_reference(device, profile, legacy, args.ngspice,
+                                                       args.ngspice_timeout, resume=True)
             convert_ibis_to_pybis(device.fast_ibis, model_path, device.component,
-                                  device.model, "Output", GATE_STATE_MODE, "Typical")
+                                  device.model, "Output", GATE_STATE_MODE, "Typical",
+                                  pad_replay_reference=reference)
 
         for direction in directions:
             if args.width_ps:
@@ -268,10 +287,21 @@ def main() -> int:
                                 "status": "OK"})
 
     if summary:
+        # Merge rather than overwrite. Widths are given per direction, so a full
+        # sweep takes several invocations into one directory, and rewriting the
+        # index each time left it describing only the last one while the
+        # waveforms from the earlier ones sat there unreferenced.
+        merged: dict[tuple[str, str, str], dict[str, object]] = {}
+        for row in read_csv(out / "cases.csv"):
+            merged[(row["device"], row["direction"], row["pulse_width_ps"])] = row
+        for row in summary:
+            key = (str(row["device"]), str(row["direction"]), str(row["pulse_width_ps"]))
+            merged[key] = row
+        rows = list(merged.values())
         with (out / "cases.csv").open("w", newline="", encoding="utf-8") as handle:
-            writer = csv.DictWriter(handle, fieldnames=list(summary[0].keys()))
+            writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
             writer.writeheader()
-            writer.writerows(summary)
+            writer.writerows(rows)
     print(f"cases: {len(summary)}")
     print(out)
     return 0

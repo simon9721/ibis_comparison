@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -37,7 +38,12 @@ TARGETS = (0.90, 0.80, 0.70, 0.60, 0.50)
 DIRECTIONS = ("short_high", "short_low")
 TARGET_TOLERANCE = 0.01
 MAX_SEARCH_ITERATIONS = 10
-GATE_STATE_MODE = "InputDrivenTwoStateGateDirectionalDualResidualFull"
+# Overridable so one stress axis can be re-used across model variants. The
+# stress widths come from HSPICE references that do not depend on the model, so
+# holding the axis fixed and changing only this makes the runs comparable.
+GATE_STATE_MODE = os.environ.get(
+    "PYBIS_GATE_MODE", "InputDrivenTwoStateGateDirectionalDualResidualFull"
+)
 
 BLACK = "#111111"
 GRAY = "#777777"

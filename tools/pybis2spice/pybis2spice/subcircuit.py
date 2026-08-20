@@ -136,6 +136,9 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
         "Input-Driven-Two-State-Gate-Level-Command-Full": "InputDrivenTwoStateGateLevelCommandFull",
         "NgSpiceInputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
+        "InputDrivenTwoStateGateDelayCommandFull": "InputDrivenTwoStateGateDelayCommandFull",
+        "Input-Driven-Two-State-Gate-Delay-Command-Full": "InputDrivenTwoStateGateDelayCommandFull",
+        "NgSpiceInputDrivenTwoStateGateDelayCommandFull": "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "Input-Driven-Two-State-Gate-Directional-Dual-Residual-Hybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "NgSpiceInputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
@@ -352,6 +355,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenTwoStateGateDirectionalDualResidualFull",
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "InputDrivenTwoStateGateLevelCommandFull",
+        "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenHybridV2StateInitializedReplay",
         "InputDrivenHybridV3AlignedReplay",
         "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull",
@@ -369,6 +373,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenTwoStateGateDirectionalDualResidualFull": "directional_dual_residual_full",
                 "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "directional_dual_residual_hybrid",
                 "InputDrivenTwoStateGateLevelCommandFull": "directional_dual_residual_level_cmd_full",
+                "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenHybridV2StateInitializedReplay": "state_initialized_replay_hybrid",
                 "InputDrivenHybridV3AlignedReplay": "aligned_replay_hybrid",
                 "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull": "directional_residual_recover_mean_full",
@@ -1532,35 +1537,116 @@ def level_command_block(fit):
     the circuit, where a predriver node is held at a rail by the transistors
     driving it rather than integrating the edges it has seen.
 
-    Turn-on and turn-off propagate at different speeds, so two delayed copies
-    are kept and selected by the current input level. Selecting on the level
-    rather than on an edge is what makes the handoff safe: at the moment the
-    input flips, a settled buffer has both copies at the same value, so the
-    selector switches between two equal signals and cannot step. They differ
-    only when edges arrive faster than the delays -- the short-pulse case -- and
-    the command capacitor filters that.
+    Turn-on and turn-off propagate at different speeds, so the condition is
+    expressed as "the input has held this level for at least the corresponding
+    delay", using the elapsed-edge timer the model already maintains. Between
+    those two thresholds neither condition is asserted and the command
+    capacitor holds, which is what gives the delayed turn-on and turn-off their
+    different timings without needing to know which delay is the longer.
+
+    An earlier version selected between two transport-delayed copies of the
+    level using the instantaneous level, and was wrong: the selector reads the
+    input now while the delayed copy carries a value from one delay ago, so on
+    a short pulse the two refer to different events. On io_buf, whose pulldown
+    delays are 1.798 and 0.829 ns, that made the delayed copy report the low
+    period from *before* the pulse and turned the pulldown on at 5.973 ns
+    instead of 7.771 ns, injecting a spurious Kd pulse. Level and elapsed time
+    share one time reference and cannot disagree that way.
     """
-    st = "BNINXB NINXB 0 V = 1.0 - V(NINX)\n"
-    for name, source, delay in [
-        ("PUONLVL", "NINX", fit["pu_on_delay"]),
-        ("PUOFFLVL", "NINX", fit["pu_off_delay"]),
-        ("PDONLVL", "NINXB", fit["pd_on_delay"]),
-        ("PDOFFLVL", "NINXB", fit["pd_off_delay"]),
+    # The command node charges over the fastest gate time constant rather than
+    # over edge_delay. edge_delay is 10 ps, so when a threshold opens the gate
+    # the node was yanked with a 10 ps time constant against a hard step in the
+    # driving condition, and 5 of 14 cases collapsed into ever-smaller
+    # timesteps. This is still far faster than the gate dynamics it feeds, so
+    # the command still lands promptly.
+    command_tau = min(fit["pu_on_tau"], fit["pu_off_tau"],
+                      fit["pd_on_tau"], fit["pd_off_tau"])
+    st = ""
+    for node, initial, low_level, on_delay, off_delay in [
+        ("GUPCMD", "0", False, fit["pu_on_delay"], fit["pu_off_delay"]),
+        ("GDNCMD", "1", True, fit["pd_on_delay"], fit["pd_off_delay"]),
     ]:
-        if delay <= 1e-15:
-            st += f"B{name} {name} 0 V = V({source})\n"
-        else:
-            st += f"T{name} {source} 0 {name} 0 Z0=50 Td={format_spice_ns(delay)}\n"
-            st += f"R{name} {name} 0 50\n"
-    # A high input means the most recent edge was a rise, so the turn-on delay
-    # applies; a low input selects the turn-off delay. This holds for either
-    # ordering of the two delays.
-    st += "BGUPCMDTGT GUPCMDTGT 0 V = (V(NINX) > 0.5) ? V(PUONLVL) : V(PUOFFLVL)\n"
-    st += "BGDNCMDTGT GDNCMDTGT 0 V = (V(NINX) < 0.5) ? V(PDONLVL) : V(PDOFFLVL)\n"
-    st += "CGUPCMD GUPCMD 0 {gate_c} ic=0\n"
-    st += "CGDNCMD GDNCMD 0 {gate_c} ic=1\n"
-    st += "BGUPCMD GUPCMD 0 I = -{gate_c} * (V(GUPCMDTGT) - V(GUPCMD)) / edge_delay\n"
-    st += "BGDNCMD GDNCMD 0 I = -{gate_c} * (V(GDNCMDTGT) - V(GDNCMD)) / edge_delay\n"
+        on_test = "V(NINX) < 0.5" if low_level else "V(NINX) > 0.5"
+        off_test = "V(NINX) > 0.5" if low_level else "V(NINX) < 0.5"
+        st += f"C{node} {node} 0 {{gate_c}} ic={initial}\n"
+        st += (
+            f"B{node}SET {node} 0 I = -{{gate_c}} * (({on_test} && "
+            f"V(HNX) >= {format_spice_ns(on_delay).rstrip('n')}) ? (1.0 - V({node})) : 0.0)"
+            f" / {format_spice_ns(command_tau)}\n"
+        )
+        st += (
+            f"B{node}RST {node} 0 I = {{gate_c}} * (({off_test} && "
+            f"V(HNX) >= {format_spice_ns(off_delay).rstrip('n')}) ? V({node}) : 0.0)"
+            f" / {format_spice_ns(command_tau)}\n"
+        )
+    return st
+
+
+_DELAY_FLOOR_NS = 1e-3
+
+
+def _asymmetric_delay_lines(prefix, source, rise_ns, fall_ns):
+    """
+    Returns SPICE for a copy of ``source`` whose edges are delayed unequally.
+
+    A lossless line terminated in its own impedance is an exact transport delay,
+    so two of them give copies of the level delayed by each of the two times.
+    Combining those copies recovers a single level whose rising edge is late by
+    ``rise_ns`` and whose falling edge is late by ``fall_ns``:
+
+        rise_ns > fall_ns   AND   1 only once the slower copy has risen,
+                                  0 as soon as the faster copy has fallen
+        rise_ns <= fall_ns  OR    1 as soon as the faster copy has risen,
+                                  0 only once the slower copy has fallen
+
+    Both branches are level functions of two delayed levels, so the result is
+    exact in steady state and has no state of its own to drift.
+    """
+    rise_ns = max(float(rise_ns), _DELAY_FLOOR_NS)
+    fall_ns = max(float(fall_ns), _DELAY_FLOOR_NS)
+    st = ""
+    for tag, delay_ns in (("A", rise_ns), ("B", fall_ns)):
+        node = f"{prefix}{tag}"
+        st += f"T{node} {source} 0 {node} 0 Z0=50 Td={format_spice_ns(delay_ns)}\n"
+        st += f"R{node} {node} 0 50\n"
+    join = "&&" if rise_ns > fall_ns else "||"
+    st += (
+        f"B{prefix}LVL {prefix}LVL 0 V = "
+        f"((V({prefix}A) > 0.5) {join} (V({prefix}B) > 0.5)) ? 1.0 : 0.0\n"
+    )
+    return st
+
+
+def delay_command_block(fit):
+    """
+    Returns SPICE that derives the command state from a delayed input level.
+
+    Two earlier formulations failed in ways that trace to the same cause: the
+    command state was made a function of switching history rather than of the
+    input. Integrating edge pulses onto a capacitor with no DC path let a
+    truncated pulse deposit less charge than a full one and leave a permanent
+    offset, which needed a separate restoring term to hide. Gating a charge
+    path on "the input has held this level for at least the delay" then dropped
+    short pulses entirely and, worse, stopped charging mid-flight when the next
+    edge reset the elapsed timer, parking the command at whatever partial value
+    it had reached.
+
+    A command that is a delayed copy of the input level has neither problem. It
+    is exactly 0 or 1 in steady state by construction, needs no restoring term
+    and no settle gate, and a pulse shorter than the delay difference is
+    swallowed or stretched exactly as an asymmetric buffer would do it -- which
+    is what a predriver stage physically is.
+
+    Turn-on and turn-off propagate at different speeds, so the two directions
+    carry their own delays. ``GDNCMD`` is asserted when the input is low, so its
+    rise follows the input's fall: the delays swap when building it.
+    """
+    st = _asymmetric_delay_lines("PUCMD", "NINX", fit["pu_on_delay"], fit["pu_off_delay"])
+    # The pulldown command is the complement of the input, so the input edge
+    # that raises it is the falling one and the two delays exchange roles.
+    st += _asymmetric_delay_lines("PDCMD", "NINX", fit["pd_off_delay"], fit["pd_on_delay"])
+    st += "BGUPCMD GUPCMD 0 V = V(PUCMDLVL)\n"
+    st += "BGDNCMD GDNCMD 0 V = 1.0 - V(PDCMDLVL)\n"
     return st
 
 
@@ -2513,18 +2599,23 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
         "directional_dual_residual_level_cmd_full",
+        "directional_dual_residual_delay_cmd_full",
         "aligned_replay_hybrid",
     }
     dual_residual_modes = {
         "directional_dual_residual_full",
         "directional_dual_residual_hybrid",
         "directional_dual_residual_level_cmd_full",
+        "directional_dual_residual_delay_cmd_full",
         "aligned_replay_hybrid",
     }
     # Derives the command state from a directionally delayed input level rather
     # than from integrated edge pulses. Kept as its own mode so the established
     # one stays available for comparison.
     use_level_command = mode == "directional_dual_residual_level_cmd_full"
+    # Same intent, but the delay is a real transport delay rather than a gate on
+    # elapsed time, which is what made the level mode drop short pulses.
+    use_delay_command = mode == "directional_dual_residual_delay_cmd_full"
     recover_modes = {
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
@@ -2728,7 +2819,9 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         st += "BHSHORT_HIGH_RECOVERY HSHORT_HIGH_RECOVERY 0 V = 0.0\n"
     st += "\n"
 
-    if use_level_command:
+    if use_delay_command:
+        st += delay_command_block(fit)
+    elif use_level_command:
         st += level_command_block(fit)
     else:
         st += "CGUPCMD GUPCMD 0 {gate_c} ic=0\n"
