@@ -57,6 +57,19 @@ METHODS = (
 )
 
 
+def case_tag(device: str, direction: str, width_ps: float) -> str:
+    """
+    Returns the waveform stem the comparison script writes for this case.
+
+    Widths reach that script as a one-decimal string, and it names the file
+    from the rounded value it parses back. Readers must quantise identically or
+    they look for a name nothing wrote: 103.490 ps is passed as 103.5 and lands
+    in w104ps, while rounding the raw value gives w103ps and silently drops the
+    case from every report.
+    """
+    return f"{device}_{direction}_w{int(round(round(width_ps, 1)))}ps"
+
+
 def stress_cases() -> list[tuple[str, str, list[tuple[int, float]]]]:
     """Returns (device, direction, [(target_percent, width_ps)]) from the sweep."""
     if not STRESS_SELECTION.exists():

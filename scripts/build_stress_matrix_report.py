@@ -25,7 +25,7 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 import numpy as np  # noqa: E402
 
-from run_stress_method_matrix import METHODS, stress_cases  # noqa: E402
+from run_stress_method_matrix import METHODS, case_tag, stress_cases  # noqa: E402
 
 
 def load(path: Path) -> dict[str, np.ndarray]:
@@ -40,10 +40,6 @@ def time_rmse(a: np.ndarray, b: np.ndarray, t: np.ndarray) -> float:
     if len(t) < 2 or t[-1] <= t[0]:
         return float("nan")
     return float(np.sqrt(np.trapezoid((a - b) ** 2, t) / (t[-1] - t[0])))
-
-
-def case_tag(device: str, direction: str, width_ps: float) -> str:
-    return f"{device}_{direction}_w{int(round(width_ps))}ps"
 
 
 def score(path: Path, source: str) -> dict[str, float]:
