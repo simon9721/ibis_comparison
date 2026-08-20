@@ -122,8 +122,15 @@ def main() -> int:
         print(line)
 
     print("\n" + "=" * (30 + width * len(columns)))
+    # A method that fails to converge on a case contributes nothing to its own
+    # mean, so comparing per-method means silently rewards failing on the hard
+    # ones. The like-for-like row averages only over cases every method solved.
+    common = [r for r in per_case
+              if all(isinstance(r.get(f"{c}_{metric}"), float)
+                     and np.isfinite(r[f"{c}_{metric}"]) for c in columns)]
     summary: list[dict[str, object]] = []
-    for label, subset in [("all cases", per_case)] + [
+    for label, subset in [("all cases (own coverage)", per_case),
+                          (f"cases all methods solved ({len(common)})", common)] + [
         (f"{device}", [r for r in per_case if r["device"] == device])
         for device in sorted({str(r["device"]) for r in per_case})
     ]:
