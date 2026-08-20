@@ -139,6 +139,9 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenTwoStateGateDelayCommandFull": "InputDrivenTwoStateGateDelayCommandFull",
         "Input-Driven-Two-State-Gate-Delay-Command-Full": "InputDrivenTwoStateGateDelayCommandFull",
         "NgSpiceInputDrivenTwoStateGateDelayCommandFull": "InputDrivenTwoStateGateDelayCommandFull",
+        "InputDrivenTwoStateGatePredriverCommandFull": "InputDrivenTwoStateGatePredriverCommandFull",
+        "Input-Driven-Two-State-Gate-Predriver-Command-Full": "InputDrivenTwoStateGatePredriverCommandFull",
+        "NgSpiceInputDrivenTwoStateGatePredriverCommandFull": "InputDrivenTwoStateGatePredriverCommandFull",
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "Input-Driven-Two-State-Gate-Directional-Dual-Residual-Hybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "NgSpiceInputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
@@ -356,6 +359,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "InputDrivenTwoStateGateLevelCommandFull",
         "InputDrivenTwoStateGateDelayCommandFull",
+        "InputDrivenTwoStateGatePredriverCommandFull",
         "InputDrivenHybridV2StateInitializedReplay",
         "InputDrivenHybridV3AlignedReplay",
         "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull",
@@ -374,6 +378,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "directional_dual_residual_hybrid",
                 "InputDrivenTwoStateGateLevelCommandFull": "directional_dual_residual_level_cmd_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
+                "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
                 "InputDrivenHybridV2StateInitializedReplay": "state_initialized_replay_hybrid",
                 "InputDrivenHybridV3AlignedReplay": "aligned_replay_hybrid",
                 "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull": "directional_residual_recover_mean_full",
@@ -1650,6 +1655,118 @@ def delay_command_block(fit):
     return st
 
 
+_LN2 = 0.6931471805599453
+_MAX_PREDRIVER_STAGES = 8
+
+
+def _cascade_half_delay(stages):
+    """
+    Returns the 50% delay of a cascade of `stages` identical lags, in taus.
+
+    The step response of N identical first-order stages is
+    ``1 - exp(-x) * sum_{k<N} x^k / k!`` with ``x = t/tau``. Solving it for 0.5
+    lets a fitted propagation delay be turned into a per-stage time constant,
+    so the cascade reproduces the measured delay whatever N is.
+    """
+    import math
+
+    def response(x):
+        total = sum(x ** k / math.factorial(k) for k in range(stages))
+        return 1.0 - math.exp(-x) * total
+
+    low, high = 0.0, 1.0
+    while response(high) < 0.5:
+        high *= 2.0
+        if high > 1e4:
+            break
+    for _ in range(200):
+        mid = 0.5 * (low + high)
+        if response(mid) < 0.5:
+            low = mid
+        else:
+            high = mid
+    return 0.5 * (low + high)
+
+
+def predriver_stage_count(delay_ns, tau_ns):
+    """
+    Estimates how many predriver stages a fitted delay/tau ratio implies.
+
+    A chain of inverters restores the edge at every stage, so its delay grows
+    with the number of stages while the output transition time stays near one
+    stage's own time constant. The ratio of the two is therefore a usable
+    proxy for depth: `inv_chain`'s eight-stage chain fits delay/tau near 13,
+    while `io_buf`'s pullup -- a NAND and one inverter -- fits 0.88.
+
+    That distinction matters because the two extremes need opposite command
+    models. A deep chain behaves like a transport delay, and modelling it as a
+    single lag is badly wrong; a shallow one behaves like a lag, and modelling
+    it as a dead time is wrong in the other direction.
+    """
+    if not (tau_ns > 0.0) or not (delay_ns > 0.0):
+        return 1
+    stages = int(round((delay_ns / tau_ns) / _LN2))
+    return max(1, min(_MAX_PREDRIVER_STAGES, stages))
+
+
+def predriver_command_block(fit):
+    """
+    Returns SPICE that derives the command by thresholding a predriver state.
+
+    A transport-delayed copy of the input level is exact in steady state and
+    fixes the drift the edge-integrating and elapsed-gated formulations both
+    suffered. It still models the propagation delay as a fixed dead time,
+    though, and that is measurably wrong when a pulse is interrupted.
+
+    Measured on `io_buf` short-high, whose fitted pulldown turn-on delay is
+    1.831 ns: silicon brings Kd back to 90% 1.627 ns after the reverse edge on
+    a 973 ps pulse and 1.858 ns after it on a 1214 ps pulse, while a fixed
+    delay puts both at about 2.30 ns. The model is 0.67 and 0.44 ns late, and
+    the error shrinks as the pulse lengthens.
+
+    That ordering is the giveaway. Propagation delay through a predriver is the
+    time its output node takes to cross the next stage's threshold. After a
+    short pulse the node never reached its rail, so on the way back it starts
+    closer to the threshold and crosses sooner. A dead time cannot express
+    that; a state can.
+
+    So the command becomes a first-order node driven by the input level, with
+    the command taken as a threshold crossing of it. Choosing the time constant
+    as delay/ln2 places the crossing of a *full* edge exactly at the measured
+    delay, so uninterrupted behaviour is unchanged by construction and only
+    interrupted behaviour differs. In steady state the node converges on the
+    input level, so like the transport-delay form it cannot drift and needs no
+    restoring term.
+    """
+    st = ""
+    for prefix, command, target, initial, on_delay, off_delay, gate_tau in [
+        ("PUCMDP", "GUPCMD", "V(NINX)", "0",
+         fit["pu_on_delay"], fit["pu_off_delay"], fit["pu_on_tau"]),
+        ("PDCMDP", "GDNCMD", "(1.0 - V(NINX))", "1",
+         fit["pd_on_delay"], fit["pd_off_delay"], fit["pd_on_tau"]),
+    ]:
+        on_delay = max(float(on_delay), _DELAY_FLOOR_NS)
+        off_delay = max(float(off_delay), _DELAY_FLOOR_NS)
+        stages = predriver_stage_count(on_delay, float(gate_tau))
+        half = _cascade_half_delay(stages)
+        tau_on = on_delay / half
+        tau_off = off_delay / half
+        st += f"* {prefix}: {stages} predriver stage(s), per-stage tau " \
+              f"{tau_on:.6g}/{tau_off:.6g} ns on/off\n"
+        source = target
+        for index in range(1, stages + 1):
+            node = f"{prefix}{index}"
+            st += f"C{node} {node} 0 {{gate_c}} ic={initial}\n"
+            st += (
+                f"B{node} {node} 0 I = -{{gate_c}} * ({source} - V({node})) / "
+                f"(({source} > V({node})) ? {format_spice_ns(tau_on)} "
+                f": {format_spice_ns(tau_off)})\n"
+            )
+            source = f"V({node})"
+        st += f"B{command} {command} 0 V = (V({prefix}{stages}) > 0.5) ? 1.0 : 0.0\n"
+    return st
+
+
 def gate_state_fit(kr, kf):
     """
     Fits a compact hidden-gate-state model from IBIS-derived Ku/Kd tables.
@@ -2600,6 +2717,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_residual_recover_fast_full",
         "directional_dual_residual_level_cmd_full",
         "directional_dual_residual_delay_cmd_full",
+        "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
     }
     dual_residual_modes = {
@@ -2607,6 +2725,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_hybrid",
         "directional_dual_residual_level_cmd_full",
         "directional_dual_residual_delay_cmd_full",
+        "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
     }
     # Derives the command state from a directionally delayed input level rather
@@ -2616,6 +2735,9 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # Same intent, but the delay is a real transport delay rather than a gate on
     # elapsed time, which is what made the level mode drop short pulses.
     use_delay_command = mode == "directional_dual_residual_delay_cmd_full"
+    # Same again, but the delay is carried by a state rather than a dead time,
+    # so an interrupted command turns around from where it actually got to.
+    use_predriver_command = mode == "directional_dual_residual_predriver_cmd_full"
     recover_modes = {
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
@@ -2819,7 +2941,9 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         st += "BHSHORT_HIGH_RECOVERY HSHORT_HIGH_RECOVERY 0 V = 0.0\n"
     st += "\n"
 
-    if use_delay_command:
+    if use_predriver_command:
+        st += predriver_command_block(fit)
+    elif use_delay_command:
         st += delay_command_block(fit)
     elif use_level_command:
         st += level_command_block(fit)

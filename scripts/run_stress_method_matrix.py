@@ -42,6 +42,8 @@ METHODS = (
      "current gate-state model, edge-integrating command plus restore patch"),
     ("delay_cmd", "InputDrivenTwoStateGateDelayCommandFull",
      "gate-state with the command as a transport-delayed copy of the input level"),
+    ("predriver_cmd", "InputDrivenTwoStateGatePredriverCommandFull",
+     "gate-state with the command delay carried by a state, so it can be interrupted"),
     ("legacy", "InputDriven",
      "pybis before any interruption handling; the reference point for all of it"),
     ("coeff_match", "InputDrivenValueMatchedReplayV2Hybrid",
