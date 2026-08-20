@@ -36,3 +36,12 @@ rsf_compare_log*.txt
 # Archive sidecar metadata
 __MACOSX/
 ._*
+
+# Stress-matrix raw simulation output. The per-case waveform CSVs, figures and
+# summary tables are kept; the ngspice/HSPICE raw files behind them run to 5.3 GB
+# and are reproducible from the committed scripts and the IBIS/netlist inputs.
+results/stress_method_matrix_*/*/ngspice_runs/
+results/stress_method_matrix_*/*/hspice_fixtures/
+results/stress_method_matrix_*/*/hspice_references/
+results/stress_method_matrix_*/*/generated_models/
+results/stress_method_matrix_*/*/plots/
