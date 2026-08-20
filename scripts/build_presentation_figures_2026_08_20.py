@@ -51,8 +51,36 @@ HYBRID = "#A16207"
 PADMATCH = "#7B2CBF"   # distinct from the native-IBIS blue
 GUP = "#C02626"
 GDN = "#1B7F5A"
+WARN_SOFT = "#F7EBE2"
 
 SHOWN = [("hybrid", "hybrid", HYBRID), ("pad_match", "pad-matched replay", PADMATCH)]
+
+# Distinct line styles as well as colours. Overlaid traces on a shared axis are
+# hard to tell apart by hue alone, especially where they nearly coincide, and
+# hue is the first thing lost to a projector.
+STYLE = {"hybrid": (HYBRID, "--", 1.9), "pad_match": (PADMATCH, "-.", 1.9)}
+
+
+def active_end(t, traces, t_rev, tol=0.02, margin=0.45):
+    """Returns a crop time just past the last real activity.
+
+    These records run to 22 ns and settle within a nanosecond or two of the
+    reversal, so a fixed window leaves most of the panel flat -- worst on
+    inv_chain, whose pulses are around 110 ps. Crop where every trace has come
+    within `tol` of its own final value and stayed there.
+    """
+    last = t_rev
+    for y in traces:
+        y = np.asarray(y, dtype=float)
+        ok = np.isfinite(y)
+        if ok.sum() < 5:
+            continue
+        settled = y[ok][-1]
+        moving = np.where(np.abs(y[ok] - settled) > tol)[0]
+        if len(moving):
+            last = max(last, float(t[ok][moving[-1]]))
+    return min(last + margin, float(t[-1]))
+
 
 
 def load(path: Path) -> dict[str, np.ndarray]:
@@ -100,6 +128,25 @@ def gate_capacitors(out_dir: Path, picks) -> None:
         top.text(0.02, 0.04, f"range {lo:.4f} … {hi:.4f}", transform=top.transAxes,
                  fontsize=9, family="monospace",
                  bbox=dict(fc="white", ec="#B6C2CD", pad=3.5))
+
+        # Annotate the state the pulse switches *on* -- the pullup on a
+        # short-high, the pulldown on a short-low. Its peak is the number that
+        # matters: how far the transition actually travelled before the reverse
+        # command caught it. Picking by largest excursion instead would label the
+        # state that fully switches and recovers, which shows nothing.
+        window = (t >= edge_ns) & (t <= t_rev + 2.0)
+        switching_on = gup if direction == "short_high" else gdn
+        if not window.any():
+            continue
+        reached = float(np.nanmax(switching_on[window]))
+        t_at = float(t[window][int(np.nanargmax(switching_on[window]))])
+        caption = (f"reached {reached:.3f}\nbefore reversing" if reached < 0.99
+                   else f"fully switched\n({reached:.3f})")
+        top.plot([t_at], [reached], "o", color="#151E28", ms=7, zorder=6)
+        top.annotate(caption, (t_at, reached), textcoords="offset points", xytext=(12, -34),
+                     fontsize=9, fontweight="bold", color="#151E28",
+                     bbox=dict(fc="white", ec="#B6C2CD", alpha=0.92, pad=3),
+                     arrowprops=dict(arrowstyle="->", color="#151E28", lw=1.1))
         if col == 0:
             top.set_ylabel("hidden gate state")
             top.legend(fontsize=8.5, loc="center right")
@@ -111,8 +158,9 @@ def gate_capacitors(out_dir: Path, picks) -> None:
         bottom.set_xlabel("Time (ns)")
         if col == 0:
             bottom.set_ylabel("Pad (V)")
+        end = active_end(t, [gup, gdn, pad], t_rev, tol=0.01, margin=0.35)
         for axis in (top, bottom):
-            axis.set_xlim(edge_ns - 0.3, t_rev + 3.5)
+            axis.set_xlim(edge_ns - 0.3, end)
         drew = True
     if not drew:
         plt.close(fig)
@@ -209,6 +257,7 @@ def stress_grids(out_dir: Path) -> None:
                 edge_ns = 5.0 if direction == "short_high" else 10.0
                 t_rev = edge_ns + width_ps / 1000.0
                 first = True
+                traces = []
                 for key, label, colour in SHOWN:
                     p = MATRIX / key / "waveforms" / f"{tag}.csv"
                     if not p.exists():
@@ -216,14 +265,19 @@ def stress_grids(out_dir: Path) -> None:
                     d = load(p)
                     t = d["time_ns"]
                     if first:
-                        axis.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=2.6,
+                        axis.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=2.8,
                                   label="HSPICE transistor", zorder=6)
-                        axis.plot(t, d["hspice_pad"], color=NATIVE, lw=1.6,
+                        axis.plot(t, d["hspice_pad"], color=NATIVE, lw=1.7, ls=":",
                                   label="HSPICE native IBIS", zorder=5)
                         axis.axvline(t_rev, color="0.5", ls="--", lw=1.0)
-                        axis.set_xlim(edge_ns - 0.2, t_rev + 3.5)
+                        traces += [d["silicon_pad"], d["hspice_pad"]]
                         first, drew = False, True
-                    axis.plot(t, d["pybis_pad"], lw=1.5, color=colour, label=label, zorder=3)
+                    style_colour, dashes, width = STYLE[key]
+                    axis.plot(t, d["pybis_pad"], lw=width, ls=dashes,
+                              color=style_colour, label=label, zorder=3)
+                    traces.append(d["pybis_pad"])
+                if traces:
+                    axis.set_xlim(edge_ns - 0.2, active_end(t, traces, t_rev))
                 axis.set_title(f"{target}% swing · {width_ps:.0f} ps", fontsize=9.5)
                 axis.grid(alpha=0.22)
                 axis.tick_params(labelsize=8)
@@ -254,15 +308,136 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
 
     # One case per buffer, at a stress level where the reversal is unmistakable.
+    # Chosen so each panel shows a transition genuinely caught in flight.
     picks = [("inv_chain", "short_low", 90, 115.992),
              ("ex2", "short_high", 70, 857.6),
-             ("io_buf", "short_low", 70, 220.1)]
+             ("io_buf", "short_high", 70, 1852.6)]
 
     gate_capacitors(out_dir, picks)
+    pad_matching_walkthrough(out_dir)
     coefficient_range(out_dir, picks)
     stress_grids(out_dir)
     return 0
 
+
+
+def pad_matching_walkthrough(out_dir: Path, device="io_buf", direction="short_high",
+                             target=80, width_ps=2090.0) -> None:
+    """The pad-matching method drawn on its own real data.
+
+    The case is chosen so the pad is genuinely mid-transition when the input
+    reverses. On buffers with a long propagation delay -- ex2 is about a
+    nanosecond -- the pad has not started moving at the reverse edge, the
+    latched voltage falls outside the opposite trajectory entirely, and the
+    lookup has nothing to resolve.
+
+    Three panels following the method in order: the two reference trajectories
+    recorded offline, the voltage-to-time lookup built by inverting them, and a
+    real reversal resolved through that lookup. Nothing here is schematic -- the
+    trajectories are the calibration JSON the model was built from, and the
+    reversal is a case out of the stress sweep.
+    """
+    import json
+
+    ref_path = (MATRIX / "pad_match" / "calibration" / device / "fast_5ps"
+                / "pad_replay_reference.json")
+    wave_path = MATRIX / "pad_match" / "waveforms" / f"{case_tag(device, direction, width_ps)}.csv"
+    if not (ref_path.exists() and wave_path.exists()):
+        print(f"walkthrough: missing inputs for {device}")
+        return
+    ref = json.loads(ref_path.read_text(encoding="utf-8"))
+    rise_t = np.asarray(ref["rising"]["time_ns"], dtype=float)
+    rise_v = np.asarray(ref["rising"]["pad_v"], dtype=float)
+    fall_t = np.asarray(ref["falling"]["time_ns"], dtype=float)
+    fall_v = np.asarray(ref["falling"]["pad_v"], dtype=float)
+
+    # Crop each reference to where it is still moving; both records run to 14 ns
+    # and are flat for most of it.
+    def crop(t, v):
+        settled = v[-1]
+        moving = np.where(np.abs(v - settled) > 0.02)[0]
+        end = t[moving[-1]] + 0.4 if len(moving) else t[-1]
+        keep = t <= end
+        return t[keep], v[keep]
+
+    rise_t, rise_v = crop(rise_t, rise_v)
+    fall_t, fall_v = crop(fall_t, fall_v)
+
+    d = load(wave_path)
+    t = d["time_ns"]
+    edge_ns = 5.0 if direction == "short_high" else 10.0
+    t_rev = edge_ns + width_ps / 1000.0
+    v_latched = float(np.interp(t_rev, t, d["pybis_pad"]))
+
+    # The reversal on a short-high pulse is a falling edge, so the opposite
+    # trajectory is the falling one; find where it first holds the latched pad.
+    opp_t, opp_v = (fall_t, fall_v) if direction == "short_high" else (rise_t, rise_v)
+    crossings = np.where(np.diff(np.sign(opp_v - v_latched)) != 0)[0]
+    t0 = float(opp_t[crossings[0]]) if len(crossings) else float("nan")
+
+    fig, axes = plt.subplots(1, 3, figsize=(15.0, 5.0))
+
+    ax = axes[0]
+    ax.plot(rise_t, rise_v, color="#C02626", lw=2.0, label="rising reference")
+    ax.plot(fall_t, fall_v, color="#1B7F5A", lw=2.0, label="falling reference")
+    ax.set_title("1 · recorded offline, once per buffer", fontsize=10.5)
+    ax.set_xlabel("time since edge (ns)")
+    ax.set_ylabel("pad (V)")
+    ax.grid(alpha=0.25)
+    ax.legend(fontsize=9)
+
+    ax = axes[1]
+    # Where the trajectory is flat in voltage the inverse is near-vertical, so a
+    # few millivolts of pad error map to a large time error. Shading those bands
+    # states the method's real limit rather than leaving it to be inferred.
+    with np.errstate(divide="ignore", invalid="ignore"):
+        dtdv = np.gradient(opp_t, opp_v)
+    steep = np.abs(dtdv) > 5.0 * np.nanmedian(np.abs(dtdv))
+    if steep.any():
+        lo_v, hi_v = float(np.nanmin(opp_v)), float(np.nanmax(opp_v))
+        span = hi_v - lo_v
+        for edge_lo, edge_hi in ((lo_v, lo_v + 0.06 * span), (hi_v - 0.06 * span, hi_v)):
+            ax.axvspan(edge_lo, edge_hi, color=WARN_SOFT, zorder=0)
+        ax.text(0.5, 0.94, "shaded: lookup ill-conditioned", transform=ax.transAxes,
+                ha="center", fontsize=8.5, color="#AE4E19")
+    ax.plot(opp_v, opp_t, color="#1B7F5A" if direction == "short_high" else "#C02626", lw=2.0)
+    ax.axvline(v_latched, color=PADMATCH, ls="-.", lw=1.8)
+    if np.isfinite(t0):
+        ax.plot([v_latched], [t0], "o", color=PADMATCH, ms=9, zorder=5)
+        ax.annotate(f"t₀ = {t0:.3f} ns", (v_latched, t0), textcoords="offset points",
+                    xytext=(12, 10), fontsize=9.5, color=PADMATCH, fontweight="bold")
+    # Show the ambiguity honestly: how many times the trajectory holds this value.
+    ax.set_title(f"2 · inverted to voltage → time  ({len(crossings)} crossing"
+                 f"{'s' if len(crossings) != 1 else ''} at this voltage)", fontsize=10.5)
+    ax.set_xlabel("pad voltage (V)")
+    ax.set_ylabel("time along the opposite edge (ns)")
+    ax.grid(alpha=0.25)
+
+    ax = axes[2]
+    end = active_end(t, [d["silicon_pad"], d["hspice_pad"], d["pybis_pad"]], t_rev)
+    ax.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=2.8, label="HSPICE transistor")
+    ax.plot(t, d["pybis_pad"], color=PADMATCH, ls="-.", lw=1.9, label="pad-matched replay")
+    ax.axvline(t_rev, color="0.45", ls="--", lw=1.2)
+    ax.axhline(v_latched, color=PADMATCH, lw=0.9, alpha=0.6)
+    ax.plot([t_rev], [v_latched], "o", color=PADMATCH, ms=9, zorder=6)
+    ax.annotate(f"pad latched once\n{v_latched:.3f} V", (t_rev, v_latched),
+                textcoords="offset points", xytext=(14, -34), fontsize=9.5,
+                color=PADMATCH, fontweight="bold")
+    ax.set_xlim(edge_ns - 0.2, end)
+    ax.set_title(f"3 · run time — {device} {direction.replace('short_', 'short-')} {target}%",
+                 fontsize=10.5)
+    ax.set_xlabel("time (ns)")
+    ax.set_ylabel("pad (V)")
+    ax.grid(alpha=0.25)
+    ax.legend(fontsize=9, loc="best")
+
+    fig.suptitle("Pad-matched replay on its own data: record, invert, then re-enter at the match",
+                 fontsize=12.5)
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    path = out_dir / "pad_matching_walkthrough.png"
+    fig.savefig(path, dpi=150)
+    plt.close(fig)
+    print(f"wrote {path.relative_to(ROOT)}")
 
 if __name__ == "__main__":
     raise SystemExit(main())
