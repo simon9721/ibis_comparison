@@ -1,0 +1,20 @@
+* "simulator" "PrimeSim HSPICE"
+* "version" "T-2022.06 win64"
+* "format" "HSP"
+* "rundate" "19:27:35 08/19/2026 "
+* "netlist" "run.sp "
+* "runtitle" "ex2 transistor short_high_swing70"
+* time =  0.000e+00       
+* temperature =  2.700e+01       
+*** BEGIN: Saved Operating Point ***                     
+.option 
++ gmindc= 1.000e-12       
+.nodeset
++ fix = 0.000e+00       
++ in_dig = 0.000e+00       
++ pad_sp = 7.302e-09       
++ vdd = 3.300e+00       
++ xdut.n2 = 3.300e+00       
++ xdut.n3 = 1.052e-08       
++ xdut.n4 = 3.300e+00       
+***   END: Saved Operating Point ***                     
