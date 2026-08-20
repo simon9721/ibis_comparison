@@ -131,7 +131,7 @@ def pad_figure(path, label, d, edge_ns, t_rev, pad_match, target_v=None):
     fig, axis = plt.subplots(figsize=WIDE)
     axis.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=5.0, label="HSPICE transistor", zorder=2)
     axis.plot(t, d["hspice_pad"], color=NATIVE, lw=3.0, label="HSPICE native IBIS", zorder=3)
-    axis.plot(t, d["pybis_pad"], color=HYBRID, lw=2.2, label="hybrid (gate-state on reversal)", zorder=4)
+    axis.plot(t, d["pybis_pad"], color=HYBRID, lw=2.2, label="gate-state", zorder=4)
     traces = [d["silicon_pad"], d["hspice_pad"], d["pybis_pad"]]
     if pad_match is not None:
         axis.plot(pad_match["time_ns"], pad_match["pybis_pad"], color=PADMATCH, lw=2.2,
@@ -162,7 +162,7 @@ def kukd_figure(path, label, d, edge_ns, t_rev, pad_match):
         axis.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
         axis.plot(t, d[f"hspice_{coeff}"], color=NATIVE, lw=3.0,
                   label="HSPICE native IBIS", zorder=3)
-        axis.plot(t, d[f"pybis_{coeff}"], color=HYBRID, lw=2.2, label="hybrid (gate-state on reversal)", zorder=4)
+        axis.plot(t, d[f"pybis_{coeff}"], color=HYBRID, lw=2.2, label="gate-state", zorder=4)
         if pad_match is not None:
             axis.plot(pad_match["time_ns"], pad_match[f"pybis_{coeff}"], color=PADMATCH,
                       lw=2.2, label="pad-matched replay", zorder=5)
