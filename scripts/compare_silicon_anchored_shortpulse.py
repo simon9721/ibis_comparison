@@ -70,30 +70,32 @@ def read_csv(path: Path) -> list[dict[str, str]]:
 
 
 def widths_for_depths(device_id: str, direction: str) -> list[tuple[float, float]]:
-    """Interpolates pulse widths that put silicon at each target depth.
+    """Picks measured pulse widths whose silicon depth is closest to each target.
 
-    The measured depth-versus-width curve is monotonic in the region of
-    interest but saturates once the device is fully off, so only the rising
-    portion is used for interpolation.
+    Interpolation is not safe here. The depth-versus-width curve rises steeply
+    and then saturates, and on `io_buf` short-low it is not even monotonic --
+    depth hovers between 0.60 and 0.84 across widths from 491 to 2900 ps.
+    Interpolating across that produced widths that went *down* as the requested
+    depth went up. Selecting the nearest measured point instead cannot invent a
+    width the device never showed, and the achieved depth is reported rather
+    than the requested one.
     """
-    points = sorted(
+    points = [
         (float(r["pulse_width_ps"]), float(r["depth_at_reversal"]))
         for r in read_csv(DEPTH_SWEEP)
         if r["device"] == device_id and r["direction"] == direction
-    )
-    if len(points) < 3:
+        and 0.0 <= float(r["depth_at_reversal"]) <= 1.05
+    ]
+    if not points:
         return []
-    widths = np.array([p[0] for p in points])
-    depths = np.array([p[1] for p in points])
-    keep = depths < 0.98
-    widths, depths = widths[keep], depths[keep]
-    order = np.argsort(depths)
-    widths, depths = widths[order], depths[order]
     out: list[tuple[float, float]] = []
     for target in DEPTH_TARGETS:
-        if target < depths.min() or target > depths.max():
+        width, depth = min(points, key=lambda p: (abs(p[1] - target), p[0]))
+        if abs(depth - target) > 0.20:
             continue
-        out.append((target, float(np.interp(target, depths, widths))))
+        if any(abs(width - chosen) < 1e-6 for _, chosen in out):
+            continue
+        out.append((depth, width))
     return out
 
 
@@ -149,6 +151,9 @@ def main() -> int:
                         choices=[d.device_id for d in base.DEVICES])
     parser.add_argument("--direction", action="append",
                         choices=["short_high", "short_low"])
+    parser.add_argument("--width-ps", action="append", type=float,
+                        help="override width selection with explicit pulse widths, so a "
+                             "model change can be A/B tested at identical stimuli")
     args = parser.parse_args()
 
     devices = set(args.device or [d.device_id for d in base.DEVICES])
@@ -171,14 +176,18 @@ def main() -> int:
                                   device.model, "Output", GATE_STATE_MODE, "Typical")
 
         for direction in directions:
-            targets = widths_for_depths(device.device_id, direction)
+            if args.width_ps:
+                targets = [(float("nan"), w) for w in args.width_ps]
+            else:
+                targets = widths_for_depths(device.device_id, direction)
             if not targets:
                 print(f"[{device.device_id} {direction}] no usable depth curve", flush=True)
                 continue
             edge_ns = 5.0 if direction == "short_high" else 10.0
             for depth_target, width_ps in targets:
                 width_ns = width_ps / 1000.0
-                tag = f"{direction}_depth{int(round(depth_target * 100))}"
+                tag = (f"{direction}_w{int(round(width_ps))}ps" if not np.isfinite(depth_target)
+                       else f"{direction}_depth{int(round(depth_target * 100))}")
                 case = base.PulseCase(f"{tag}_{int(round(width_ps))}ps", 0.050, direction,
                                       width_ns, 22.0, f"silicon depth {depth_target:.2f}")
                 label = f"{device.device_id} {direction.replace('_', '-')} silicon depth {depth_target:.2f}"

@@ -134,10 +134,16 @@ def solve_silicon_kukd(ibis_data, low: np.ndarray, high: np.ndarray,
     i1 = gc1 + pc1 + rf1 - cc1 - cf1
     i2 = gc2 + pc2 + rf2 - cc2 - cf2
 
-    out = np.zeros((len(time), 3))
+    out = np.zeros((len(time), 4))
     out[:, 0] = time
     for n in range(len(time)):
         matrix = np.array([[pu1[n], pd1[n]], [pu2[n], pd2[n]]])
+        # Conditioning is the honest confidence measure here. The two fixtures
+        # stop giving independent information whenever both devices are nearly
+        # off, and the solve is then reconstructing coefficients from almost no
+        # signal. Recording it keeps a numerically meaningless Ku/Kd from being
+        # read as a statement about the buffer.
+        out[n, 3] = np.linalg.cond(matrix)
         if abs(np.linalg.det(matrix)) < 1e-18:
             out[n, 1] = out[n, 2] = np.nan
             continue
@@ -261,7 +267,16 @@ def main() -> int:
                 grid = data["time_ns"]
                 sil_ku = np.interp(grid, t_ns, silicon[:, 1])
                 sil_kd = np.interp(grid, t_ns, silicon[:, 2])
+                sil_cond = np.interp(grid, t_ns, silicon[:, 3])
                 post = grid >= t_rev
+                # Is the IBIS formulation itself able to express what silicon
+                # does here? If the coefficients silicon requires stay bounded
+                # and the solve stays conditioned, the formulation is adequate
+                # and any error is the model's. If not, the limit is structural.
+                trusted = post & (sil_cond < 100.0)
+                frac_trusted = float(np.count_nonzero(trusted)) / max(np.count_nonzero(post), 1)
+                ku_span = (float(np.nanmin(sil_ku[trusted])), float(np.nanmax(sil_ku[trusted]))) if trusted.any() else (np.nan, np.nan)
+                kd_span = (float(np.nanmin(sil_kd[trusted])), float(np.nanmax(sil_kd[trusted]))) if trusted.any() else (np.nan, np.nan)
 
                 series = {
                     "silicon (transistor)": ("#111111", 2.6, {"ku": sil_ku, "kd": sil_kd}),
@@ -294,6 +309,11 @@ def main() -> int:
                     "native_vs_silicon_kd_post": round(rmse(data["hspice_native_kd"], sil_kd, grid, post), 4),
                     "model_vs_silicon_kd_post": round(rmse(data["gate_state_kd"], sil_kd, grid, post), 4),
                     "native_vs_model_ku_post": round(rmse(data["hspice_native_ku"], data["gate_state_ku"], grid, post), 4),
+                    "well_conditioned_fraction": round(frac_trusted, 3),
+                    "silicon_ku_min": round(ku_span[0], 3),
+                    "silicon_ku_max": round(ku_span[1], 3),
+                    "silicon_kd_min": round(kd_span[0], 3),
+                    "silicon_kd_max": round(kd_span[1], 3),
                 })
 
     if summary:

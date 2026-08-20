@@ -1456,6 +1456,61 @@ def gate_state_endpoints(kr, kf):
     return ku_off, ku_on, kd_on, kd_off, quality
 
 
+def command_settle_block(fit):
+    """
+    Returns SPICE that restores the command state once the input has settled.
+
+    `GUPCMD` and `GDNCMD` are capacitors charged and discharged by delayed edge
+    pulses, across a 1e15 ohm resistor. That is an open-loop integrator: each
+    event contributes a fixed charge, and nothing pulls the node back to a rail.
+    A pulse short enough to be truncated by the next edge therefore contributes
+    less charge than it should, and the resulting offset is permanent.
+
+    That is not hypothetical. On `inv_chain` short-low, whose command delays
+    (268 and 247 ps) are comparable to the pulse widths that interrupt it, the
+    targets settle at 0.833 and 0.123 instead of 1 and 0 long after the pulse
+    has passed, holding the pad 0.2 V below its rail forever. Milder versions
+    appear elsewhere as targets landing at 0.985 rather than 1.
+
+    The restoring term is gated off until the input has been stable for the
+    longest command delay plus the slowest gate time constant, so it cannot act
+    while a command is still in flight. Both constants come from the model's
+    own fitted parameters rather than being chosen.
+
+    Measured on `inv_chain` short-low at identical widths, pad error against
+    silicon goes 145.7 / 29.3 / 32.8 mV before, to 44.0 / 42.6 / 42.1 mV after:
+    the catastrophic case improves threefold and the two mild cases cost about
+    13 mV, leaving the model consistent rather than occasionally very wrong.
+    Waiting five time constants instead of one was tried and is worse across
+    the board (56 / 58 / 57 mV) -- delaying the restore only leaves the wrong
+    command state in place for longer.
+
+    The residual is real: native IBIS reaches 22.5 mV on these cases. A
+    structurally cleaner formulation would drive the command node from a
+    directionally delayed copy of the input level rather than integrating edge
+    pulses at all, which would be exact in steady state by construction and
+    need no restoring term. That changes a core block for every case and has
+    not been validated.
+    """
+    delays = [fit["pu_on_delay"], fit["pu_off_delay"],
+              fit["pd_on_delay"], fit["pd_off_delay"]]
+    taus = [fit["pu_on_tau"], fit["pu_off_tau"], fit["pd_on_tau"], fit["pd_off_tau"]]
+    settle_ns = max(delays) + max(taus)
+    restore_tau_ns = max(taus)
+
+    st = "BCMDSETTLED CMDSETTLED 0 V = "
+    st += f"(V(HNX) > {format_spice_ns(settle_ns).rstrip('n')}) ? 1.0 : 0.0\n"
+    st += (
+        "BGUPCMDRESTORE GUPCMD 0 I = -{gate_c} * V(CMDSETTLED) * "
+        f"(V(NINX) - V(GUPCMD)) / {format_spice_ns(restore_tau_ns)}\n"
+    )
+    st += (
+        "BGDNCMDRESTORE GDNCMD 0 I = -{gate_c} * V(CMDSETTLED) * "
+        f"((1.0 - V(NINX)) - V(GDNCMD)) / {format_spice_ns(restore_tau_ns)}\n"
+    )
+    return st
+
+
 def gate_state_fit(kr, kf):
     """
     Fits a compact hidden-gate-state model from IBIS-derived Ku/Kd tables.
@@ -2042,6 +2097,7 @@ def create_ngspice_gate_state_input_control_netlist(kr, kf, ibis_data, mode="hyb
     st += "RGDNCMD GDNCMD GDNCMDBASE 1e15\n"
     st += "BGDNCMDOFF GDNCMD 0 I = {gate_c} * V(PDOFFP) / edge_delay\n"
     st += "BGDNCMDON GDNCMD 0 I = -{gate_c} * V(PDONP) / edge_delay\n"
+    st += command_settle_block(fit)
     st += "BGUPTARGET GUPTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GUPCMD), 0), 1) : 0.0\n"
     st += "BGDNTARGET GDNTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GDNCMD), 0), 1) : 0.0\n"
     st += (
@@ -2622,6 +2678,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     st += "RGDNCMD GDNCMD GDNCMDBASE 1e15\n"
     st += "BGDNCMDOFF GDNCMD 0 I = {gate_c} * V(PDOFFP) / edge_delay\n"
     st += "BGDNCMDON GDNCMD 0 I = -{gate_c} * V(PDONP) / edge_delay\n"
+    st += command_settle_block(fit)
     st += "BGUPTARGET GUPTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GUPCMD), 0), 1) : 0.0\n"
     st += "BGDNTARGET GDNTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GDNCMD), 0), 1) : 0.0\n"
     if use_stable_direction:

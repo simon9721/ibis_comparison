@@ -58,6 +58,13 @@ WIDTH_RANGES_PS = {
 POINTS = 8
 
 
+def read_existing(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open(newline="", encoding="utf-8") as handle:
+        return list(csv.DictReader(handle))
+
+
 def recovery_metrics(t: np.ndarray, y: np.ndarray, index: int, t_rev: float) -> dict[str, float]:
     """Separates continued turn-off from the actual return.
 
@@ -96,6 +103,10 @@ def main() -> int:
     parser.add_argument("--device", action="append", choices=list(WIDTH_RANGES_PS))
     parser.add_argument("--direction", action="append", choices=["short_high", "short_low"])
     parser.add_argument("--points", type=int, default=POINTS)
+    parser.add_argument("--width-min-ps", type=float,
+                        help="override the swept width range, for refining a region "
+                             "where the depth curve is steep or under-sampled")
+    parser.add_argument("--width-max-ps", type=float)
     args = parser.parse_args()
 
     devices = args.device or ["inv_chain", "ex2"]
@@ -103,7 +114,17 @@ def main() -> int:
     out = args.out
     out.mkdir(parents=True, exist_ok=True)
 
-    rows: list[dict[str, object]] = []
+    # Keep points this run will not regenerate. A filtered or range-limited run
+    # is normally a refinement of an under-sampled region, so rewriting the file
+    # from only the new rows would silently discard the rest of the curve.
+    csv_path = out / "depth_vs_recovery.csv"
+    scope = {(d, direction) for d in devices for direction in directions}
+    rows: list[dict[str, object]] = [
+        r for r in read_existing(csv_path) if (r["device"], r["direction"]) not in scope
+    ]
+    if rows:
+        print(f"keeping {len(rows)} point(s) outside this run's scope", flush=True)
+
     for device in base.DEVICES:
         if device.device_id not in devices:
             continue
@@ -112,6 +133,10 @@ def main() -> int:
             model_name=device.model, component_name=device.component,
         )
         low_ps, high_ps = WIDTH_RANGES_PS[device.device_id]
+        if args.width_min_ps is not None:
+            low_ps = args.width_min_ps
+        if args.width_max_ps is not None:
+            high_ps = args.width_max_ps
         widths = np.linspace(low_ps, high_ps, args.points)
         for direction in directions:
             coefficient = "kd" if direction == "short_high" else "ku"
@@ -162,8 +187,13 @@ def main() -> int:
                       f"depth@rev {metrics['depth_at_reversal']:6.3f}  max {metrics['max_depth']:6.3f}  "
                       f"return {shown}", flush=True)
 
-                with (out / "depth_vs_recovery.csv").open("w", newline="", encoding="utf-8") as handle:
-                    writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+                fieldnames: list[str] = []
+                for row in rows:
+                    for key in row:
+                        if key not in fieldnames:
+                            fieldnames.append(key)
+                with csv_path.open("w", newline="", encoding="utf-8") as handle:
+                    writer = csv.DictWriter(handle, fieldnames=fieldnames, restval="")
                     writer.writeheader()
                     writer.writerows(rows)
 
