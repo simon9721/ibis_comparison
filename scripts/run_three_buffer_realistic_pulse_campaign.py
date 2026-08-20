@@ -285,6 +285,16 @@ def input_waveform(device: Device, case: PulseCase, time_ns: np.ndarray) -> np.n
     return np.interp(time_ns, [item[0] for item in pts], [item[1] for item in pts])
 
 
+def _no_window_flags() -> int:
+    """Windows creation flags that keep a child simulator off the desktop.
+
+    A campaign launches hundreds of simulator processes. Without this each one
+    can flash or park a console window, which makes a long run impossible to sit
+    beside and can steal focus. Zero elsewhere, where the flag does not exist.
+    """
+    return getattr(subprocess, "CREATE_NO_WINDOW", 0)
+
+
 def run_process(command: list[str], cwd: Path, log_path: Path, timeout_s: int) -> int:
     try:
         process = subprocess.run(
@@ -295,6 +305,7 @@ def run_process(command: list[str], cwd: Path, log_path: Path, timeout_s: int) -
             text=True,
             timeout=timeout_s,
             check=False,
+            creationflags=_no_window_flags(),
         )
     except subprocess.TimeoutExpired as exc:
         captured = exc.stdout or ""

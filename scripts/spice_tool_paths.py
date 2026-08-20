@@ -37,13 +37,20 @@ def default_ngspice(console: bool = False) -> Path:
 
 
 def default_hspice() -> Path:
+    """Return the preferred HSPICE executable for this workspace.
+
+    `hspice.com` is preferred over `hspice.exe`. On Windows the `.exe` is a
+    208 KB launcher that opens its own output window on every invocation, which
+    makes a batch of hundreds of runs unusable interactively; the `.com` is the
+    240 MB console engine and stays headless. Both accept the same arguments.
+    """
     env_value = os.environ.get("HSPICE_EXE")
     if env_value:
         return Path(env_value)
     return first_existing(
         [
-            Path(r"C:\synopsys\Hspice_T-2022.06\WIN64\hspice.exe"),
             Path(r"C:\synopsys\Hspice_T-2022.06\WIN64\hspice.com"),
+            Path(r"C:\synopsys\Hspice_T-2022.06\WIN64\hspice.exe"),
             Path("hspice"),
         ]
     )

@@ -1,0 +1,15 @@
+device,direction,depth_target,pulse_width_ps,status
+io_buf,short_high,0.4253,972.7,OK
+io_buf,short_high,0.8557,1213.6,OK
+io_buf,short_low,0.2005,431.4,OK
+io_buf,short_low,0.5589,328.6,OK
+io_buf,short_low,0.6298,500.0,OK
+inv_chain,short_high,0.285,284.5,OK
+inv_chain,short_high,0.9078,318.2,OK
+inv_chain,short_low,0.151,284.5,OK
+inv_chain,short_low,0.9054,318.2,OK
+ex2,short_high,0.3207,904.5,OK
+ex2,short_high,0.8482,995.5,OK
+ex2,short_low,0.1874,813.6,OK
+ex2,short_low,0.4191,904.5,OK
+ex2,short_low,0.9129,995.5,OK

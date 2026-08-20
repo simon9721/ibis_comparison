@@ -133,6 +133,9 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenTwoStateGateDirectionalDualResidualFull": "InputDrivenTwoStateGateDirectionalDualResidualFull",
         "Input-Driven-Two-State-Gate-Directional-Dual-Residual-Full": "InputDrivenTwoStateGateDirectionalDualResidualFull",
         "NgSpiceInputDrivenTwoStateGateDirectionalDualResidualFull": "InputDrivenTwoStateGateDirectionalDualResidualFull",
+        "InputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
+        "Input-Driven-Two-State-Gate-Level-Command-Full": "InputDrivenTwoStateGateLevelCommandFull",
+        "NgSpiceInputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "Input-Driven-Two-State-Gate-Directional-Dual-Residual-Hybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "NgSpiceInputDrivenTwoStateGateDirectionalDualResidualHybrid": "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
@@ -348,6 +351,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenTwoStateGateDirectionalResidualHybrid",
         "InputDrivenTwoStateGateDirectionalDualResidualFull",
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
+        "InputDrivenTwoStateGateLevelCommandFull",
         "InputDrivenHybridV2StateInitializedReplay",
         "InputDrivenHybridV3AlignedReplay",
         "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull",
@@ -364,6 +368,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenTwoStateGateDirectionalResidualHybrid": "directional_residual_hybrid",
                 "InputDrivenTwoStateGateDirectionalDualResidualFull": "directional_dual_residual_full",
                 "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "directional_dual_residual_hybrid",
+                "InputDrivenTwoStateGateLevelCommandFull": "directional_dual_residual_level_cmd_full",
                 "InputDrivenHybridV2StateInitializedReplay": "state_initialized_replay_hybrid",
                 "InputDrivenHybridV3AlignedReplay": "aligned_replay_hybrid",
                 "InputDrivenTwoStateGateDirectionalResidualRecoverMeanFull": "directional_residual_recover_mean_full",
@@ -1511,6 +1516,54 @@ def command_settle_block(fit):
     return st
 
 
+def level_command_block(fit):
+    """
+    Returns SPICE that derives the command state from the input level.
+
+    The edge-integrating formulation this replaces accumulates a fixed charge
+    per edge event and has no path back to a rail, so a truncated pulse leaves a
+    permanent offset that only a separate restoring term can remove. The command
+    state there is a function of switching history rather than of the input.
+
+    Here it is a directionally delayed copy of the input level instead. Since
+    both delayed copies are levels, the command state is exactly 0 or 1 in
+    steady state by construction: there is nothing to accumulate, so nothing can
+    drift, and no restoring term or settle gate is required. That also matches
+    the circuit, where a predriver node is held at a rail by the transistors
+    driving it rather than integrating the edges it has seen.
+
+    Turn-on and turn-off propagate at different speeds, so two delayed copies
+    are kept and selected by the current input level. Selecting on the level
+    rather than on an edge is what makes the handoff safe: at the moment the
+    input flips, a settled buffer has both copies at the same value, so the
+    selector switches between two equal signals and cannot step. They differ
+    only when edges arrive faster than the delays -- the short-pulse case -- and
+    the command capacitor filters that.
+    """
+    st = "BNINXB NINXB 0 V = 1.0 - V(NINX)\n"
+    for name, source, delay in [
+        ("PUONLVL", "NINX", fit["pu_on_delay"]),
+        ("PUOFFLVL", "NINX", fit["pu_off_delay"]),
+        ("PDONLVL", "NINXB", fit["pd_on_delay"]),
+        ("PDOFFLVL", "NINXB", fit["pd_off_delay"]),
+    ]:
+        if delay <= 1e-15:
+            st += f"B{name} {name} 0 V = V({source})\n"
+        else:
+            st += f"T{name} {source} 0 {name} 0 Z0=50 Td={format_spice_ns(delay)}\n"
+            st += f"R{name} {name} 0 50\n"
+    # A high input means the most recent edge was a rise, so the turn-on delay
+    # applies; a low input selects the turn-off delay. This holds for either
+    # ordering of the two delays.
+    st += "BGUPCMDTGT GUPCMDTGT 0 V = (V(NINX) > 0.5) ? V(PUONLVL) : V(PUOFFLVL)\n"
+    st += "BGDNCMDTGT GDNCMDTGT 0 V = (V(NINX) < 0.5) ? V(PDONLVL) : V(PDOFFLVL)\n"
+    st += "CGUPCMD GUPCMD 0 {gate_c} ic=0\n"
+    st += "CGDNCMD GDNCMD 0 {gate_c} ic=1\n"
+    st += "BGUPCMD GUPCMD 0 I = -{gate_c} * (V(GUPCMDTGT) - V(GUPCMD)) / edge_delay\n"
+    st += "BGDNCMD GDNCMD 0 I = -{gate_c} * (V(GDNCMDTGT) - V(GDNCMD)) / edge_delay\n"
+    return st
+
+
 def gate_state_fit(kr, kf):
     """
     Fits a compact hidden-gate-state model from IBIS-derived Ku/Kd tables.
@@ -2459,13 +2512,19 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_hybrid",
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
+        "directional_dual_residual_level_cmd_full",
         "aligned_replay_hybrid",
     }
     dual_residual_modes = {
         "directional_dual_residual_full",
         "directional_dual_residual_hybrid",
+        "directional_dual_residual_level_cmd_full",
         "aligned_replay_hybrid",
     }
+    # Derives the command state from a directionally delayed input level rather
+    # than from integrated edge pulses. Kept as its own mode so the established
+    # one stays available for comparison.
+    use_level_command = mode == "directional_dual_residual_level_cmd_full"
     recover_modes = {
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
@@ -2669,16 +2728,19 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         st += "BHSHORT_HIGH_RECOVERY HSHORT_HIGH_RECOVERY 0 V = 0.0\n"
     st += "\n"
 
-    st += "CGUPCMD GUPCMD 0 {gate_c} ic=0\n"
-    st += "RGUPCMD GUPCMD 0 1e15\n"
-    st += "BGUPCMDON GUPCMD 0 I = -{gate_c} * V(PUONP) / edge_delay\n"
-    st += "BGUPCMDOFF GUPCMD 0 I = {gate_c} * V(PUOFFP) / edge_delay\n"
-    st += "CGDNCMD GDNCMD 0 {gate_c} ic=1\n"
-    st += "BGDNCMDBASE GDNCMDBASE 0 V = 1.0\n"
-    st += "RGDNCMD GDNCMD GDNCMDBASE 1e15\n"
-    st += "BGDNCMDOFF GDNCMD 0 I = {gate_c} * V(PDOFFP) / edge_delay\n"
-    st += "BGDNCMDON GDNCMD 0 I = -{gate_c} * V(PDONP) / edge_delay\n"
-    st += command_settle_block(fit)
+    if use_level_command:
+        st += level_command_block(fit)
+    else:
+        st += "CGUPCMD GUPCMD 0 {gate_c} ic=0\n"
+        st += "RGUPCMD GUPCMD 0 1e15\n"
+        st += "BGUPCMDON GUPCMD 0 I = -{gate_c} * V(PUONP) / edge_delay\n"
+        st += "BGUPCMDOFF GUPCMD 0 I = {gate_c} * V(PUOFFP) / edge_delay\n"
+        st += "CGDNCMD GDNCMD 0 {gate_c} ic=1\n"
+        st += "BGDNCMDBASE GDNCMDBASE 0 V = 1.0\n"
+        st += "RGDNCMD GDNCMD GDNCMDBASE 1e15\n"
+        st += "BGDNCMDOFF GDNCMD 0 I = {gate_c} * V(PDOFFP) / edge_delay\n"
+        st += "BGDNCMDON GDNCMD 0 I = -{gate_c} * V(PDONP) / edge_delay\n"
+        st += command_settle_block(fit)
     st += "BGUPTARGET GUPTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GUPCMD), 0), 1) : 0.0\n"
     st += "BGDNTARGET GDNTARGET 0 V = (V(NENABLE) > 0.5) ? min(max(V(GDNCMD), 0), 1) : 0.0\n"
     if use_stable_direction:

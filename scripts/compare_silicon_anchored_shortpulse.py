@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Compare pybis against silicon at pulse widths that actually stress silicon.
 
 Every stress sweep so far chose pulse widths by watching either the transistor's
@@ -16,9 +16,14 @@ at widths where silicon does nothing at all:
 Both models then invent a response silicon never produces, which says more about
 the stimulus than about either model.
 
-This anchors on silicon instead. Widths are interpolated from the measured
-depth sweep so that the transistor's own coefficient reaches a chosen fraction
-of its travel at the reverse edge, making all six combinations informative.
+This anchors on silicon instead. Widths are taken from the measured depth sweep
+so that the transistor's own coefficient reaches a chosen fraction of its travel
+at the reverse edge, making all six combinations informative.
+
+Set `PYBIS_GATE_MODE` to compare model variants at identical stimuli; with
+`--width-ps` that gives a controlled A/B, which matters because an earlier
+attempt changed the width selection and the model together and could attribute
+the difference to neither.
 
 The deliverable is waveform evidence, not a summary statistic. Every scalar
 recovery metric attempted so far has been defeated by either the command still
@@ -29,6 +34,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 from pathlib import Path
 import sys
 
@@ -53,7 +59,7 @@ from extract_silicon_kukd import run_fixture, solve_silicon_kukd  # noqa: E402
 
 DEPTH_SWEEP = ROOT / "results" / "silicon_recovery_depth_sweep_2026-08-19" / "depth_vs_recovery.csv"
 DEFAULT_OUT = ROOT / "results" / "silicon_anchored_shortpulse_2026-08-19"
-GATE_STATE_MODE = "InputDrivenTwoStateGateDirectionalDualResidualFull"
+GATE_STATE_MODE = os.environ.get("PYBIS_GATE_MODE", "InputDrivenTwoStateGateDirectionalDualResidualFull")
 LOAD = (50.0, 2.0)
 DEPTH_TARGETS = (0.25, 0.50, 0.75)
 
@@ -240,7 +246,7 @@ def main() -> int:
                 }
                 t_rev = edge_ns + width_ns
                 plot_case(out / "plots" / f"{device.device_id}_{tag}.png",
-                          f"{label} — pulse {width_ps:.0f} ps", grid, t_rev, edge_ns, series)
+                          f"{label} â€” pulse {width_ps:.0f} ps", grid, t_rev, edge_ns, series)
 
                 wave_path = out / "waveforms" / f"{device.device_id}_{tag}.csv"
                 wave_path.parent.mkdir(parents=True, exist_ok=True)
@@ -273,3 +279,5 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
