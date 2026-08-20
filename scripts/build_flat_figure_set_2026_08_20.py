@@ -78,6 +78,45 @@ def active_window(t, traces, edge_ns, t_rev, tol=0.02, margin=0.5, minimum=1.2):
     return start, end
 
 
+
+def loaded_rails(device):
+    """Returns the loaded low and high pad rails for a device, from the sweep data.
+
+    A short-high record never settles high and a short-low record never settles
+    low, so neither alone gives both rails. Both run the same 50 ohm / 2 pF load,
+    so taking the settled low from one and the settled high from the other is
+    consistent.
+    """
+    low = high = None
+    for direction, widths in (("short_high", None), ("short_low", None)):
+        for dev, d, ws in stress_cases():
+            if dev != device or d != direction:
+                continue
+            path = MATRIX / "hybrid" / "waveforms" / f"{case_tag(dev, d, ws[0][1])}.csv"
+            if not path.exists():
+                continue
+            wave = load(path)
+            t, pad = wave["time_ns"], wave["silicon_pad"]
+            # A short-low record is also low before its own first rise, so the
+            # high rail has to be read after that rise and before the dip.
+            if direction == "short_high":
+                low = float(np.median(pad[(t >= 1.0) & (t <= 4.5)]))
+            else:
+                high = float(np.median(pad[(t >= 8.0) & (t <= 9.5)]))
+            break
+    return low, high
+
+
+def target_level(device, direction, target):
+    """The pad voltage the stress target names, as an absolute level."""
+    low, high = loaded_rails(device)
+    if low is None or high is None:
+        return None
+    swing = high - low
+    frac = target / 100.0
+    return low + frac * swing if direction == "short_high" else high - frac * swing
+
+
 def style(axis, title=None):
     axis.grid(alpha=0.3, color="#C9D3DE", lw=0.8)
     axis.tick_params(labelsize=11)
@@ -87,18 +126,21 @@ def style(axis, title=None):
         axis.set_title(title, fontsize=17, fontweight="bold", pad=12)
 
 
-def pad_figure(path, label, d, edge_ns, t_rev, pad_match):
+def pad_figure(path, label, d, edge_ns, t_rev, pad_match, target_v=None):
     t = d["time_ns"]
     fig, axis = plt.subplots(figsize=WIDE)
     axis.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=5.0, label="HSPICE transistor", zorder=2)
     axis.plot(t, d["hspice_pad"], color=NATIVE, lw=3.0, label="HSPICE native IBIS", zorder=3)
-    axis.plot(t, d["pybis_pad"], color=HYBRID, lw=2.2, label="hybrid", zorder=4)
+    axis.plot(t, d["pybis_pad"], color=HYBRID, lw=2.2, label="hybrid (gate-state on reversal)", zorder=4)
     traces = [d["silicon_pad"], d["hspice_pad"], d["pybis_pad"]]
     if pad_match is not None:
         axis.plot(pad_match["time_ns"], pad_match["pybis_pad"], color=PADMATCH, lw=2.2,
                   label="pad-matched replay", zorder=5)
         traces.append(pad_match["pybis_pad"])
     axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.6, label="reverse edge", zorder=1)
+    if target_v is not None:
+        axis.axhline(target_v, color="#AE4E19", ls=":", lw=2.0,
+                     label=f"target level ({target_v:.3f} V)", zorder=1)
     axis.set_xlim(*active_window(t, traces, edge_ns, t_rev))
     axis.set_xlabel("Time (ns)", fontsize=12)
     axis.set_ylabel("Pad voltage (V)", fontsize=12)
@@ -117,7 +159,7 @@ def kukd_figure(path, label, d, edge_ns, t_rev, pad_match):
         axis.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
         axis.plot(t, d[f"hspice_{coeff}"], color=NATIVE, lw=3.0,
                   label="HSPICE native IBIS", zorder=3)
-        axis.plot(t, d[f"pybis_{coeff}"], color=HYBRID, lw=2.2, label="hybrid", zorder=4)
+        axis.plot(t, d[f"pybis_{coeff}"], color=HYBRID, lw=2.2, label="hybrid (gate-state on reversal)", zorder=4)
         if pad_match is not None:
             axis.plot(pad_match["time_ns"], pad_match[f"pybis_{coeff}"], color=PADMATCH,
                       lw=2.2, label="pad-matched replay", zorder=5)
@@ -149,26 +191,14 @@ def gate_figure(path, label, device, tag, edge_ns, t_rev, direction):
     fig, axes = plt.subplots(2, 1, figsize=STACK, sharex=True)
     top, bottom = axes
     top.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0, label="[0, 1]")
-    top.plot(t, gup, color=GUP_C, lw=2.6, label="GUP (pullup gate state)", zorder=3)
-    top.plot(t, gdn, color=GDN_C, lw=2.6, label="GDN (pulldown gate state)", zorder=3)
+    top.plot(t, gup, color=GUP_C, lw=2.6, label="Vc_PU (pullup gate state)", zorder=3)
+    top.plot(t, gdn, color=GDN_C, lw=2.6, label="Vc_PD (pulldown gate state)", zorder=3)
     for level in (0.0, 1.0):
         top.axhline(level, color="#8A8A8A", lw=1.0)
     top.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.6, zorder=1)
     top.set_ylim(-0.15, 1.15)
     top.set_ylabel("hidden gate state", fontsize=12)
 
-    window = (t >= edge_ns) & (t <= t_rev + 2.0)
-    switching_on = gup if direction == "short_high" else gdn
-    if window.any():
-        reached = float(np.nanmax(switching_on[window]))
-        t_at = float(t[window][int(np.nanargmax(switching_on[window]))])
-        top.plot([t_at], [reached], "o", color="#151E28", ms=9, zorder=6)
-        top.annotate(f"reached {reached:.3f} before reversing" if reached < 0.99
-                     else f"fully switched ({reached:.3f})",
-                     (t_at, reached), textcoords="offset points", xytext=(14, -30),
-                     fontsize=11, fontweight="bold", color="#151E28",
-                     bbox=dict(fc="white", ec="#8A96A3", alpha=0.93, pad=4),
-                     arrowprops=dict(arrowstyle="->", color="#151E28", lw=1.3))
     lo = float(min(gup.min(), gdn.min()))
     hi = float(max(gup.max(), gdn.max()))
     top.text(0.008, 0.05, f"range {lo:.4f} … {hi:.4f}", transform=top.transAxes,
@@ -232,7 +262,8 @@ def main() -> int:
             name = f"{n:02d}_{stem}_{kind}.png"
             path = out / name
             if kind == "pad_voltage":
-                pad_figure(path, label, d, edge_ns, t_rev, pad_match)
+                pad_figure(path, label, d, edge_ns, t_rev, pad_match,
+                           target_level(device, direction, target))
             elif kind == "ku_kd":
                 kukd_figure(path, label, d, edge_ns, t_rev, pad_match)
             else:
@@ -298,6 +329,9 @@ def walkthrough(out: Path, device="io_buf", direction="short_high",
     ax.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=4.2, label="HSPICE transistor")
     ax.plot(t, d["pybis_pad"], color=PADMATCH, lw=2.2, label="pad-matched replay")
     ax.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8)
+    tgt = target_level(device, direction, target)
+    if tgt is not None:
+        ax.axhline(tgt, color="#AE4E19", ls=":", lw=2.0, label=f"target {target}%")
     ax.axhline(v_latched, color=STEP, lw=1.2, alpha=0.7)
     ax.plot([t_rev], [v_latched], "o", color=STEP, ms=12, zorder=6)
     ax.annotate(f"input reverses here\npad = {v_latched:.3f} V", (t_rev, v_latched),
