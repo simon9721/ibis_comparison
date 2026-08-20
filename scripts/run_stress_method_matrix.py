@@ -57,6 +57,19 @@ METHODS = (
 )
 
 
+# io_buf's widths in the 2026-08-14 selection were searched against the RDSW=0
+# model card. The corrected stock card is a weaker device, so those widths left
+# the transistor 72 to 149 mV short of its nominal target on short-high and 57
+# to 92 mV over on short-low. Re-derived by interpolating the measured
+# width-versus-achieved curve, which is monotonic and had five points per
+# direction, so no new search was needed. Every corrected width lands within
+# 15 mV of target, in the same band as ex2 and inv_chain.
+WIDTH_CORRECTIONS = {
+    ("io_buf", "short_high"): {90: 2484.4, 80: 2225.9, 70: 1988.8, 60: 1791.5, 50: 1634.2},
+    ("io_buf", "short_low"): {90: 324.6, 80: 281.1, 70: 241.6, 60: 209.1, 50: 180.4},
+}
+
+
 def case_tag(device: str, direction: str, width_ps: float) -> str:
     """
     Returns the waveform stem the comparison script writes for this case.
@@ -81,8 +94,12 @@ def stress_cases() -> list[tuple[str, str, list[tuple[int, float]]]]:
             grouped.setdefault(key, []).append(
                 (int(float(row["target_percent"])), float(row["pulse_width_ps"]))
             )
-    return [(device, direction, sorted(widths, reverse=True))
-            for (device, direction), widths in sorted(grouped.items())]
+    out = []
+    for (device, direction), widths in sorted(grouped.items()):
+        fix = WIDTH_CORRECTIONS.get((device, direction), {})
+        widths = [(target, fix.get(target, width)) for target, width in widths]
+        out.append((device, direction, sorted(widths, reverse=True)))
+    return out
 
 
 def main() -> int:
