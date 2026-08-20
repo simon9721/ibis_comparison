@@ -78,6 +78,9 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenValueMatchedReplayFull": "InputDrivenValueMatchedReplayFull",
         "Input-Driven-Value-Matched-Replay-Full": "InputDrivenValueMatchedReplayFull",
         "NgSpiceInputDrivenValueMatchedReplayFull": "InputDrivenValueMatchedReplayFull",
+        "InputDrivenTimeMatchedReplayFull": "InputDrivenTimeMatchedReplayFull",
+        "Input-Driven-Time-Matched-Replay-Full": "InputDrivenTimeMatchedReplayFull",
+        "NgSpiceInputDrivenTimeMatchedReplayFull": "InputDrivenTimeMatchedReplayFull",
         "InputDrivenValueMatchedReplayBalanced": "InputDrivenValueMatchedReplayHybrid",
         "InputDrivenValueMatchedReplayKuOnly": "InputDrivenValueMatchedReplayKuOnly",
         "Input-Driven-Value-Matched-Replay-Ku-Only": "InputDrivenValueMatchedReplayKuOnly",
@@ -136,6 +139,11 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
         "Input-Driven-Two-State-Gate-Level-Command-Full": "InputDrivenTwoStateGateLevelCommandFull",
         "NgSpiceInputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
+        "InputDrivenGateMatchedReplayFull": "InputDrivenGateMatchedReplayFull",
+        "InputDrivenMeasuredRateGateFull": "InputDrivenMeasuredRateGateFull",
+        "Input-Driven-Measured-Rate-Gate-Full": "InputDrivenMeasuredRateGateFull",
+        "Input-Driven-Gate-Matched-Replay-Full": "InputDrivenGateMatchedReplayFull",
+        "NgSpiceInputDrivenGateMatchedReplayFull": "InputDrivenGateMatchedReplayFull",
         "InputDrivenTwoStateGateDelayCommandFull": "InputDrivenTwoStateGateDelayCommandFull",
         "Input-Driven-Two-State-Gate-Delay-Command-Full": "InputDrivenTwoStateGateDelayCommandFull",
         "NgSpiceInputDrivenTwoStateGateDelayCommandFull": "InputDrivenTwoStateGateDelayCommandFull",
@@ -308,6 +316,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
     if subcircuit_type in {
         "InputDrivenValueMatchedReplayHybrid",
         "InputDrivenValueMatchedReplayFull",
+        "InputDrivenTimeMatchedReplayFull",
         "InputDrivenValueMatchedReplayKuOnly",
         "InputDrivenValueMatchedReplayKdOnly",
     }:
@@ -315,6 +324,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
             mode = {
                 "InputDrivenValueMatchedReplayHybrid": "hybrid_balanced",
                 "InputDrivenValueMatchedReplayFull": "full_balanced",
+                "InputDrivenTimeMatchedReplayFull": "full_time",
                 "InputDrivenValueMatchedReplayKuOnly": "hybrid_ku",
                 "InputDrivenValueMatchedReplayKdOnly": "hybrid_kd",
             }[subcircuit_type]
@@ -358,6 +368,8 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenTwoStateGateDirectionalDualResidualFull",
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "InputDrivenTwoStateGateLevelCommandFull",
+        "InputDrivenGateMatchedReplayFull",
+        "InputDrivenMeasuredRateGateFull",
         "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGatePredriverCommandFull",
         "InputDrivenHybridV2StateInitializedReplay",
@@ -377,6 +389,8 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenTwoStateGateDirectionalDualResidualFull": "directional_dual_residual_full",
                 "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "directional_dual_residual_hybrid",
                 "InputDrivenTwoStateGateLevelCommandFull": "directional_dual_residual_level_cmd_full",
+                "InputDrivenGateMatchedReplayFull": "directional_dual_residual_gate_matched_full",
+                "InputDrivenMeasuredRateGateFull": "measured_rate_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
                 "InputDrivenHybridV2StateInitializedReplay": "state_initialized_replay_hybrid",
@@ -1853,6 +1867,116 @@ def gate_state_fit(kr, kf):
     }
 
 
+def gate_inverse_time_table(delay_ns, tau_ns, start_value, end_value, point_count=161):
+    """
+    Returns (gate_value, time_ns) for inverting a fitted gate trajectory.
+
+    The trajectory is monotone between its two rails, so unlike a pad voltage it
+    has a unique inverse: one gate value corresponds to exactly one time along
+    the edge. That is the whole appeal of matching on it -- there is no
+    ambiguity to resolve with a policy.
+
+    Sampled on a uniform grid in *gate value* rather than in time, so the
+    resolution is even where it is read, and clamped just inside the rails
+    because the exponential only reaches them asymptotically.
+    """
+    lo, hi = (start_value, end_value) if end_value > start_value else (end_value, start_value)
+    margin = 0.001 * max(abs(hi - lo), 1e-9)
+    values = np.linspace(lo + margin, hi - margin, point_count)
+    span = float(end_value) - float(start_value)
+    if abs(span) < 1e-12:
+        return np.asarray([lo, hi]), np.asarray([0.0, 0.0])
+    progress = (values - float(start_value)) / span
+    progress = np.clip(progress, 1e-6, 1.0 - 1e-6)
+    times = float(delay_ns) + max(float(tau_ns), 0.02) * (-np.log(1.0 - progress))
+    order = np.argsort(values)
+    return values[order], times[order]
+
+
+
+def measured_progress_rate_table(time_s, values, start_value, end_value, point_count=81):
+    """
+    Returns (progress, d(progress)/dt) fitted from a recorded coefficient edge.
+
+    Progress is the coefficient normalised onto [0,1] between its two settled
+    rails. Recorded coefficients are not monotone -- the C_comp*dV/dt term puts
+    a spike near the edge -- so progress is forced monotone by a running
+    extremum before differentiating, otherwise the rate law would be
+    multi-valued and the ODE ill-posed.
+
+    The rate at zero progress is set to the first moving rate rather than to
+    zero. An ODE with g(0) = 0 can never leave the rail; the dead time before
+    motion is supplied by the command delay, not by the rate law.
+    """
+    t = np.asarray(time_s, dtype=float) * 1e9
+    y = np.asarray(values, dtype=float)
+    ok = np.isfinite(t) & np.isfinite(y)
+    t, y = t[ok], y[ok]
+    span = float(end_value) - float(start_value)
+    if len(t) < 8 or abs(span) < 1e-9:
+        return np.asarray([0.0, 1.0]), np.asarray([1.0, 1.0])
+    progress = (y - float(start_value)) / span
+    progress = np.clip(progress, 0.0, 1.0)
+    progress = np.maximum.accumulate(progress)
+
+    moving = np.where(np.diff(progress) > 1e-9)[0]
+    if len(moving) < 4:
+        return np.asarray([0.0, 1.0]), np.asarray([1.0, 1.0])
+    lo, hi = moving[0], moving[-1] + 1
+    p_seg, t_seg = progress[lo:hi + 1], t[lo:hi + 1]
+    keep = np.concatenate(([True], np.diff(p_seg) > 1e-9))
+    p_seg, t_seg = p_seg[keep], t_seg[keep]
+    if len(p_seg) < 4:
+        return np.asarray([0.0, 1.0]), np.asarray([1.0, 1.0])
+
+    rate = np.gradient(p_seg, t_seg)
+    # Floor the rate at a small fraction of its peak. A measured rate law is
+    # hump shaped -- near zero at both rails -- and an ODE whose rate vanishes
+    # at the rail can never leave it, so the state would stall at 0 forever.
+    rate = np.clip(rate, 0.02 * float(np.nanmax(rate)), None)
+    grid = np.linspace(float(p_seg[0]), float(p_seg[-1]), point_count)
+    sampled = np.interp(grid, p_seg, rate)
+    # Extend to both rails: hold the first moving rate down to zero so the state
+    # can leave the rail, and taper to a small positive rate at the far end so
+    # it settles without stalling short.
+    grid = np.concatenate(([0.0], grid, [1.0]))
+    sampled = np.concatenate(([sampled[0]], sampled, [max(sampled[-1], 1e-4)]))
+    order = np.argsort(grid)
+    grid, sampled = grid[order], sampled[order]
+    unique = np.concatenate(([True], np.diff(grid) > 1e-9))
+    return grid[unique], sampled[unique]
+
+
+
+def gate_rate_tables(kr, kf, fit):
+    """
+    Returns rate laws for each gate, indexed by the gate value itself.
+
+    A rising edge has progress equal to the gate value, so its table is used as
+    measured. A falling edge runs the other way: the gate is one minus progress,
+    so the table is re-indexed onto the gate before being emitted. Both are
+    therefore read with V(GUP) or V(GDN) directly, with no arithmetic in the
+    netlist to get the direction wrong.
+    """
+    def rising(time_s, values, low, high):
+        gate, rate = measured_progress_rate_table(time_s, values, low, high)
+        return gate, rate
+
+    def falling(time_s, values, high, low):
+        progress, rate = measured_progress_rate_table(time_s, values, high, low)
+        gate = 1.0 - progress
+        order = np.argsort(gate)
+        return gate[order], rate[order]
+
+    return {
+        "pu_on": rising(kr[:, _TIME], kr[:, _KU], fit["ku_off"], fit["ku_on"]),
+        "pu_off": falling(kf[:, _TIME], kf[:, _KU], fit["ku_on"], fit["ku_off"]),
+        "pd_on": rising(kf[:, _TIME], kf[:, _KD], fit["kd_off"], fit["kd_on"]),
+        "pd_off": falling(kr[:, _TIME], kr[:, _KD], fit["kd_on"], fit["kd_off"]),
+    }
+
+
+
 def gate_state_rate(time_ns, delay_ns, tau_ns, start_value, end_value):
     """
     Returns d(gate_state)/dt in state/ns for the fitted single-pole state.
@@ -2732,6 +2856,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_residual_recover_mean_full",
         "directional_residual_recover_fast_full",
         "directional_dual_residual_level_cmd_full",
+        "directional_dual_residual_gate_matched_full",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2740,6 +2865,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_full",
         "directional_dual_residual_hybrid",
         "directional_dual_residual_level_cmd_full",
+        "directional_dual_residual_gate_matched_full",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2748,6 +2874,12 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # than from integrated edge pulses. Kept as its own mode so the established
     # one stays available for comparison.
     use_level_command = mode == "directional_dual_residual_level_cmd_full"
+    # Replay the opposite tables from an entry time found by inverting the
+    # opposite gate trajectory at whatever Vc the interrupted state had reached.
+    use_gate_matched = mode == "directional_dual_residual_gate_matched_full"
+    # All the edge shape in the rate law, none in the map: the other end of
+    # the RC/map redundancy, and the one that reproduces the recorded edge.
+    use_measured_rate = mode == "measured_rate_full"
     # Same intent, but the delay is a real transport delay rather than a gate on
     # elapsed time, which is what made the level mode drop short pulses.
     use_delay_command = mode == "directional_dual_residual_delay_cmd_full"
@@ -2768,7 +2900,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_residual_hybrid",
         "directional_dual_residual_hybrid",
     } or state_initialized_replay or aligned_replay
-    full_mode = mode in {"pwl_full", "identity_full"}
+    full_mode = mode in {"pwl_full", "identity_full", "measured_rate_full"}
     if use_directional_map and not reversal_hybrid:
         full_mode = True
     ku_table = convert_iv_table_to_str(fit["ku_map_x"], fit["ku_map_y"])
@@ -2981,6 +3113,28 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             f"BGUP GUP 0 I = -{{gate_c}} * (V(GUPTARGET) - V(GUP)) / "
             f"((V(GUPTARGET) > 0.5) ? {format_spice_ns(fit['pu_on_tau'])} : {format_spice_ns(fit['pu_off_tau'])})\n"
         )
+    elif use_measured_rate:
+        # ds/dt = g(s) with g measured from the recorded edge, rather than the
+        # exponential's (1-s)/tau. The measured law is hump shaped -- it peaks
+        # between s = 0.26 and 0.60 on these three buffers -- which an
+        # exponential cannot produce at any tau, since (1-s)/tau always peaks at
+        # s = 0. The sign carries the direction; the magnitude comes from the
+        # table for the direction currently being travelled.
+        rates = gate_rate_tables(kr, kf, fit)
+        for node, target, on_key, off_key in (("GUP", "GUPTARGET", "pu_on", "pu_off"),
+                                              ("GDN", "GDNTARGET", "pd_on", "pd_off")):
+            on_x, on_y = rates[on_key]
+            off_x, off_y = rates[off_key]
+            st += (f"B{node}RATEON {node}RATEON 0 V = "
+                   f"pwl(min(max(V({node}), 0), 1), {convert_iv_table_to_str(on_x, on_y)})\n")
+            st += (f"B{node}RATEOFF {node}RATEOFF 0 V = "
+                   f"pwl(min(max(V({node}), 0), 1), {convert_iv_table_to_str(off_x, off_y)})\n")
+            # The tables are per nanosecond; dividing by 1n converts to the
+            # per-second rate the capacitor integrates. Without it the gate
+            # moves a billion times too slowly and never leaves its rail --
+            # the model emitted a flat line and scored 629 mV.
+            st += (f"B{node} {node} 0 I = -{{gate_c}} * ((V({target}) > V({node})) ? "
+                   f"V({node}RATEON) : -V({node}RATEOFF)) / 1n\n")
     else:
         st += (
             f"BGUP GUP 0 I = -{{gate_c}} * (V(GUPTARGET) - V(GUP)) / "
@@ -2994,10 +3148,11 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             f"((V(GDNTARGET) > 0.5) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})\n"
         )
     else:
-        st += (
-            f"BGDN GDN 0 I = -{{gate_c}} * (V(GDNTARGET) - V(GDN)) / "
-            f"((V(GDNTARGET) > V(GDN)) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})\n"
-        )
+        if not use_measured_rate:
+            st += (
+                f"BGDN GDN 0 I = -{{gate_c}} * (V(GDNTARGET) - V(GDN)) / "
+                f"((V(GDNTARGET) > V(GDN)) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})\n"
+            )
     st += "CGDN GDN 0 {gate_c} ic=1\n"
     st += "BGDNBASE GDNBASE 0 V = 1.0\n"
     st += "RGDN GDN GDNBASE 1e12\n\n"
@@ -3051,18 +3206,69 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         else:
             st += "BKUGATE KUGATE 0 V = V(KUGATE_BASE)\n"
         st += "BKDGATE KDGATE 0 V = V(KDGATE_BASE) + V(KDRES)\n"
-    elif use_identity_map:
+    elif use_identity_map or use_measured_rate:
         st += f"BKUGATE KUGATE 0 V = {fit['ku_off']:.16g} + ({fit['ku_on'] - fit['ku_off']:.16g}) * min(max(V(GUP), 0), 1)\n"
         st += f"BKDGATE KDGATE 0 V = {fit['kd_off']:.16g} + ({fit['kd_on'] - fit['kd_off']:.16g}) * min(max(V(GDN), 0), 1)\n"
     else:
         st += f"BKUGATE KUGATE 0 V = pwl(min(max(V(GUP), 0), 1), {ku_table})\n"
         st += f"BKDGATE KDGATE 0 V = pwl(min(max(V(GDN), 0), 1), {kd_table})\n"
     st += "BKOVERLAP KOVERLAP 0 V = max(V(Ku), 0) * max(V(Kd), 0)\n"
+
+    if use_gate_matched:
+        st += "\n* Vc-matched replay: the interrupted gate states pick the entry time.\n"
+        # HREVERSERAW and EDGEPULSE belong to other builders; referencing them
+        # here left undefined nodes and every case died with a singular matrix.
+        # H2STATEACTIVE already encodes "a device is mid-travel" in this builder,
+        # and HN2 is the differentiated input the edge pulse is made from.
+        st += "BGMEDGE GMEDGE 0 V = min(max(abs(V(HN2)), 0), 1)\n"
+        st += "BGMREV GMREV 0 V = (V(H2STATEACTIVE) > 0.5) ? 1.0 : 0.0\n"
+        # Latch each gate state on the reverse edge. edge_delay is far shorter
+        # than any gate tau, so the latched value is the pre-edge one.
+        st += "CGUSAMP GUSAMP 0 {gate_c} ic=0\n"
+        st += "RGUSAMP GUSAMP 0 1e15\n"
+        st += "BGUSAMPLE GUSAMP 0 I = -{gate_c} * V(GMEDGE) * (V(GUP) - V(GUSAMP)) / edge_delay\n"
+        st += "CGDSAMP GDSAMP 0 {gate_c} ic=1\n"
+        st += "BGDSAMPBASE GDSAMPBASE 0 V = 1.0\n"
+        st += "RGDSAMP GDSAMP GDSAMPBASE 1e15\n"
+        st += "BGDSAMPLE GDSAMP 0 I = -{gate_c} * V(GMEDGE) * (V(GDN) - V(GDSAMP)) / edge_delay\n"
+
+        # One inverse per direction of travel for each device. The trajectory is
+        # monotone, so each is single valued -- no policy needed to break ties.
+        for name, node, delay, tau, lo, hi in (
+            ("GMTU_ON", "GUSAMP", fit["pu_on_delay"], fit["pu_on_tau"], 0.0, 1.0),
+            ("GMTU_OFF", "GUSAMP", fit["pu_off_delay"], fit["pu_off_tau"], 1.0, 0.0),
+            ("GMTD_ON", "GDSAMP", fit["pd_on_delay"], fit["pd_on_tau"], 0.0, 1.0),
+            ("GMTD_OFF", "GDSAMP", fit["pd_off_delay"], fit["pd_off_tau"], 1.0, 0.0),
+        ):
+            values, times = gate_inverse_time_table(delay, tau, lo, hi)
+            table = convert_iv_table_to_str(values, times)
+            st += (f"B{name} {name} 0 V = pwl(min(max(V({node}), {values[0]:.6g}), "
+                   f"{values[-1]:.6g}), {table})\n")
+
+        # A falling reverse edge turns the pullup off and the pulldown on; a
+        # rising one does the opposite. Ku and Kd each get their own entry time,
+        # which is what pad matching cannot do -- it has only one pad voltage.
+        st += "BGMTU GMTU 0 V = (V(NINX) > 0.5) ? V(GMTU_ON) : V(GMTU_OFF)\n"
+        st += "BGMTD GMTD 0 V = (V(NINX) > 0.5) ? V(GMTD_OFF) : V(GMTD_ON)\n"
+        st += "BGMARGU GMARGU 0 V = V(GMTU) + V(HNX)\n"
+        st += "BGMARGD GMARGD 0 V = V(GMTD) + V(HNX)\n"
+        st += create_ngspice_k_lookup_source_from_arg("BGMKUR", "GMKUR", "GMARGU", kr[:, _TIME], kr[:, _KU])
+        st += create_ngspice_k_lookup_source_from_arg("BGMKUF", "GMKUF", "GMARGU", kf[:, _TIME], kf[:, _KU])
+        st += create_ngspice_k_lookup_source_from_arg("BGMKDR", "GMKDR", "GMARGD", kr[:, _TIME], kr[:, _KD])
+        st += create_ngspice_k_lookup_source_from_arg("BGMKDF", "GMKDF", "GMARGD", kf[:, _TIME], kf[:, _KD])
+        st += "BGMKU GMKU 0 V = (V(NINX) > 0.5) ? V(GMKUR) : V(GMKUF)\n"
+        st += "BGMKD GMKD 0 V = (V(NINX) > 0.5) ? V(GMKDR) : V(GMKDF)\n"
+        st += "B42 KUTARGET 0 V = (V(GMREV) > 0.5) ? V(GMKU) : V(KULEG)\n"
+        st += "B43 KDTARGET 0 V = (V(GMREV) > 0.5) ? V(GMKD) : V(KDLEG)\n\n"
+
     st += "BH2STATEACTIVE H2STATEACTIVE 0 V = "
     st += "((V(NINX) < 0.5 && V(GUP) > 0.05 && V(GUP) < 0.95) || "
     st += "(V(NINX) > 0.5 && V(GDN) > 0.05 && V(GDN) < 0.95)) ? 1.0 : 0.0\n\n"
 
-    if full_mode:
+    if use_gate_matched:
+        # Already emitted above, keyed off the inverted gate trajectories.
+        pass
+    elif full_mode:
         st += "B42 KUTARGET 0 V = V(KUGATE)\n"
         st += "B43 KDTARGET 0 V = V(KDGATE)\n"
     elif reversal_hybrid:
@@ -3259,7 +3465,9 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             st += "(V(HREVERSERAW) > 0.5 && V(HNX) < hybrid_recovery_ns) ? 1.0 : 0.0\n"
             st += "B42 KUTARGET 0 V = V(HHYBRIDACTIVE) * V(KUGATE) + (1.0 - V(HHYBRIDACTIVE)) * V(KULEG)\n"
             st += "B43 KDTARGET 0 V = V(HHYBRIDACTIVE) * V(KDGATE) + (1.0 - V(HHYBRIDACTIVE)) * V(KDLEG)\n"
-    else:
+    elif not use_gate_matched:
+        # Gate-matched replay writes its own KUTARGET/KDTARGET above, so the
+        # normal gate-versus-legacy blend must not also emit them.
         st += "B42 KUTARGET 0 V = V(H2STATEACTIVE) * V(KUGATE) + (1.0 - V(H2STATEACTIVE)) * V(KULEG)\n"
         st += "B43 KDTARGET 0 V = V(H2STATEACTIVE) * V(KDGATE) + (1.0 - V(H2STATEACTIVE)) * V(KDLEG)\n"
     if state_initialized_replay or aligned_replay:
@@ -3307,6 +3515,14 @@ def create_ngspice_value_matched_replay_input_control_netlist(kr, kf, ibis_data,
         policy = "kd_only"
         tr_start_expr = "V(TR_KD)"
         tf_start_expr = "V(TF_KD)"
+    elif mode.endswith("_time"):
+        # The simplest thing anyone would try: keep the clock. Whatever time we
+        # had reached along the current table, carry it straight over and read
+        # the opposite table at the same offset. No matching of any quantity --
+        # this is the baseline the value, pad and gate methods exist to beat.
+        policy = "time"
+        tr_start_expr = "V(TSAMP)"
+        tf_start_expr = "V(TSAMP)"
     else:
         policy = "balanced"
         tr_start_expr = "0.5 * (V(TR_KU) + V(TR_KD))"
@@ -3368,6 +3584,13 @@ def create_ngspice_value_matched_replay_input_control_netlist(kr, kf, ibis_data,
     st += "RKDSAMP KDSAMP KDSAMPBASE 1e15\n"
     st += "BKDSAMPLE KDSAMP 0 I = -{sample_c} * V(EDGEPULSE) * (V(Kd) - V(KDSAMP)) / match_tau\n\n"
 
+    # HNX resets to zero on the edge, but it is built from a line delayed by
+    # edge_delay, so for that brief window it still reads the pre-edge elapsed
+    # time. Sampling it on the same pulse that samples Ku and Kd therefore
+    # captures how far into the interrupted transition we had actually got.
+    st += "CTSAMP TSAMP 0 {sample_c} ic=0\n"
+    st += "RTSAMP TSAMP 0 1e15\n"
+    st += "BTSAMPLE TSAMP 0 I = -{sample_c} * V(EDGEPULSE) * (V(HNX) - V(TSAMP)) / match_tau\n"
     st += create_inverse_time_lookup_source("B30", "TR_KU", "KUSAMP", kr[:, _TIME], kr[:, _KU])
     st += create_inverse_time_lookup_source("B31", "TR_KD", "KDSAMP", kr[:, _TIME], kr[:, _KD])
     st += create_inverse_time_lookup_source("B32", "TF_KU", "KUSAMP", kf[:, _TIME], kf[:, _KU])
@@ -3450,6 +3673,14 @@ def create_ngspice_value_matched_replay_v2_input_control_netlist(kr, kf, ibis_da
         tf_start_expr = "0.5 * (V(TF_KU) + V(TF_KD))"
         ku_start_expr = "(V(NINX) > 0.5) ? V(TR_KU) : V(TF_KU)"
         kd_start_expr = "(V(NINX) > 0.5) ? V(TR_KD) : V(TF_KD)"
+    elif mode.endswith("_time"):
+        # The simplest thing anyone would try: keep the clock. Whatever time we
+        # had reached along the current table, carry it straight over and read
+        # the opposite table at the same offset. No matching of any quantity --
+        # this is the baseline the value, pad and gate methods exist to beat.
+        policy = "time"
+        tr_start_expr = "V(TSAMP)"
+        tf_start_expr = "V(TSAMP)"
     else:
         policy = "balanced"
         tr_start_expr = "0.5 * (V(TR_KU) + V(TR_KD))"
