@@ -52,6 +52,8 @@ METHODS = (
      "invert the opposite gate trajectory at the reversal; Ku and Kd get their own entry time"),
     ("measured_rate", "InputDrivenMeasuredRateGateFull",
      "all the edge shape in a measured rate law, identity map, no residual"),
+    ("gate_match_shared", "InputDrivenGateMatchedReplaySharedFull",
+     "Vc-matching, but Ku and Kd forced to one shared entry time"),
     ("value_match_full", "InputDrivenValueMatchedReplayFull",
      "same builder as time_match, but enter where the opposite table holds the present Ku/Kd"),
     ("coeff_match", "InputDrivenValueMatchedReplayV2Hybrid",

@@ -140,6 +140,7 @@ def normalize_subcircuit_type(subcircuit_type):
         "Input-Driven-Two-State-Gate-Level-Command-Full": "InputDrivenTwoStateGateLevelCommandFull",
         "NgSpiceInputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
         "InputDrivenGateMatchedReplayFull": "InputDrivenGateMatchedReplayFull",
+        "InputDrivenGateMatchedReplaySharedFull": "InputDrivenGateMatchedReplaySharedFull",
         "InputDrivenMeasuredRateGateFull": "InputDrivenMeasuredRateGateFull",
         "Input-Driven-Measured-Rate-Gate-Full": "InputDrivenMeasuredRateGateFull",
         "Input-Driven-Gate-Matched-Replay-Full": "InputDrivenGateMatchedReplayFull",
@@ -369,6 +370,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenTwoStateGateDirectionalDualResidualHybrid",
         "InputDrivenTwoStateGateLevelCommandFull",
         "InputDrivenGateMatchedReplayFull",
+        "InputDrivenGateMatchedReplaySharedFull",
         "InputDrivenMeasuredRateGateFull",
         "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGatePredriverCommandFull",
@@ -390,6 +392,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenTwoStateGateDirectionalDualResidualHybrid": "directional_dual_residual_hybrid",
                 "InputDrivenTwoStateGateLevelCommandFull": "directional_dual_residual_level_cmd_full",
                 "InputDrivenGateMatchedReplayFull": "directional_dual_residual_gate_matched_full",
+                "InputDrivenGateMatchedReplaySharedFull": "directional_dual_residual_gate_matched_shared_full",
                 "InputDrivenMeasuredRateGateFull": "measured_rate_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
@@ -2876,7 +2879,12 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     use_level_command = mode == "directional_dual_residual_level_cmd_full"
     # Replay the opposite tables from an entry time found by inverting the
     # opposite gate trajectory at whatever Vc the interrupted state had reached.
-    use_gate_matched = mode == "directional_dual_residual_gate_matched_full"
+    use_gate_matched = mode in ("directional_dual_residual_gate_matched_full",
+                                "directional_dual_residual_gate_matched_shared_full")
+    # Ku and Kd were solved as a pair from one recorded edge, so reading them
+    # at different offsets yields a combination the buffer never held. This
+    # variant forces one shared entry time to test whether that matters.
+    gate_matched_shared = mode == "directional_dual_residual_gate_matched_shared_full"
     # All the edge shape in the rate law, none in the map: the other end of
     # the RC/map redundancy, and the one that reproduces the recorded edge.
     use_measured_rate = mode == "measured_rate_full"
@@ -3133,8 +3141,15 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             # per-second rate the capacitor integrates. Without it the gate
             # moves a billion times too slowly and never leaves its rail --
             # the model emitted a flat line and scored 629 mV.
+            # The magnitude comes from the measured law, but it has to vanish at
+            # the target or the node has no DC equilibrium: the RC's (target-G)
+            # is self-balancing, a floored rate is not, and ngspice failed gmin,
+            # source and transient operating points on every case. Tapering over
+            # the last 1% of travel restores a fixed point while leaving the
+            # measured shape intact over the other 99%.
             st += (f"B{node} {node} 0 I = -{{gate_c}} * ((V({target}) > V({node})) ? "
-                   f"V({node}RATEON) : -V({node}RATEOFF)) / 1n\n")
+                   f"V({node}RATEON) : -V({node}RATEOFF)) "
+                   f"* min(1.0, abs(V({target}) - V({node})) / 0.01) / 1n\n")
     else:
         st += (
             f"BGUP GUP 0 I = -{{gate_c}} * (V(GUPTARGET) - V(GUP)) / "
@@ -3250,8 +3265,11 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         # which is what pad matching cannot do -- it has only one pad voltage.
         st += "BGMTU GMTU 0 V = (V(NINX) > 0.5) ? V(GMTU_ON) : V(GMTU_OFF)\n"
         st += "BGMTD GMTD 0 V = (V(NINX) > 0.5) ? V(GMTD_OFF) : V(GMTD_ON)\n"
-        st += "BGMARGU GMARGU 0 V = V(GMTU) + V(HNX)\n"
-        st += "BGMARGD GMARGD 0 V = V(GMTD) + V(HNX)\n"
+        shared = "0.5 * (V(GMTU) + V(GMTD))"
+        entry_u = shared if gate_matched_shared else "V(GMTU)"
+        entry_d = shared if gate_matched_shared else "V(GMTD)"
+        st += f"BGMARGU GMARGU 0 V = {entry_u} + V(HNX)\n"
+        st += f"BGMARGD GMARGD 0 V = {entry_d} + V(HNX)\n"
         st += create_ngspice_k_lookup_source_from_arg("BGMKUR", "GMKUR", "GMARGU", kr[:, _TIME], kr[:, _KU])
         st += create_ngspice_k_lookup_source_from_arg("BGMKUF", "GMKUF", "GMARGU", kf[:, _TIME], kf[:, _KU])
         st += create_ngspice_k_lookup_source_from_arg("BGMKDR", "GMKDR", "GMARGD", kr[:, _TIME], kr[:, _KD])
