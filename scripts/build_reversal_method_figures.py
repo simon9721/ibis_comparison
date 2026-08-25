@@ -157,10 +157,16 @@ COMPARISONS = [
 # the one rule that reads the hidden state rather than a coefficient or a clock,
 # so it is the closest thing to gate-state that is still a replay method, and
 # worth seeing next to it rather than buried in the six-trace summary.
+GATE_ONLY = [(GATE_METHOD, "gate-state", GATE)]
+
 VC_METHODS = [
-    ("gate_match", "Vc-matching", "#D97706"),
+    ("gate_match_hybrid", "Vc-matching", "#D97706"),
     (GATE_METHOD, "gate-state", GATE),
 ]
+# The gated build does not converge on 1634 ps, the case the rest of the deck
+# uses, so this figure sits at 1792 ps -- the nearest width both it and the
+# ungated build solve, which keeps the two comparable.
+VC_CASE = ("io_buf", "short_high", 1792.0, (4.6, 8.8))
 
 # One figure with everything on it, in the order the deck introduces them.
 ALL_METHODS = [
@@ -343,13 +349,23 @@ def main() -> int:
             print(f"\n  all methods, {case_name} ({device} {width_ps:.0f} ps)")
             for name, value in peaks.items():
                 print(f"     peak pad  {name:22s} {value:.3f} V")
-        vc = summary_figures(out, f"15_vc_matching_{case_name}", stem,
-                             f"{device}  |  {width_ps:.0f} ps pulse  |  Vc-matching",
-                             t_rev, window, methods=VC_METHODS)
-        if vc:
-            print(f"\n  Vc-matching, {case_name} ({device} {width_ps:.0f} ps)")
-            for name, value in vc.items():
+        gs = summary_figures(out, f"16_gate_state_only_{case_name}", stem,
+                             f"{device}  |  {width_ps:.0f} ps pulse  |  gate-state",
+                             t_rev, window, methods=GATE_ONLY)
+        if gs:
+            print(f"\n  gate-state only, {case_name} ({device} {width_ps:.0f} ps)")
+            for name, value in gs.items():
                 print(f"     peak pad  {name:22s} {value:.3f} V")
+    vc_device, vc_direction, vc_width, vc_window = VC_CASE
+    vc = summary_figures(
+        out, "15_vc_matching",
+        f"{vc_device}_{vc_direction}_w{int(round(vc_width))}ps.csv",
+        f"{vc_device}  |  {vc_width:.0f} ps pulse  |  Vc-matching",
+        EDGE_NS[vc_direction] + vc_width / 1000.0, vc_window, methods=VC_METHODS)
+    if vc:
+        print(f"\n  Vc-matching ({vc_device} {vc_width:.0f} ps)")
+        for name, value in vc.items():
+            print(f"     peak pad  {name:22s} {value:.3f} V")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
 
