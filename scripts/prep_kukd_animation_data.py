@@ -4,6 +4,11 @@
 The animation should show the actual solve, not a sketch of it, so this pulls
 the two fixture waveforms that were already simulated, runs the same 2x2 solve
 the study uses, and records one representative instant in full detail.
+
+Every number the animation shows has to be traceable on screen, so the dump
+carries more than the solve itself: the pullup and pulldown I-V curves the two
+multipliers are read off, and the term-by-term breakdown of each right-hand
+side. Otherwise a viewer sees four decimals appear with no origin.
 """
 from __future__ import annotations
 
@@ -31,6 +36,22 @@ def pad_of(run_dir):
     t = np.asarray(raw["time"], dtype=float)
     pad = np.asarray(raw[next(k for k in raw if "pad_sp" in k)], dtype=float)
     return t, pad
+
+
+def iv_curves(ibis, vcc, n=240):
+    """The pullup and pulldown tables as the solve sees them, versus pad voltage.
+
+    Same call the per-timestep lookup makes, just swept over the rail instead of
+    over a waveform, so the curve drawn is the curve read from.
+    """
+    v = np.linspace(0.0, vcc, n)
+    pullup_ref = pybis2spice.get_reference(ibis.pullup_ref, ibis.v_range, CORNER)
+    pulldown_ref = pybis2spice.get_reference(ibis.pulldown_ref, 0, CORNER)
+    pu = pybis2spice.get_current_data_from_iv_data(
+        v, ibis.iv_pullup, pullup_ref, CORNER, iv_data_adjust=ibis.iv_pwr_clamp)
+    pd = pybis2spice.get_current_data_from_iv_data(
+        v, ibis.iv_pulldown, pulldown_ref, CORNER, iv_data_adjust=ibis.iv_gnd_clamp)
+    return v, pu, pd
 
 
 def main():
@@ -72,25 +93,44 @@ def main():
         step = max(1, len(arr) // n)
         return [float(x) for x in arr[::step]]
 
+    v_iv, pu_iv, pd_iv = iv_curves(ibis, device.supply_v)
+
     snap = {
         "t_ns": float(t_ns[idx]),
         "v_lo": float(np.interp(time[idx], t_lo, pad_lo)),
         "v_hi": float(np.interp(time[idx], t_hi, pad_hi)),
         "pu_lo": float(pu1[idx]), "pd_lo": float(pd1[idx]), "rhs_lo": float(i1[idx]),
         "pu_hi": float(pu2[idx]), "pd_hi": float(pd2[idx]), "rhs_hi": float(i2[idx]),
+        # The right-hand side is not measured directly -- it is everything in the
+        # pad current that is already known, so the animation has to be able to
+        # show it being assembled term by term.
+        "terms_lo": {"rfix": float(rf1[idx]), "pwr_clamp": float(pc1[idx]),
+                     "gnd_clamp": float(gc1[idx]), "c_comp": float(cc1[idx]),
+                     "c_fixture": float(cf1[idx])},
+        "terms_hi": {"rfix": float(rf2[idx]), "pwr_clamp": float(pc2[idx]),
+                     "gnd_clamp": float(gc2[idx]), "c_comp": float(cc2[idx]),
+                     "c_fixture": float(cf2[idx])},
         "ku": float(ku[idx]), "kd": float(kd[idx]),
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "device": "inv_chain", "vcc": device.supply_v, "r_fixture": R_FIXTURE,
+        "c_comp": float(ibis.c_comp[CORNER - 1]),
         "t": dec(t_ns), "pad_lo": dec(np.interp(time, t_lo, pad_lo)),
         "pad_hi": dec(np.interp(time, t_hi, pad_hi)),
-        "ku": dec(ku), "kd": dec(kd), "snapshot": snap,
+        "ku": dec(ku), "kd": dec(kd),
+        "iv": {"v": [float(x) for x in v_iv],
+               "pu": [float(x) for x in pu_iv],
+               "pd": [float(x) for x in pd_iv]},
+        "snapshot": snap,
     }, indent=1), encoding="utf-8")
     print("wrote", OUT.relative_to(ROOT))
     print("snapshot at t = %.4f ns" % snap["t_ns"])
     for k, v in snap.items():
-        print("   %-8s %s" % (k, ("%.6g" % v)))
+        if isinstance(v, dict):
+            print("   %-8s %s" % (k, " ".join("%s=%.6g" % kv for kv in v.items())))
+        else:
+            print("   %-8s %s" % (k, ("%.6g" % v)))
 
 
 if __name__ == "__main__":
