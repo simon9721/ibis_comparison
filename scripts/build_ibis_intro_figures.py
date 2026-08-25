@@ -69,16 +69,13 @@ def load(path: Path) -> dict[str, np.ndarray]:
     return {name: values[:, i] for i, name in enumerate(header)}
 
 
-def style(axis, title=None, subtitle=None):
+def style(axis, title=None):
     axis.grid(alpha=0.3, color="#C9D3DE", lw=0.8)
     axis.tick_params(labelsize=12)
     for spine in axis.spines.values():
         spine.set_color("#3A4753")
     if title:
-        axis.set_title(title, fontsize=18, fontweight="bold", pad=34 if subtitle else 12)
-    if subtitle:
-        axis.text(0.5, 1.015, subtitle, transform=axis.transAxes, ha="center",
-                  va="bottom", fontsize=12.5, color="#57646F")
+        axis.set_title(title, fontsize=18, fontweight="bold", pad=12)
 
 
 def worst_gap(t, a, b, window, exclude=(), guard=0.15):
@@ -100,7 +97,7 @@ def worst_gap(t, a, b, window, exclude=(), guard=0.15):
     return float(np.max(np.abs(a[m] - b[m]))) if m.any() else float("nan")
 
 
-def pad_figure(path, d, window, title, subtitle=None, t_rev=None):
+def pad_figure(path, d, window, title, t_rev=None):
     t = d["time_ns"]
     fig, axis = plt.subplots(figsize=WIDE)
     axis.plot(t, d["hspice_pad"], color=NATIVE, lw=4.2,
@@ -113,14 +110,14 @@ def pad_figure(path, d, window, title, subtitle=None, t_rev=None):
     axis.set_xlim(*window)
     axis.set_xlabel("Time (ns)", fontsize=13)
     axis.set_ylabel("Pad voltage (V)", fontsize=13)
-    style(axis, title, subtitle)
+    style(axis, title)
     axis.legend(fontsize=12.5, loc="best", framealpha=0.92)
     fig.tight_layout()
     fig.savefig(path, dpi=DPI)
     plt.close(fig)
 
 
-def kukd_figure(path, d, window, title, subtitle=None, t_rev=None, notes=None):
+def kukd_figure(path, d, window, title, t_rev=None, notes=None):
     t = d["time_ns"]
     fig, axes = plt.subplots(2, 1, figsize=STACK, sharex=True)
     for axis, coeff in zip(axes, ("ku", "kd")):
@@ -134,11 +131,7 @@ def kukd_figure(path, d, window, title, subtitle=None, t_rev=None, notes=None):
         axis.set_ylabel(coeff.replace("k", "K"), fontsize=15)
         axis.set_ylim(-0.25, 1.3)
         style(axis)
-    axes[0].set_title(title, fontsize=18, fontweight="bold",
-                      pad=34 if subtitle else 12)
-    if subtitle:
-        axes[0].text(0.5, 1.015, subtitle, transform=axes[0].transAxes, ha="center",
-                     va="bottom", fontsize=12.5, color="#57646F")
+    axes[0].set_title(title, fontsize=18, fontweight="bold", pad=12)
     axes[0].legend(fontsize=12.5, loc="center right", framealpha=0.92)
     axes[1].set_xlabel("Time (ns)", fontsize=13)
     axes[0].set_xlim(*window)
@@ -178,21 +171,16 @@ def main() -> int:
     gap_ku = worst_gap(full["time_ns"], full["hspice_ku"], full["pybis_ku"], full_win, edges)
     gap_kd = worst_gap(full["time_ns"], full["hspice_kd"], full["pybis_kd"], full_win, edges)
 
+    full_label = f"{args.device}  |  full transition"
+    short_label = f"{args.device}  |  {short_w:.0f} ps pulse"
     pad_figure(out / "1_full_swing_pad.png", full, full_win,
-               "A full transition: our model reproduces the IBIS reference",
-               f"worst separation {gap_pad * 1000:.0f} mV")
+               f"{full_label}  |  pad voltage")
     kukd_figure(out / "2_full_swing_kukd.png", full, full_win,
-                "The same agreement, in the coefficients themselves",
-                f"worst separation  Ku {gap_ku:.2f}   Kd {gap_kd:.2f}"
-                "   (away from the switching instants)")
+                f"{full_label}  |  Ku and Kd")
     pad_figure(out / "3_short_pulse_pad.png", short, short_win,
-               "Interrupt the transition and the agreement goes",
-               f"pulse reversed after {short_w:.0f} ps", t_rev=t_rev)
+               f"{short_label}  |  pad voltage", t_rev=t_rev)
     kukd_figure(out / "4_short_pulse_kukd.png", short, short_win,
-                "Why: the reverse edge resets the model's clock to zero",
-                "the falling table starts at Ku = 1, so Ku is driven there - "
-                "it was only 0.30",
-                t_rev=t_rev)
+                f"{short_label}  |  Ku and Kd", t_rev=t_rev)
 
     print(f"{args.device}: full swing w{full_w:.0f}ps, short pulse w{short_w:.0f}ps")
     print(f"  full-swing worst separation: pad {gap_pad * 1000:.1f} mV, "

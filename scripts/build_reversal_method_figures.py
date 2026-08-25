@@ -135,10 +135,11 @@ def main() -> int:
             print(f"  {key}: no converged run at this case")
             continue
         d = load(path)
+        case = f"{DEVICE}  |  {WIDTH_PS:.0f} ps pulse  |  {label}"
         pad_figure(out / f"{index}_{key}_pad.png", d, colour, label,
-                   f"{label}: pad voltage", t_rev)
+                   f"{case}  |  pad voltage", t_rev)
         kukd_figure(out / f"{index}_{key}_kukd.png", d, colour, label,
-                    f"{label}: Ku and Kd", t_rev)
+                    f"{case}  |  Ku and Kd", t_rev)
 
         t = d["time_ns"]
         w = (t >= EDGE_NS) & (t <= t_rev + 2.0)
