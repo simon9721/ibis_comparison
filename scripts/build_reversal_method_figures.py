@@ -64,14 +64,14 @@ METHODS = [
      "the same rule with the replay path forced on from t=0"),
 ]
 
-# A method is only as good as the case it is shown on. io_buf short_high at
-# 1634 ps is coeff_match's *best* of the thirty (33 mV); its worst is io_buf
-# short_low at 180 ps (283 mV), where it drives the pad to the opposite rail
-# while the transistor only dips halfway. Both are built, and the filenames say
-# which is which.
+# A method is only as good as the case it is shown on. Restricted to short-high,
+# io_buf at 1634 ps is the easiest case for both rules (33 and 41 mV) and ex2 at
+# 975 ps is the hardest for both (205 and 206 mV). io_buf has no hard short-high
+# case -- its worst is 71 mV -- so the bad case has to change buffer, which the
+# titles say. Both are built and the filenames say which is which.
 CASES = {
     "best": ("io_buf", "short_high", 1634.0, (4.6, 8.6)),
-    "worst": ("io_buf", "short_low", 180.4, (9.6, 13.6)),
+    "worst": ("ex2", "short_high", 974.7, (4.8, 9.2)),
 }
 EDGE_NS = {"short_high": 5.0, "short_low": 10.0}
 DPI = 180
