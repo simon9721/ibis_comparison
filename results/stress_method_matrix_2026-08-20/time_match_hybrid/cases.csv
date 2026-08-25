@@ -4,3 +4,8 @@ io_buf,short_high,nan,2225.9,NGSPICE_FAIL
 io_buf,short_high,nan,1988.8,OK
 io_buf,short_high,nan,1791.5,OK
 io_buf,short_high,nan,1634.2,OK
+io_buf,short_low,nan,324.6,OK
+io_buf,short_low,nan,281.1,OK
+io_buf,short_low,nan,241.6,OK
+io_buf,short_low,nan,209.1,OK
+io_buf,short_low,nan,180.4,OK
