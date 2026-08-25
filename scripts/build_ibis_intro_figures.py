@@ -52,11 +52,11 @@ STACK = (14.2, 8.4)
 
 # device -> (full-swing width ps, short-pulse width ps, full window, short window)
 CASES = {
-    # Short pulse is the 50% target, the earliest reversal in the stress set:
-    # the reference peaks at 0.45 V there and the legacy model at 1.09 V, so the
-    # failure is a doubled pulse rather than a modest overshoot. Later reversals
-    # show the same defect shrinking smoothly to +219 mV at 90%.
-    "io_buf": (10000.0, 1505.0, (4.0, 18.0), (4.9, 7.6)),
+    # Short pulse is the 50% target on io_buf's re-derived widths -- the same
+    # case the reversal-method figures use, so one case carries the whole deck.
+    # The reference peaks at 0.60 V there and the legacy model at 1.16 V. Later
+    # reversals show the same defect shrinking smoothly to +219 mV at 90%.
+    "io_buf": (10000.0, 1634.0, (4.0, 18.0), (4.9, 8.6)),
     "inv_chain": (3000.0, 135.0, (4.9, 8.9), (5.05, 5.75)),
     "ex2": (6000.0, 975.0, (4.6, 12.0), (4.8, 7.6)),
 }
