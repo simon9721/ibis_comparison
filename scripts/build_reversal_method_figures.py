@@ -49,14 +49,18 @@ NATIVE = "#000000"
 # the first edge, and v1 hybrid still mixes a stale elapsed-time coordinate into
 # the replay argument at the reversal. So the plain name belongs to v2, and the
 # broken builds are named for what is wrong with them.
+# The two working rules keep slide numbers, continuing the intro set. The broken
+# builds keep an "x_" prefix instead: they belong in an appendix showing the
+# defect, not in the numbered flow, and a number would imply otherwise.
 METHODS = [
-    ("time_match_hybrid", "t-matching", "#C02626",
+    ("5", "time_match_hybrid", "t_matching", "t-matching", "#C02626",
      "at the reversal, enter the opposite table at the same elapsed time"),
-    ("coeff_match", "Ku/Kd value matching", "#7B2CBF",
+    ("6", "coeff_match", "value_matching", "Ku/Kd value matching", "#7B2CBF",
      "enter the opposite table where it already holds the present Ku and Kd"),
-    ("time_match", "t-matching (ungated build)", "#C02626",
+    ("x", "time_match", "t_matching_ungated", "t-matching (ungated build)", "#C02626",
      "the same rule with the replay path forced on from t=0"),
-    ("value_match_full", "Ku/Kd value matching (ungated build)", "#D97706",
+    ("x", "value_match_full", "value_matching_ungated",
+     "Ku/Kd value matching (ungated build)", "#D97706",
      "the same rule with the replay path forced on from t=0"),
 ]
 
@@ -145,14 +149,14 @@ def main() -> int:
         stem = f"{device}_{direction}_w{int(round(width_ps))}ps.csv"
         print(f"\n=== {case_name}: {device} {direction} {width_ps:.0f} ps")
 
-        for index, (key, label, colour, rule) in enumerate(METHODS, start=5):
+        for index, key, slug, label, colour, rule in METHODS:
             path = MATRIX / key / "waveforms" / stem
             if not path.exists():
-                print(f"  {key}: no converged run at this case")
+                print(f"  {label}: no converged run at this case")
                 continue
             d = load(path)
             title = f"{device}  |  {width_ps:.0f} ps pulse  |  {label}"
-            stub = f"{index}_{key}_{case_name}"
+            stub = f"{index}_{slug}_{case_name}"
             pad_figure(out / f"{stub}_pad.png", d, colour, label,
                        f"{title}  |  pad voltage", t_rev, window)
             kukd_figure(out / f"{stub}_kukd.png", d, colour, label,
