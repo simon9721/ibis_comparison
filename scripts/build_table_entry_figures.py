@@ -274,9 +274,9 @@ def main() -> int:
           f"{first_crossing(tf, kf[:, 1], 0.03):.3f} ns")
     print(f"  rising Ku reaches only {float(np.interp(ELAPSED_NS, kr[:, 0] * 1e9, kr[:, 1])):.3f}"
           f" in that time")
-    print("\n  |dKu| + |dKd| demanded at the reversal:")
-    for label, value in sorted(steps.items(), key=lambda kv: -kv[1]):
-        print(f"     {label:24s} {value:.3f}")
+    print("\n  Ku after the reversal: time to give up 90% of the drop")
+    for label, value in sorted(steps.items(), key=lambda kv: kv[1]):
+        print(f"     {label:24s} {value:6.1f} ps")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
 
