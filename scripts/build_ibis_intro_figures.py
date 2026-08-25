@@ -45,6 +45,9 @@ OUT = ROOT / "results" / "ibis_intro_figures_2026-08-25" / "figures"
 # pad-matched, grey transistor): these slides run before any method is named.
 NATIVE = "#000000"
 NGSPICE = "#1F6FB2"
+# Same grey the flat set uses for the transistor, so the trace means the same
+# thing here as it does on the later method slides.
+TRANSISTOR = "#808080"
 
 DPI = 180
 WIDE = (14.2, 6.0)
@@ -97,9 +100,12 @@ def worst_gap(t, a, b, window, exclude=(), guard=0.15):
     return float(np.max(np.abs(a[m] - b[m]))) if m.any() else float("nan")
 
 
-def pad_figure(path, d, window, title, t_rev=None):
+def pad_figure(path, d, window, title, t_rev=None, transistor=False):
     t = d["time_ns"]
     fig, axis = plt.subplots(figsize=WIDE)
+    if transistor:
+        axis.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=5.4,
+                  label="HSPICE  (transistor)", zorder=2)
     axis.plot(t, d["hspice_pad"], color=NATIVE, lw=4.2,
               label="HSPICE  (native IBIS model)", zorder=3)
     axis.plot(t, d["pybis_pad"], color=NGSPICE, lw=2.4, ls=(0, (5, 2.4)),
@@ -179,6 +185,8 @@ def main() -> int:
                 f"{full_label}  |  Ku and Kd")
     pad_figure(out / "3_short_pulse_pad.png", short, short_win,
                f"{short_label}  |  pad voltage", t_rev=t_rev)
+    pad_figure(out / "3b_short_pulse_pad_with_transistor.png", short, short_win,
+               f"{short_label}  |  pad voltage", t_rev=t_rev, transistor=True)
     kukd_figure(out / "4_short_pulse_kukd.png", short, short_win,
                 f"{short_label}  |  Ku and Kd", t_rev=t_rev)
 
