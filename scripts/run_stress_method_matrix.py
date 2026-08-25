@@ -58,6 +58,8 @@ METHODS = (
      "all the edge shape in a measured rate law, identity map, no residual"),
     ("gate_match_shared", "InputDrivenGateMatchedReplaySharedFull",
      "Vc-matching, but Ku and Kd forced to one shared entry time"),
+    ("gate_match_hybrid", "InputDrivenGateMatchedReplayHybrid",
+     "Vc-matching gated to the reversal, so the normal edge stays on the legacy path"),
     ("value_match_full", "InputDrivenValueMatchedReplayFull",
      "same builder as time_match, but enter where the opposite table holds the present Ku/Kd"),
     ("coeff_match", "InputDrivenValueMatchedReplayV2Hybrid",

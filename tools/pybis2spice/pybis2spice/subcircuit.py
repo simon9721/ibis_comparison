@@ -144,6 +144,9 @@ def normalize_subcircuit_type(subcircuit_type):
         "NgSpiceInputDrivenTwoStateGateLevelCommandFull": "InputDrivenTwoStateGateLevelCommandFull",
         "InputDrivenGateMatchedReplayFull": "InputDrivenGateMatchedReplayFull",
         "InputDrivenGateMatchedReplaySharedFull": "InputDrivenGateMatchedReplaySharedFull",
+        "InputDrivenGateMatchedReplayHybrid": "InputDrivenGateMatchedReplayHybrid",
+        "Input-Driven-Gate-Matched-Replay-Hybrid": "InputDrivenGateMatchedReplayHybrid",
+        "NgSpiceInputDrivenGateMatchedReplayHybrid": "InputDrivenGateMatchedReplayHybrid",
         "InputDrivenMeasuredRateGateFull": "InputDrivenMeasuredRateGateFull",
         "Input-Driven-Measured-Rate-Gate-Full": "InputDrivenMeasuredRateGateFull",
         "Input-Driven-Gate-Matched-Replay-Full": "InputDrivenGateMatchedReplayFull",
@@ -382,6 +385,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenTwoStateGateLevelCommandFull",
         "InputDrivenGateMatchedReplayFull",
         "InputDrivenGateMatchedReplaySharedFull",
+        "InputDrivenGateMatchedReplayHybrid",
         "InputDrivenMeasuredRateGateFull",
         "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGatePredriverCommandFull",
@@ -404,6 +408,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenTwoStateGateLevelCommandFull": "directional_dual_residual_level_cmd_full",
                 "InputDrivenGateMatchedReplayFull": "directional_dual_residual_gate_matched_full",
                 "InputDrivenGateMatchedReplaySharedFull": "directional_dual_residual_gate_matched_shared_full",
+                "InputDrivenGateMatchedReplayHybrid": "directional_dual_residual_gate_matched_hybrid",
                 "InputDrivenMeasuredRateGateFull": "measured_rate_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
@@ -2871,6 +2876,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_residual_recover_fast_full",
         "directional_dual_residual_level_cmd_full",
         "directional_dual_residual_gate_matched_full",
+        "directional_dual_residual_gate_matched_hybrid",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2880,6 +2886,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_hybrid",
         "directional_dual_residual_level_cmd_full",
         "directional_dual_residual_gate_matched_full",
+        "directional_dual_residual_gate_matched_hybrid",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2891,7 +2898,15 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # Replay the opposite tables from an entry time found by inverting the
     # opposite gate trajectory at whatever Vc the interrupted state had reached.
     use_gate_matched = mode in ("directional_dual_residual_gate_matched_full",
-                                "directional_dual_residual_gate_matched_shared_full")
+                                "directional_dual_residual_gate_matched_shared_full",
+                                "directional_dual_residual_gate_matched_hybrid")
+    # The original build gates the replay on H2STATEACTIVE, which only says "a
+    # device is mid-travel" and so is true on an ordinary edge as well as on a
+    # reversal. Vc-matching was therefore replacing the normal transition too,
+    # and left the rail 700 ps early on io_buf. This variant latches the gate on
+    # an edge arriving while the opposite state is still in flight, which is what
+    # a reversal actually is.
+    gate_matched_reversal_only = mode == "directional_dual_residual_gate_matched_hybrid"
     # Ku and Kd were solved as a pair from one recorded edge, so reading them
     # at different offsets yields a combination the buffer never held. This
     # variant forces one shared entry time to test whether that matters.
@@ -3247,7 +3262,19 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         # H2STATEACTIVE already encodes "a device is mid-travel" in this builder,
         # and HN2 is the differentiated input the edge pulse is made from.
         st += "BGMEDGE GMEDGE 0 V = min(max(abs(V(HN2)), 0), 1)\n"
-        st += "BGMREV GMREV 0 V = (V(H2STATEACTIVE) > 0.5) ? 1.0 : 0.0\n"
+        if gate_matched_reversal_only:
+            # Sampled on the edge pulse: the input has already flipped there but
+            # the gate states have not moved, so H2STATEACTIVE still reports the
+            # state the edge interrupted. Held between edges so the replay stays
+            # selected for the whole recovery, re-evaluated at the next edge.
+            st += "BGMREVCMD GMREVCMD 0 V = (V(GMEDGE) > 0.5) ? "
+            st += "((V(H2STATEACTIVE) > 0.5) ? 1.0 : 0.0) : V(GMREVL)\n"
+            st += "CGMREVL GMREVL 0 {gate_c} ic=0\n"
+            st += "RGMREVL GMREVL 0 1e15\n"
+            st += "BGMREVL GMREVL 0 I = -{gate_c} * (V(GMREVCMD) - V(GMREVL)) / edge_delay\n"
+            st += "BGMREV GMREV 0 V = (V(GMREVL) > 0.5) ? 1.0 : 0.0\n"
+        else:
+            st += "BGMREV GMREV 0 V = (V(H2STATEACTIVE) > 0.5) ? 1.0 : 0.0\n"
         # Latch each gate state on the reverse edge. edge_delay is far shorter
         # than any gate tau, so the latched value is the pre-edge one.
         st += "CGUSAMP GUSAMP 0 {gate_c} ic=0\n"
