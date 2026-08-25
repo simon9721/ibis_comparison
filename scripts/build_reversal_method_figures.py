@@ -135,7 +135,11 @@ def kukd_figure(path, d, colour, label, title, t_rev, window):
     plt.close(fig)
 
 
-GATE = "#1F6FB2"
+# Gate-state is green, not blue: blue already means "legacy ngspice" in the
+# intro figures, and reusing it here would silently remap a colour the audience
+# has already learned. Legacy keeps the intro's blue in the summary figure.
+GATE = "#1B6B4F"
+LEGACY = "#1F6FB2"
 # The shipped gate-state build is the hybrid one -- gate-state everywhere, handing
 # off to matched replay in a window around the reversal. The deck has called it
 # gate-state throughout and these figures keep that name.
@@ -147,6 +151,73 @@ COMPARISONS = [
     ("12", "time_match_hybrid", "t_matching", "t-matching", "#C02626", ""),
     ("13", "coeff_match", "value_matching", "Ku/Kd value matching", "#7B2CBF", ""),
 ]
+
+
+# One figure with everything on it, in the order the deck introduces them.
+ALL_METHODS = [
+    ("legacy", "legacy (ngspice)", LEGACY),
+    ("time_match_hybrid", "t-matching", "#C02626"),
+    ("coeff_match", "Ku/Kd value matching", "#7B2CBF"),
+    (GATE_METHOD, "gate-state", GATE),
+]
+
+
+def summary_figures(out, stub, stem, title, t_rev, window):
+    """Every method on one pair of axes, against both references."""
+    available = [(k, lab, c) for k, lab, c in ALL_METHODS
+                 if (MATRIX / k / "waveforms" / stem).exists()]
+    if not available:
+        return {}
+    base = load(MATRIX / available[0][0] / "waveforms" / stem)
+    t = base["time_ns"]
+    w = (t >= window[0]) & (t <= window[1])
+    peaks = {"HSPICE transistor": float(base["silicon_pad"][w].max()),
+             "HSPICE native IBIS": float(base["hspice_pad"][w].max())}
+
+    fig, axis = plt.subplots(figsize=WIDE)
+    axis.plot(t, base["silicon_pad"], color=TRANSISTOR, lw=5.4,
+              label="HSPICE transistor", zorder=2)
+    axis.plot(t, base["hspice_pad"], color=NATIVE, lw=3.0,
+              label="HSPICE native IBIS", zorder=3)
+    for key, label, colour in available:
+        d = load(MATRIX / key / "waveforms" / stem)
+        axis.plot(d["time_ns"], d["pybis_pad"], color=colour, lw=2.2,
+                  label=label, zorder=4)
+        m = (d["time_ns"] >= window[0]) & (d["time_ns"] <= window[1])
+        peaks[label] = float(d["pybis_pad"][m].max())
+    axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1, label="reverse edge")
+    axis.set_xlim(*window)
+    axis.set_xlabel("Time (ns)", fontsize=13)
+    axis.set_ylabel("Pad voltage (V)", fontsize=13)
+    style(axis, f"{title}  |  pad voltage")
+    axis.legend(fontsize=12, loc="best", framealpha=0.92, ncol=2)
+    fig.tight_layout()
+    fig.savefig(out / f"{stub}_pad.png", dpi=DPI)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(2, 1, figsize=STACK, sharex=True)
+    for axis, coeff in zip(axes, ("ku", "kd")):
+        axis.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
+        axis.plot(t, base[f"silicon_{coeff}"], color=TRANSISTOR, lw=5.4,
+                  label="HSPICE transistor", zorder=2)
+        axis.plot(t, base[f"hspice_{coeff}"], color=NATIVE, lw=3.0,
+                  label="HSPICE native IBIS", zorder=3)
+        for key, label, colour in available:
+            d = load(MATRIX / key / "waveforms" / stem)
+            axis.plot(d["time_ns"], d[f"pybis_{coeff}"], color=colour, lw=2.2,
+                      label=label, zorder=4)
+        axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1)
+        axis.set_ylabel(coeff.replace("k", "K"), fontsize=15)
+        axis.set_ylim(-0.25, 1.3)
+        style(axis)
+    axes[0].set_title(f"{title}  |  Ku and Kd", fontsize=18, fontweight="bold", pad=12)
+    axes[0].legend(fontsize=12, loc="upper right", framealpha=0.94, ncol=2)
+    axes[1].set_xlabel("Time (ns)", fontsize=13)
+    axes[0].set_xlim(*window)
+    fig.tight_layout()
+    fig.savefig(out / f"{stub}_kukd.png", dpi=DPI)
+    plt.close(fig)
+    return peaks
 
 
 def overlay_figures(out, stub, stem, title, method, t_rev, window):
@@ -252,6 +323,16 @@ def main() -> int:
         if made:
             print(f"\n  {label} vs gate-state")
             for name, value in made.items():
+                print(f"     peak pad  {name:22s} {value:.3f} V")
+    for case_name, (device, direction, width_ps, window) in CASES.items():
+        t_rev = EDGE_NS[direction] + width_ps / 1000.0
+        stem = f"{device}_{direction}_w{int(round(width_ps))}ps.csv"
+        peaks = summary_figures(out, f"14_all_methods_{case_name}", stem,
+                                f"{device}  |  {width_ps:.0f} ps pulse  |  all methods",
+                                t_rev, window)
+        if peaks:
+            print(f"\n  all methods, {case_name} ({device} {width_ps:.0f} ps)")
+            for name, value in peaks.items():
                 print(f"     peak pad  {name:22s} {value:.3f} V")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
