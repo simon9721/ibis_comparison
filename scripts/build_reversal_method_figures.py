@@ -153,6 +153,15 @@ COMPARISONS = [
 ]
 
 
+# Vc-matching on its own axis against gate-state and the two references. It is
+# the one rule that reads the hidden state rather than a coefficient or a clock,
+# so it is the closest thing to gate-state that is still a replay method, and
+# worth seeing next to it rather than buried in the six-trace summary.
+VC_METHODS = [
+    ("gate_match", "Vc-matching", "#D97706"),
+    (GATE_METHOD, "gate-state", GATE),
+]
+
 # One figure with everything on it, in the order the deck introduces them.
 ALL_METHODS = [
     ("legacy", "legacy (ngspice)", LEGACY),
@@ -162,9 +171,9 @@ ALL_METHODS = [
 ]
 
 
-def summary_figures(out, stub, stem, title, t_rev, window):
+def summary_figures(out, stub, stem, title, t_rev, window, methods=None):
     """Every method on one pair of axes, against both references."""
-    available = [(k, lab, c) for k, lab, c in ALL_METHODS
+    available = [(k, lab, c) for k, lab, c in (methods or ALL_METHODS)
                  if (MATRIX / k / "waveforms" / stem).exists()]
     if not available:
         return {}
@@ -333,6 +342,13 @@ def main() -> int:
         if peaks:
             print(f"\n  all methods, {case_name} ({device} {width_ps:.0f} ps)")
             for name, value in peaks.items():
+                print(f"     peak pad  {name:22s} {value:.3f} V")
+        vc = summary_figures(out, f"15_vc_matching_{case_name}", stem,
+                             f"{device}  |  {width_ps:.0f} ps pulse  |  Vc-matching",
+                             t_rev, window, methods=VC_METHODS)
+        if vc:
+            print(f"\n  Vc-matching, {case_name} ({device} {width_ps:.0f} ps)")
+            for name, value in vc.items():
                 print(f"     peak pad  {name:22s} {value:.3f} V")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
