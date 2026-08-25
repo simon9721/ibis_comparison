@@ -135,6 +135,77 @@ def kukd_figure(path, d, colour, label, title, t_rev, window):
     plt.close(fig)
 
 
+GATE = "#1F6FB2"
+# The shipped gate-state build is the hybrid one -- gate-state everywhere, handing
+# off to matched replay in a window around the reversal. The deck has called it
+# gate-state throughout and these figures keep that name.
+GATE_METHOD = "hybrid"
+
+# Each replay rule gets a figure with gate-state drawn alongside it, on the case
+# the deck already uses, so the contrast is one trace rather than one slide apart.
+COMPARISONS = [
+    ("12", "time_match_hybrid", "t_matching", "t-matching", "#C02626", ""),
+    ("13", "coeff_match", "value_matching", "Ku/Kd value matching", "#7B2CBF", ""),
+]
+
+
+def overlay_figures(out, stub, stem, title, method, t_rev, window):
+    """Pad and Ku/Kd for one replay rule with gate-state on the same axes."""
+    key, label, colour = method
+    paths = {label: (MATRIX / key / "waveforms" / stem, colour),
+             "gate-state": (MATRIX / GATE_METHOD / "waveforms" / stem, GATE)}
+    if not all(p.exists() for p, _ in paths.values()):
+        return {}
+
+    peaks = {}
+    fig, axis = plt.subplots(figsize=WIDE)
+    base = load(paths[label][0])
+    t = base["time_ns"]
+    axis.plot(t, base["silicon_pad"], color=TRANSISTOR, lw=5.0,
+              label="HSPICE transistor", zorder=2)
+    axis.plot(t, base["hspice_pad"], color=NATIVE, lw=3.0,
+              label="HSPICE native IBIS", zorder=3)
+    w = (t >= window[0]) & (t <= window[1])
+    peaks["HSPICE transistor"] = float(base["silicon_pad"][w].max())
+    peaks["HSPICE native IBIS"] = float(base["hspice_pad"][w].max())
+    for name, (path_in, col) in paths.items():
+        d = load(path_in)
+        axis.plot(d["time_ns"], d["pybis_pad"], color=col, lw=2.4, label=name, zorder=4)
+        m = (d["time_ns"] >= window[0]) & (d["time_ns"] <= window[1])
+        peaks[name] = float(d["pybis_pad"][m].max())
+    axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1, label="reverse edge")
+    axis.set_xlim(*window)
+    axis.set_xlabel("Time (ns)", fontsize=13)
+    axis.set_ylabel("Pad voltage (V)", fontsize=13)
+    style(axis, f"{title}  |  pad voltage")
+    axis.legend(fontsize=12.5, loc="best", framealpha=0.92)
+    fig.tight_layout()
+    fig.savefig(out / f"{stub}_pad.png", dpi=DPI)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(2, 1, figsize=STACK, sharex=True)
+    for axis, coeff in zip(axes, ("ku", "kd")):
+        axis.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
+        axis.plot(t, base[f"hspice_{coeff}"], color=NATIVE, lw=3.0,
+                  label="HSPICE native IBIS", zorder=3)
+        for name, (path_in, col) in paths.items():
+            d = load(path_in)
+            axis.plot(d["time_ns"], d[f"pybis_{coeff}"], color=col, lw=2.4,
+                      label=name, zorder=4)
+        axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1)
+        axis.set_ylabel(coeff.replace("k", "K"), fontsize=15)
+        axis.set_ylim(-0.25, 1.3)
+        style(axis)
+    axes[0].set_title(f"{title}  |  Ku and Kd", fontsize=18, fontweight="bold", pad=12)
+    axes[0].legend(fontsize=12.5, loc="center right", framealpha=0.92)
+    axes[1].set_xlabel("Time (ns)", fontsize=13)
+    axes[0].set_xlim(*window)
+    fig.tight_layout()
+    fig.savefig(out / f"{stub}_kukd.png", dpi=DPI)
+    plt.close(fig)
+    return peaks
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -171,6 +242,17 @@ def main() -> int:
             print(f"     pad excursion  transistor {pick(d['silicon_pad']):.3f} V"
                   f"   native IBIS {pick(d['hspice_pad']):.3f} V"
                   f"   model {pick(d['pybis_pad']):.3f} V")
+    for index, key, slug, label, colour, _rule in COMPARISONS:
+        device, direction, width_ps, window = CASES["best"]
+        t_rev = EDGE_NS[direction] + width_ps / 1000.0
+        stem = f"{device}_{direction}_w{int(round(width_ps))}ps.csv"
+        title = f"{device}  |  {width_ps:.0f} ps pulse  |  {label} vs gate-state"
+        made = overlay_figures(out, f"{index}_{slug}_vs_gate_state", stem, title,
+                               (key, label, colour), t_rev, window)
+        if made:
+            print(f"\n  {label} vs gate-state")
+            for name, value in made.items():
+                print(f"     peak pad  {name:22s} {value:.3f} V")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
 
