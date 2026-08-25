@@ -1,0 +1,6 @@
+device,direction,depth_target,pulse_width_ps,status
+io_buf,short_high,nan,2484.4,NGSPICE_FAIL
+io_buf,short_high,nan,2225.9,NGSPICE_FAIL
+io_buf,short_high,nan,1988.8,OK
+io_buf,short_high,nan,1791.5,OK
+io_buf,short_high,nan,1634.2,OK

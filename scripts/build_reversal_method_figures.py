@@ -44,19 +44,32 @@ NATIVE = "#000000"
 
 # Same policy colours as the reversal-discontinuity analysis, so a reader who
 # has seen that chart carries the mapping over.
+# coeff_match is the working implementation of value matching, not a variant of
+# it: the v1 `...Full` build drives the pad from a match against nothing before
+# the first edge, and v1 hybrid still mixes a stale elapsed-time coordinate into
+# the replay argument at the reversal. So the plain name belongs to v2, and the
+# broken builds are named for what is wrong with them.
 METHODS = [
-    ("time_match", "t-matching", "#C02626",
+    ("time_match_hybrid", "t-matching", "#C02626",
      "at the reversal, enter the opposite table at the same elapsed time"),
-    ("value_match_full", "Ku/Kd value matching", "#D97706",
+    ("coeff_match", "Ku/Kd value matching", "#7B2CBF",
      "enter the opposite table where it already holds the present Ku and Kd"),
-    ("coeff_match", "Ku/Kd value matching (guarded)", "#7B2CBF",
-     "the same rule, applied only at the reversal"),
+    ("time_match", "t-matching (ungated build)", "#C02626",
+     "the same rule with the replay path forced on from t=0"),
+    ("value_match_full", "Ku/Kd value matching (ungated build)", "#D97706",
+     "the same rule with the replay path forced on from t=0"),
 ]
 
-DEVICE = "io_buf"
-WIDTH_PS = 1634.0
-EDGE_NS = 5.0
-WINDOW = (4.6, 8.6)
+# A method is only as good as the case it is shown on. io_buf short_high at
+# 1634 ps is coeff_match's *best* of the thirty (33 mV); its worst is io_buf
+# short_low at 180 ps (283 mV), where it drives the pad to the opposite rail
+# while the transistor only dips halfway. Both are built, and the filenames say
+# which is which.
+CASES = {
+    "best": ("io_buf", "short_high", 1634.0, (4.6, 8.6)),
+    "worst": ("io_buf", "short_low", 180.4, (9.6, 13.6)),
+}
+EDGE_NS = {"short_high": 5.0, "short_low": 10.0}
 DPI = 180
 WIDE = (14.2, 6.0)
 STACK = (14.2, 8.4)
@@ -77,7 +90,7 @@ def style(axis, title=None):
         axis.set_title(title, fontsize=18, fontweight="bold", pad=12)
 
 
-def pad_figure(path, d, colour, label, title, t_rev):
+def pad_figure(path, d, colour, label, title, t_rev, window):
     t = d["time_ns"]
     fig, axis = plt.subplots(figsize=WIDE)
     axis.plot(t, d["silicon_pad"], color=TRANSISTOR, lw=5.0,
@@ -87,17 +100,17 @@ def pad_figure(path, d, colour, label, title, t_rev):
     axis.plot(t, d["pybis_pad"], color=colour, lw=2.4, label=label, zorder=4)
     axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1,
                  label="reverse edge")
-    axis.set_xlim(*WINDOW)
+    axis.set_xlim(*window)
     axis.set_xlabel("Time (ns)", fontsize=13)
     axis.set_ylabel("Pad voltage (V)", fontsize=13)
     style(axis, title)
-    axis.legend(fontsize=12.5, loc="upper left", framealpha=0.92)
+    axis.legend(fontsize=12.5, loc="best", framealpha=0.92)
     fig.tight_layout()
     fig.savefig(path, dpi=DPI)
     plt.close(fig)
 
 
-def kukd_figure(path, d, colour, label, title, t_rev):
+def kukd_figure(path, d, colour, label, title, t_rev, window):
     t = d["time_ns"]
     fig, axes = plt.subplots(2, 1, figsize=STACK, sharex=True)
     for axis, coeff in zip(axes, ("ku", "kd")):
@@ -112,7 +125,7 @@ def kukd_figure(path, d, colour, label, title, t_rev):
     axes[0].set_title(title, fontsize=18, fontweight="bold", pad=12)
     axes[0].legend(fontsize=12.5, loc="center right", framealpha=0.92)
     axes[1].set_xlabel("Time (ns)", fontsize=13)
-    axes[0].set_xlim(*WINDOW)
+    axes[0].set_xlim(*window)
     fig.tight_layout()
     fig.savefig(path, dpi=DPI)
     plt.close(fig)
@@ -126,29 +139,34 @@ def main() -> int:
     out = args.out if args.out.is_absolute() else ROOT / args.out
     out.mkdir(parents=True, exist_ok=True)
 
-    t_rev = EDGE_NS + WIDTH_PS / 1000.0
-    stem = f"{DEVICE}_short_high_w{int(round(WIDTH_PS))}ps.csv"
+    for case_name, (device, direction, width_ps, window) in CASES.items():
+        edge_ns = EDGE_NS[direction]
+        t_rev = edge_ns + width_ps / 1000.0
+        stem = f"{device}_{direction}_w{int(round(width_ps))}ps.csv"
+        print(f"\n=== {case_name}: {device} {direction} {width_ps:.0f} ps")
 
-    for index, (key, label, colour, rule) in enumerate(METHODS, start=5):
-        path = MATRIX / key / "waveforms" / stem
-        if not path.exists():
-            print(f"  {key}: no converged run at this case")
-            continue
-        d = load(path)
-        case = f"{DEVICE}  |  {WIDTH_PS:.0f} ps pulse  |  {label}"
-        pad_figure(out / f"{index}_{key}_pad.png", d, colour, label,
-                   f"{case}  |  pad voltage", t_rev)
-        kukd_figure(out / f"{index}_{key}_kukd.png", d, colour, label,
-                    f"{case}  |  Ku and Kd", t_rev)
+        for index, (key, label, colour, rule) in enumerate(METHODS, start=5):
+            path = MATRIX / key / "waveforms" / stem
+            if not path.exists():
+                print(f"  {key}: no converged run at this case")
+                continue
+            d = load(path)
+            title = f"{device}  |  {width_ps:.0f} ps pulse  |  {label}"
+            stub = f"{index}_{key}_{case_name}"
+            pad_figure(out / f"{stub}_pad.png", d, colour, label,
+                       f"{title}  |  pad voltage", t_rev, window)
+            kukd_figure(out / f"{stub}_kukd.png", d, colour, label,
+                        f"{title}  |  Ku and Kd", t_rev, window)
 
-        t = d["time_ns"]
-        w = (t >= EDGE_NS) & (t <= t_rev + 2.0)
-        pre = (t >= WINDOW[0]) & (t <= EDGE_NS)
-        print(f"{label}  ({rule})")
-        print(f"   peak pad   transistor {d['silicon_pad'][w].max():.3f} V"
-              f"   native IBIS {d['hspice_pad'][w].max():.3f} V"
-              f"   model {d['pybis_pad'][w].max():.3f} V")
-        print(f"   pad before the pulse: model {d['pybis_pad'][pre].max():.3f} V")
+            t = d["time_ns"]
+            w = (t >= edge_ns) & (t <= t_rev + 3.0)
+            # Short-low drives the pad down, so the excursion of interest is the
+            # minimum there and the maximum on short-high.
+            pick = (lambda a: a[w].min()) if direction == "short_low" else (lambda a: a[w].max())
+            print(f"  {label}")
+            print(f"     pad excursion  transistor {pick(d['silicon_pad']):.3f} V"
+                  f"   native IBIS {pick(d['hspice_pad']):.3f} V"
+                  f"   model {pick(d['pybis_pad']):.3f} V")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
 

@@ -81,6 +81,9 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenTimeMatchedReplayFull": "InputDrivenTimeMatchedReplayFull",
         "Input-Driven-Time-Matched-Replay-Full": "InputDrivenTimeMatchedReplayFull",
         "NgSpiceInputDrivenTimeMatchedReplayFull": "InputDrivenTimeMatchedReplayFull",
+        "InputDrivenTimeMatchedReplayHybrid": "InputDrivenTimeMatchedReplayHybrid",
+        "Input-Driven-Time-Matched-Replay-Hybrid": "InputDrivenTimeMatchedReplayHybrid",
+        "NgSpiceInputDrivenTimeMatchedReplayHybrid": "InputDrivenTimeMatchedReplayHybrid",
         "InputDrivenValueMatchedReplayBalanced": "InputDrivenValueMatchedReplayHybrid",
         "InputDrivenValueMatchedReplayKuOnly": "InputDrivenValueMatchedReplayKuOnly",
         "Input-Driven-Value-Matched-Replay-Ku-Only": "InputDrivenValueMatchedReplayKuOnly",
@@ -318,6 +321,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenValueMatchedReplayHybrid",
         "InputDrivenValueMatchedReplayFull",
         "InputDrivenTimeMatchedReplayFull",
+        "InputDrivenTimeMatchedReplayHybrid",
         "InputDrivenValueMatchedReplayKuOnly",
         "InputDrivenValueMatchedReplayKdOnly",
     }:
@@ -326,6 +330,13 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenValueMatchedReplayHybrid": "hybrid_balanced",
                 "InputDrivenValueMatchedReplayFull": "full_balanced",
                 "InputDrivenTimeMatchedReplayFull": "full_time",
+                # The full modes hold the matched-replay path on from t=0, which
+                # means the very first edge is driven by a match against nothing:
+                # with the input low the falling table is read at t=0, where
+                # Ku = 1, so the pad starts pinned high. Hybrid latches the
+                # matched path on a real reversal, leaving the first edge to the
+                # legacy path where it belongs.
+                "InputDrivenTimeMatchedReplayHybrid": "hybrid_time",
                 "InputDrivenValueMatchedReplayKuOnly": "hybrid_ku",
                 "InputDrivenValueMatchedReplayKdOnly": "hybrid_kd",
             }[subcircuit_type]
