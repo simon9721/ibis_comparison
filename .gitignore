@@ -45,3 +45,6 @@ results/stress_method_matrix_*/*/hspice_fixtures/
 results/stress_method_matrix_*/*/hspice_references/
 results/stress_method_matrix_*/*/generated_models/
 results/stress_method_matrix_*/*/plots/
+
+# manim scratch renders; the published copy lives in results/kukd_animation/
+media/
