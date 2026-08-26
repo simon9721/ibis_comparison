@@ -62,6 +62,8 @@ METHODS = (
      "Vc-matching gated to the reversal, so the normal edge stays on the legacy path"),
     ("gate_match_delayed", "InputDrivenGateMatchedReplayDelayed",
      "Vc-matching gated to the reversal and made to wait out the fitted onset delay"),
+    ("gate_match_equiv", "InputDrivenGateMatchedReplayEquivalent",
+     "Vc-matching feeding the same map and residual gate-state uses: should be identical"),
     ("gate_match_aligned", "InputDrivenGateMatchedReplayAligned",
      "Vc-matching sampled at edge+delay: the form that should equal gate-state"),
     ("value_match_full", "InputDrivenValueMatchedReplayFull",

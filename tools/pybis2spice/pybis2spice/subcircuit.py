@@ -147,6 +147,8 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenGateMatchedReplayHybrid": "InputDrivenGateMatchedReplayHybrid",
         "InputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
         "InputDrivenGateMatchedReplayAligned": "InputDrivenGateMatchedReplayAligned",
+        "InputDrivenGateMatchedReplayEquivalent": "InputDrivenGateMatchedReplayEquivalent",
+        "NgSpiceInputDrivenGateMatchedReplayEquivalent": "InputDrivenGateMatchedReplayEquivalent",
         "NgSpiceInputDrivenGateMatchedReplayAligned": "InputDrivenGateMatchedReplayAligned",
         "NgSpiceInputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
         "Input-Driven-Gate-Matched-Replay-Hybrid": "InputDrivenGateMatchedReplayHybrid",
@@ -392,6 +394,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenGateMatchedReplayHybrid",
         "InputDrivenGateMatchedReplayDelayed",
         "InputDrivenGateMatchedReplayAligned",
+        "InputDrivenGateMatchedReplayEquivalent",
         "InputDrivenMeasuredRateGateFull",
         "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGatePredriverCommandFull",
@@ -417,6 +420,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenGateMatchedReplayHybrid": "directional_dual_residual_gate_matched_hybrid",
                 "InputDrivenGateMatchedReplayDelayed": "directional_dual_residual_gate_matched_delayed",
                 "InputDrivenGateMatchedReplayAligned": "directional_dual_residual_gate_matched_aligned",
+                "InputDrivenGateMatchedReplayEquivalent": "directional_dual_residual_gate_matched_equiv",
                 "InputDrivenMeasuredRateGateFull": "measured_rate_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
@@ -1894,6 +1898,24 @@ def gate_state_fit(kr, kf):
     }
 
 
+def gate_forward_time_table(delay_ns, tau_ns, start_value, end_value,
+                            end_time_ns, point_count=241):
+    """
+    Returns (time_ns, gate_value) for evaluating a fitted gate trajectory.
+
+    The forward partner of `gate_inverse_time_table`. Replaying this at
+    entry + elapsed reproduces the same gate value an integrator would reach,
+    because the exponential is memoryless -- which is the whole point of the
+    equivalence build: it lets the gate be obtained by table lookup and then
+    fed into exactly the same map and residual the integrated gate uses.
+    """
+    times = np.linspace(0.0, max(float(end_time_ns), float(delay_ns) + 1.0), point_count)
+    x = np.maximum(0.0, times - float(delay_ns))
+    progress = 1.0 - np.exp(-x / max(float(tau_ns), 0.02))
+    values = float(start_value) + (float(end_value) - float(start_value)) * progress
+    return times, values
+
+
 def gate_inverse_time_table(delay_ns, tau_ns, start_value, end_value, point_count=161):
     """
     Returns (gate_value, time_ns) for inverting a fitted gate trajectory.
@@ -2887,6 +2909,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_gate_matched_hybrid",
         "directional_dual_residual_gate_matched_delayed",
         "directional_dual_residual_gate_matched_aligned",
+        "directional_dual_residual_gate_matched_equiv",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2899,6 +2922,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_gate_matched_hybrid",
         "directional_dual_residual_gate_matched_delayed",
         "directional_dual_residual_gate_matched_aligned",
+        "directional_dual_residual_gate_matched_equiv",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2913,7 +2937,8 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
                                 "directional_dual_residual_gate_matched_shared_full",
                                 "directional_dual_residual_gate_matched_hybrid",
                                 "directional_dual_residual_gate_matched_delayed",
-                                "directional_dual_residual_gate_matched_aligned")
+                                "directional_dual_residual_gate_matched_aligned",
+                                "directional_dual_residual_gate_matched_equiv")
     # The original build gates the replay on H2STATEACTIVE, which only says "a
     # device is mid-travel" and so is true on an ordinary edge as well as on a
     # reversal. Vc-matching was therefore replacing the normal transition too,
@@ -2929,7 +2954,8 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # gate-state build still has to pay.
     gate_matched_delay_hold = mode in (
         "directional_dual_residual_gate_matched_delayed",
-        "directional_dual_residual_gate_matched_aligned")
+        "directional_dual_residual_gate_matched_aligned",
+        "directional_dual_residual_gate_matched_equiv")
     # Sample the gate at edge+delay rather than at the edge. During the fitted
     # delay the gate is still travelling in the old direction -- GUP rises from
     # 0.4989 to 0.5282 on io_buf -- so sampling at the edge inverts the wrong
@@ -2937,7 +2963,14 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # exponential is memoryless, inverting there and advancing reproduces the
     # gate-state trajectory exactly: checked offline to 1e-5, which is the ODE
     # integrator step error rather than a difference between the two.
-    gate_matched_late_sample = mode == "directional_dual_residual_gate_matched_aligned"
+    gate_matched_late_sample = mode in (
+        "directional_dual_residual_gate_matched_aligned", "directional_dual_residual_gate_matched_equiv")
+    # The equivalence build goes one step further: instead of reading Ku from
+    # the raw table, it replays the *gate value* and feeds it into the same map
+    # and residual the integrated gate uses. Everything downstream is then
+    # literally the same code, so any remaining difference is the gate value
+    # itself -- which is the quantity the equivalence proof is about.
+    gate_matched_equiv = mode == "directional_dual_residual_gate_matched_equiv"
     # Ku and Kd were solved as a pair from one recorded edge, so reading them
     # at different offsets yields a combination the buffer never held. This
     # variant forces one shared entry time to test whether that matters.
@@ -3229,19 +3262,25 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     st += "BGDNBASE GDNBASE 0 V = 1.0\n"
     st += "RGDN GDN GDNBASE 1e12\n\n"
 
+    # The equivalence build reads the map and the rate terms from GUPX/GDNX:
+    # the replayed gate values once a reversal has armed, the integrated ones
+    # otherwise. Everything downstream is then identical between the two, so a
+    # difference in the waveform can only come from the gate value itself.
+    gu = "GUPX" if gate_matched_equiv else "GUP"
+    gd = "GDNX" if gate_matched_equiv else "GDN"
     if use_directional_map:
-        st += f"BKUGATE_ON KUGATE_ON 0 V = pwl(min(max(V(GUP), 0), 1), {ku_on_table})\n"
-        st += f"BKUGATE_OFF KUGATE_OFF 0 V = pwl(min(max(V(GUP), 0), 1), {ku_off_table})\n"
+        st += f"BKUGATE_ON KUGATE_ON 0 V = pwl(min(max(V({gu}), 0), 1), {ku_on_table})\n"
+        st += f"BKUGATE_OFF KUGATE_OFF 0 V = pwl(min(max(V({gu}), 0), 1), {ku_off_table})\n"
         if use_stable_direction:
             st += "BKUGATE_BASE KUGATE_BASE 0 V = (V(GUPTARGET) > 0.5) ? V(KUGATE_ON) : V(KUGATE_OFF)\n"
         else:
-            st += "BKUGATE_BASE KUGATE_BASE 0 V = (V(GUPTARGET) >= V(GUP)) ? V(KUGATE_ON) : V(KUGATE_OFF)\n"
-        st += f"BKDGATE_OFF KDGATE_OFF 0 V = pwl(min(max(V(GDN), 0), 1), {kd_off_table})\n"
-        st += f"BKDGATE_ON KDGATE_ON 0 V = pwl(min(max(V(GDN), 0), 1), {kd_on_table})\n"
+            st += f"BKUGATE_BASE KUGATE_BASE 0 V = (V(GUPTARGET) >= V({gu})) ? V(KUGATE_ON) : V(KUGATE_OFF)\n"
+        st += f"BKDGATE_OFF KDGATE_OFF 0 V = pwl(min(max(V({gd}), 0), 1), {kd_off_table})\n"
+        st += f"BKDGATE_ON KDGATE_ON 0 V = pwl(min(max(V({gd}), 0), 1), {kd_on_table})\n"
         if use_stable_direction:
             st += "BKDGATE_BASE KDGATE_BASE 0 V = (V(GDNTARGET) > 0.5) ? V(KDGATE_ON) : V(KDGATE_OFF)\n"
         else:
-            st += "BKDGATE_BASE KDGATE_BASE 0 V = (V(GDNTARGET) >= V(GDN)) ? V(KDGATE_ON) : V(KDGATE_OFF)\n"
+            st += f"BKDGATE_BASE KDGATE_BASE 0 V = (V(GDNTARGET) >= V({gd})) ? V(KDGATE_ON) : V(KDGATE_OFF)\n"
         if mode in dual_residual_modes:
             st += create_ngspice_k_lookup_source_from_elapsed("BKURES_R", "KURES_R", "HNX", kr[:, _TIME], fit["ku_rise_residual"])
             st += create_ngspice_k_lookup_source_from_elapsed("BKURES_F", "KURES_F", "HNX", kf[:, _TIME], fit["ku_fall_residual"])
@@ -3254,8 +3293,8 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             st += "BKDRES_TABLE KDRES_TABLE 0 V = 0.0\n"
         if mode in dual_residual_modes:
             st += (
-                f"BGUPRATE GUPRATE 0 V = ((V(GUPTARGET) - V(GUP)) / "
-                f"((V(GUPTARGET) > V(GUP)) ? {format_spice_ns(fit['pu_on_tau'])} : {format_spice_ns(fit['pu_off_tau'])})) * 1e-9\n"
+                f"BGUPRATE GUPRATE 0 V = ((V(GUPTARGET) - V({gu})) / "
+                f"((V(GUPTARGET) > V({gu})) ? {format_spice_ns(fit['pu_on_tau'])} : {format_spice_ns(fit['pu_off_tau'])})) * 1e-9\n"
             )
         if use_stable_direction:
             st += (
@@ -3264,8 +3303,8 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             )
         else:
             st += (
-                f"BGDNRATE GDNRATE 0 V = ((V(GDNTARGET) - V(GDN)) / "
-                f"((V(GDNTARGET) > V(GDN)) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})) * 1e-9\n"
+                f"BGDNRATE GDNRATE 0 V = ((V(GDNTARGET) - V({gd})) / "
+                f"((V(GDNTARGET) > V({gd})) ? {format_spice_ns(fit['pd_on_tau'])} : {format_spice_ns(fit['pd_off_tau'])})) * 1e-9\n"
             )
         if mode in dual_residual_modes:
             st += f"BKURES KURES 0 V = V(KURES_TABLE) + {fit['ku_rate_gain_ns']:.16g} * V(GUPRATE)\n"
@@ -3318,6 +3357,16 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             # fires per edge, so max() picks whichever applies.
             st += "BGMSAMPU GMSAMPU 0 V = max(V(PUONP), V(PUOFFP))\n"
             st += "BGMSAMPD GMSAMPD 0 V = max(V(PDONP), V(PDOFFP))\n"
+            # Arm each device only once its own sample has landed; reset at
+            # every edge. Defined here rather than beside KUTARGET because the
+            # equivalence build skips that branch but still reads these.
+            for arm, pulse in (("GMARMU", "GMSAMPU"), ("GMARMD", "GMSAMPD")):
+                st += (f"B{arm}CMD {arm}CMD 0 V = (V({pulse}) > 0.5) ? 1.0 : "
+                       f"((V(GMEDGE) > 0.5) ? 0.0 : V({arm}))\n")
+                st += f"C{arm} {arm} 0 {{gate_c}} ic=0\n"
+                st += f"R{arm} {arm} 0 1e15\n"
+                st += (f"B{arm} {arm} 0 I = -{{gate_c}} * "
+                       f"(V({arm}CMD) - V({arm})) / edge_delay\n")
         st += ("BGUSAMPLE GUSAMP 0 I = -{gate_c} * V(" + sample_u +
                ") * (V(GUP) - V(GUSAMP)) / edge_delay\n")
         st += "CGDSAMP GDSAMP 0 {gate_c} ic=1\n"
@@ -3368,26 +3417,46 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         else:
             st += f"BGMARGU GMARGU 0 V = {entry_u} + V(HNX)\n"
             st += f"BGMARGD GMARGD 0 V = {entry_d} + V(HNX)\n"
+        if gate_matched_equiv:
+            # Forward partner of the inverse: evaluate the fitted trajectory at
+            # entry + elapsed. Memorylessness makes this the same value the
+            # integrator reaches, so feeding it into the normal map and residual
+            # leaves the gate value as the only thing that could differ.
+            end_ns = max(float(np.nanmax(kr[:, _TIME])),
+                         float(np.nanmax(kf[:, _TIME]))) * 1e9
+            for name, arg, dly, tau, lo, hi in (
+                ("GMGU_ON", "GMARGU", fit["pu_on_delay"], fit["pu_on_tau"], 0.0, 1.0),
+                ("GMGU_OFF", "GMARGU", fit["pu_off_delay"], fit["pu_off_tau"], 1.0, 0.0),
+                ("GMGD_ON", "GMARGD", fit["pd_on_delay"], fit["pd_on_tau"], 0.0, 1.0),
+                ("GMGD_OFF", "GMARGD", fit["pd_off_delay"], fit["pd_off_tau"], 1.0, 0.0),
+            ):
+                times, values = gate_forward_time_table(dly, tau, lo, hi, end_ns)
+                table = convert_iv_table_to_str(times, values)
+                st += (f"B{name} {name} 0 V = pwl(min(max(V({arg}), 0), "
+                       f"{times[-1]:.6g}), {table})\n")
+            st += "BGMGUP GMGUP 0 V = (V(NINX) > 0.5) ? V(GMGU_ON) : V(GMGU_OFF)\n"
+            st += "BGMGDN GMGDN 0 V = (V(NINX) > 0.5) ? V(GMGD_OFF) : V(GMGD_ON)\n"
+            st += ("BGUPX GUPX 0 V = (V(GMREV) > 0.5 && V(GMARMU) > 0.5) ? "
+                   "V(GMGUP) : V(GUP)\n")
+            st += ("BGDNX GDNX 0 V = (V(GMREV) > 0.5 && V(GMARMD) > 0.5) ? "
+                   "V(GMGDN) : V(GDN)\n")
         st += create_ngspice_k_lookup_source_from_arg("BGMKUR", "GMKUR", "GMARGU", kr[:, _TIME], kr[:, _KU])
         st += create_ngspice_k_lookup_source_from_arg("BGMKUF", "GMKUF", "GMARGU", kf[:, _TIME], kf[:, _KU])
         st += create_ngspice_k_lookup_source_from_arg("BGMKDR", "GMKDR", "GMARGD", kr[:, _TIME], kr[:, _KD])
         st += create_ngspice_k_lookup_source_from_arg("BGMKDF", "GMKDF", "GMARGD", kf[:, _TIME], kf[:, _KD])
         st += "BGMKU GMKU 0 V = (V(NINX) > 0.5) ? V(GMKUR) : V(GMKUF)\n"
         st += "BGMKD GMKD 0 V = (V(NINX) > 0.5) ? V(GMKDR) : V(GMKDF)\n"
-        if gate_matched_late_sample:
+        if gate_matched_equiv:
+            # Nothing to override: the normal blend below produces KUTARGET,
+            # now reading the map through the replayed gate.
+            pass
+        elif gate_matched_late_sample:
             # The sample lands at edge+delay, but GMREV goes high at the edge.
             # Between the two, GUSAMP still holds the value from the *previous*
             # edge, which inverts to the far end of the opposite curve and drove
             # Ku to zero for 68 ps before snapping back. Arm each device only
             # once its own sample has been taken, and run the gate mapping until
             # then -- which is what the gate is doing anyway during that window.
-            for arm, pulse in (("GMARMU", "GMSAMPU"), ("GMARMD", "GMSAMPD")):
-                st += (f"B{arm}CMD {arm}CMD 0 V = (V({pulse}) > 0.5) ? 1.0 : "
-                       f"((V(GMEDGE) > 0.5) ? 0.0 : V({arm}))\n")
-                st += f"C{arm} {arm} 0 {{gate_c}} ic=0\n"
-                st += f"R{arm} {arm} 0 1e15\n"
-                st += (f"B{arm} {arm} 0 I = -{{gate_c}} * "
-                       f"(V({arm}CMD) - V({arm})) / edge_delay\n")
             blend_u = ("V(H2STATEACTIVE) * V(KUGATE) + "
                        "(1.0 - V(H2STATEACTIVE)) * V(KULEG)")
             blend_d = ("V(H2STATEACTIVE) * V(KDGATE) + "
@@ -3404,8 +3473,11 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     st += "((V(NINX) < 0.5 && V(GUP) > 0.05 && V(GUP) < 0.95) || "
     st += "(V(NINX) > 0.5 && V(GDN) > 0.05 && V(GDN) < 0.95)) ? 1.0 : 0.0\n\n"
 
-    if use_gate_matched:
-        # Already emitted above, keyed off the inverted gate trajectories.
+    if use_gate_matched and not gate_matched_equiv:
+        # Already emitted above, keyed off the inverted gate trajectories. The
+        # equivalence build is the exception: it overrides no target of its own,
+        # so it must fall through to the normal blend, which now reads the map
+        # through the replayed gate.
         pass
     elif full_mode:
         st += "B42 KUTARGET 0 V = V(KUGATE)\n"
@@ -3604,7 +3676,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
             st += "(V(HREVERSERAW) > 0.5 && V(HNX) < hybrid_recovery_ns) ? 1.0 : 0.0\n"
             st += "B42 KUTARGET 0 V = V(HHYBRIDACTIVE) * V(KUGATE) + (1.0 - V(HHYBRIDACTIVE)) * V(KULEG)\n"
             st += "B43 KDTARGET 0 V = V(HHYBRIDACTIVE) * V(KDGATE) + (1.0 - V(HHYBRIDACTIVE)) * V(KDLEG)\n"
-    elif not use_gate_matched:
+    elif (not use_gate_matched) or gate_matched_equiv:
         # Gate-matched replay writes its own KUTARGET/KDTARGET above, so the
         # normal gate-versus-legacy blend must not also emit them.
         st += "B42 KUTARGET 0 V = V(H2STATEACTIVE) * V(KUGATE) + (1.0 - V(H2STATEACTIVE)) * V(KULEG)\n"
