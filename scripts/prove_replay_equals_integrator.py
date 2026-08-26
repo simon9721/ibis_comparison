@@ -54,7 +54,7 @@ GENERATED = (ROOT / "results" / "stress_method_matrix_2026-08-20" / "gate_state"
 OUT = ROOT / "results" / "replay_vs_integrator_2026-08-26"
 
 EDGE_NS = 5.0        # command asserted
-WIDTH_NS = 2.2259    # reversed here, with the pullup gate about two thirds up
+WIDTH_NS = 1.6342    # the deck's io_buf case; the pullup gate is mid-travel here
 STOP_NS = 14.0
 
 INTEG = "#1F6FB2"
@@ -194,8 +194,11 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--out", type=Path, default=OUT)
+    parser.add_argument("--width-ps", type=float, default=WIDTH_NS * 1000.0,
+                        help="pulse width; default matches the deck's io_buf case")
     parser.add_argument("--ngspice", type=Path, default=default_ngspice(console=True))
     args = parser.parse_args()
+    globals()["WIDTH_NS"] = args.width_ps / 1000.0
     out = args.out if args.out.is_absolute() else ROOT / args.out
     out.mkdir(parents=True, exist_ok=True)
 
