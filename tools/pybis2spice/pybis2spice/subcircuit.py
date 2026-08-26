@@ -148,6 +148,7 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
         "InputDrivenGateMatchedReplayAligned": "InputDrivenGateMatchedReplayAligned",
         "InputDrivenGateMatchedReplayEquivalent": "InputDrivenGateMatchedReplayEquivalent",
+        "InputDrivenGateMatchedReplayEquivalentDelayCmd": "InputDrivenGateMatchedReplayEquivalentDelayCmd",
         "NgSpiceInputDrivenGateMatchedReplayEquivalent": "InputDrivenGateMatchedReplayEquivalent",
         "NgSpiceInputDrivenGateMatchedReplayAligned": "InputDrivenGateMatchedReplayAligned",
         "NgSpiceInputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
@@ -395,6 +396,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenGateMatchedReplayDelayed",
         "InputDrivenGateMatchedReplayAligned",
         "InputDrivenGateMatchedReplayEquivalent",
+        "InputDrivenGateMatchedReplayEquivalentDelayCmd",
         "InputDrivenMeasuredRateGateFull",
         "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGatePredriverCommandFull",
@@ -421,6 +423,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenGateMatchedReplayDelayed": "directional_dual_residual_gate_matched_delayed",
                 "InputDrivenGateMatchedReplayAligned": "directional_dual_residual_gate_matched_aligned",
                 "InputDrivenGateMatchedReplayEquivalent": "directional_dual_residual_gate_matched_equiv",
+                "InputDrivenGateMatchedReplayEquivalentDelayCmd": "directional_dual_residual_gate_matched_equiv_delay_cmd",
                 "InputDrivenMeasuredRateGateFull": "measured_rate_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
@@ -2910,6 +2913,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_gate_matched_delayed",
         "directional_dual_residual_gate_matched_aligned",
         "directional_dual_residual_gate_matched_equiv",
+        "directional_dual_residual_gate_matched_equiv_delay_cmd",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2923,6 +2927,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_gate_matched_delayed",
         "directional_dual_residual_gate_matched_aligned",
         "directional_dual_residual_gate_matched_equiv",
+        "directional_dual_residual_gate_matched_equiv_delay_cmd",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2938,7 +2943,8 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
                                 "directional_dual_residual_gate_matched_hybrid",
                                 "directional_dual_residual_gate_matched_delayed",
                                 "directional_dual_residual_gate_matched_aligned",
-                                "directional_dual_residual_gate_matched_equiv")
+                                "directional_dual_residual_gate_matched_equiv",
+                                "directional_dual_residual_gate_matched_equiv_delay_cmd")
     # The original build gates the replay on H2STATEACTIVE, which only says "a
     # device is mid-travel" and so is true on an ordinary edge as well as on a
     # reversal. Vc-matching was therefore replacing the normal transition too,
@@ -2955,7 +2961,8 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     gate_matched_delay_hold = mode in (
         "directional_dual_residual_gate_matched_delayed",
         "directional_dual_residual_gate_matched_aligned",
-        "directional_dual_residual_gate_matched_equiv")
+        "directional_dual_residual_gate_matched_equiv",
+        "directional_dual_residual_gate_matched_equiv_delay_cmd")
     # Sample the gate at edge+delay rather than at the edge. During the fitted
     # delay the gate is still travelling in the old direction -- GUP rises from
     # 0.4989 to 0.5282 on io_buf -- so sampling at the edge inverts the wrong
@@ -2964,13 +2971,14 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # gate-state trajectory exactly: checked offline to 1e-5, which is the ODE
     # integrator step error rather than a difference between the two.
     gate_matched_late_sample = mode in (
-        "directional_dual_residual_gate_matched_aligned", "directional_dual_residual_gate_matched_equiv")
+        "directional_dual_residual_gate_matched_aligned",
+        "directional_dual_residual_gate_matched_equiv", "directional_dual_residual_gate_matched_equiv_delay_cmd")
     # The equivalence build goes one step further: instead of reading Ku from
     # the raw table, it replays the *gate value* and feeds it into the same map
     # and residual the integrated gate uses. Everything downstream is then
     # literally the same code, so any remaining difference is the gate value
     # itself -- which is the quantity the equivalence proof is about.
-    gate_matched_equiv = mode == "directional_dual_residual_gate_matched_equiv"
+    gate_matched_equiv = mode in ("directional_dual_residual_gate_matched_equiv", "directional_dual_residual_gate_matched_equiv_delay_cmd")
     # Ku and Kd were solved as a pair from one recorded edge, so reading them
     # at different offsets yields a combination the buffer never held. This
     # variant forces one shared entry time to test whether that matters.
@@ -2980,7 +2988,8 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     use_measured_rate = mode == "measured_rate_full"
     # Same intent, but the delay is a real transport delay rather than a gate on
     # elapsed time, which is what made the level mode drop short pulses.
-    use_delay_command = mode == "directional_dual_residual_delay_cmd_full"
+    use_delay_command = mode in ("directional_dual_residual_delay_cmd_full",
+                                 "directional_dual_residual_gate_matched_equiv_delay_cmd")
     # Same again, but the delay is carried by a state rather than a dead time,
     # so an interrupted command turns around from where it actually got to.
     use_predriver_command = mode == "directional_dual_residual_predriver_cmd_full"
