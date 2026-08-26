@@ -63,6 +63,67 @@ def style(axis, title=None):
         axis.set_title(title, fontsize=18, fontweight="bold", pad=12)
 
 
+# Each Vc build against the gate-state built on the *same* command layer. Pairing
+# the delay_cmd build against the edge-integrating gate-state would charge it for
+# a command change it did not make.
+CONVERGENCE = [
+    ("gate_match", "gate_state", "as shipped", "#D97706"),
+    ("gate_match_hybrid", "gate_state", "gated to the reversal", "#C02626"),
+    ("gate_match_equiv", "gate_state", "same map and residual", "#7B2CBF"),
+    ("gate_match_equiv_delaycmd", "delay_cmd",
+     "delay command, sample fixed", "#1B6B4F"),
+]
+
+
+def convergence_figure(out):
+    """Absolute waveforms for the closest pair, and every build's gap below it."""
+    pairs = [(a, b, lab, c) for a, b, lab, c in CONVERGENCE
+             if (MATRIX / a / "waveforms" / STEM).exists()
+             and (MATRIX / b / "waveforms" / STEM).exists()]
+    if not pairs:
+        return {}
+    t_rev = EDGE_NS + WIDTH_NS
+    fig, axes = plt.subplots(2, 1, figsize=(14.2, 9.0))
+
+    best_a, best_b, best_lab, best_c = pairs[-1]
+    a, b = (load(MATRIX / best_a / "waveforms" / STEM),
+            load(MATRIX / best_b / "waveforms" / STEM))
+    axes[0].plot(b["time_ns"], b["silicon_pad"], color=TRANSISTOR, lw=5.4,
+                 label="HSPICE transistor", zorder=2)
+    axes[0].plot(b["time_ns"], b["pybis_pad"], color="#1B6B4F", lw=3.0,
+                 label="gate-state (integrated gate)", zorder=3)
+    axes[0].plot(a["time_ns"], a["pybis_pad"], color="#C02626", lw=2.0,
+                 ls=(0, (5, 2.4)), label="Vc-matching (replayed gate)", zorder=4)
+    axes[0].axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1)
+    axes[0].set_xlim(*WINDOW)
+    axes[0].set_ylabel("Pad voltage (V)", fontsize=13)
+    style(axes[0], f"io_buf  |  {WIDTH_NS * 1000:.0f} ps pulse  |  "
+                   "replayed gate against integrated gate")
+    axes[0].legend(fontsize=12, loc="upper left", framealpha=0.94)
+
+    worst = {}
+    for key, ref, label, colour in pairs:
+        d = load(MATRIX / key / "waveforms" / STEM)
+        r = load(MATRIX / ref / "waveforms" / STEM)
+        t = d["time_ns"]
+        m = (t >= WINDOW[0]) & (t <= WINDOW[1])
+        gap = np.abs(d["pybis_pad"][m] - np.interp(t[m], r["time_ns"], r["pybis_pad"]))
+        worst[label] = float(np.max(gap)) * 1000.0
+        axes[1].semilogy(t[m], np.maximum(gap * 1000.0, 1e-3), color=colour, lw=2.2,
+                         label=f"{label}   worst {worst[label]:.0f} mV")
+    axes[1].axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1)
+    axes[1].set_xlim(*WINDOW)
+    axes[1].set_ylim(1e-2, 2e3)
+    axes[1].set_xlabel("Time (ns)", fontsize=13)
+    axes[1].set_ylabel("|Vc-matching - gate-state|  (mV)", fontsize=13)
+    style(axes[1])
+    axes[1].legend(fontsize=11.5, loc="upper left", framealpha=0.94)
+    fig.tight_layout()
+    fig.savefig(out / "20_convergence.png", dpi=DPI)
+    plt.close(fig)
+    return worst
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -131,6 +192,11 @@ def main() -> int:
         dk = np.max(np.abs(ref["pybis_ku"][m] -
                            np.interp(t[m], d["time_ns"], d["pybis_ku"])))
         print(f"{label:38s} {dp:9.1f} mV {dk:11.3f}")
+    worst = convergence_figure(out)
+    if worst:
+        print("\neach build against the gate-state on its own command layer")
+        for label, value in worst.items():
+            print(f"   {label:32s} {value:8.1f} mV")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
 
