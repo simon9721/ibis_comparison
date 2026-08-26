@@ -60,6 +60,8 @@ METHODS = (
      "Vc-matching, but Ku and Kd forced to one shared entry time"),
     ("gate_match_hybrid", "InputDrivenGateMatchedReplayHybrid",
      "Vc-matching gated to the reversal, so the normal edge stays on the legacy path"),
+    ("gate_match_delayed", "InputDrivenGateMatchedReplayDelayed",
+     "Vc-matching gated to the reversal and made to wait out the fitted onset delay"),
     ("value_match_full", "InputDrivenValueMatchedReplayFull",
      "same builder as time_match, but enter where the opposite table holds the present Ku/Kd"),
     ("coeff_match", "InputDrivenValueMatchedReplayV2Hybrid",

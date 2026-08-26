@@ -145,6 +145,8 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenGateMatchedReplayFull": "InputDrivenGateMatchedReplayFull",
         "InputDrivenGateMatchedReplaySharedFull": "InputDrivenGateMatchedReplaySharedFull",
         "InputDrivenGateMatchedReplayHybrid": "InputDrivenGateMatchedReplayHybrid",
+        "InputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
+        "NgSpiceInputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
         "Input-Driven-Gate-Matched-Replay-Hybrid": "InputDrivenGateMatchedReplayHybrid",
         "NgSpiceInputDrivenGateMatchedReplayHybrid": "InputDrivenGateMatchedReplayHybrid",
         "InputDrivenMeasuredRateGateFull": "InputDrivenMeasuredRateGateFull",
@@ -386,6 +388,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenGateMatchedReplayFull",
         "InputDrivenGateMatchedReplaySharedFull",
         "InputDrivenGateMatchedReplayHybrid",
+        "InputDrivenGateMatchedReplayDelayed",
         "InputDrivenMeasuredRateGateFull",
         "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGatePredriverCommandFull",
@@ -409,6 +412,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenGateMatchedReplayFull": "directional_dual_residual_gate_matched_full",
                 "InputDrivenGateMatchedReplaySharedFull": "directional_dual_residual_gate_matched_shared_full",
                 "InputDrivenGateMatchedReplayHybrid": "directional_dual_residual_gate_matched_hybrid",
+                "InputDrivenGateMatchedReplayDelayed": "directional_dual_residual_gate_matched_delayed",
                 "InputDrivenMeasuredRateGateFull": "measured_rate_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
@@ -2877,6 +2881,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_level_cmd_full",
         "directional_dual_residual_gate_matched_full",
         "directional_dual_residual_gate_matched_hybrid",
+        "directional_dual_residual_gate_matched_delayed",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2887,6 +2892,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_level_cmd_full",
         "directional_dual_residual_gate_matched_full",
         "directional_dual_residual_gate_matched_hybrid",
+        "directional_dual_residual_gate_matched_delayed",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2906,7 +2912,13 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # and left the rail 700 ps early on io_buf. This variant latches the gate on
     # an edge arriving while the opposite state is still in flight, which is what
     # a reversal actually is.
-    gate_matched_reversal_only = mode == "directional_dual_residual_gate_matched_hybrid"
+    gate_matched_reversal_only = mode in (
+        "directional_dual_residual_gate_matched_hybrid",
+        "directional_dual_residual_gate_matched_delayed")
+    # Also make the replay wait out the fitted onset delay, so the entry rule is
+    # judged on where it enters rather than on having skipped the latency the
+    # gate-state build still has to pay.
+    gate_matched_delay_hold = mode == "directional_dual_residual_gate_matched_delayed"
     # Ku and Kd were solved as a pair from one recorded edge, so reading them
     # at different offsets yields a combination the buffer never held. This
     # variant forces one shared entry time to test whether that matters.
@@ -3306,8 +3318,27 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         shared = "0.5 * (V(GMTU) + V(GMTD))"
         entry_u = shared if gate_matched_shared else "V(GMTU)"
         entry_d = shared if gate_matched_shared else "V(GMTD)"
-        st += f"BGMARGU GMARGU 0 V = {entry_u} + V(HNX)\n"
-        st += f"BGMARGD GMARGD 0 V = {entry_d} + V(HNX)\n"
+        if gate_matched_delay_hold:
+            # The inverse table returns delay + tau*(-ln(1-progress)), so the
+            # entry time already sits past the fitted onset delay. Advancing
+            # straight from there asserts the new edge's propagation delay has
+            # already been served, which it has not -- the edge just happened.
+            # Holding the replay for that delay makes the entry rule pay the
+            # same latency the gate-state build pays, which is the only way the
+            # two are comparable. On io_buf's pulldown that is 1.83 ns, and it
+            # is the difference between Kd reaching 0.89 by +400 ps and staying
+            # near zero.
+            pu_on = format_spice_ns(fit["pu_on_delay"]).rstrip("n")
+            pu_off = format_spice_ns(fit["pu_off_delay"]).rstrip("n")
+            pd_on = format_spice_ns(fit["pd_on_delay"]).rstrip("n")
+            pd_off = format_spice_ns(fit["pd_off_delay"]).rstrip("n")
+            st += f"BGMDLYU GMDLYU 0 V = (V(NINX) > 0.5) ? {pu_on} : {pu_off}\n"
+            st += f"BGMDLYD GMDLYD 0 V = (V(NINX) > 0.5) ? {pd_off} : {pd_on}\n"
+            st += f"BGMARGU GMARGU 0 V = {entry_u} + max(0, V(HNX) - V(GMDLYU))\n"
+            st += f"BGMARGD GMARGD 0 V = {entry_d} + max(0, V(HNX) - V(GMDLYD))\n"
+        else:
+            st += f"BGMARGU GMARGU 0 V = {entry_u} + V(HNX)\n"
+            st += f"BGMARGD GMARGD 0 V = {entry_d} + V(HNX)\n"
         st += create_ngspice_k_lookup_source_from_arg("BGMKUR", "GMKUR", "GMARGU", kr[:, _TIME], kr[:, _KU])
         st += create_ngspice_k_lookup_source_from_arg("BGMKUF", "GMKUF", "GMARGU", kf[:, _TIME], kf[:, _KU])
         st += create_ngspice_k_lookup_source_from_arg("BGMKDR", "GMKDR", "GMARGD", kr[:, _TIME], kr[:, _KD])
