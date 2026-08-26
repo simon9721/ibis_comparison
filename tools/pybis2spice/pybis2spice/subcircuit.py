@@ -146,6 +146,8 @@ def normalize_subcircuit_type(subcircuit_type):
         "InputDrivenGateMatchedReplaySharedFull": "InputDrivenGateMatchedReplaySharedFull",
         "InputDrivenGateMatchedReplayHybrid": "InputDrivenGateMatchedReplayHybrid",
         "InputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
+        "InputDrivenGateMatchedReplayAligned": "InputDrivenGateMatchedReplayAligned",
+        "NgSpiceInputDrivenGateMatchedReplayAligned": "InputDrivenGateMatchedReplayAligned",
         "NgSpiceInputDrivenGateMatchedReplayDelayed": "InputDrivenGateMatchedReplayDelayed",
         "Input-Driven-Gate-Matched-Replay-Hybrid": "InputDrivenGateMatchedReplayHybrid",
         "NgSpiceInputDrivenGateMatchedReplayHybrid": "InputDrivenGateMatchedReplayHybrid",
@@ -389,6 +391,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
         "InputDrivenGateMatchedReplaySharedFull",
         "InputDrivenGateMatchedReplayHybrid",
         "InputDrivenGateMatchedReplayDelayed",
+        "InputDrivenGateMatchedReplayAligned",
         "InputDrivenMeasuredRateGateFull",
         "InputDrivenTwoStateGateDelayCommandFull",
         "InputDrivenTwoStateGatePredriverCommandFull",
@@ -413,6 +416,7 @@ def generate_spice_model(io_type, subcircuit_type, ibis_data, corner, output_fil
                 "InputDrivenGateMatchedReplaySharedFull": "directional_dual_residual_gate_matched_shared_full",
                 "InputDrivenGateMatchedReplayHybrid": "directional_dual_residual_gate_matched_hybrid",
                 "InputDrivenGateMatchedReplayDelayed": "directional_dual_residual_gate_matched_delayed",
+                "InputDrivenGateMatchedReplayAligned": "directional_dual_residual_gate_matched_aligned",
                 "InputDrivenMeasuredRateGateFull": "measured_rate_full",
                 "InputDrivenTwoStateGateDelayCommandFull": "directional_dual_residual_delay_cmd_full",
                 "InputDrivenTwoStateGatePredriverCommandFull": "directional_dual_residual_predriver_cmd_full",
@@ -2882,6 +2886,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_gate_matched_full",
         "directional_dual_residual_gate_matched_hybrid",
         "directional_dual_residual_gate_matched_delayed",
+        "directional_dual_residual_gate_matched_aligned",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2893,6 +2898,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         "directional_dual_residual_gate_matched_full",
         "directional_dual_residual_gate_matched_hybrid",
         "directional_dual_residual_gate_matched_delayed",
+        "directional_dual_residual_gate_matched_aligned",
         "directional_dual_residual_delay_cmd_full",
         "directional_dual_residual_predriver_cmd_full",
         "aligned_replay_hybrid",
@@ -2905,7 +2911,9 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # opposite gate trajectory at whatever Vc the interrupted state had reached.
     use_gate_matched = mode in ("directional_dual_residual_gate_matched_full",
                                 "directional_dual_residual_gate_matched_shared_full",
-                                "directional_dual_residual_gate_matched_hybrid")
+                                "directional_dual_residual_gate_matched_hybrid",
+                                "directional_dual_residual_gate_matched_delayed",
+                                "directional_dual_residual_gate_matched_aligned")
     # The original build gates the replay on H2STATEACTIVE, which only says "a
     # device is mid-travel" and so is true on an ordinary edge as well as on a
     # reversal. Vc-matching was therefore replacing the normal transition too,
@@ -2914,11 +2922,22 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     # a reversal actually is.
     gate_matched_reversal_only = mode in (
         "directional_dual_residual_gate_matched_hybrid",
-        "directional_dual_residual_gate_matched_delayed")
+        "directional_dual_residual_gate_matched_delayed",
+        "directional_dual_residual_gate_matched_aligned")
     # Also make the replay wait out the fitted onset delay, so the entry rule is
     # judged on where it enters rather than on having skipped the latency the
     # gate-state build still has to pay.
-    gate_matched_delay_hold = mode == "directional_dual_residual_gate_matched_delayed"
+    gate_matched_delay_hold = mode in (
+        "directional_dual_residual_gate_matched_delayed",
+        "directional_dual_residual_gate_matched_aligned")
+    # Sample the gate at edge+delay rather than at the edge. During the fitted
+    # delay the gate is still travelling in the old direction -- GUP rises from
+    # 0.4989 to 0.5282 on io_buf -- so sampling at the edge inverts the wrong
+    # value. Sampling late reads GUP after that travel, and because an
+    # exponential is memoryless, inverting there and advancing reproduces the
+    # gate-state trajectory exactly: checked offline to 1e-5, which is the ODE
+    # integrator step error rather than a difference between the two.
+    gate_matched_late_sample = mode == "directional_dual_residual_gate_matched_aligned"
     # Ku and Kd were solved as a pair from one recorded edge, so reading them
     # at different offsets yields a combination the buffer never held. This
     # variant forces one shared entry time to test whether that matters.
@@ -3291,11 +3310,21 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         # than any gate tau, so the latched value is the pre-edge one.
         st += "CGUSAMP GUSAMP 0 {gate_c} ic=0\n"
         st += "RGUSAMP GUSAMP 0 1e15\n"
-        st += "BGUSAMPLE GUSAMP 0 I = -{gate_c} * V(GMEDGE) * (V(GUP) - V(GUSAMP)) / edge_delay\n"
+        sample_u = "GMSAMPU" if gate_matched_late_sample else "GMEDGE"
+        sample_d = "GMSAMPD" if gate_matched_late_sample else "GMEDGE"
+        if gate_matched_late_sample:
+            # PUONP/PUOFFP and PDONP/PDOFFP are the edge pulses already delayed
+            # by the fitted onset for each device and direction; exactly one
+            # fires per edge, so max() picks whichever applies.
+            st += "BGMSAMPU GMSAMPU 0 V = max(V(PUONP), V(PUOFFP))\n"
+            st += "BGMSAMPD GMSAMPD 0 V = max(V(PDONP), V(PDOFFP))\n"
+        st += ("BGUSAMPLE GUSAMP 0 I = -{gate_c} * V(" + sample_u +
+               ") * (V(GUP) - V(GUSAMP)) / edge_delay\n")
         st += "CGDSAMP GDSAMP 0 {gate_c} ic=1\n"
         st += "BGDSAMPBASE GDSAMPBASE 0 V = 1.0\n"
         st += "RGDSAMP GDSAMP GDSAMPBASE 1e15\n"
-        st += "BGDSAMPLE GDSAMP 0 I = -{gate_c} * V(GMEDGE) * (V(GDN) - V(GDSAMP)) / edge_delay\n"
+        st += ("BGDSAMPLE GDSAMP 0 I = -{gate_c} * V(" + sample_d +
+               ") * (V(GDN) - V(GDSAMP)) / edge_delay\n")
 
         # One inverse per direction of travel for each device. The trajectory is
         # monotone, so each is single valued -- no policy needed to break ties.
@@ -3345,8 +3374,31 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
         st += create_ngspice_k_lookup_source_from_arg("BGMKDF", "GMKDF", "GMARGD", kf[:, _TIME], kf[:, _KD])
         st += "BGMKU GMKU 0 V = (V(NINX) > 0.5) ? V(GMKUR) : V(GMKUF)\n"
         st += "BGMKD GMKD 0 V = (V(NINX) > 0.5) ? V(GMKDR) : V(GMKDF)\n"
-        st += "B42 KUTARGET 0 V = (V(GMREV) > 0.5) ? V(GMKU) : V(KULEG)\n"
-        st += "B43 KDTARGET 0 V = (V(GMREV) > 0.5) ? V(GMKD) : V(KDLEG)\n\n"
+        if gate_matched_late_sample:
+            # The sample lands at edge+delay, but GMREV goes high at the edge.
+            # Between the two, GUSAMP still holds the value from the *previous*
+            # edge, which inverts to the far end of the opposite curve and drove
+            # Ku to zero for 68 ps before snapping back. Arm each device only
+            # once its own sample has been taken, and run the gate mapping until
+            # then -- which is what the gate is doing anyway during that window.
+            for arm, pulse in (("GMARMU", "GMSAMPU"), ("GMARMD", "GMSAMPD")):
+                st += (f"B{arm}CMD {arm}CMD 0 V = (V({pulse}) > 0.5) ? 1.0 : "
+                       f"((V(GMEDGE) > 0.5) ? 0.0 : V({arm}))\n")
+                st += f"C{arm} {arm} 0 {{gate_c}} ic=0\n"
+                st += f"R{arm} {arm} 0 1e15\n"
+                st += (f"B{arm} {arm} 0 I = -{{gate_c}} * "
+                       f"(V({arm}CMD) - V({arm})) / edge_delay\n")
+            blend_u = ("V(H2STATEACTIVE) * V(KUGATE) + "
+                       "(1.0 - V(H2STATEACTIVE)) * V(KULEG)")
+            blend_d = ("V(H2STATEACTIVE) * V(KDGATE) + "
+                       "(1.0 - V(H2STATEACTIVE)) * V(KDLEG)")
+            st += (f"B42 KUTARGET 0 V = (V(GMREV) > 0.5 && V(GMARMU) > 0.5) ? "
+                   f"V(GMKU) : ({blend_u})\n")
+            st += (f"B43 KDTARGET 0 V = (V(GMREV) > 0.5 && V(GMARMD) > 0.5) ? "
+                   f"V(GMKD) : ({blend_d})\n\n")
+        else:
+            st += "B42 KUTARGET 0 V = (V(GMREV) > 0.5) ? V(GMKU) : V(KULEG)\n"
+            st += "B43 KDTARGET 0 V = (V(GMREV) > 0.5) ? V(GMKD) : V(KDLEG)\n\n"
 
     st += "BH2STATEACTIVE H2STATEACTIVE 0 V = "
     st += "((V(NINX) < 0.5 && V(GUP) > 0.05 && V(GUP) < 0.95) || "

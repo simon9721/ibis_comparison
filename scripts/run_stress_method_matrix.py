@@ -62,6 +62,8 @@ METHODS = (
      "Vc-matching gated to the reversal, so the normal edge stays on the legacy path"),
     ("gate_match_delayed", "InputDrivenGateMatchedReplayDelayed",
      "Vc-matching gated to the reversal and made to wait out the fitted onset delay"),
+    ("gate_match_aligned", "InputDrivenGateMatchedReplayAligned",
+     "Vc-matching sampled at edge+delay: the form that should equal gate-state"),
     ("value_match_full", "InputDrivenValueMatchedReplayFull",
      "same builder as time_match, but enter where the opposite table holds the present Ku/Kd"),
     ("coeff_match", "InputDrivenValueMatchedReplayV2Hybrid",
