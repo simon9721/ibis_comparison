@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""The shipped builds, not the mechanism: gate-state against every Vc-matching.
+
+Figure 18 shows the two *mechanisms* agree to 0.08 mV once everything else is
+stripped away. This shows what the actual implementations do on a real case,
+which is a different and less flattering picture: the production models carry
+residual corrections, arming and sampling machinery, and read Ku from different
+places, so they do not produce the same waveform.
+
+io_buf short_high at 2226 ps is the only width where all five builds converge,
+so the comparison is made there rather than on the deck's 1634 ps case, which
+pure gate-state and two of the Vc builds do not solve.
+
+    py -3.14 scripts/build_implementation_comparison_figure.py
+"""
+from __future__ import annotations
+
+import argparse
+import csv
+from pathlib import Path
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / ".codex_deps" / "presentation" / "python"))
+
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt  # noqa: E402
+import numpy as np  # noqa: E402
+
+MATRIX = ROOT / "results" / "stress_method_matrix_2026-08-20"
+OUT = ROOT / "results" / "ibis_intro_figures_2026-08-25" / "figures_methods"
+
+STEM = "io_buf_short_high_w2226ps.csv"
+EDGE_NS, WIDTH_NS = 5.0, 2.2259
+WINDOW = (4.6, 9.4)
+
+TRANSISTOR = "#808080"
+# Reference first, then the shipped Vc build, then each correction in the order
+# it was applied, so the figure reads as the sequence of fixes.
+BUILDS = [
+    ("gate_state", "gate-state (pure build)", "#1B6B4F", 2.6),
+    ("gate_match", "Vc-matching, as shipped", "#D97706", 2.2),
+    ("gate_match_hybrid", "Vc-matching, gated to the reversal", "#C02626", 2.2),
+    ("gate_match_equiv", "Vc-matching, same map and residual", "#7B2CBF", 2.2),
+]
+DPI = 180
+
+
+def load(path: Path) -> dict[str, np.ndarray]:
+    rows = list(csv.reader(path.open(newline="", encoding="utf-8")))
+    header, values = rows[0], np.array([[float(x) for x in r] for r in rows[1:]])
+    return {name: values[:, i] for i, name in enumerate(header)}
+
+
+def style(axis, title=None):
+    axis.grid(alpha=0.3, color="#C9D3DE", lw=0.8)
+    axis.tick_params(labelsize=12)
+    for spine in axis.spines.values():
+        spine.set_color("#3A4753")
+    if title:
+        axis.set_title(title, fontsize=18, fontweight="bold", pad=12)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--out", type=Path, default=OUT)
+    args = parser.parse_args()
+    out = args.out if args.out.is_absolute() else ROOT / args.out
+    out.mkdir(parents=True, exist_ok=True)
+
+    have = [(k, lab, c, lw) for k, lab, c, lw in BUILDS
+            if (MATRIX / k / "waveforms" / STEM).exists()]
+    missing = [k for k, *_ in BUILDS if (MATRIX / k / "waveforms" / STEM).exists() is False]
+    if missing:
+        print("missing:", missing)
+    base = load(MATRIX / have[0][0] / "waveforms" / STEM)
+    t_rev = EDGE_NS + WIDTH_NS
+    title = f"io_buf  |  {WIDTH_NS * 1000:.0f} ps pulse  |  shipped implementations"
+
+    fig, axis = plt.subplots(figsize=(14.2, 6.0))
+    axis.plot(base["time_ns"], base["silicon_pad"], color=TRANSISTOR, lw=5.4,
+              label="HSPICE transistor", zorder=2)
+    for key, label, colour, lw in have:
+        d = load(MATRIX / key / "waveforms" / STEM)
+        axis.plot(d["time_ns"], d["pybis_pad"], color=colour, lw=lw, label=label, zorder=4)
+    axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1, label="reverse edge")
+    axis.set_xlim(*WINDOW)
+    axis.set_xlabel("Time (ns)", fontsize=13)
+    axis.set_ylabel("Pad voltage (V)", fontsize=13)
+    style(axis, f"{title}  |  pad voltage")
+    axis.legend(fontsize=11.5, loc="upper left", framealpha=0.94)
+    fig.tight_layout()
+    fig.savefig(out / "19_implementations_pad.png", dpi=DPI)
+    plt.close(fig)
+
+    fig, axes = plt.subplots(2, 1, figsize=(14.2, 8.4), sharex=True)
+    for axis, coeff in zip(axes, ("ku", "kd")):
+        axis.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
+        axis.plot(base["time_ns"], base[f"silicon_{coeff}"], color=TRANSISTOR, lw=5.4,
+                  label="HSPICE transistor", zorder=2)
+        for key, label, colour, lw in have:
+            d = load(MATRIX / key / "waveforms" / STEM)
+            axis.plot(d["time_ns"], d[f"pybis_{coeff}"], color=colour, lw=lw,
+                      label=label, zorder=4)
+        axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1)
+        axis.set_ylabel(coeff.replace("k", "K"), fontsize=15)
+        axis.set_ylim(-0.25, 1.3)
+        style(axis)
+    axes[0].set_title(f"{title}  |  Ku and Kd", fontsize=18, fontweight="bold", pad=12)
+    axes[0].legend(fontsize=11.5, loc="upper right", framealpha=0.94, ncol=2)
+    axes[1].set_xlabel("Time (ns)", fontsize=13)
+    axes[0].set_xlim(*WINDOW)
+    fig.tight_layout()
+    fig.savefig(out / "19_implementations_kukd.png", dpi=DPI)
+    plt.close(fig)
+
+    ref = load(MATRIX / "gate_state" / "waveforms" / STEM)
+    t = ref["time_ns"]
+    m = (t >= WINDOW[0]) & (t <= WINDOW[1])
+    print(f"io_buf 2226 ps, each build against the pure gate-state build\n")
+    print(f"{'build':38s} {'worst dPad':>12s} {'worst dKu':>11s}")
+    for key, label, _c, _lw in have:
+        if key == "gate_state":
+            continue
+        d = load(MATRIX / key / "waveforms" / STEM)
+        dp = np.max(np.abs(ref["pybis_pad"][m] -
+                           np.interp(t[m], d["time_ns"], d["pybis_pad"]))) * 1000
+        dk = np.max(np.abs(ref["pybis_ku"][m] -
+                           np.interp(t[m], d["time_ns"], d["pybis_ku"])))
+        print(f"{label:38s} {dp:9.1f} mV {dk:11.3f}")
+    print(f"\nwrote to {out.relative_to(ROOT)}")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
