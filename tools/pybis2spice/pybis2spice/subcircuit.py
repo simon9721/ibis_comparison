@@ -3336,6 +3336,10 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
 
     if use_gate_matched:
         st += "\n* Vc-matched replay: the interrupted gate states pick the entry time.\n"
+        # Fast enough to settle inside the sample pulse: charging through
+        # edge_delay against a pulse of the same width captured only ~63% of
+        # the gate and biased every inverted entry.
+        st += ".param gm_sample_tau=0.2p\n"
         # HREVERSERAW and EDGEPULSE belong to other builders; referencing them
         # here left undefined nodes and every case died with a singular matrix.
         # H2STATEACTIVE already encodes "a device is mid-travel" in this builder,
@@ -3377,12 +3381,12 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
                 st += (f"B{arm} {arm} 0 I = -{{gate_c}} * "
                        f"(V({arm}CMD) - V({arm})) / edge_delay\n")
         st += ("BGUSAMPLE GUSAMP 0 I = -{gate_c} * V(" + sample_u +
-               ") * (V(GUP) - V(GUSAMP)) / edge_delay\n")
+               ") * (V(GUP) - V(GUSAMP)) / gm_sample_tau\n")
         st += "CGDSAMP GDSAMP 0 {gate_c} ic=1\n"
         st += "BGDSAMPBASE GDSAMPBASE 0 V = 1.0\n"
         st += "RGDSAMP GDSAMP GDSAMPBASE 1e15\n"
         st += ("BGDSAMPLE GDSAMP 0 I = -{gate_c} * V(" + sample_d +
-               ") * (V(GDN) - V(GDSAMP)) / edge_delay\n")
+               ") * (V(GDN) - V(GDSAMP)) / gm_sample_tau\n")
 
         # One inverse per direction of travel for each device. The trajectory is
         # monotone, so each is single valued -- no policy needed to break ties.

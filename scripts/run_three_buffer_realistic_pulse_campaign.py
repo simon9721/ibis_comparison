@@ -476,6 +476,14 @@ def ngspice_deck(device: Device, case: PulseCase, subckt_type: str) -> str:
             " V(xdrv.hreverseraw) V(xdrv.hsettled) V(xdrv.hhybridactive)"
             " V(xdrv.kures) V(xdrv.kdres) V(xdrv.guprate) V(xdrv.gdnrate)"
         )
+    if "GateMatchedReplay" in subckt_type:
+        # The replayed gate and its entry, so a divergence from the integrated
+        # gate can be attributed rather than inferred from Ku.
+        diagnostics += (" V(xdrv.gusamp) V(xdrv.gdsamp) V(xdrv.gmtu) V(xdrv.gmtd)"
+                        " V(xdrv.gmargu) V(xdrv.gmargd)")
+    if subckt_type in ("InputDrivenGateMatchedReplayEquivalent",
+                       "InputDrivenGateMatchedReplayEquivalentDelayCmd"):
+        diagnostics += " V(xdrv.gupx) V(xdrv.gdnx) V(xdrv.gmgup) V(xdrv.gmgdn)"
     if subckt_type == "InputDrivenTwoStateGateLevelCommandFull":
         # The level-command block replaces the edge-integrating one, so its
         # nodes are absent from the shared diagnostic list above. Without them a
