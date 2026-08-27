@@ -124,6 +124,62 @@ def convergence_figure(out):
     return worst
 
 
+# The pair after every bookkeeping difference is removed: same command layer,
+# same map, same residual, sample settling inside its pulse. All that separates
+# them now is how the gate value is obtained.
+FINAL_PAIR = ("gate_match_equiv_delaycmd", "delay_cmd")
+
+
+def final_pair_figure(out):
+    """Pad, Ku and Kd for the corrected pair, on one set of axes each."""
+    a_key, b_key = FINAL_PAIR
+    if not all((MATRIX / k / "waveforms" / STEM).exists() for k in FINAL_PAIR):
+        return {}
+    a, b = (load(MATRIX / a_key / "waveforms" / STEM),
+            load(MATRIX / b_key / "waveforms" / STEM))
+    t_rev = EDGE_NS + WIDTH_NS
+    integ, replay = "#1B6B4F", "#C02626"
+
+    fig, axes = plt.subplots(3, 1, figsize=(14.2, 11.4), sharex=True)
+    axes[0].plot(b["time_ns"], b["silicon_pad"], color=TRANSISTOR, lw=5.4,
+                 label="HSPICE transistor", zorder=2)
+    axes[0].plot(b["time_ns"], b["pybis_pad"], color=integ, lw=3.2,
+                 label="gate-state   gate by integration", zorder=3)
+    axes[0].plot(a["time_ns"], a["pybis_pad"], color=replay, lw=2.0, ls=(0, (5, 2.4)),
+                 label="Vc-matching   gate by replay", zorder=4)
+    axes[0].set_ylabel("Pad voltage (V)", fontsize=13)
+    style(axes[0], f"io_buf  |  {WIDTH_NS * 1000:.0f} ps pulse  |  "
+                   "pad voltage and Ku/Kd")
+    axes[0].legend(fontsize=12, loc="upper left", framealpha=0.94)
+
+    worst = {}
+    for axis, coeff in zip(axes[1:], ("ku", "kd")):
+        axis.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
+        axis.plot(b["time_ns"], b[f"pybis_{coeff}"], color=integ, lw=3.2,
+                  label="gate-state", zorder=3)
+        axis.plot(a["time_ns"], a[f"pybis_{coeff}"], color=replay, lw=2.0,
+                  ls=(0, (5, 2.4)), label="Vc-matching", zorder=4)
+        axis.set_ylabel(coeff.replace("k", "K"), fontsize=15)
+        axis.set_ylim(-0.25, 1.3)
+        style(axis)
+        axis.legend(fontsize=12, loc="upper right", framealpha=0.94)
+
+    for axis in axes:
+        axis.axvline(t_rev, color="#8A8A8A", ls="--", lw=1.8, zorder=1)
+        axis.set_xlim(*WINDOW)
+    axes[2].set_xlabel("Time (ns)", fontsize=13)
+    fig.tight_layout()
+    fig.savefig(out / "23_final_pair.png", dpi=DPI)
+    plt.close(fig)
+
+    t = a["time_ns"]
+    m = (t >= WINDOW[0]) & (t <= WINDOW[1])
+    for name, col in (("pad", "pybis_pad"), ("Ku", "pybis_ku"), ("Kd", "pybis_kd")):
+        worst[name] = float(np.max(np.abs(a[col][m] -
+                                          np.interp(t[m], b["time_ns"], b[col]))))
+    return worst
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -197,6 +253,12 @@ def main() -> int:
         print("\neach build against the gate-state on its own command layer")
         for label, value in worst.items():
             print(f"   {label:32s} {value:8.1f} mV")
+    final = final_pair_figure(out)
+    if final:
+        print("\nfinal pair, worst separation across the window")
+        for name, value in final.items():
+            unit = " V" if name == "pad" else ""
+            print(f"   {name:4s} {value:.3e}{unit}")
     print(f"\nwrote to {out.relative_to(ROOT)}")
     return 0
 
