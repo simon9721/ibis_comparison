@@ -20,6 +20,10 @@ Superseded and kept only for history:
 | 6 | `06_reversal_io_buf_short_low_70.png` | Mid-reversal, opposite direction. The case where native IBIS departs from silicon most sharply. | `results\silicon_kukd_recovery_uniform_2026-08-27\plots\io_buf_short_low_70.png` |
 | 7 | `07_reversal_inv_chain_short_high_50.png` | Mid-reversal. inv_chain short high 50%, where silicon produces no pulse at all. | `results\silicon_kukd_recovery_uniform_2026-08-27\plots\inv_chain_short_high_50.png` |
 | 8 | `08_reversal_ex2_short_low_70.png` | Mid-reversal. ex2 short low 70%, the third buffer. | `results\silicon_kukd_recovery_uniform_2026-08-27\plots\ex2_short_low_70.png` |
+| 9 | `09_edge_io_buf_rising.png` | Close-up. io_buf rising edge, Ku and Kd, cropped to the transition. | `scripts/build_kukd_edge_closeups.py` |
+| 10 | `10_edge_io_buf_falling.png` | Close-up. io_buf falling edge. Silicon leads both models by 35-54 ps. | `scripts/build_kukd_edge_closeups.py` |
+| 11 | `11_edge_inv_chain_rising.png` | Close-up. inv_chain rising edge -- a 16 ps transition, where pybis fires 270 ps early. | `scripts/build_kukd_edge_closeups.py` |
+| 12 | `12_edge_inv_chain_falling.png` | Close-up. inv_chain falling edge. | `scripts/build_kukd_edge_closeups.py` |
 
 ## Model and native IBIS against silicon, post-reversal Ku
 

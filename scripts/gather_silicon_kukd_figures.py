@@ -50,6 +50,20 @@ PLAN = [
      "Mid-reversal. ex2 short low 70%, the third buffer."),
 ]
 
+# Written by build_kukd_edge_closeups.py straight into this folder, continuing
+# the numbering. Listed here so the index describes the whole set.
+CLOSEUPS = [
+    ("09_edge_io_buf_rising.png",
+     "Close-up. io_buf rising edge, Ku and Kd, cropped to the transition."),
+    ("10_edge_io_buf_falling.png",
+     "Close-up. io_buf falling edge. Silicon leads both models by 35-54 ps."),
+    ("11_edge_inv_chain_rising.png",
+     "Close-up. inv_chain rising edge -- a 16 ps transition, where pybis fires "
+     "270 ps early."),
+    ("12_edge_inv_chain_falling.png",
+     "Close-up. inv_chain falling edge."),
+]
+
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__,
@@ -82,6 +96,11 @@ def main() -> int:
         shutil.copy2(src, out / name)
         copied += 1
         index.append(f"| {n} | `{name}` | {caption} | `{src.relative_to(ROOT)}` |")
+
+    for n, (name, caption) in enumerate(CLOSEUPS, start=len(PLAN) + 1):
+        exists = (out / name).exists()
+        index.append(f"| {n} | `{name}`{'' if exists else ' _(not built)_'} | {caption} "
+                     f"| `scripts/build_kukd_edge_closeups.py` |")
 
     summary = MID / "recovery_vs_silicon.csv"
     if summary.exists():
