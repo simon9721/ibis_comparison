@@ -1,20 +1,23 @@
 #!/usr/bin/env python3
-"""One case, one column, one link of the causal chain per panel.
+"""The settled offset traced through one buffer, one case, one link per panel.
 
-Reads top to bottom. Each panel is the input to the panel below it, so the
-question "where does the pad offset come from" is answered by looking upward
-until the traces stop separating:
+Figure 03 reads top to bottom. Each panel is the input to the panel below it,
+so the pad offset can be followed upward until it reaches the layer that
+created it:
 
-    GUPCMD      the command capacitor          <- the defect is created here
-    GUPTARGET   after the clamp                <- and two cases are hidden here
+    GUPCMD      the command capacitor          <- created here
+    GUPTARGET   after the clamp
     GUP         the gate state
-    KUGATE      pwl(GUP), the map
-    Ku          KUGATE + KURES
+    Ku          the map of the gate, plus the residual
     pad         what the load sees
 
-Two cases are drawn against each other rather than all five: 60%, the worst
-offset, and 70%, which reads clean. They differ only in pulse width, so any
-separation between them is the defect and nothing else.
+Only the 60% case is drawn. An earlier version put 60% and 70% side by side to
+contrast a bad case with a good one, which is misleading: 70% is *not* good.
+Its command error is -0.0056 and the clamp erases it, so a reader comparing the
+two would conclude the defect is case-dependent when in fact all five cases
+carry it. That comparison belongs in figure 02, where the clamp is the subject.
+
+Figure 04 is the same case before and after the restore-term fix.
 
     py -3.14 scripts/build_offset_chain_figure.py
 """
@@ -34,87 +37,117 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
-DATA = ROOT / "results" / "settled_offset_diagnosis_2026-08-27" / "command_probe"
-OUT = ROOT / "results" / "settled_offset_diagnosis_2026-08-27"
+BASE = ROOT / "results" / "settled_offset_diagnosis_2026-08-27"
+PROBE = BASE / "command_probe"
+FIX = BASE / "fix_probe"
 
-BAD, GOOD = (60, 1792), (70, 1989)
-BAD_C, GOOD_C = "#C05621", "#2E8B57"
+CASE = (60, 1792)
 EDGE_NS = 5.0
+INK = "#C05621"
+SHIPPED_C = "#8A8A8A"
+FIXED_C = "#1B6B4F"
 DPI = 170
 
-# node, label, what the panel is showing, y limits
 CHAIN = [
-    ("gupcmd", "GUPCMD", "the command capacitor", (-0.03, 0.06)),
-    ("guptarget", "GUPTARGET", "after the clamp  min(max(x,0),1)", (-0.03, 0.06)),
-    ("gup", "GUP", "the gate state follows the command", (-0.03, 0.06)),
-    ("ku", "Ku", "the map, plus the residual", (-0.03, 0.10)),
-    ("pad", "Pad (V)", "what the load sees", (-0.02, 0.12)),
+    ("gupcmd", "GUPCMD", "the command capacitor", (-0.02, 0.06)),
+    ("guptarget", "GUPTARGET", "after the clamp  min(max(x,0),1)", (-0.02, 0.06)),
+    ("gup", "GUP", "the gate state follows the command", (-0.02, 0.06)),
+    ("ku", "Ku", "the map of the gate, plus the residual", (-0.02, 0.10)),
+    ("pad", "Pad (V)", "what the load sees", (-0.01, 0.13)),
 ]
 
 
-def load(target: int, width: int) -> dict[str, np.ndarray]:
-    rows = list(csv.reader((DATA / f"swing_{target}_w{width}ps.csv")
-                           .open(newline="", encoding="utf-8")))
+def load(path: Path, width: int) -> dict[str, np.ndarray]:
+    rows = list(csv.reader(path.open(newline="", encoding="utf-8")))
     values = np.array([[float(x) for x in r] for r in rows[1:]])
     d = {name: values[:, i] for i, name in enumerate(rows[0])}
     d["rel_ns"] = d["time_ns"] - (EDGE_NS + width / 1000.0)
     return d
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--out", type=Path, default=OUT)
-    args = parser.parse_args()
-    out = args.out if args.out.is_absolute() else ROOT / args.out
-    out.mkdir(parents=True, exist_ok=True)
+def settled(d: dict[str, np.ndarray], node: str) -> float:
+    hold = (d["rel_ns"] >= 2.60) & (d["rel_ns"] <= 2.95)
+    return float(d[node][hold].mean())
 
-    bad, good = load(*BAD), load(*GOOD)
-    fig, axes = plt.subplots(len(CHAIN), 1, figsize=(12.4, 13.6), sharex=True)
 
+def style(axis, label, caption, ylim):
+    axis.axhline(0.0, color="#5A5A5A", lw=1.2)
+    axis.axvline(0.0, color="#8A8A8A", ls="--", lw=1.5)
+    axis.set_ylim(*ylim)
+    axis.set_xlim(-0.2, 7.0)
+    axis.grid(alpha=0.28, color="#C9D3DE", lw=0.8)
+    axis.tick_params(labelsize=11)
+    for spine in axis.spines.values():
+        spine.set_color("#3A4753")
+    axis.set_ylabel(label, fontsize=14)
+    axis.text(0.988, 0.90, caption, transform=axis.transAxes, ha="right", va="top",
+              fontsize=11.5, color="#40505E",
+              bbox=dict(fc="white", ec="#C3CCD6", pad=3.5))
+
+
+def chain_figure(out: Path, target: int, width: int) -> None:
+    d = load(PROBE / f"swing_{target}_w{width}ps.csv", width)
+    fig, axes = plt.subplots(len(CHAIN), 1, figsize=(12.0, 13.2), sharex=True)
     for axis, (node, label, caption, ylim) in zip(axes, CHAIN):
-        axis.axhline(0.0, color="#5A5A5A", lw=1.2)
-        axis.plot(good["rel_ns"], good[node], color=GOOD_C, lw=2.6,
-                  label=f"{GOOD[0]}%  ({GOOD[1]} ps)")
-        axis.plot(bad["rel_ns"], bad[node], color=BAD_C, lw=2.6,
-                  label=f"{BAD[0]}%  ({BAD[1]} ps)")
-        axis.set_ylim(*ylim)
-        axis.set_xlim(-0.2, 7.0)
-        axis.grid(alpha=0.28, color="#C9D3DE", lw=0.8)
-        axis.tick_params(labelsize=11)
-        for spine in axis.spines.values():
-            spine.set_color("#3A4753")
-        axis.set_ylabel(label, fontsize=14)
-        axis.text(0.988, 0.90, caption, transform=axis.transAxes, ha="right", va="top",
-                  fontsize=11.5, color="#40505E",
-                  bbox=dict(fc="white", ec="#C3CCD6", pad=3.5))
-        # settled value of each trace, read where both have stopped moving
-        for d, colour in ((good, GOOD_C), (bad, BAD_C)):
-            hold = (d["rel_ns"] >= 2.60) & (d["rel_ns"] <= 2.95)
-            value = float(d[node][hold].mean())
-            axis.text(0.012, 0.88 if colour == BAD_C else 0.68,
-                      f"{value:+.4f}", transform=axis.transAxes, fontsize=12,
-                      family="monospace", color=colour, va="top")
-
-    axes[0].axvline(0.0, color="#8A8A8A", ls="--", lw=1.5)
-    for axis in axes:
-        axis.axvline(0.0, color="#8A8A8A", ls="--", lw=1.5)
-    axes[0].legend(fontsize=12, loc="upper right", framealpha=0.94,
-                   bbox_to_anchor=(1.0, 0.72))
+        axis.plot(d["rel_ns"], d[node], color=INK, lw=2.8)
+        style(axis, label, caption, ylim)
+        axis.text(0.012, 0.90, f"settles at {settled(d, node):+.4f}",
+                  transform=axis.transAxes, fontsize=12.5, family="monospace",
+                  color=INK, va="top")
     axes[-1].set_xlabel("Time from the reversal (ns)", fontsize=13)
-    fig.suptitle("io_buf  |  short high  |  the same defect at every layer",
-                 fontsize=18, fontweight="bold")
+    fig.suptitle(f"io_buf  |  short high  |  target {target}%  ({width} ps)  |  "
+                 "the offset at every layer", fontsize=17, fontweight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.977))
     fig.savefig(out / "03_offset_chain.png", dpi=DPI)
     plt.close(fig)
 
-    print("settled values, read at +2.60 to +2.95 ns from the reversal")
-    print(f"{'layer':<12}{f'{GOOD[0]}% (clean)':>16}{f'{BAD[0]}% (offset)':>17}{'separation':>13}")
+
+def fix_figure(out: Path, target: int, width: int) -> None:
+    ship = load(FIX / f"as_shipped_swing{target}_w{width}ps.csv", width)
+    fixed = load(FIX / f"gate_and_tau_swing{target}_w{width}ps.csv", width)
+    fig, axes = plt.subplots(len(CHAIN), 1, figsize=(12.0, 13.2), sharex=True)
+    for axis, (node, label, caption, ylim) in zip(axes, CHAIN):
+        axis.plot(ship["rel_ns"], ship[node], color=SHIPPED_C, lw=3.2,
+                  label="as shipped   gate 2.958 ns, tau 1.127 ns")
+        axis.plot(fixed["rel_ns"], fixed[node], color=FIXED_C, lw=2.2,
+                  ls=(0, (5, 2.2)), label="fixed   gate 1.831 ns, tau 0.250 ns")
+        style(axis, label, caption, ylim)
+        axis.text(0.012, 0.90,
+                  f"{settled(ship, node):+.4f}  ->  {settled(fixed, node):+.4f}",
+                  transform=axis.transAxes, fontsize=12.5, family="monospace",
+                  color="#2A3742", va="top")
+    axes[0].legend(fontsize=11.5, loc="upper right", framealpha=0.94,
+                   bbox_to_anchor=(1.0, 0.74))
+    axes[-1].set_xlabel("Time from the reversal (ns)", fontsize=13)
+    fig.suptitle(f"io_buf  |  short high  |  target {target}%  ({width} ps)  |  "
+                 "before and after the restore-term change",
+                 fontsize=17, fontweight="bold")
+    fig.tight_layout(rect=(0, 0, 1, 0.977))
+    fig.savefig(out / "04_offset_fix.png", dpi=DPI)
+    plt.close(fig)
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--out", type=Path, default=BASE)
+    args = parser.parse_args()
+    out = args.out if args.out.is_absolute() else ROOT / args.out
+    out.mkdir(parents=True, exist_ok=True)
+    target, width = CASE
+
+    chain_figure(out, target, width)
+    fix_figure(out, target, width)
+
+    ship = load(FIX / f"as_shipped_swing{target}_w{width}ps.csv", width)
+    fixed = load(FIX / f"gate_and_tau_swing{target}_w{width}ps.csv", width)
+    print(f"io_buf short high {target}% ({width} ps), settled at +2.60 to +2.95 ns")
+    print(f"{'layer':<12}{'as shipped':>13}{'fixed':>13}{'change':>13}")
     for node, label, _, _ in CHAIN:
-        g = float(good[node][(good["rel_ns"] >= 2.60) & (good["rel_ns"] <= 2.95)].mean())
-        b = float(bad[node][(bad["rel_ns"] >= 2.60) & (bad["rel_ns"] <= 2.95)].mean())
-        print(f"{label:<12}{g:16.5f}{b:17.5f}{b - g:13.5f}")
-    print(f"\nwrote to {out.relative_to(ROOT)}")
+        a, b = settled(ship, node), settled(fixed, node)
+        print(f"{label:<12}{a:13.5f}{b:13.5f}{b - a:13.5f}")
+    print(f"\nwrote {out.resolve()}\\03_offset_chain.png")
+    print(f"wrote {out.resolve()}\\04_offset_fix.png")
     return 0
 
 

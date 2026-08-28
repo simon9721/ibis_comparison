@@ -115,14 +115,42 @@ def run_fixture(device: base.Device, case: base.PulseCase, v_fixture: float,
     return np.column_stack([time_s, pad, pad, pad])
 
 
+# Uniform resample applied before the solve. The two fixtures arrive on their
+# own HSPICE adaptive grids, and taking the union of those grids puts timesteps
+# as short as 8 fs beside stretches where one fixture is only linearly
+# interpolated. `C_comp * dV/dt` is a finite difference over that grid, so it
+# amplifies the interpolation staircase enormously -- across the io_buf falling
+# edge the device currents move under 1% while the C_comp term swings 9x,
+# driving Ku to +1.5 and -1.2 on a coefficient that belongs in [0, 1].
+#
+# The conditioning is not the problem; `np.linalg.cond` never exceeds 5.5 on
+# any case here. Resampling both fixtures onto one uniform grid removes 77-80%
+# of the excursion on io_buf and leaves inv_chain and ex2 essentially
+# untouched, which is what identifies it as numerical: a physical coefficient
+# does not depend on the sampling interval.
+#
+# 5 ps is still 200 samples per io_buf's slowest fitted time constant (1.13 ns),
+# so the edge shape survives intact.
+UNIFORM_GRID_PS = 5.0
+
+
 def solve_silicon_kukd(ibis_data, low: np.ndarray, high: np.ndarray,
-                       v_high: float) -> np.ndarray:
+                       v_high: float, uniform_ps: float | None = UNIFORM_GRID_PS
+                       ) -> np.ndarray:
     """Solves Ku/Kd from two transistor fixture responses.
 
     This mirrors ``pybis2spice.solve_k_params_output`` exactly; only the source
-    of the two voltage waveforms differs.
+    of the two voltage waveforms differs, and the grid the solve runs on.
+    Pass ``uniform_ps=None`` to reproduce the original union-grid behaviour.
     """
-    time = np.unique(np.sort(np.concatenate([low[:, 0], high[:, 0]])))
+    if uniform_ps is None:
+        time = np.unique(np.sort(np.concatenate([low[:, 0], high[:, 0]])))
+    else:
+        start = max(low[0, 0], high[0, 0])
+        stop = min(low[-1, 0], high[-1, 0])
+        time = np.arange(start, stop, uniform_ps * 1e-12)
+        low = np.column_stack([time] + [np.interp(time, low[:, 0], low[:, 1])] * 3)
+        high = np.column_stack([time] + [np.interp(time, high[:, 0], high[:, 1])] * 3)
     wave_low = FixtureWaveform(low, [0.0, 0.0, 0.0], R_FIXTURE)
     wave_high = FixtureWaveform(high, [v_high] * 3, R_FIXTURE)
 
