@@ -39,11 +39,17 @@ PYBIS = "#C02626"
 DPI = 180
 
 # device, comparison csv, silicon csv, rising window, falling window
+#
+# A window has to hold *both* coefficients, not just the one the edge is named
+# after. io_buf turns its pullup off 0.068 ns after the input falls but does not
+# turn the pulldown on for 1.831 ns, so a window cropped to the Ku fall cuts the
+# Kd rise off the right-hand side entirely. The same asymmetry is what opens the
+# dead zone in the transport-delay command.
 CASES = [
     ("io_buf", INTRO / "io_buf_short_high_w10000ps.csv",
-     SILICON_DIR / "io_buf_full_transition.csv", (4.85, 9.5), (14.90, 16.6)),
+     SILICON_DIR / "io_buf_full_transition.csv", (4.85, 9.5), (14.85, 18.6)),
     ("inv_chain", INTRO / "inv_chain_short_high_w3000ps.csv",
-     SILICON_DIR / "inv_chain_full_transition.csv", (4.90, 6.2), (7.90, 8.6)),
+     SILICON_DIR / "inv_chain_full_transition.csv", (4.90, 6.2), (7.90, 9.0)),
 ]
 
 
