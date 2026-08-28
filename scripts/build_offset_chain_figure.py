@@ -40,12 +40,15 @@ import numpy as np  # noqa: E402
 BASE = ROOT / "results" / "settled_offset_diagnosis_2026-08-27"
 PROBE = BASE / "command_probe"
 FIX = BASE / "fix_probe"
+MATRIX = ROOT / "results" / "stress_method_matrix_2026-08-20" / "hybrid" / "waveforms"
 
 CASE = (60, 1792)
 EDGE_NS = 5.0
 INK = "#C05621"
 SHIPPED_C = "#8A8A8A"
 FIXED_C = "#1B6B4F"
+SILICON_C = "#111111"
+NATIVE_C = "#2B6CA3"
 DPI = 170
 
 CHAIN = [
@@ -63,6 +66,35 @@ def load(path: Path, width: int) -> dict[str, np.ndarray]:
     d = {name: values[:, i] for i, name in enumerate(rows[0])}
     d["rel_ns"] = d["time_ns"] - (EDGE_NS + width / 1000.0)
     return d
+
+
+def silicon(width: int) -> dict[str, np.ndarray]:
+    """The transistor and native-IBIS references for the same stimulus.
+
+    Only the last two panels have a reference to draw: GUPCMD, GUPTARGET and
+    GUP are internal to the model and silicon has no counterpart for them.
+    That is the point of the figure -- the offset is only *visible* at Ku and
+    the pad, and only *explicable* in the three panels above them.
+    """
+    rows = list(csv.reader((MATRIX / f"io_buf_short_high_w{width}ps.csv")
+                           .open(newline="", encoding="utf-8")))
+    values = np.array([[float(x) for x in r] for r in rows[1:]])
+    d = {name: values[:, i] for i, name in enumerate(rows[0])}
+    d["rel_ns"] = d["time_ns"] - (EDGE_NS + width / 1000.0)
+    return d
+
+
+REFERENCE = {"ku": ("silicon_ku", "hspice_ku"), "pad": ("silicon_pad", "hspice_pad")}
+
+
+def draw_reference(axis, ref, node, label=False):
+    if node not in REFERENCE:
+        return
+    sil, nat = REFERENCE[node]
+    axis.plot(ref["rel_ns"], ref[nat], color=NATIVE_C, lw=1.8,
+              label="HSPICE native IBIS" if label else None, zorder=2)
+    axis.plot(ref["rel_ns"], ref[sil], color=SILICON_C, lw=3.4,
+              label="HSPICE transistor" if label else None, zorder=3)
 
 
 def settled(d: dict[str, np.ndarray], node: str) -> float:
@@ -87,13 +119,24 @@ def style(axis, label, caption, ylim):
 
 def chain_figure(out: Path, target: int, width: int) -> None:
     d = load(PROBE / f"swing_{target}_w{width}ps.csv", width)
+    ref = silicon(width)
     fig, axes = plt.subplots(len(CHAIN), 1, figsize=(12.0, 13.2), sharex=True)
-    for axis, (node, label, caption, ylim) in zip(axes, CHAIN):
-        axis.plot(d["rel_ns"], d[node], color=INK, lw=2.8)
+    for n, (axis, (node, label, caption, ylim)) in enumerate(zip(axes, CHAIN)):
+        draw_reference(axis, ref, node, label=(node == "ku"))
+        axis.plot(d["rel_ns"], d[node], color=INK, lw=2.8,
+                  label="gate-state model" if node == "ku" else None, zorder=4)
         style(axis, label, caption, ylim)
-        axis.text(0.012, 0.90, f"settles at {settled(d, node):+.4f}",
+        axis.text(0.012, 0.90, f"model settles at {settled(d, node):+.4f}",
                   transform=axis.transAxes, fontsize=12.5, family="monospace",
                   color=INK, va="top")
+        if node in REFERENCE:
+            sil = REFERENCE[node][0]
+            axis.text(0.012, 0.72, f"transistor    {settled(ref, sil):+.4f}",
+                      transform=axis.transAxes, fontsize=12.5, family="monospace",
+                      color=SILICON_C, va="top")
+        if node == "ku":
+            axis.legend(fontsize=11, loc="upper right", framealpha=0.94,
+                        bbox_to_anchor=(1.0, 0.80))
     axes[-1].set_xlabel("Time from the reversal (ns)", fontsize=13)
     fig.suptitle(f"io_buf  |  short high  |  target {target}%  ({width} ps)  |  "
                  "the offset at every layer", fontsize=17, fontweight="bold")
@@ -105,12 +148,15 @@ def chain_figure(out: Path, target: int, width: int) -> None:
 def fix_figure(out: Path, target: int, width: int) -> None:
     ship = load(FIX / f"as_shipped_swing{target}_w{width}ps.csv", width)
     fixed = load(FIX / f"gate_and_tau_swing{target}_w{width}ps.csv", width)
+    ref = silicon(width)
     fig, axes = plt.subplots(len(CHAIN), 1, figsize=(12.0, 13.2), sharex=True)
     for axis, (node, label, caption, ylim) in zip(axes, CHAIN):
+        draw_reference(axis, ref, node, label=(node == "ku"))
         axis.plot(ship["rel_ns"], ship[node], color=SHIPPED_C, lw=3.2,
-                  label="as shipped   gate 2.958 ns, tau 1.127 ns")
+                  label="as shipped   gate 2.958 ns, tau 1.127 ns", zorder=4)
         axis.plot(fixed["rel_ns"], fixed[node], color=FIXED_C, lw=2.2,
-                  ls=(0, (5, 2.2)), label="fixed   gate 1.831 ns, tau 0.250 ns")
+                  ls=(0, (5, 2.2)), label="fixed   gate 1.831 ns, tau 0.250 ns",
+                  zorder=5)
         style(axis, label, caption, ylim)
         axis.text(0.012, 0.90,
                   f"{settled(ship, node):+.4f}  ->  {settled(fixed, node):+.4f}",
