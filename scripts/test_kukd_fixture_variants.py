@@ -207,25 +207,45 @@ def compare(reference: np.ndarray, other: np.ndarray) -> tuple[float, float, flo
 
 
 def variant_figure(path, label, solutions, window):
-    fig, axes = plt.subplots(2, 1, figsize=(13.0, 8.4), sharex=True)
-    for axis, col, name in zip(axes, (1, 2), ("Ku", "Kd")):
-        axis.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
+    """Overlay above, departure from the R-only baseline below.
+
+    The overlay alone is close to unreadable: away from the reversal the traces
+    sit on top of each other to four decimals, so the difference panel is what
+    actually carries the answer.
+    """
+    fig, axes = plt.subplots(4, 1, figsize=(13.0, 12.4), sharex=True,
+                             gridspec_kw={"height_ratios": [3, 2, 3, 2]})
+    base_t = solutions[0][1][:, 0] * 1e9
+    for (top, bottom), col, name in ((( axes[0], axes[1]), 1, "Ku"),
+                                     ((axes[2], axes[3]), 2, "Kd")):
+        top.axhspan(0.0, 1.0, color="#EDF3FA", zorder=0)
+        base = solutions[0][1][:, col]
         for (variant, solution), colour in zip(solutions, COLOURS):
-            axis.plot(solution[:, 0] * 1e9, solution[:, col], color=colour,
-                      lw=2.6 if variant.startswith("baseline") else 1.8,
-                      ls="-" if variant.startswith("baseline") else (0, (5, 2.2)),
-                      label=variant, zorder=3)
-        axis.set_ylabel(name, fontsize=15)
-        axis.set_xlim(*window)
-        axis.set_ylim(-0.3, 1.3)
-        axis.grid(alpha=0.28, color="#C9D3DE", lw=0.8)
-        axis.tick_params(labelsize=11.5)
-        for spine in axis.spines.values():
-            spine.set_color("#3A4753")
-    axes[0].set_title(f"{label}  |  Ku and Kd re-solved on four different fixtures",
-                      fontsize=16, fontweight="bold", pad=11)
-    axes[0].legend(fontsize=11.5, loc="upper left", framealpha=0.94)
-    axes[1].set_xlabel("Time (ns)", fontsize=12.5)
+            t = solution[:, 0] * 1e9
+            top.plot(t, solution[:, col], color=colour,
+                     lw=2.6 if variant.startswith("baseline") else 1.8,
+                     ls="-" if variant.startswith("baseline") else (0, (5, 2.2)),
+                     label=variant, zorder=3)
+            if variant.startswith("baseline"):
+                continue
+            bottom.plot(t, solution[:, col] - np.interp(t, base_t, base),
+                        color=colour, lw=1.7, zorder=3)
+        top.set_ylabel(name, fontsize=15)
+        top.set_ylim(-0.3, 1.3)
+        bottom.set_ylabel(f"{name} − baseline", fontsize=11.5)
+        bottom.axhline(0.0, color="#5A5A5A", lw=1.0)
+        bottom.set_ylim(-0.6, 0.6)
+        for axis in (top, bottom):
+            axis.set_xlim(*window)
+            axis.grid(alpha=0.28, color="#C9D3DE", lw=0.8)
+            axis.tick_params(labelsize=11)
+            for spine in axis.spines.values():
+                spine.set_color("#3A4753")
+    axes[0].set_title(f"{label}  |  Ku and Kd re-solved on {len(solutions)} fixtures, "
+                      "against the R-only baseline",
+                      fontsize=15.5, fontweight="bold", pad=11)
+    axes[0].legend(fontsize=11, loc="upper left", framealpha=0.94)
+    axes[3].set_xlabel("Time (ns)", fontsize=12.5)
     fig.tight_layout()
     fig.savefig(path, dpi=DPI)
     plt.close(fig)
