@@ -35,7 +35,64 @@ vendored dependencies under `.codex_deps` — or it dies on `import yaml`. And i
 must run **from the `inputs/` directory**, because the generated HSPICE decks
 reference the transistor library by bare filename.
 
-## 2. The historical instability, and where it stands
+## 2. The instability is real, and it is the per-job timeout
+
+**Corrected 2026-09-02.** Section 1 says the conversion is deterministic. That
+is true only of runs that complete. The tool is *not* reliably reproducible
+under load, and this is the instability that prompted item 3.
+
+While testing shorter capture windows, one recipe produced three different
+outcomes on three attempts:
+
+| attempt | outcome |
+|---|---|
+| first pair | exit 20 -- `dV/dt_r 0.0000`, rejected by ibischk |
+| next | exit 0, valid file |
+| next | exit 1 -- "Curve pullup not generated" |
+
+Same config, same inputs, same machine. The cause was in the log all along:
+
+```
+ERROR - hspice ... putPAD.spi timed out after 60 seconds
+ERROR - Curve pullup not generated.
+```
+
+A pullup I-V sweep -- about 5 s of simulation -- hit the 60 s per-job ceiling
+because other HSPICE jobs were running on the same host. **A timed-out job does
+not abort the conversion.** The caller logs it and continues, so the IBIS file
+is still written with that curve or waveform missing, and the failure surfaces
+minutes later as an ibischk error that names nothing useful. Which job loses
+the race varies, so the symptom varies.
+
+Worth stating plainly, because it misled the diagnosis: shortening `sim_time`
+looked like it broke the `[Ramp]` extraction, and it did not. The 1 ns window
+is fine. Its V-T waveforms land within 1 ps of the 6 ns reference, and once the
+timeout was raised it converts cleanly.
+
+### The fix
+
+Committed upstream as `a7b0ead` in the s2ibispy repository:
+
+- **Per-job timeout 60 s to 300 s**, overridable through
+  `S2IBISPY_SPICE_TIMEOUT` and `S2IBISPY_SPICE_COLD_START_TIMEOUT`. The limit
+  exists to catch a hung simulator, so it should sit far above any healthy run
+  rather than near it. A generous ceiling costs nothing when jobs succeed.
+- **Refuse to write a ramp with `dV <= 0` or `dt <= 0`.** That was previously
+  emitted and left for ibischk to reject much later. It now fails at the point
+  of extraction and names the file whose simulation failed.
+
+Verified: the 1 ns recipe that failed twice now converts cleanly, and the
+known-good 6 ns / 5 ps recipe still reproduces the 2026-07-27 archive byte for
+byte.
+
+Two things that commit deliberately does not do. It does not make a timed-out
+job abort the conversion -- failures still `continue`, so a partial model can
+still be written if a job fails for another reason. And it swept in
+pre-existing uncommitted work in that file (the HSPICE cold-start allowance and
+the stale-output guard) which was sitting untracked in the working tree; that
+work is not mine, and it is now committed alongside the timeout change.
+
+## 3. The earlier account of the instability, for context
 
 The July README documented the real failure: s2ibispy had a fixed 60 s per-job
 timeout, HSPICE's first Windows launch can spend close to a minute in the OS
@@ -59,7 +116,7 @@ All eight conversions in this sweep exited **0**.
 Nothing downstream currently enforces that; it is a convention, and it would be
 better as a validator.
 
-## 3. Accuracy against the characterization edge
+## 4. Accuracy against the characterization edge
 
 `tr = tf` is the free parameter. Swept over four decades on `inv_chain`, each
 model scored on the July sanity bench — HSPICE native IBIS, 1 ps input edges at
@@ -89,7 +146,7 @@ characterization edge** — about **0.70 × tr** from 1 ns down to 20 ps, flatte
 onto a ~2 ps floor below that, which is the bench's own resolution. That is a
 usable predictor: characterizing at `tr` builds in roughly `0.7 tr` of lateness.
 
-## 4. Usability is a separate axis, and it binds first
+## 5. Usability is a separate axis, and it binds first
 
 The sweep above scores the generated IBIS **under HSPICE**. Whether *pybis* can
 consume the same file is an independent question, and `io_buf` shows the two
@@ -125,7 +182,7 @@ goes below ~216 ps. **That residual is not the characterization edge**, and it
 is worth its own investigation — it is a candidate contributor to the
 unexplained falling-edge lateness (defect B).
 
-## 5. The procedure
+## 6. The procedure
 
 There is no universal edge rate. Both gates are buffer-specific, and the
 usability gate binds before the accuracy gate.
