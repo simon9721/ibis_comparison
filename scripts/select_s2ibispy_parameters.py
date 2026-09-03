@@ -495,8 +495,13 @@ def main() -> int:
     args = parser.parse_args()
 
     recipe = Recipe.load(args.config, args.inputs)
-    out = args.out or (ROOT / "results" /
-                       f"s2ibispy_parameter_selection_{recipe.name}_2026-09-02")
+    # Resolve before anything runs: conversions execute with cwd set to the
+    # inputs directory, so a relative --out would be interpreted there.
+    default_out = (ROOT / "results" /
+                   f"s2ibispy_parameter_selection_{recipe.name}_2026-09-02")
+    out = default_out if args.out is None else (
+        args.out if args.out.is_absolute() else (ROOT / args.out))
+    out = out.resolve()
     out.mkdir(parents=True, exist_ok=True)
 
     print(f"recipe   {recipe.path.name}")
