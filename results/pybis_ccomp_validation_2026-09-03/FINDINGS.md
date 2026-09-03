@@ -1,3 +1,10 @@
+> **SUPERSEDED (2026-09-03).** The conclusion below -- that pybis over-applies
+> C_comp -- is wrong. The golden-waveform test in
+> `../golden_waveform_test_2026-09-03/` shows nominal C_comp reproduces the
+> model's own V-T tables better than any reduced value, on all four tables.
+> pybis's C_comp handling is correct; the residual ~5-6 ps lag and the
+> falling-edge error are separate defects. Kept for the measurements.
+
 # Validating the C_comp fix: net-positive, but not the whole story
 
 The lag localization traced pybis's ~10 ps output-stage delay to its explicit

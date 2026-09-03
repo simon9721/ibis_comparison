@@ -36,8 +36,14 @@ Section 11.8.2, *Is Ccomp Being Double-Counted?*, gives the diagnostic:
 > value, say 50 pF. ... If the buffer rise time changes as C_comp is varied,
 > then C_comp may be getting double counted in the simulation.
 
-**This is precisely the test we ran, and pybis fails it.** Sweep against a fixed
-native reference:
+**CORRECTION (see results/golden_waveform_test_2026-09-03).** I originally read
+this as pybis failing the test. It does not apply to pybis: 11.8.2 describes a
+simulator that uses V-T/ramp data *directly* and also hangs C_comp on the output.
+pybis back-solves Ku with the C_comp current removed, so its Ku is C_comp-free
+and the explicit C_comp is the required other half -- the edge is *supposed* to
+move with C_comp. The golden-waveform test settles it: nominal C_comp beats
+C_comp=0 on all four tables. **pybis handles C_comp correctly.** The sweep below
+is kept as the measurement, not as a verdict:
 
 | pybis C_comp | pad lag vs native |
 |---:|---:|
@@ -56,7 +62,12 @@ Two consequences:
    doctrine, and the mechanism is the known one: C_comp is already inside the
    V-T (and so inside the Ku(t) derived from it), so an explicit die capacitor
    across the output applies it twice.
-2. **It kills the C_comp-scaling idea properly.** The rule is not *use a smaller
+2. **C_comp scaling is still wrong**, but for a simpler reason than I gave:
+   nominal C_comp is already the best value against the model's own golden data,
+   so scaling it away can only hurt. The rule below applies to V-T-replay
+   simulators, not to pybis:
+
+   *(original note)* The rule is not *use a smaller
    C_comp* -- it is that varying C_comp should have *no* effect on driver
    rise/fall at all. A scaled value is still a driver whose edge moves with
    C_comp: still double-counting, only less. The correct behaviour is that the
