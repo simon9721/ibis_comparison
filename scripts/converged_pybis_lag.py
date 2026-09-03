@@ -21,7 +21,7 @@ import shutil
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 for _p in (ROOT / "scripts", ROOT / ".codex_deps" / "presentation" / "python",
            ROOT / "tools" / "pybis2spice"):
     sys.path.insert(0, str(_p))
