@@ -48,3 +48,17 @@ results/stress_method_matrix_*/*/plots/
 
 # manim scratch renders; the published copy lives in results/kukd_animation/
 media/
+
+# HSPICE per-run intermediates (pure output, never source). These are the bulk
+# of the untracked tree and were partly committed before this rule; see the
+# separate untracking step to drop the tracked ones. Kept out going forward.
+*.tr0
+*.st0
+*.ic0
+*.pa0
+*.lis
+*.msg
+*.spi
+*.mt0
+*.pa1
+*.tr0.tmp
