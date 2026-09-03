@@ -28,10 +28,14 @@ ex2 variants, all seven edge rates each:
 | `base` | nothing (control) | 1.28 – 1.34 | 1.11 – 1.13 |
 | `skewp` | output PMOS halved | 1.59 – 1.71 | 1.24 – 1.31 |
 | `weak` | both output devices halved | **1.82 – 1.83** | **1.48 – 1.49** |
-| `nomiller` | n4→out caps removed | *running* | *running* |
+| `nomiller` | n4→out caps removed | **1.30 – 1.34** | 1.11 – 1.14 |
 
-**Hypothesis (well supported, not yet proven):** max|Ku| inflation is
-**gate-to-drain (Miller) feedthrough** that the two-fixture Ku/Kd solve cannot
+**FALSIFIED hypothesis:** ~~max|Ku| inflation is gate-to-drain (Miller)
+feedthrough~~ -- `nomiller` came back identical to the control. The caps are
+20.5 fF against C_comp's 5 pF, 0.41%, far too small to matter.
+
+**Revised, and the null result supports it:** the governing quantity is
+**C_comp x dV/dt against the device drive current** that the two-fixture Ku/Kd solve cannot
 attribute to either device, so it lands in the coefficients.
 
     max|K|  ~  (Miller feedthrough current)  /  (device drive current)
@@ -49,8 +53,10 @@ Every variant fits:
   (cx3 + cx5 + cx8). inv_chain has **zero** explicit caps — and inv_chain's
   max|Ku| is 1.03–1.06.
 
-`nomiller` (those three caps removed, nothing else) is the clincher. If Ku falls
-to ~1.05 the mechanism is proven.
+For ex2 the displacement current is 5 pF x 3.3 V / 200 ps = 82 mA against a
+~51 mA drive -- it exceeds the device, so the solve must push Ku above 1.
+inv_chain, at C_comp 0.468 pF, sits at 1.03. max|Ku| is monotonic in output edge
+rate across all five variants (328 ps -> 1.047, down to 152 ps -> 1.779).
 
 **Why this matters beyond ex2:** it means a high max|Ku| can be a *real signature
 of realistic parasitics*, not a corrupted extraction — which makes the selector's
