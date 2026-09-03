@@ -1,0 +1,41 @@
+{
+  "recipe": "results\\io_buf_fast_edge_regen_2026-08-19\\source\\io_buf_50ps.yaml",
+  "component": "MCM Driver 1",
+  "model": "driver",
+  "model_type": "I/O",
+  "observed": {
+    "settle_s": 5.183200000000001e-09,
+    "edge_width_s": 1.9819999999999995e-10,
+    "window_s": 6.000000000000001e-09,
+    "points": 1000,
+    "sampling_s": 6.000000000000001e-12,
+    "window_used_pct": 86.38666666666667
+  },
+  "chosen_sim_time_s": 6.479000000000001e-09,
+  "chosen_tr_s": 5e-11,
+  "gates": {
+    "max_abs_coefficient": 1.25,
+    "min_edge_samples": 5.0,
+    "hspice_convergence": true,
+    "ngspice_convergence": true,
+    "ngspice_timeout_s": 240
+  },
+  "rejected": [
+    {
+      "tr_s": 2e-11,
+      "reason": "max|Ku| = 1.714 (> 1.25)"
+    },
+    {
+      "tr_s": 1e-11,
+      "reason": "max|Ku| = 2.334 (> 1.25)"
+    },
+    {
+      "tr_s": 5e-12,
+      "reason": "max|Ku| = 2.091 (> 1.25)"
+    },
+    {
+      "tr_s": 1e-12,
+      "reason": "max|Ku| = 2.863 (> 1.25); max|Kd| = 1.343 (> 1.25)"
+    }
+  ]
+}

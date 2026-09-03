@@ -1,0 +1,53 @@
+{
+  "recipe": "results\\ex2_s2ibispy_slow_fast_2026-07-28\\configs\\ex2_fast_5ps.yaml",
+  "component": "MCM Driver 1",
+  "model": "driver",
+  "model_type": "Output",
+  "observed": {
+    "settle_s": 2.1381000000000003e-09,
+    "edge_width_s": 2.0019999999999978e-10,
+    "window_s": 8e-09,
+    "points": 1000,
+    "sampling_s": 8e-12,
+    "window_used_pct": 26.726250000000004
+  },
+  "chosen_sim_time_s": 2.6726250000000006e-09,
+  "chosen_tr_s": null,
+  "gates": {
+    "max_abs_coefficient": 1.25,
+    "min_edge_samples": 5.0,
+    "hspice_convergence": true,
+    "ngspice_convergence": true,
+    "ngspice_timeout_s": 240
+  },
+  "rejected": [
+    {
+      "tr_s": 2e-10,
+      "reason": "max|Ku| = 1.302 (> 1.25)"
+    },
+    {
+      "tr_s": 1e-10,
+      "reason": "max|Ku| = 1.307 (> 1.25)"
+    },
+    {
+      "tr_s": 5e-11,
+      "reason": "max|Ku| = 1.343 (> 1.25)"
+    },
+    {
+      "tr_s": 2e-11,
+      "reason": "max|Ku| = 1.307 (> 1.25)"
+    },
+    {
+      "tr_s": 1e-11,
+      "reason": "max|Ku| = 1.326 (> 1.25)"
+    },
+    {
+      "tr_s": 5e-12,
+      "reason": "max|Ku| = 1.299 (> 1.25)"
+    },
+    {
+      "tr_s": 1e-12,
+      "reason": "max|Ku| = 1.283 (> 1.25)"
+    }
+  ]
+}
