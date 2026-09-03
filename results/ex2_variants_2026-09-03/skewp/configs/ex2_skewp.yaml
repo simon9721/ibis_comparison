@@ -3,8 +3,8 @@ ibis_version: '7.1'
 file_name: ex2_skewp.ibs
 file_rev: '1.0'
 date: July 28, 2026
-source: ex2 variant 'skewp' -- output PMOS at half width
-notes: Halves only the pullup, so rise slows and fall does not. On inv_chain this inflated max|Ku| while leaving Kd untouched; this repeats it on a real extracted layout.
+source: "ex2 variant 'skewp' -- output PMOS at half width"
+notes: "Halves only the pullup, so rise slows and fall does not. On inv_chain this inflated max|Ku| while leaving Kd untouched; this repeats it on a real extracted layout."
 disclaimer: Experimental characterization for pybis observability study.
 copyright: ''
 spice_type: hspice

@@ -3,8 +3,8 @@ ibis_version: '7.1'
 file_name: ex2_base.ibs
 file_rev: '1.0'
 date: July 28, 2026
-source: ex2 variant 'base' -- unchanged reference
-notes: Identical to the shipped ex2. Built through the same generator so the reference and the variants differ only in the silicon.
+source: "ex2 variant 'base' -- unchanged reference"
+notes: "Identical to the shipped ex2. Built through the same generator so the reference and the variants differ only in the silicon."
 disclaimer: Experimental characterization for pybis observability study.
 copyright: ''
 spice_type: hspice

@@ -33,6 +33,7 @@ since removing the pullup outright is a structural change rather than a scaling.
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import shutil
 from dataclasses import dataclass, field
@@ -109,10 +110,11 @@ def recipe(variant: Variant, inputs_dir: Path) -> str:
             lines.append(f"file_name: ex2_{variant.key}.ibs")
             continue
         if s.startswith("source:"):
-            lines.append(f"source: ex2 variant '{variant.key}' -- {variant.title}")
+            lines.append("source: " + json.dumps(
+                f"ex2 variant {variant.key} -- {variant.title}"))
             continue
         if s.startswith("notes:"):
-            lines.append(f"notes: {variant.purpose}")
+            lines.append("notes: " + json.dumps(variant.purpose))
             continue
         if s.startswith("modelFile"):
             key = s.split(":")[0]

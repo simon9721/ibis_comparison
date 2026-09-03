@@ -3,8 +3,8 @@ ibis_version: '7.1'
 file_name: ex2_slowpre.ibs
 file_rev: '1.0'
 date: July 28, 2026
-source: ex2 variant 'slowpre' -- predriver at half width
-notes: Weakens the three predriver stages, so n4 swings more slowly and the output onset is delayed -- ex2's analogue of inv_chain's stage count, which is the quantity the command layer represents.
+source: "ex2 variant 'slowpre' -- predriver at half width"
+notes: "Weakens the three predriver stages, so n4 swings more slowly and the output onset is delayed -- ex2's analogue of inv_chain's stage count, which is the quantity the command layer represents."
 disclaimer: Experimental characterization for pybis observability study.
 copyright: ''
 spice_type: hspice

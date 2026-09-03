@@ -3,8 +3,8 @@ ibis_version: '7.1'
 file_name: ex2_weak.ibs
 file_rev: '1.0'
 date: July 28, 2026
-source: ex2 variant 'weak' -- output stage at half width
-notes: Halves both output devices: weaker drive and a slower edge into the same load, with the timing structure untouched.
+source: "ex2 variant 'weak' -- output stage at half width"
+notes: "Halves both output devices: weaker drive and a slower edge into the same load, with the timing structure untouched."
 disclaimer: Experimental characterization for pybis observability study.
 copyright: ''
 spice_type: hspice
