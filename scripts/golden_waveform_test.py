@@ -42,14 +42,38 @@ import numpy as np  # noqa: E402
 import spicelab as sl  # noqa: E402
 from pybis2spice import pybis2spice as pb, subcircuit  # noqa: E402
 
-IBIS = (ROOT / "results" / "inv_chain_variants_2026-09-02" / "base8" /
-        "selection" / "tr1ps" / "invchain_base8_tr1ps.ibs")
-OUT = ROOT / "results" / "golden_waveform_test_2026-09-03"
-MODEL, COMPONENT = "driver2", "invchain"
-SUPPLY_V = 1.8
-C_COMP_NOMINAL = 4.68e-13
+import argparse
+
+DEFAULTS = dict(
+    ibis=(ROOT / "results" / "inv_chain_variants_2026-09-02" / "base8" /
+          "selection" / "tr1ps" / "invchain_base8_tr1ps.ibs"),
+    out=ROOT / "results" / "golden_waveform_test_2026-09-03",
+    model="driver2", component="invchain", supply=1.8, ccomp=4.68e-13)
+
 SETTLE_NS = 5.0      # hold before the edge so the model starts settled
 NGSPICE_STEP_NS = 0.0002
+
+# filled in by main() from the CLI
+IBIS = DEFAULTS["ibis"]
+OUT = DEFAULTS["out"]
+MODEL = DEFAULTS["model"]
+COMPONENT = DEFAULTS["component"]
+SUPPLY_V = DEFAULTS["supply"]
+C_COMP_NOMINAL = DEFAULTS["ccomp"]
+
+
+def enable_level(sub_text: str, supply: float) -> float:
+    """The EN level that ENABLES the buffer, read off the generated subcircuit.
+
+    pybis writes NENABLE as `V(EN,VSS) < thr` for an active-low enable and
+    `> thr` for active-high. Reading it beats trusting a flag: driving EN to the
+    wrong rail silently disables the buffer and the pad never moves, which is a
+    failure mode we have already hit once on the open-drain bench.
+    """
+    m = re.search(r"NENABLE\s+0\s+V\s*=\s*\(\s*V\(EN[^)]*\)\s*([<>])", sub_text)
+    if not m:
+        return supply
+    return 0.0 if m.group(1) == "<" else supply
 
 
 def read_waveforms(path: Path):
@@ -109,6 +133,7 @@ def run_pybis(out_dir: Path, rfix: float, vfix: float, kind: str,
     pins = [p for p in m.group(2).split("params:")[0].split() if "=" not in p]
     nd = {"OUT": "OUT", "IN": "IN", "EN": "EN", "VCC": "VCC", "VSS": "0"}
     nodes = [nd.get(p.upper(), p) for p in pins]
+    en_v = enable_level((out_dir / "driver.sub").read_text(errors="ignore"), SUPPLY_V)
     # The InputDriven model initialises with the pulldown on and establishes
     # state only on the first detected EDGE, so a level it was merely held at is
     # not a settled state. A falling table therefore needs a real rising edge
@@ -127,7 +152,7 @@ def run_pybis(out_dir: Path, rfix: float, vfix: float, kind: str,
 .include driver.sub
 Vdd VCC 0 DC {SUPPLY_V}
 Vin IN 0 {pwl}
-Ven EN 0 DC {SUPPLY_V}
+Ven EN 0 DC {en_v:g}
 X1 {' '.join(nodes)} {m.group(1)} C_comp={c_comp:.6e}
 Vfix FIX 0 DC {vfix}
 Rfix OUT FIX {rfix}
@@ -150,6 +175,19 @@ def fom_percent(golden_v, sim_v, dx):
 
 
 def main() -> int:
+    global IBIS, OUT, MODEL, COMPONENT, SUPPLY_V, C_COMP_NOMINAL
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--ibis", type=Path, default=DEFAULTS["ibis"])
+    ap.add_argument("--out", type=Path, default=DEFAULTS["out"])
+    ap.add_argument("--model", default=DEFAULTS["model"])
+    ap.add_argument("--component", default=DEFAULTS["component"])
+    ap.add_argument("--supply", type=float, default=DEFAULTS["supply"])
+    ap.add_argument("--ccomp", type=float, default=DEFAULTS["ccomp"])
+    a = ap.parse_args()
+    IBIS, OUT = a.ibis, a.out
+    MODEL, COMPONENT, SUPPLY_V, C_COMP_NOMINAL = a.model, a.component, a.supply, a.ccomp
+    print(f"model {IBIS.name}  [{COMPONENT} / {MODEL}]  "
+          f"VCC {SUPPLY_V} V  C_comp {C_COMP_NOMINAL*1e12:.3f} pF")
     OUT.mkdir(parents=True, exist_ok=True)
     blocks = read_waveforms(IBIS)
     print(f"{len(blocks)} waveform tables in {IBIS.name}\n")
