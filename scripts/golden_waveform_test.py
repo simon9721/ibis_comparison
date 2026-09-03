@@ -109,10 +109,19 @@ def run_pybis(out_dir: Path, rfix: float, vfix: float, kind: str,
     pins = [p for p in m.group(2).split("params:")[0].split() if "=" not in p]
     nd = {"OUT": "OUT", "IN": "IN", "EN": "EN", "VCC": "VCC", "VSS": "0"}
     nodes = [nd.get(p.upper(), p) for p in pins]
-    # Rising: input settles low then steps high at SETTLE_NS. Falling: reverse.
-    lo, hi = (0.0, SUPPLY_V) if kind == "rising" else (SUPPLY_V, 0.0)
-    pwl = (f"PWL(0n {lo:g}  {SETTLE_NS}n {lo:g}  {SETTLE_NS + 0.001}n {hi:g}  "
-           f"{SETTLE_NS + stop_ns + 1:g}n {hi:g})")
+    # The InputDriven model initialises with the pulldown on and establishes
+    # state only on the first detected EDGE, so a level it was merely held at is
+    # not a settled state. A falling table therefore needs a real rising edge
+    # first, or the model enters the transition from the wrong initial level and
+    # the comparison measures the test, not the model.
+    end = SETTLE_NS + stop_ns + 1
+    if kind == "rising":
+        pwl = (f"PWL(0n 0  {SETTLE_NS}n 0  {SETTLE_NS + 0.001}n {SUPPLY_V:g}  "
+               f"{end:g}n {SUPPLY_V:g})")
+    else:
+        pre = SETTLE_NS / 2.0          # rise here, settle, then fall at SETTLE_NS
+        pwl = (f"PWL(0n 0  {pre:g}n 0  {pre + 0.001:g}n {SUPPLY_V:g}  "
+               f"{SETTLE_NS}n {SUPPLY_V:g}  {SETTLE_NS + 0.001}n 0  {end:g}n 0)")
     deck = f"""* golden-waveform replay, {kind}, R={rfix} V={vfix}, C_comp={c_comp:.3e}
 .options reltol=1e-5 abstol=1e-10 vntol=1e-7 trtol=1
 .include driver.sub

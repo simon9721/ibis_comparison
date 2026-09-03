@@ -27,13 +27,13 @@ alignment shift plus the aligned curve-overlay FOM.
 | table | C_comp | FOM % | RMSE mV | worst mV | shift ps |
 |---|---|---:|---:|---:|---:|
 | rising R=50 V=1.8 | **nominal** | **0.18** | 7.5 | 54 | +6.0 |
-| rising R=50 V=1.8 | zero | 0.74 | 54.3 | 798 | −4.0 |
+| rising R=50 V=1.8 | zero | 0.74 | 54.3 | 798 | -4.0 |
 | rising R=50 V=0 | **nominal** | **0.41** | 10.9 | 74 | +6.0 |
-| rising R=50 V=0 | zero | 0.60 | 38.0 | 711 | −4.0 |
-| falling R=50 V=1.8 | **nominal** | **0.44** | 44.8 | 658 | +6.0 |
-| falling R=50 V=1.8 | zero | 1.14 | 90.5 | 1595 | 0.0 |
-| falling R=50 V=0 | **nominal** | **0.84** | 62.6 | 766 | +6.0 |
-| falling R=50 V=0 | zero | 1.24 | 95.1 | 1422 | 0.0 |
+| rising R=50 V=0 | zero | 0.60 | 38.0 | 711 | -4.0 |
+| falling R=50 V=1.8 | **nominal** | **0.09** | 4.4 | 49 | +6.0 |
+| falling R=50 V=1.8 | zero | 0.64 | 39.8 | 368 | -6.0 |
+| falling R=50 V=0 | **nominal** | **0.18** | 9.3 | 66 | +4.0 |
+| falling R=50 V=0 | zero | 0.74 | 46.8 | 459 | -6.0 |
 
 **Nominal C_comp wins on all four tables**, by 1.5x to 4x in FOM, and the figure
 shows why: with nominal C_comp pybis lies on the golden trace, while at C_comp=0
@@ -62,16 +62,43 @@ Applying the book's test to pybis was a category error on my part: the right tes
 for pybis's scheme is whether the two halves cancel where they must -- at the
 characterization fixture -- and they do.
 
-## What is actually left, and it is not C_comp
+## Correction: there is no falling-edge defect
 
-- **A consistent +6.0 ps alignment shift** on every table with nominal C_comp.
-  That is the residual model lag, matching the ~5 ps measured against native IBIS
+An earlier run of this test reported falling edges reproducing far worse than
+rising (FOM 0.44 / 0.84, worst 658-766 mV). **That was an artifact of the test,
+not of pybis.**
+
+The InputDriven model initialises with the pulldown on and establishes state only
+on the first detected *edge*, so a level the input is merely *held* at is not a
+settled state. The falling replay held the input high from t=0 and stepped it low
+-- giving the model no rising edge -- so it entered the transition from the wrong
+initial level and spent the first tens of picoseconds climbing into the golden
+trace. Driving a real rising edge first, letting it settle, then falling gives:
+
+  falling V=1.8   FOM 0.44 -> **0.09**,  worst 658 -> **49 mV**
+  falling V=0     FOM 0.84 -> **0.18**,  worst 766 -> **66 mV**
+
+Falling now reproduces *better* than rising. This is the second time this same
+initialisation property has produced a false finding (the first was the open-drain
+bench), so it is worth stating as a rule: **any bench for this model must begin
+with a real edge, never a held level.**
+
+## What is actually left
+
+- **A consistent +4 to +6 ps alignment shift** on every table. That is the whole
+  of the residual, and it matches the ~5 ps model lag measured against native IBIS
   in the engine/model decoupling. Real, small, and not C_comp.
-- **Falling edges reproduce worse than rising** -- FOM 0.44 and 0.84 against 0.18
-  and 0.41, with worst-case departures of 658-766 mV against 54-74 mV. This is
-  the largest genuine defect the test exposes and is unexplained. It is a
-  plausible relative of the Ku edge-transition ringing seen in the lag
-  localization, and of the io_buf falling-edge lateness (defect B).
+- Aligned shape error is now 0.09-0.41% FOM (49-74 mV worst) across all four
+  tables -- pybis reproduces its own golden data closely once timing is removed.
+
+Appendix E of the book explains where the residual shift most likely comes from.
+The canonical IBIS simulator architecture is: *"an IBIS output driver sends a
+voltage wave, provided by the model file's [Ramp] or V-T data lookup tables, down
+a network... The reflections at each IBIS Input/Output are calculated with the use
+of the model file's I-V data lookup tables."* That is, V-T drives the wave and I-V
+handles reflections. pybis instead reconstructs the wave from I-V scaled by Ku(t).
+Both are defensible, but they are different architectures, and that difference --
+not C_comp -- is the remaining candidate for the few-ps lag.
 
 ## Files
 
