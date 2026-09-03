@@ -4,15 +4,17 @@
 Everything measured on the stress cases so far has been scalar -- a 50% crossing
 and an RMSE. That hides the shape, and the shape turns out to matter, because
 these truncated pulses are *partial excursions*: on io_buf short_high the pad
-peaks at 0.57-1.22 V out of a 3.3 V rail, so none of them reach the half-swing
-level a "50% crossing" would normally be measured against.
+peaks at 0.57-1.22 V, which is 36-76% of the swing it actually reaches into this
+load. Note the reference -- the pad swings to ~1.6 V into 50 ohm, not to the
+3.3 V supply, because the 50 ohm divider halves it. Comparing against 3.3 V (as
+I first did) makes these look far more truncated than they are.
 
 Plotting them shows something the scalars never surfaced: **native IBIS
 systematically under-swings the transistor** on every width, by 60-124 mV, while
 pybis tracks the peak to within 3-29 mV. That matters for how defect B is stated,
 because a waveform that peaks lower reaches any fixed threshold at a different
-time -- so part of "native is early, we are late" is an amplitude difference
-being read as a timing difference.
+time, so part of the reported timing difference may be an amplitude difference
+read as one. That contribution is plausible but has not been quantified.
 
     py -3.14 scripts/plot_stress_shapes.py
 """
@@ -34,7 +36,7 @@ import numpy as np  # noqa: E402
 
 SRC = ROOT / "results" / "stress_method_matrix_2026-08-20" / "delay_cmd" / "waveforms"
 OUT = ROOT / "results" / "stress_shapes_2026-09-03"
-SUPPLY = 3.3
+SUPPLY = 1.601  # io_buf pad swing into 50 ohm, not the 3.3 V supply
 TX, NAT, PYB = "#111111", "#2B6CA3", "#C02626"
 
 
@@ -61,7 +63,7 @@ def main() -> int:
         ax.plot(t, py, color=PYB, lw=2.0, ls=(0, (2, 1.6)), label="pybis (delay_cmd)")
         ax.axhline(SUPPLY / 2, color="#8A8A8A", lw=1.0, ls=":")
         ax.text(t[0] + 0.02 * (t[-1] - t[0]), SUPPLY / 2 + 0.05,
-                "half swing (1.65 V) — never reached", fontsize=8.5, color="#5A5A5A")
+                "half swing = 0.788 V (pad swings to ~1.6 V, not 3.3 V)", fontsize=8.5, color="#5A5A5A")
         ax.set_title(f"io_buf short_high, {width}    "
                      f"peaks: tx {si.max():.3f}  native {hs.max():.3f}  pybis {py.max():.3f} V",
                      fontsize=10.5, fontweight="bold")
@@ -70,7 +72,7 @@ def main() -> int:
         ax.set_xlabel("Time (ns)", fontsize=10)
         ax.grid(alpha=0.28)
     axes[0, 0].legend(fontsize=9.5, loc="upper right")
-    fig.suptitle("Stressed io_buf: the pulses are partial excursions, and native IBIS under-swings",
+    fig.suptitle("Stressed io_buf: native IBIS under-swings the transistor on every width",
                  fontsize=14, fontweight="bold")
     fig.tight_layout()
     fig.savefig(OUT / "stress_shapes.png", dpi=170)

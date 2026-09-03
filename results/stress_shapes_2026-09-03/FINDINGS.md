@@ -8,23 +8,37 @@ Source: `results/stress_method_matrix_2026-08-20/delay_cmd/waveforms/`,
 io_buf `short_high`, nine pulse widths, columns `silicon_pad` (HSPICE
 transistor), `hspice_pad` (native IBIS), `pybis_pad` (our delay_cmd build).
 
-## 1. The stressed pulses are partial excursions, not transitions
+## CORRECTION to section 1 (2026-09-03, same day)
 
-| width | transistor peak | fraction of the 3.3 V rail |
-|---|---:|---:|
-| 1505 ps | 0.569 V | 17% |
-| 1792 ps | 0.868 V | 26% |
-| 2090 ps | 1.074 V | 33% |
-| 2354 ps | 1.220 V | 37% |
+I first wrote that these pulses "never reach half swing", comparing their peaks
+against the **3.3 V supply**. That is the wrong reference. **io_buf's pad only
+swings to ~1.6 V into the 50 ohm + 2 pF load** -- the 50 ohm divider halves the
+supply. Measured from the same bench, the full-swing transistor run goes
+-0.013 to 1.588 V, so full swing is 1.601 V and the half-swing level is 0.788 V,
+not 1.65 V.
 
-**None of them reach half swing (1.65 V).** The pad rises to a partial peak and
-is pulled back — these are spikes, not edges.
+Against the correct reference:
 
-That has a direct consequence for how the timing defect is stated. A "falling 50%
-crossing" presumes the waveform *has* a 50% crossing of the full swing. On these
-cases it does not, so whatever level the study's crossing was measured against,
-it was not half of the rail. Any timing number on this family needs its reference
-level stated explicitly before it can be compared with a full-swing number.
+| width | transistor peak | % of the 1.601 V swing | crosses half? |
+|---|---:|---:|---:|
+| 1505 ps | 0.569 V | 36% | no |
+| 1634 ps | 0.722 V | 45% | no |
+| 1666 ps | 0.755 V | 47% | no |
+| 1792 ps | 0.868 V | 54% | **yes** |
+| 1853 ps | 0.914 V | 57% | **yes** |
+| 1989 ps | 1.009 V | 63% | **yes** |
+| 2090 ps | 1.074 V | 67% | **yes** |
+| 2226 ps | 1.154 V | 72% | **yes** |
+| 2354 ps | 1.220 V | 76% | **yes** |
+
+**Six of nine do cross half swing.** So the claim that a 50% crossing does not
+exist on this family was wrong, and the stronger conclusion drawn from it -- that
+the timing measurement is meaningless here -- does not hold. These are still
+partial excursions (36-76% of swing rather than 100%), but a half-swing crossing
+is well defined for most of them.
+
+What survives unchanged is section 2 below: the peak-amplitude comparison is a
+direct trace-to-trace measurement and does not depend on the reference level.
 
 ## 2. Native IBIS systematically under-swings; pybis does not
 
@@ -56,8 +70,10 @@ gets shorter.
 Defect B is stated as "we are 69–99 ps late, native is 5–26 ps early", both
 against the transistor. If native's waveform peaks 60–124 mV low, then it reaches
 any fixed threshold at a different time than a correctly-scaled waveform would —
-so **part of "native is early" is an amplitude deficit being read as a timing
-lead**, not native genuinely anticipating the transistor.
+so **part of "native is early" may be an amplitude deficit read as a timing
+lead** rather than native genuinely anticipating the transistor. This is a
+plausible contribution, not a measured one -- it has not been quantified on
+defect B's own cases.
 
 That does not make the timing shift disappear. It does mean the headline number
 mixes two effects, and the honest statement is either
