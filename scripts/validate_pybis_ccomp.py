@@ -93,7 +93,7 @@ XDUT in_dig pad vccq 0 invchain
 Rload pad 0 {r_load}
 Cload pad 0 {c_load}p
 .probe tran V(pad)
-.tran 0.001n {STOP_NS}n
+.tran 0.0005n {STOP_NS}n
 .end
 """
     (out_dir / "run.sp").write_text(deck, encoding="utf-8")
@@ -119,7 +119,7 @@ BIBIS pu_ref pd_ref pad in_dig pc_ref gc_ref
 Rload pad 0 {r_load}
 Cload pad 0 {c_load}p
 .probe tran V(pad)
-.tran 0.001n {STOP_NS}n
+.tran 0.0005n {STOP_NS}n
 .end
 """
     (out_dir / "run.sp").write_text(deck, encoding="utf-8")
@@ -139,6 +139,7 @@ def pybis(out_dir: Path, r_load: float, c_load: float, c_comp_pf: float):
     node = {"OUT": "OUT", "IN": "IN", "EN": "EN", "VCC": "VCC", "VSS": "0"}
     nodes = [node.get(p.upper(), p) for p in pins]
     deck = f"""* base8 pybis, C_comp override
+.options reltol=1e-5 abstol=1e-10 vntol=1e-7 trtol=1
 .include driver.sub
 Vdd VCC 0 DC {SUPPLY_V}
 Vin IN 0 {_pwl()}
@@ -146,7 +147,7 @@ Ven EN 0 DC {SUPPLY_V}
 X1 {' '.join(nodes)} {m.group(1)} C_comp={c_comp_pf * 1e-12:.6e}
 Rload OUT 0 {r_load}
 Cload OUT 0 {c_load}p
-.tran 0.001n {STOP_NS}n
+.tran 0.0002n {STOP_NS}n
 .save V(OUT)
 .end
 """
@@ -184,8 +185,9 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     window = (RISE_NS - 0.3, RISE_NS + 4.0)
 
-    print(f"{'load':<10}{'native RMSE':>12}{'pyb Ccomp':>11}{'pyb noCcomp':>13}"
-          f"  | {'native ps':>10}{'pyb Cc ps':>10}{'pyb no ps':>10}")
+    print(f"{'load':<10}{'native':>11}{'pyb full':>10}{'pyb half':>10}{'pyb none':>11}"
+          f"  | {'nat ps':>9}{'full ps':>9}{'half ps':>9}{'none ps':>9}")
+    print('   (converged: ngspice 0.2ps reltol 1e-5, HSPICE 0.5ps print)')
     rows = []
     for label, r_load, c_load in LOADS:
         case = out / label
@@ -196,11 +198,13 @@ def main() -> int:
         nat = native(case / "native", r_load, c_load)
         pyc = pybis(case / "pybis_ccomp", r_load, c_load, C_COMP_PF)
         pyn = pybis(case / "pybis_noccomp", r_load, c_load, 0.0)
+        pyh = pybis(case / "pybis_halfccomp", r_load, c_load, C_COMP_PF / 2)
         r_nat, s_nat = score(nat, tr, window) if nat else (np.nan, np.nan)
         r_pyc, s_pyc = score(pyc, tr, window) if pyc else (np.nan, np.nan)
         r_pyn, s_pyn = score(pyn, tr, window) if pyn else (np.nan, np.nan)
-        print(f"{label:<10}{r_nat:12.2f}{r_pyc:11.2f}{r_pyn:13.2f}"
-              f"  | {s_nat:10.1f}{s_pyc:10.1f}{s_pyn:10.1f}")
+        r_pyh, s_pyh = score(pyh, tr, window) if pyh else (np.nan, np.nan)
+        print(f"{label:<10}{r_nat:11.2f}{r_pyc:10.2f}{r_pyh:10.2f}{r_pyn:11.2f}"
+              f"  | {s_nat:9.1f}{s_pyc:9.1f}{s_pyh:9.1f}{s_pyn:9.1f}")
         rows.append({"load": label, "r_load": r_load, "c_load_pf": c_load,
                      "native_rmse_mv": round(r_nat, 3), "pybis_ccomp_rmse_mv": round(r_pyc, 3),
                      "pybis_noccomp_rmse_mv": round(r_pyn, 3),
