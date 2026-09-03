@@ -98,3 +98,52 @@ a safe measurement.
   marked to show it is never reached
 - `stress_peak_error.png` — peak error against the transistor across all nine
 - `scripts/plot_stress_shapes.py`
+
+## 4. Native IBIS has a clear, near-linear trend — and it is interpretable
+
+The under-swing is not noise. Native's error tracks **how complete the transition
+was**, where completion fraction = transistor peak / full swing (1.601 V):
+
+| completion | native error | as % of peak |
+|---:|---:|---:|
+| 0.36 | −116 mV | −20.3% |
+| 0.45 | −124 mV | −17.2% |
+| 0.47 | −121 mV | −16.1% |
+| 0.54 | −98 mV | −11.4% |
+| 0.57 | −92 mV | −10.1% |
+| 0.63 | −87 mV | −8.6% |
+| 0.67 | −82 mV | −7.7% |
+| 0.72 | −60 mV | −5.2% |
+| 0.76 | −60 mV | −4.9% |
+
+Correlation of native's error with completion fraction: **+0.939 absolute,
++0.986 relative.** The relative error is very nearly a straight line in how far
+the transition got.
+
+    native:  err(mV) = 169 x frac - 191      r = +0.939
+    pybis :  err(mV) = 125 x frac -  66      r = +0.988
+
+**What that says about how native works.** Extrapolated to a complete transition
+(frac = 1.0) native's error is only −22 mV: it is essentially correct when the
+transition finishes. Extrapolated to a vanishing pulse (frac = 0) it is −191 mV.
+**Native's error is proportional to how much of the transition never happened.**
+
+That is exactly what the V-T replay architecture predicts. Native drives the pad
+from recorded waveform tables that describe a *complete* transition (Appendix E:
+"an IBIS output driver sends a voltage wave, provided by the model file's [Ramp]
+or V-T data lookup tables"). When a pulse is truncated, native has to abandon that
+replay partway and hand over to the opposite table — and the less of the recorded
+waveform it got to use, the more of the answer rests on how the tool handles the
+interruption, which is the one regime the recorded data does not constrain. So
+native is strongest where its data applies and degrades in proportion to the
+departure from it.
+
+**pybis fails differently, not just less.** Its error crosses zero at frac ≈ 0.53:
+slightly under on short pulses, slightly over on long ones, and small throughout
+(−18 to +29 mV). Native is one-sided over the whole range; pybis is centred.
+
+Two different error structures, and that is useful on its own: it says the two
+models are not competing approximations of the same thing but have genuinely
+different failure modes. Native should be trusted where transitions complete;
+under truncation its deficit is predictable enough to be *corrected for* rather
+than merely noted — the fit above is a first estimate of that correction.
