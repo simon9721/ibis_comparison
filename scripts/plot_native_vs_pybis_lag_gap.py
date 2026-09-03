@@ -119,10 +119,31 @@ def main():
                  arrowprops=dict(arrowstyle="<->", color="#111", lw=1.6))
     ax0.text((cn + cp) / 2, half + 0.06, f"lag {lag:.1f} ps", ha="center",
              fontsize=12, fontweight="bold")
+    # Zoom inset: at full scale the curves sit 4.9 ps apart on a 1500 ps axis
+    # (0.33% of the width), so the separation the bottom panel reports as 93 mV
+    # is invisible. The inset opens the steepest part of the edge, where that
+    # 93 mV is simply the lag times the 18.5 mV/ps slew.
+    axz = ax0.inset_axes([0.58, 0.13, 0.40, 0.46])
+    axz.plot(grid, b, color=NATIVE, lw=2.4)
+    axz.plot(grid, a, color=PYBIS, lw=2.0, ls=(0, (4, 1.8)))
+    imx = int(np.argmax(np.abs(a - b)))
+    axz.set_xlim(grid[imx] - 0.018, grid[imx] + 0.022)
+    lo = min(a[imx], b[imx]); hi = max(a[imx], b[imx])
+    axz.set_ylim(lo - 0.32, hi + 0.34)
+    axz.grid(alpha=0.30, color="#C9D3DE", lw=0.7)
+    axz.tick_params(labelsize=8.5)
+    axz.set_title("zoom: steepest part of the edge", fontsize=9.5, pad=4)
+    imax = imx
+    axz.annotate("", xy=(grid[imax], a[imax]), xytext=(grid[imax], b[imax]),
+                 arrowprops=dict(arrowstyle="<->", color="#111", lw=1.4))
+    axz.text(grid[imax] + 0.0015, (a[imax] + b[imax]) / 2, "93 mV",
+             fontsize=9.5, fontweight="bold", va="center")
+    ax0.indicate_inset_zoom(axz, edgecolor="#555")
+
     ax0.set_ylabel("Pad (V)", fontsize=12)
     ax0.set_title("base8  |  50 Ω + 2 pF  |  native IBIS vs pybis, rising edge  (converged)",
                   fontsize=14.5, fontweight="bold", pad=10)
-    ax0.legend(fontsize=11.5, loc="lower right", framealpha=0.95)
+    ax0.legend(fontsize=11.5, loc="upper left", framealpha=0.95)
 
     ax1.fill_between(grid, 0, (a - b) * 1e3, color=PYBIS, alpha=0.30)
     ax1.plot(grid, (a - b) * 1e3, color=PYBIS, lw=1.6)
