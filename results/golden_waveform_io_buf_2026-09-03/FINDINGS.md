@@ -39,20 +39,41 @@ Per-table detail for io_buf and ex2:
 | ex2 falling V=3.3 | **nominal** | **0.28** | 6.8 | 12.8 | +4 |
 | ex2 falling V=3.3 | zero | 0.82 | 37.0 | 219 | −178 |
 
-## 1. Defect B is not in the model
+## 1. What this does and does not say about defect B
 
-This is the result worth having. **io_buf reproduces its own V-T tables to
-0.05–0.17% FOM with an alignment shift of only +6 to +8 ps.**
+**io_buf reproduces its own V-T tables to 0.05-0.17% FOM with an alignment shift
+of only +6 to +8 ps.**
 
-Defect B — the 70–100 ps falling-edge lateness seen in the study — is an order of
-magnitude larger than anything this test can find in the model. A model that
-replays its own characterization waveforms to within 8 ps cannot be the origin of
-a 70–100 ps error.
+**Scope correction.** An earlier version of this note claimed that therefore
+"defect B is not in the model". That was too strong, because this test does not
+exercise the build or the conditions defect B lives in:
 
-So defect B lives somewhere else: the study bench, the stress/interrupted-pulse
-conditions, the load, or the comparison method (which, per the book, should be
-time-aligned before scoring — and our study numbers were not). That redirects the
-defect-B investigation away from the model entirely.
+| | defect B | this test |
+|---|---|---|
+| build | **gate-state** (GUP / GUPCMD command layer) | **InputDriven** (plain) |
+| stimulus | **stress cases**, truncated pulses at 90/80/70/60/50% width | **full swing** |
+| reference | HSPICE transistor | the model's own V-T tables |
+
+Defect B is the falling 50% crossing running 69-99 ps late against the transistor
+on the five stress targets, where native IBIS is 5-26 ps early.
+
+What the test legitimately establishes is narrower but still useful: **the
+underlying reconstruction is sound.** The I-V + Ku(t) + C_comp machinery that
+both builds share replays a full-swing edge to within 8 ps on io_buf's own data.
+So a 70-100 ps error is not coming from that layer.
+
+That leaves defect B in one of:
+
+- the **gate-state command layer** (GUP/GUPCMD), which the earlier work already
+  showed is where the *offset* defect is born -- untested here;
+- the **stress condition itself** (a truncated pulse never reaches a settled
+  state, and the golden tables only describe full swing);
+- the **study bench or comparison method** -- notably, the study's timing numbers
+  were taken without the time alignment the book prescribes.
+
+A golden-waveform test cannot settle it, because IBIS provides golden data only
+for full swing. Defect B needs its own experiment on the gate-state build under
+stress.
 
 ## 2. C_comp is handled correctly, on all twelve tables
 
