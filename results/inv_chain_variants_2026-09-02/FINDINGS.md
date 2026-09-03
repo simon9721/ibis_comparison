@@ -1,0 +1,109 @@
+# Four inverter-chain variants: what changing the silicon does
+
+Item 1 of `0902_plan.md`. Every conclusion in the study rests on three buffers.
+These are variants of one we already understand, each changing a single
+property, so a difference downstream has one candidate explanation.
+
+Each went through `scripts/select_s2ibispy_parameters.py` — the procedure from
+item 3 — which is also the first time that procedure has been used on buffers
+it was not built against.
+
+## What was measured
+
+| variant | stages | Wn / Wp (um) | settles by | output edge | window chosen | max abs Ku | max abs Kd |
+|---|---:|---|---:|---:|---:|---:|---:|
+| `base8` | 8 | 1.0 / 2.0 | 0.498 ns | 18.0 ps | 0.623 ns | 1.032 – 1.057 | 1.033 – 1.034 |
+| `stage4` | 4 | 1.0 / 2.0 | **0.330 ns** | **24.0 ps** | 0.413 ns | 1.043 – 1.061 | 1.033 – 1.036 |
+| `skewp` | 8 | 1.0 / **1.0** | 0.528 ns | 18.0 ps | 0.661 ns | **1.151 – 1.220** | 1.032 |
+| `weak` | 8 | **0.5 / 1.0** | 0.541 ns | 24.0 ps | 0.676 ns | 1.084 – 1.131 | 1.044 – 1.046 |
+
+Coefficient ranges are across all seven characterization edge rates. Every
+candidate of every variant passed all five gates, including HSPICE and ngspice
+convergence — unlike io_buf, this family is well behaved throughout.
+
+`base8` reproduces the shipped `inv_chain` exactly: same settling, same edge,
+same window, same coefficients. That is the control on the generator, and it
+passed.
+
+## 1. Fewer stages: shorter delay, slower edge
+
+`stage4` halves the predriver depth with an identical final stage.
+
+- **Settling drops 34%**, 0.498 → 0.330 ns. That is the delay the command layer
+  exists to model — io_buf's `pu_on_delay` of 0.99 ns is its predriver — moved
+  by a known amount on a device where we controlled the change.
+- **The output edge gets slower**, 18.0 → 24.0 ps, even though the last two
+  stages (`64 -> 128`) are identical in both.
+
+The second point is the interesting one. Each inverter regenerates the
+transition it passes on, so eight stages of sharpening deliver a crisper edge
+into the final stage than four do. **Fewer stages buys delay and costs edge
+rate**, and on the shipped buffer alone the two are confounded.
+
+## 2. A weak pullup inflates Ku, and only Ku
+
+`skewp` sets Wp = Wn, halving the PMOS relative to the NMOS. Rise slows, fall
+does not.
+
+| | max abs Ku | max abs Kd |
+|---|---:|---:|
+| `base8` | 1.032 – 1.057 | 1.033 – 1.034 |
+| `skewp` | **1.151 – 1.220** | **1.032** — unchanged |
+
+Ku inflates by roughly 0.17. Kd does not move at all. That is a clean causal
+demonstration: **coefficient inflation above 1 tracks device weakness, and it
+appears in the coefficient belonging to the weakened device.**
+
+`weak` is the control for that reading. It halves *both* devices, and both
+coefficients rise slightly together — Ku to 1.084–1.131, Kd to 1.044–1.046.
+Symmetric weakening moves both; asymmetric weakening moves one.
+
+This gives a diagnostic that did not exist before: `max abs Ku` and
+`max abs Kd` read against each other say something about the silicon, not just
+about the extraction.
+
+## 3. A hypothesis about ex2, tested and rejected
+
+ex2's `max abs Ku` sits at ~1.24 at every edge rate and every capture window,
+which item 3 left unexplained. `skewp` looked like the answer: a pullup-weak
+buffer showing exactly that signature.
+
+**It is not.** ex2's output stage is `pfet w = 42.15 um` against
+`nfet w = 21.15 um` — a ratio of **1.99**, essentially identical to `base8`'s
+2.0, whose Ku is only 1.03–1.06.
+
+So ex2 is not P/N-skewed in the way `skewp` is, and the resemblance is
+coincidental. What is now ruled out is the width ratio. What remains: ex2's
+output stage uses L = 900 nm against inv_chain's 180 nm, runs at 3.3 V rather
+than 1.8 V, and uses a different process (`pfet`/`nfet` against
+`pch_tn`/`nch_tn`). Any of those could carry it, and none has been tested.
+
+Worth noting the ordering that now exists, though, since it puts ex2 in
+context rather than leaving it as an outlier:
+
+| | max abs Ku |
+|---|---:|
+| `base8`, `stage4` — balanced | 1.03 – 1.06 |
+| `weak` — symmetric, half drive | 1.08 – 1.13 |
+| `skewp` — pullup at half strength | 1.15 – 1.22 |
+| ex2 shipped | 1.24 |
+| io_buf 20 ps, known corrupted | 1.66 |
+
+ex2 sits among devices with a real drive imbalance rather than among corrupted
+extractions. That is a different reading from "ex2's model is broken", and it
+argues the 1.25 gate is drawn in the wrong place.
+
+## What has not been done
+
+These are characterized, not yet compared. The next step is the one item 1 is
+actually for: run each variant's transistor, its native IBIS model and the
+pybis model on a full-swing edge, and see whether the gate-state model tracks
+silicon as the silicon changes. Nothing here says that yet.
+
+## Files
+
+- `<variant>/inputs/` — the netlist, three corner files, the transistor library
+- `<variant>/configs/` — the s2ibispy recipe
+- `<variant>/selection/` — the selector run: `decision.json`, `selection.csv`,
+  the probe pass and one directory per candidate
+- generated by `scripts/make_inv_chain_variants.py`
