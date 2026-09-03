@@ -9,8 +9,7 @@ my earlier claims turned out wrong.
 
 | job | state |
 |---|---|
-| `ex2 nomiller` characterization | **running** — the decisive Miller-feedthrough test |
-| `ex2 weak` characterization | running (partial results already in, see below) |
+| — | nothing running; all four ex2 variants plus `nomiller` are characterized |
 
 Logs in the session scratchpad: `ex2_weak_select.log`, `ex2_nomiller_select.log`.
 Re-run with `scripts/select_s2ibispy_parameters.py --config <variant>/configs/<x>.yaml
@@ -18,49 +17,40 @@ Re-run with `scripts/select_s2ibispy_parameters.py --config <variant>/configs/<x
 
 ---
 
-## The big open thread: what inflates max|Ku| — and it is probably physical
+## What inflates max|Ku| -- answered
 
 ex2 variants, all seven edge rates each:
 
-| variant | what changed | max\|Ku\| | max\|Kd\| |
-|---|---|---:|---:|
-| `slowpre` | predriver halved | **1.04 – 1.06** | 1.03 |
-| `base` | nothing (control) | 1.28 – 1.34 | 1.11 – 1.13 |
-| `skewp` | output PMOS halved | 1.59 – 1.71 | 1.24 – 1.31 |
-| `weak` | both output devices halved | **1.82 – 1.83** | **1.48 – 1.49** |
-| `nomiller` | n4→out caps removed | **1.30 – 1.34** | 1.11 – 1.14 |
+| variant | what changed | output edge | max\|Ku\| | max\|Kd\| |
+|---|---|---:|---:|---:|
+| `slowpre` | predriver halved | 328 ps | **1.047** | 1.03 |
+| `base` | nothing (control) | 200 ps | 1.283 | 1.11 - 1.13 |
+| `nomiller` | n4->out caps removed | 208 ps | 1.299 | 1.11 - 1.14 |
+| `skewp` | output PMOS halved | 160 ps | 1.589 | 1.24 - 1.31 |
+| `weak` | both output devices halved | 152 ps | **1.779** | **1.48 - 1.49** |
 
-**FALSIFIED hypothesis:** ~~max|Ku| inflation is gate-to-drain (Miller)
-feedthrough~~ -- `nomiller` came back identical to the control. The caps are
-20.5 fF against C_comp's 5 pF, 0.41%, far too small to matter.
+**The answer: max|Ku| is governed by C_comp x dV/dt against the device drive
+current.** When the displacement current approaches or exceeds what the device
+can source, the two-fixture solve has to push Ku above 1 to balance.
 
-**Revised, and the null result supports it:** the governing quantity is
-**C_comp x dV/dt against the device drive current** that the two-fixture Ku/Kd solve cannot
-attribute to either device, so it lands in the coefficients.
+For ex2 that is 5 pF x 3.3 V / 200 ps = **82 mA against a ~51 mA drive** -- the
+displacement current *exceeds* the device. inv_chain, with C_comp of 0.468 pF,
+sits at 1.03. Within ex2 the value is monotonic in output edge rate across all
+five variants, and the two axes behave as the ratio predicts: `slowpre` slows the
+edge (smaller numerator) and Ku collapses; `skewp` and `weak` weaken the devices
+(smaller denominator) and it climbs, both coefficients when both devices are
+halved and Ku alone when only the PMOS is.
 
-    max|K|  ~  (Miller feedthrough current)  /  (device drive current)
-             =  C_n4→out * dV_n4/dt          /  I_pu(V)
+**A wrong version of this was tested and rejected.** I first proposed the cause
+was gate-to-drain (Miller) feedthrough and built `nomiller` with ex2's three
+n4->out caps removed. It came back identical to the control (1.299 vs 1.283).
+Those caps are 20.5 fF against C_comp's 5 pF -- **0.41%**, 250x too small to
+matter, which is arithmetic that should have preceded the hypothesis. The null
+result is still useful: it eliminates the small capacitor and points at C_comp.
 
-Every variant fits:
-
-- **`slowpre`** weakens the *predriver* → smaller `dV_n4/dt` → smaller numerator →
-  Ku collapses to 1.05, exactly inv_chain's clean level.
-- **`weak`** weakens *both output devices* → smaller denominator → **both** Ku and
-  Kd inflate (1.83 / 1.49).
-- **`skewp`** weakens *only the PMOS* → Ku inflates much more than Kd
-  (1.71 / 1.31), the asymmetric signature already seen on inv_chain.
-- **Structural check:** ex2 carries **20.5 fF** of explicit n4→out coupling
-  (cx3 + cx5 + cx8). inv_chain has **zero** explicit caps — and inv_chain's
-  max|Ku| is 1.03–1.06.
-
-For ex2 the displacement current is 5 pF x 3.3 V / 200 ps = 82 mA against a
-~51 mA drive -- it exceeds the device, so the solve must push Ku above 1.
-inv_chain, at C_comp 0.468 pF, sits at 1.03. max|Ku| is monotonic in output edge
-rate across all five variants (328 ps -> 1.047, down to 152 ps -> 1.779).
-
-**Why this matters beyond ex2:** it means a high max|Ku| can be a *real signature
-of realistic parasitics*, not a corrupted extraction — which makes the selector's
-absolute 1.25 cap wrong in principle, not merely mis-tuned.
+**Why this matters beyond ex2:** a high max|Ku| is a real signature of a large
+die capacitance driven fast, not a corrupted extraction -- which makes the
+selector's absolute 1.25 cap wrong in principle, not merely mis-tuned.
 
 ### The 1.25 cap needs replacing
 
