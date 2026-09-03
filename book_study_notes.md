@@ -9,7 +9,7 @@ outline and the OCR renders C_comp variously as Ccomp / C comp / Cjcomp.
 | ch | topic | why |
 |---|---|---|
 | 4.5 | IBIS models | keyword reference |
-| **11.8** | **Experiment 2: Ccomp loading** | **directly our C_comp finding** |
+| **11.8** | **Experiment 2: Ccomp loading** | **C_comp doctrine -- see correction** |
 | 11.11 | V-T data versus a ramp | why V-T beats ramp |
 | 12.9-12.10 | Golden waveforms, common-errors checklist | validation practice |
 | **13** | **Creating/validating IBIS from SPICE** | **this is what s2ibispy does** |
@@ -18,7 +18,7 @@ outline and the OCR renders C_comp variously as Ccomp / C comp / Cjcomp.
 
 ---
 
-## 1. C_comp double-counting -- the book names our exact failure mode
+## 1. C_comp double-counting -- and why it does NOT apply to pybis
 
 Section 11.8.1, as established doctrine:
 
@@ -52,27 +52,22 @@ is kept as the measurement, not as a verdict:
 | 0.100 pF | 3.3 ps |
 | 0 | 1.6 ps |
 
-Rise time moves with C_comp, monotonically, to near zero at C_comp = 0. By the
-book's own criterion that is the double-count signature. Native IBIS, given the
-same file, does not show it.
+Rise time moves with C_comp, monotonically, to near zero at C_comp = 0. Under
+pybis's decomposition that is expected, not a defect: Ku is C_comp-free, so the
+pad edge genuinely depends on the C_comp in the circuit. Native IBIS does not
+show the same sensitivity because it uses the V-T data directly, where C_comp is
+already baked in -- two different, individually self-consistent schemes.
 
-Two consequences:
+One consequence:
 
-1. The finding is no longer a lone measurement -- it matches documented
-   doctrine, and the mechanism is the known one: C_comp is already inside the
-   V-T (and so inside the Ku(t) derived from it), so an explicit die capacitor
-   across the output applies it twice.
-2. **C_comp scaling is still wrong**, but for a simpler reason than I gave:
+1. **C_comp scaling is wrong**, for a simpler reason than I first gave:
    nominal C_comp is already the best value against the model's own golden data,
    so scaling it away can only hurt. The rule below applies to V-T-replay
    simulators, not to pybis:
 
-   *(original note)* The rule is not *use a smaller
-   C_comp* -- it is that varying C_comp should have *no* effect on driver
-   rise/fall at all. A scaled value is still a driver whose edge moves with
-   C_comp: still double-counting, only less. The correct behaviour is that the
-   driver transient path must not take C_comp as an extra output load. C_comp
-   still matters receiver-side, for line matching and reflections (11.8.1).
+   The book's stronger rule (varying C_comp must have *no* effect on rise/fall,
+   so the driver path must not take C_comp as an extra output load) applies to
+   V-T-replay simulators, not to pybis's back-solved decomposition.
 
 ## 2. Golden waveforms -- a better test than any we have run
 
@@ -86,7 +81,8 @@ Two consequences:
 And 16.5.1: *the test circuit load should match the load specified in the V-T
 table being verified.*
 
-**We have never run this.** Everything we did compared pybis to native and to
+**We have now run this** (`results/golden_waveform_test_2026-09-03`), and it is
+what settled the C_comp question. Originally: Everything we did compared pybis to native and to
 the transistor into an *arbitrary* load (50 ohm + 2 pF). The golden-waveform
 test is self-contained: simulate the model into the exact fixture its
 [Rising Waveform] table specifies (50 ohm to 0 V, 50 ohm to VCC) and check the
@@ -150,9 +146,8 @@ during clamp extraction) restores the identity -- 51 mA to 0.8 nA, model valid.
 
 ## What to do next, per the book
 
-1. **Run the golden-waveform test** on pybis: replay each model's own
-   [Rising Waveform] / [Falling Waveform] into its specified fixture.
-   Self-contained, and it is the book's prescribed simulator verification.
+1. ~~Run the golden-waveform test~~ **DONE** -- it showed nominal C_comp beats
+   C_comp=0 on all four tables, so pybis's C_comp handling is correct.
 2. **Report shift + post-alignment FOM** instead of raw RMSE.
 3. **Re-frame the C_comp fix** as *the driver transient path must not take
    C_comp as an extra output load*, not *scale C_comp*.
