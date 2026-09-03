@@ -81,3 +81,58 @@ output for every model:
 - `ccomp_validation.csv`, `ccomp_validation.png`
 - `<load>/{transistor,native,pybis_ccomp,pybis_noccomp}/` -- the runs
 - `scripts/validate_pybis_ccomp.py`
+
+---
+
+## Correct-fix investigation: the extraction is clean; the replay method is the cause
+
+Following the correct fix rather than the pragmatic C_comp reduction, two
+hypotheses were tested directly.
+
+### Ruled out: the extraction differentiation
+
+`differentiate()` used a forward difference (`(y[i+1]-y[i])/(x[i+1]-x[i])`
+stored at index i), a half-step phase lead that would shift the `C_comp * dV/dt`
+term the K-parameter solve subtracts. Replaced it with a centered difference and
+regenerated the base8 model: **the pad lag stayed at 9.9 ps, unchanged.** The
+extraction grid is ~0.6 ps, so its half-step is sub-picosecond and not the
+cause. Reverted -- it perturbs the validated silicon extraction for no benefit.
+
+### Ruled out: a wrong or over-applied C_comp value
+
+native IBIS uses the same `.ibs` C_comp = 0.468 pF and tracks the transistor at
+every load (RMSE 1-5 mV, shift within 3.4 ps). If the value were wrong, native
+would be off too. It is not, so the value is right.
+
+Nor is pybis applying a fixed wrong *fraction* of it. If the only error were
+die-cap magnitude, native would always sit between pybis-noCcomp and pybis-Ccomp.
+It does not: at 50 Ω + 2 pF native (0.0 ps) is **earlier** than pybis with zero
+C_comp (+3.3 ps), and adding capacitance can only slow an edge. So pybis's zero-
+C_comp reconstruction is already load-dependently late in a way that has nothing
+to do with C_comp.
+
+### The cause: the InputDriven replay approximation
+
+pybis replays `Ku(t)` as a fixed function of elapsed time and injects
+`Ku(t) * I_pu(V_die)` -- evaluating the pullup current at the *simulated* pad,
+which under a new load does not follow the recorded trajectory `Ku(t)` was
+extracted against. That approximation, closed around the C_comp + load node,
+produces a load-dependent edge that differs from native's. Native does not make
+it: HSPICE's B-element reconstructs from the V-T waveform tables directly, so the
+recorded edge (die cap included) is reproduced consistently at any load.
+
+This is structural to the InputDriven method, not a parameter or a bug in one
+line. No C_comp value matches native across loads because the discrepancy is not
+about C_comp -- it is about how the drive itself is reconstructed.
+
+### Where that leaves the fix
+
+The exact fix -- match native -- means giving pybis a V-T-waveform-based output
+stage in place of the `Ku(t) x I_pu(V_die) + lumped C_comp` reconstruction. That
+is a redesign of the model's core, with its own validation, not a safe edit to
+make speculatively on shipped pybis. The verification here has done its job: it
+rules out the cheap fixes and scopes the real one.
+
+Interim, unchanged from above: reducing the explicit C_comp is a net improvement
+on realistic (capacitively loaded) nets and is the best available without the
+redesign.
