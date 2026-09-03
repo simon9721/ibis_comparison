@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "069541783fc1e6fd60acd507b515f7a8941ea8f438ea3822bc7e6187ca6ea341",
+  "extra": {
+    "case_id": "edge_250ps_visible_short_high_250ps",
+    "device": "inv_chain",
+    "edge_ns": 0.25,
+    "family": "realistic_pulse_inv_chain_slow_1ns_native",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 0.25
+  },
+  "inputs": [
+    {
+      "name": "inv_chain_slow_1ns.ibs",
+      "sha256": "eca4d9eb2e67c0bdcd1a2759f36c29819722350c7f5399e99b96a38d0f8922b4",
+      "size": 563940
+    }
+  ]
+}

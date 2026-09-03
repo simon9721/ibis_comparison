@@ -1,0 +1,25 @@
+{
+  "deck_sha256": "5bc27521f47b4f58acd25f37e83038d72ae1e37e43a98f842a67f1b05afe5f95",
+  "extra": {
+    "case_id": "edge_250ps_sweep_short_high_3p13ns",
+    "device": "ex2",
+    "edge_ns": 0.25,
+    "family": "realistic_pulse_ex2_transistor",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 3.13
+  },
+  "inputs": [
+    {
+      "name": "buffer.sp",
+      "sha256": "16a371d8927df1a442e292d17a11f7ff6e420ad2283b940966a406655bed215f",
+      "size": 1973
+    },
+    {
+      "name": "hspice.mod",
+      "sha256": "775f90f0dcd626b80757299afab84ae7dae84f450273da34eb70c79abd3763fa",
+      "size": 5227
+    }
+  ]
+}

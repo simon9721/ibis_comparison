@@ -1,0 +1,24 @@
+slide,tex,rendered_asset
+2,"\left\{Ku_{\mathrm{rising}}(t),Kd_{\mathrm{rising}}(t)\right\}\;\longrightarrow\;\left\{Ku_{\mathrm{falling}}(0),Kd_{\mathrm{falling}}(0)\right\}",.codex_deps\presentation\equation_cache\equation_9c0f3c47fc98c2eec355.png
+3,I_C=C\frac{dV_C}{dt}=\frac{V_{\mathrm{target}}-V_C}{R},.codex_deps\presentation\equation_cache\equation_64e4aa009b86b17a3613.png
+3,\frac{dV_C}{dt}=\frac{V_{\mathrm{target}}-V_C}{RC},.codex_deps\presentation\equation_cache\equation_e4548b44558c6cdf6d6e.png
+4,\tau=RC,.codex_deps\presentation\equation_cache\equation_f2ede211e7550a48f137.png
+4,\frac{dV_C}{dt}=\frac{V_{\mathrm{target}}-V_C}{\tau},.codex_deps\presentation\equation_cache\equation_10ed745800b1b14b786c.png
+4,V_C(t)=V_{\mathrm{target}}+\left(V_0-V_{\mathrm{target}}\right)e^{-t/\tau},.codex_deps\presentation\equation_cache\equation_9aeae760d7f7c41166dc.png
+5,V_C(t)=1-e^{-t/\tau},.codex_deps\presentation\equation_cache\equation_e606cbc198882257014a.png
+5,V_C(t)=e^{-t/\tau},.codex_deps\presentation\equation_cache\equation_4481c01bbfff206c2a0e.png
+6,V_C(\tau)=1-e^{-1}\approx0.632,.codex_deps\presentation\equation_cache\equation_93f84d01efaf70187363.png
+7,"\tau_{\mathrm{PU,rising}}",.codex_deps\presentation\equation_cache\equation_a156332f612e826fb7cb.png
+7,"\tau_{\mathrm{PD,rising}}",.codex_deps\presentation\equation_cache\equation_f567cc566034dbce6622.png
+7,"\tau_{\mathrm{PU,falling}}",.codex_deps\presentation\equation_cache\equation_bc739b6cd71f4db0fb6f.png
+7,"\tau_{\mathrm{PD,falling}}",.codex_deps\presentation\equation_cache\equation_55ebd750443daf3305a7.png
+8,"t_i\longrightarrow Vc_i=Vc(t_i)\longrightarrow(Vc_i,K_i)",.codex_deps\presentation\equation_cache\equation_1337fc5c7c7099715cd8.png
+8,"Ku_{\mathrm{rising}}=f_{\mathrm{PU,rising}}(Vc_{\mathrm{PU}})",.codex_deps\presentation\equation_cache\equation_7ef047ab6f1efcddbe2c.png
+9,Ku(t)\;\longrightarrow\;Ku(Vc_{\mathrm{PU}}),.codex_deps\presentation\equation_cache\equation_243f11b450f3e7e32b6d.png
+9,Kd(t)\;\longrightarrow\;Kd(Vc_{\mathrm{PD}}),.codex_deps\presentation\equation_cache\equation_6c12447d15ebcb7846b6.png
+10,"Vc_{\mathrm{PU}}(t)=1-e^{-t/\tau_{\mathrm{PU,rising}}}",.codex_deps\presentation\equation_cache\equation_f54532419cd4b17da19e.png
+10,"Vc_{\mathrm{PD}}(t)=e^{-t/\tau_{\mathrm{PD,rising}}}",.codex_deps\presentation\equation_cache\equation_66c648d731036aab527c.png
+10,"Ku=Ku_{\mathrm{rising}}(Vc_{\mathrm{PU}}),\quad Kd=Kd_{\mathrm{rising}}(Vc_{\mathrm{PD}})",.codex_deps\presentation\equation_cache\equation_33b53a881075d5966109.png
+14,"I_{\mathrm{PU}}(t)=Ku(Vc_{\mathrm{PU}})\,I_{\mathrm{PU,full}}(V)",.codex_deps\presentation\equation_cache\equation_52c56be60c84707fb512.png
+14,"I_{\mathrm{PD}}(t)=Kd(Vc_{\mathrm{PD}})\,I_{\mathrm{PD,full}}(V)",.codex_deps\presentation\equation_cache\equation_c8433732f56554d58d3a.png
+15,\frac{dVc}{dt}=\frac{Vc_{\mathrm{target}}-Vc}{\tau},.codex_deps\presentation\equation_cache\equation_bfe5e495e572d27759f3.png

@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "d7b6e2dfbfcd960ada7bfbf38f3e177a3ca4b8440a6924dfb3e2bcd5191f86b2",
+  "extra": {
+    "case_id": "short_high_500ps",
+    "device": "ex2",
+    "edge_ns": 0.05,
+    "family": "pad_match_ex2_fast_5ps_r50_c2pf_native",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 0.5
+  },
+  "inputs": [
+    {
+      "name": "ex2_fast_5ps.ibs",
+      "sha256": "a13b1be30b11a2e95febc9e1790410794e3ad7bef49150ff04199e3b8af24827",
+      "size": 563915
+    }
+  ]
+}

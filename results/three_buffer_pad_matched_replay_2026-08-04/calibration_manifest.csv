@@ -1,0 +1,7 @@
+device,profile,source,reference_json,calibration_raw
+io_buf,slow_1ns,existing_raw,results\three_buffer_pad_matched_replay_2026-08-04\calibration\io_buf\slow_1ns\pad_replay_reference.json,results\three_buffer_pad_matched_replay_2026-08-04\calibration\io_buf\slow_1ns\calibration.raw
+io_buf,fast_5ps,existing_raw,results\three_buffer_pad_matched_replay_2026-08-04\calibration\io_buf\fast_5ps\pad_replay_reference.json,results\three_buffer_pad_matched_replay_2026-08-04\calibration\io_buf\fast_5ps\calibration.raw
+inv_chain,slow_1ns,existing_raw,results\three_buffer_pad_matched_replay_2026-08-04\calibration\inv_chain\slow_1ns\pad_replay_reference.json,results\three_buffer_pad_matched_replay_2026-08-04\calibration\inv_chain\slow_1ns\calibration.raw
+inv_chain,fast_5ps,existing_raw,results\three_buffer_pad_matched_replay_2026-08-04\calibration\inv_chain\fast_5ps\pad_replay_reference.json,results\three_buffer_pad_matched_replay_2026-08-04\calibration\inv_chain\fast_5ps\calibration.raw
+ex2,slow_1ns,existing_raw,results\three_buffer_pad_matched_replay_2026-08-04\calibration\ex2\slow_1ns\pad_replay_reference.json,results\three_buffer_pad_matched_replay_2026-08-04\calibration\ex2\slow_1ns\calibration.raw
+ex2,fast_5ps,existing_raw,results\three_buffer_pad_matched_replay_2026-08-04\calibration\ex2\fast_5ps\pad_replay_reference.json,results\three_buffer_pad_matched_replay_2026-08-04\calibration\ex2\fast_5ps\calibration.raw

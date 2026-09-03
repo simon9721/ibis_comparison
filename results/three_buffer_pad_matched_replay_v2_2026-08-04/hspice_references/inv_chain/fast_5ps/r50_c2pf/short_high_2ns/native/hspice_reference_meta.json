@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "11466459e1a7427a977f6b94d2ccb6d51a25fd4eb8b7bd1454d09435d0577911",
+  "extra": {
+    "case_id": "short_high_2ns",
+    "device": "inv_chain",
+    "edge_ns": 0.05,
+    "family": "pad_match_inv_chain_fast_5ps_r50_c2pf_native",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 2.0
+  },
+  "inputs": [
+    {
+      "name": "inv_chain_fast_5ps.ibs",
+      "sha256": "118b54c89bc7a0fdb72299bed5140750a9e30bb5b45a547605aa8538ce0609f6",
+      "size": 563940
+    }
+  ]
+}

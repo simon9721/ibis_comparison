@@ -1,0 +1,6 @@
+load,r_load,c_load_pf,native_rmse_mv,pybis_ccomp_rmse_mv,pybis_noccomp_rmse_mv,native_shift_ps,pybis_ccomp_shift_ps,pybis_noccomp_shift_ps
+50R_0pF,50.0,0.0,4.4,21.615,18.933,1.19,6.65,-277.76
+50R_2pF,50.0,2.0,1.476,nan,7.349,-0.16,nan,-0.9
+50R_10pF,50.0,10.0,1.11,nan,3.358,-1.29,nan,-1.14
+500R_2pF,500.0,2.0,2.806,12.077,12.135,0.09,5.16,-1.84
+1k_5pF,1000.0,5.0,3.255,7.509,8.701,-1.27,4.51,-2.3

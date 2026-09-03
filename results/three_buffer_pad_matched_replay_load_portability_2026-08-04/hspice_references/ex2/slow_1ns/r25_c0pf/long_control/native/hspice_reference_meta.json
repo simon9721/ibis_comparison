@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "4265fb946ff29d5fbf309b23263e044dba9e1ce1181d42a42a329b8ed4fd9ebe",
+  "extra": {
+    "case_id": "long_control",
+    "device": "ex2",
+    "edge_ns": 0.05,
+    "family": "pad_match_ex2_slow_1ns_r25_c0pf_native",
+    "load_ohm": 25.0,
+    "load_pf": 0.0,
+    "pattern": "rise_fall",
+    "pulse_width_ns": 10.0
+  },
+  "inputs": [
+    {
+      "name": "ex2_slow_1ns.ibs",
+      "sha256": "11d9678679b923084bbe8cb3320427ca2a7cb96fd0757ce8ee22721df2027f2b",
+      "size": 563915
+    }
+  ]
+}

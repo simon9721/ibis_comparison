@@ -62,3 +62,7 @@ media/
 *.mt0
 *.pa1
 *.tr0.tmp
+
+# Local scratch / tool caches
+/.tmp/
+/.pytest_cache/

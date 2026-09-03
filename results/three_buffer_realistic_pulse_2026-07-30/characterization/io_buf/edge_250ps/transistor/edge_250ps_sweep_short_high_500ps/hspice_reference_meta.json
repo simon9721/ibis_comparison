@@ -1,0 +1,25 @@
+{
+  "deck_sha256": "280940535af98645d4457cebdc40896c6969b3b00bb5d0216ff4d3e37facc052",
+  "extra": {
+    "case_id": "edge_250ps_sweep_short_high_500ps",
+    "device": "io_buf",
+    "edge_ns": 0.25,
+    "family": "realistic_pulse_io_buf_transistor",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 0.5
+  },
+  "inputs": [
+    {
+      "name": "io_buf.sp",
+      "sha256": "1567b3cae6390433ab4f6cc22133f017cd86a607fbb8b06bfb3fd75408bf581a",
+      "size": 2203
+    },
+    {
+      "name": "hspice_ngspice.mod",
+      "sha256": "9e37aaa69cb8723859caccd7e0a3e37bc8ed72ba7e2cf59a387acee373f1ccee",
+      "size": 5759
+    }
+  ]
+}

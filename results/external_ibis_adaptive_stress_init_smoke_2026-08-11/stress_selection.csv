@@ -1,0 +1,3 @@
+file,model,case_id,direction,selection_source,pulse_width_ns,reverse_time_ns,hspice_ku_at_reverse,hspice_kd_at_reverse,hspice_composite_progress,hspice_ku_initial,hspice_kd_initial,hspice_ku_settled,hspice_kd_settled
+stm32g031_041_ufqfpn32.ibs,ioms8p_sudq_ft_lv,stm32g031_041_ufqfpn32__ioms8p_sudq_ft_lv,short_high,cached_hspice_composite_k_50pct,2.4619868845,7.4619868845,-0.01168263355211206,-0.0023151564849897624,0.5,0.0,1.0,1.0006571425461404,1.3395484114209613e-05
+stm32g031_041_ufqfpn32.ibs,ioms8p_sudq_ft_lv,stm32g031_041_ufqfpn32__ioms8p_sudq_ft_lv,short_low,cached_hspice_composite_k_50pct,4.9889309510625,58.586478451062504,0.00032438609683559095,0.000339528676930389,0.5000022333328389,1.0005034292777943,1.0842701586754513e-05,0.0,1.0

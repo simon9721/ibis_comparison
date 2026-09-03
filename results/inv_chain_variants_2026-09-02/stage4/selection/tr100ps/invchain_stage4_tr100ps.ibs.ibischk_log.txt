@@ -1,0 +1,12 @@
+IBISCHK7 V7.2.1
+
+Checking C:\Users\sh3qm\code\ibis_comparison\results\inv_chain_variants_2026-09-02\stage4\selection\tr100ps\invchain_stage4_tr100ps.ibs for IBIS 7.1 Compatibility...
+
+WARNING (line   32) - Vinl should not be specified for model type Output
+WARNING (line   33) - Vinh should not be specified for model type Output
+WARNING - Model 'driver2': Vmeas timing test load parameter should be specified
+
+Errors  : 0
+Warnings: 3
+
+File Passed

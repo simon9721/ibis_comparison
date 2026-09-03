@@ -1,0 +1,5 @@
+role,path,sha256
+old_slow_characterized_ibis,C:\Users\sh3qm\code\ibis_comparison\hspice\sparam\io_buf.ibs,6c4b8b0a75c4000626d17a3cf1006cb26cb92d619d22d0e3b9860fb948d6076a
+regenerated_5ps_ibis,C:\Users\sh3qm\code\ibis_comparison\results\io_buf_fast_edge_retest_2026-06-05\source\io_buf.ibs,1794e5cec67a8710cb3bbdb149f7ef442251e3eb573a2245b304b4663669b149
+source_transistor_netlist,C:\Users\sh3qm\code\ibis_comparison\models\io_buf.sp,1567b3cae6390433ab4f6cc22133f017cd86a607fbb8b06bfb3fd75408bf581a
+original_hspice_model_card,C:\Users\sh3qm\code\s2ibispy\tests\hspice.mod,a26781e333888c5211bb77dfcc381df7a3147561de0b0975416bdf587a4d828b

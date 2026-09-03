@@ -1,0 +1,23 @@
+{
+  "deck_sha256": "fae70690ad112f3c205f0b8b857ce43fb0fea01ff1601eed99d81ad27fae6b0c",
+  "extra": {
+    "case_id": "visible_sweep_106ps_low",
+    "edge_ns": 0.001,
+    "family": "inv_chain_transistor_direct_50r_2pf",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "supply_v": 1.8
+  },
+  "inputs": [
+    {
+      "name": "invchain_ref_ngspice.sub",
+      "sha256": "504c6c0e3ffd019d38fb9081daa8ed05b985b7d474d4952e89083dacabd8de64",
+      "size": 998
+    },
+    {
+      "name": "HL18G-S3.7S.lib",
+      "sha256": "d89ab0f63f30ad012bdf8988e7654a8a8377540aa8c8bcb9909a4571be2451f3",
+      "size": 1097771
+    }
+  ]
+}

@@ -1,0 +1,2 @@
+component,model,ibis,ibis_sha256,worst_rmse,worst_max_error,gate,pu_on_delay_ns,pu_off_delay_ns,pd_on_delay_ns,pd_off_delay_ns,pu_on_tau_ns,pu_off_tau_ns,pd_on_tau_ns,pd_off_tau_ns
+invchain,driver2,inv_chain\t2b_0615_v5.ibs,d84c346efc6d709ff976763d33330f6ca062e264fed0ac2579005a128da60052,0.025820437852922266,0.07888249555068011,FAIL,0.26851373056694655,0.2463685422615715,0.2755371539824735,0.24115664391880784,0.02,0.02459524595231849,0.03204281078731491,0.022156592650544343

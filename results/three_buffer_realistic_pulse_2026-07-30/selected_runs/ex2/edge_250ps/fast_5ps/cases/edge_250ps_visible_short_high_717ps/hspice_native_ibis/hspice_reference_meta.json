@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "4cb69e011058c5a7a6216137c0533866b433bddbd76bd181844bc99fb9bdee54",
+  "extra": {
+    "case_id": "edge_250ps_visible_short_high_717ps",
+    "device": "ex2",
+    "edge_ns": 0.25,
+    "family": "realistic_pulse_ex2_fast_5ps_native",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 0.717
+  },
+  "inputs": [
+    {
+      "name": "ex2_fast_5ps.ibs",
+      "sha256": "a13b1be30b11a2e95febc9e1790410794e3ad7bef49150ff04199e3b8af24827",
+      "size": 563915
+    }
+  ]
+}

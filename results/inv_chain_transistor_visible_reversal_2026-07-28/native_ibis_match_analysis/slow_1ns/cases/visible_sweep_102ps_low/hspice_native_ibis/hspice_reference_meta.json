@@ -1,0 +1,18 @@
+{
+  "deck_sha256": "84673ebe6d9bcb2bb8ad786851f58ac5482ef1cb03e34f7c619df65d94a495ed",
+  "extra": {
+    "case_id": "visible_sweep_102ps_low",
+    "edge_ns": 0.001,
+    "family": "inv_chain_s2ibispy_native_ibis_direct_50r_2pf",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "supply_v": 1.8
+  },
+  "inputs": [
+    {
+      "name": "inv_chain_slow_1ns.ibs",
+      "sha256": "eca4d9eb2e67c0bdcd1a2759f36c29819722350c7f5399e99b96a38d0f8922b4",
+      "size": 563940
+    }
+  ]
+}

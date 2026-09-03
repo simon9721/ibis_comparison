@@ -1,0 +1,12 @@
+{
+  "returncode": 0,
+  "errors": [],
+  "warnings": [
+    "WARNING (line   32) - Vinl should not be specified for model type Output",
+    "WARNING (line   33) - Vinh should not be specified for model type Output",
+    "WARNING - Model 'driver2': Vmeas timing test load parameter should be specified"
+  ],
+  "notes": [],
+  "total_errors": 0,
+  "total_warnings": 3
+}

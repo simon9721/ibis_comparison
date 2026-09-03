@@ -1,0 +1,6 @@
+device,ibis_variant,case_id,timeout_s,last_reference_time_ns,partial_raw_size_mb,log
+io_buf,slow,edge_1ps_base_50r_2pf,30,15.350600000000002,162.729199,results\io_buf_inv_chain_reversal_hybrid_comparison_2026-07-27\io_buf\slow\cases\edge_1ps_base_50r_2pf\ngspice_reversal_hybrid\ngspice_stdout.log
+io_buf,fast,edge_1ps_base_50r_2pf,30,15.300600000000001,169.622308,results\io_buf_inv_chain_reversal_hybrid_comparison_2026-07-27\io_buf\fast\cases\edge_1ps_base_50r_2pf\ngspice_reversal_hybrid\ngspice_stdout.log
+io_buf,fast,short_pulse_2ns_high,30,7.26061,163.491183,results\io_buf_inv_chain_reversal_hybrid_comparison_2026-07-27\io_buf\fast\cases\short_pulse_2ns_high\ngspice_reversal_hybrid\ngspice_stdout.log
+inv_chain,slow,edge_1ps_base_50r_2pf,30,15.2702,154.133405,results\io_buf_inv_chain_reversal_hybrid_comparison_2026-07-27\inv_chain\slow\cases\edge_1ps_base_50r_2pf\ngspice_reversal_hybrid\ngspice_stdout.log
+inv_chain,fast,edge_1ps_base_50r_2pf,30,15.2702,155.738202,results\io_buf_inv_chain_reversal_hybrid_comparison_2026-07-27\inv_chain\fast\cases\edge_1ps_base_50r_2pf\ngspice_reversal_hybrid\ngspice_stdout.log

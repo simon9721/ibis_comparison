@@ -1,0 +1,7 @@
+algorithm,direction,total,completed,good,warn,check,conversion_fail,ngspice_timeout,ngspice_fail
+value_match_v2,short_high,84,69,2,7,60,1,14,0
+value_match_v2,short_low,84,60,9,4,47,1,23,0
+gate_state_full,short_high,84,67,8,27,32,1,15,1
+gate_state_full,short_low,84,64,19,25,20,1,19,0
+gate_state_hybrid,short_high,84,68,10,27,31,1,15,0
+gate_state_hybrid,short_low,84,57,13,22,22,1,26,0

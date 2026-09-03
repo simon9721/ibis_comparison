@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "f02ea304d5efefdd4fe79a17c861d9e6d199856625d2a4948dd78d2e88c7b629",
+  "extra": {
+    "case_id": "prbs7_ui_2ns_edge_50ps",
+    "device": "io_buf",
+    "edge_ns": 0.05,
+    "family": "prbs_phase1_io_buf_native_ibis",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "prbs7",
+    "pulse_width_ns": 0.0
+  },
+  "inputs": [
+    {
+      "name": "io_buf.ibs",
+      "sha256": "1794e5cec67a8710cb3bbdb149f7ef442251e3eb573a2245b304b4663669b149",
+      "size": 574730
+    }
+  ]
+}

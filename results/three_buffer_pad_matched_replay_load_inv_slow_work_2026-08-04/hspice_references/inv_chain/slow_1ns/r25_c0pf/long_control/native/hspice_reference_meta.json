@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "8c9e121f04a0186ff7bc16562474e13b83327b18ac92013a606f317123c11775",
+  "extra": {
+    "case_id": "long_control",
+    "device": "inv_chain",
+    "edge_ns": 0.05,
+    "family": "pad_match_inv_chain_slow_1ns_r25_c0pf_native",
+    "load_ohm": 25.0,
+    "load_pf": 0.0,
+    "pattern": "rise_fall",
+    "pulse_width_ns": 10.0
+  },
+  "inputs": [
+    {
+      "name": "inv_chain_slow_1ns.ibs",
+      "sha256": "eca4d9eb2e67c0bdcd1a2759f36c29819722350c7f5399e99b96a38d0f8922b4",
+      "size": 563940
+    }
+  ]
+}

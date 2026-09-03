@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "11063a21a9eb30686db18456e2dceef154ab18edf38771174fb81347ffa8d926",
+  "extra": {
+    "case_id": "prbs7_ui_1ns_edge_50ps",
+    "device": "ex2",
+    "edge_ns": 0.05,
+    "family": "prbs_phase1_ex2_native_ibis",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "prbs7",
+    "pulse_width_ns": 0.0
+  },
+  "inputs": [
+    {
+      "name": "ex2_fast_5ps.ibs",
+      "sha256": "a13b1be30b11a2e95febc9e1790410794e3ad7bef49150ff04199e3b8af24827",
+      "size": 563915
+    }
+  ]
+}

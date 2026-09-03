@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "bac45377734511ba77305ae8e15cccd57151df302d4bd4bad2ab0acebc61bb40",
+  "extra": {
+    "case_id": "edge_100ps_long_control",
+    "device": "io_buf",
+    "edge_ns": 0.1,
+    "family": "realistic_pulse_io_buf_slow_1ns_native",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "rise_fall",
+    "pulse_width_ns": 10.0
+  },
+  "inputs": [
+    {
+      "name": "io_buf.ibs",
+      "sha256": "6c4b8b0a75c4000626d17a3cf1006cb26cb92d619d22d0e3b9860fb948d6076a",
+      "size": 574684
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "deck_sha256": "e9085cce6a60b4af4beace23577fdd11502e3ea8db77a736d337bcab37bf859d",
+  "extra": {
+    "case_id": "short_pulse_50ps_high",
+    "edge_ns": 0.001,
+    "family": "ex2_fast_5ps_native_ibis_direct_50r_2pf",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "supply_v": 3.3
+  },
+  "inputs": [
+    {
+      "name": "ex2_fast_5ps.ibs",
+      "sha256": "a13b1be30b11a2e95febc9e1790410794e3ad7bef49150ff04199e3b8af24827",
+      "size": 563915
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+order,buffer,direction,target_percent,figure_type,filename
+1,io_buf,short_high,70,pad_voltage,01_io_buf_short_high_70pct_pad_voltage.png
+2,io_buf,short_high,70,ku_kd,02_io_buf_short_high_70pct_ku_kd.png
+3,io_buf,short_low,70,pad_voltage,03_io_buf_short_low_70pct_pad_voltage.png
+4,io_buf,short_low,70,ku_kd,04_io_buf_short_low_70pct_ku_kd.png
+5,inv_chain,short_high,70,pad_voltage,05_inv_chain_short_high_70pct_pad_voltage.png
+6,inv_chain,short_high,70,ku_kd,06_inv_chain_short_high_70pct_ku_kd.png
+7,inv_chain,short_low,70,pad_voltage,07_inv_chain_short_low_70pct_pad_voltage.png
+8,inv_chain,short_low,70,ku_kd,08_inv_chain_short_low_70pct_ku_kd.png
+9,ex2,short_high,70,pad_voltage,09_ex2_short_high_70pct_pad_voltage.png
+10,ex2,short_high,70,ku_kd,10_ex2_short_high_70pct_ku_kd.png
+11,ex2,short_low,70,pad_voltage,11_ex2_short_low_70pct_pad_voltage.png
+12,ex2,short_low,70,ku_kd,12_ex2_short_low_70pct_ku_kd.png

@@ -1,0 +1,4 @@
+flow,label,rise_50_delay_ns,rise_delta_vs_transistor_ps,fall_50_delay_ns,fall_delta_vs_transistor_ps,settled_high_v,load_current_high_ma,effective_pullup_r_ohm,active_window_rmse_vs_transistor_mv
+native_ibis,HSPICE IBIS: old slow-characterized file,2.362873080897086,511.26783637062,0.9396557796846352,627.9542314991584,1.544746,30.89492,56.81367681159232,299.05513575909765
+native_ibis_fast,HSPICE IBIS: regenerated 5 ps file,1.8606021971683093,8.996952641843414,0.31559119310669637,3.8896449212195705,1.544746,30.89492,56.81367681159232,11.657398801158237
+transistor_original_ideal,HSPICE transistor: io_buf.sp,1.851605244526466,0.0,0.3117015481854768,0.0,1.544674,30.89348,56.818655586874634,0.0

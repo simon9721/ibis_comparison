@@ -1,0 +1,7 @@
+algorithm,direction,paired_completed_cases,improved_class,same_class,worse_class
+value_match_v2,short_high,69,9,55,5
+value_match_v2,short_low,60,2,57,1
+gate_state_full,short_high,67,32,33,2
+gate_state_full,short_low,64,37,21,6
+gate_state_hybrid,short_high,68,32,36,0
+gate_state_hybrid,short_low,57,26,29,2

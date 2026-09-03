@@ -1,0 +1,25 @@
+{
+  "deck_sha256": "63570c79891ad47ce7c0c110641885bde89af32153a09d98708e9c2b5d8043a2",
+  "extra": {
+    "case_id": "edge_100ps_sweep_short_high_215ps",
+    "device": "inv_chain",
+    "edge_ns": 0.1,
+    "family": "realistic_pulse_inv_chain_transistor",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 0.215
+  },
+  "inputs": [
+    {
+      "name": "invchain_ref_ngspice.sub",
+      "sha256": "504c6c0e3ffd019d38fb9081daa8ed05b985b7d474d4952e89083dacabd8de64",
+      "size": 998
+    },
+    {
+      "name": "HL18G-S3.7S.lib",
+      "sha256": "d89ab0f63f30ad012bdf8988e7654a8a8377540aa8c8bcb9909a4571be2451f3",
+      "size": 1097771
+    }
+  ]
+}

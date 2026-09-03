@@ -1,0 +1,3 @@
+device,profile,load_ohm,load_pf,case_id,reference,source,tr0,edge_ps
+inv_chain,fast_5ps,50.0,2.0,short_low_500ps,hspice_native_ibis,cache,results\three_buffer_pad_matched_replay_v2_pilot_low_2026-08-04\hspice_references\inv_chain\fast_5ps\r50_c2pf\short_low_500ps\native\run.tr0,
+inv_chain,fast_5ps,50.0,2.0,short_low_500ps,hspice_transistor,cache,results\three_buffer_pad_matched_replay_v2_pilot_low_2026-08-04\hspice_references\inv_chain\transistor\r50_c2pf\short_low_500ps\run.tr0,50.0

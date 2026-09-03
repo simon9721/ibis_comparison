@@ -1,0 +1,20 @@
+{
+  "deck_sha256": "8bcdd337ad75fd8d0d0b7f065326af3e391cfc9bc07136f32ac235f9066150d6",
+  "extra": {
+    "case_id": "short_high_2ns",
+    "device": "io_buf",
+    "edge_ns": 0.05,
+    "family": "pad_match_io_buf_fast_5ps_r50_c2pf_native",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 2.0
+  },
+  "inputs": [
+    {
+      "name": "io_buf.ibs",
+      "sha256": "1794e5cec67a8710cb3bbdb149f7ef442251e3eb573a2245b304b4663669b149",
+      "size": 574730
+    }
+  ]
+}

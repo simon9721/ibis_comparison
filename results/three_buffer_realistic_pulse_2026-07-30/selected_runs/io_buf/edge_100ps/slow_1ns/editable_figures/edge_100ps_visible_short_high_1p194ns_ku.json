@@ -1,0 +1,68 @@
+{
+  "csv_path": "..\\waveform_data\\edge_100ps_visible_short_high_1p194ns.csv",
+  "x_column": "time_ns",
+  "series": [
+    {
+      "column": "hspice_ibis_ku",
+      "label": "HSPICE native IBIS",
+      "color": "#111111",
+      "linewidth": 3.1,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 5,
+      "visible": true
+    },
+    {
+      "column": "gate_state_ku",
+      "label": "Gate state model",
+      "color": "#d62728",
+      "linewidth": 2.0,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 4,
+      "visible": true
+    },
+    {
+      "column": "hybrid_ku",
+      "label": "Hybrid model",
+      "color": "#7b2cbf",
+      "linewidth": 2.0,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 3,
+      "visible": true
+    }
+  ],
+  "figure": {
+    "title": "io_buf | slow_1ns | 100 ps edge, 1194 ps pulse | Ku",
+    "xlabel": "Time (ns)",
+    "ylabel": "Ku",
+    "title_size": 15,
+    "label_size": 12,
+    "tick_size": 10,
+    "legend_size": 10,
+    "legend_location": "best",
+    "legend_columns": 2,
+    "show_legend": true,
+    "show_grid": true,
+    "grid_alpha": 0.45,
+    "x_min": null,
+    "x_max": null,
+    "y_min": null,
+    "y_max": null,
+    "width_in": 11.5,
+    "height_in": 6.2,
+    "dpi": 180,
+    "background": "#ffffff",
+    "transparent": false,
+    "font_family": "DejaVu Sans",
+    "x_scale": "linear",
+    "y_scale": "linear"
+  }
+}

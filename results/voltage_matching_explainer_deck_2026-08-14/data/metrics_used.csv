@@ -1,0 +1,4 @@
+device,flow,label,direction,status,pulse_width_ps,pad_extreme_v,output_turn_time_ns,output_excursion_fraction,pad_rmse_mv,ku_rmse,kd_rmse,input_reverse_threshold_ns,native_output_turn_time_ns,hybrid_activated,hybrid_active_duration_ns
+io_buf,voltage_matching,voltage-matching,short_high,COMPLETED,1503.906,0.6355989736712511,6.573552,0.41308589325514805,56.31111991635024,0.4323677156881538,0.3391266291879181,6.528905999999999,6.604561,,
+inv_chain,voltage_matching,voltage-matching,short_high,COMPLETED,103.515,1.424327567122815,5.373871,1.0015201441259507,851.3659336352241,0.49301121548653437,0.33466583016765533,5.128515,5.415184,,
+ex2,voltage_matching,voltage-matching,short_high,COMPLETED,808.594,1.4389740833354412,6.606211,0.9314922881872199,379.3714382570658,0.4020253931766939,0.15841367986660285,5.833594,6.695998,,

@@ -1,0 +1,5 @@
+device,profile,flow,cases,load_points,median_pad_rmse_mv,median_ku_rmse,median_kd_rmse,coefficient_and_pad_improved,pad_only_false_pass,mapping_ambiguous,coefficient_artifact
+ex2,slow_1ns,legacy,24,8,479.38901649737375,0.47711457945978414,0.37374387135058773,0,0,0,0
+ex2,slow_1ns,coefficient_value_match,24,8,260.06614334836627,0.33456464472469516,0.4876914757598185,8,8,0,0
+ex2,slow_1ns,pad_voltage,24,8,192.71485839740612,0.31648921085890497,0.11932747536204022,8,8,0,0
+ex2,slow_1ns,pad_slew,24,8,193.18756483044743,0.31786795280575497,0.11932798516973733,7,7,2,0

@@ -1,0 +1,13 @@
+flow,flow_label,reference,window,segments_ns,ku_time_weighted_rmse,kd_time_weighted_rmse,ku_max_abs_error,kd_max_abs_error
+legacy,ngspice legacy pybis runtime,HSPICE native IBIS runtime,full_active,4.5:20,0.029754366194839933,0.017892326167778284,1.7122245999999999,0.7688225
+legacy,ngspice legacy pybis runtime,HSPICE native IBIS runtime,rise_impulse_50ps,4.995:5.05,0.22720724264358685,0.14037121023880073,0.7251824,0.46174839999999995
+legacy,ngspice legacy pybis runtime,HSPICE native IBIS runtime,fall_impulse_50ps,14.995:15.05,0.47897169952426655,0.28355648235314784,1.7122245999999999,0.7688225
+legacy,ngspice legacy pybis runtime,HSPICE native IBIS runtime,outside_impulses,4.5:4.995;5.05:14.995;15.05:20,0.0042934349261001346,0.0034854518950256596,0.027790394918000005,0.027870188328000034
+legacy,ngspice legacy pybis runtime,HSPICE native IBIS runtime,rise_main_body,5.05:14.9,0.004248654065573178,0.002746996486555458,0.012753945544999978,0.027870188328000034
+legacy,ngspice legacy pybis runtime,HSPICE native IBIS runtime,fall_main_body,15.05:20,0.004382414404787564,0.004629957362163021,0.027790394918000005,0.023515962510999966
+directional_residual,ngspice gate-state directional+residual runtime,HSPICE native IBIS runtime,full_active,4.5:20,0.7437103240109809,0.17373265389340534,1.08740450669,0.46938847723599997
+directional_residual,ngspice gate-state directional+residual runtime,HSPICE native IBIS runtime,rise_impulse_50ps,4.995:5.05,0.15434915080861536,0.13725752716862522,0.317265299452,0.3622426267440001
+directional_residual,ngspice gate-state directional+residual runtime,HSPICE native IBIS runtime,fall_impulse_50ps,14.995:15.05,0.4227448538865529,0.2384209368615786,1.08740450669,0.46938847723599997
+directional_residual,ngspice gate-state directional+residual runtime,HSPICE native IBIS runtime,outside_impulses,4.5:4.995;5.05:14.995;15.05:20,0.7306106327263651,0.1649075340542746,1.01088078884309,0.301839522349
+directional_residual,ngspice gate-state directional+residual runtime,HSPICE native IBIS runtime,rise_main_body,5.05:14.9,0.8689324378417457,0.20159808181061056,1.01088078884309,0.301839522349
+directional_residual,ngspice gate-state directional+residual runtime,HSPICE native IBIS runtime,fall_main_body,15.05:20,0.29543382943839824,0.0075066406340239,0.323102483241,0.0416497067679

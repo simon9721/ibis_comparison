@@ -1,0 +1,7 @@
+edge,flow,flow_label,window_start_ns,window_stop_ns,ku_min,ku_max,kd_min,kd_max
+rise,native,HSPICE native IBIS runtime,4.995,5.05,-0.2209466,0.7251824,0.5382516,1.181855
+rise,legacy,ngspice legacy pybis runtime,4.995,5.05,-0.0890613970072,0.137730019466,0.926892824044,1.17068112844
+rise,directional_residual,ngspice gate-state directional+residual runtime,4.995,5.05,-0.0526189048217,0.415566595331,0.655524356734,1.11701138665
+fall,native,HSPICE native IBIS runtime,14.995,15.05,-0.7122246,2.410691,-0.6092723,0.7688225
+fall,legacy,ngspice legacy pybis runtime,14.995,15.05,0.90833623579,1.98761135457,-0.416028018326,4.73461280932e-08
+fall,directional_residual,ngspice gate-state directional+residual runtime,14.995,15.05,-0.00965278884305,1.68916362856,-0.382954488844,0.41937209002

@@ -1,0 +1,25 @@
+{
+  "deck_sha256": "7f1568a89c02d04f4b32b9d630b69d2ed63ea0bacdca10c451f99ea10b1d9e31",
+  "extra": {
+    "case_id": "long_control",
+    "device": "ex2",
+    "edge_ns": 0.05,
+    "family": "pad_match_ex2_transistor",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "rise_fall",
+    "pulse_width_ns": 10.0
+  },
+  "inputs": [
+    {
+      "name": "buffer.sp",
+      "sha256": "16a371d8927df1a442e292d17a11f7ff6e420ad2283b940966a406655bed215f",
+      "size": 1973
+    },
+    {
+      "name": "hspice.mod",
+      "sha256": "775f90f0dcd626b80757299afab84ae7dae84f450273da34eb70c79abd3763fa",
+      "size": 5227
+    }
+  ]
+}
