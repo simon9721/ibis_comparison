@@ -72,3 +72,4 @@ media/
 # ex2 variants that is 0.54 MB duplicated ~50 times. The sources are tracked under
 # results/*_variants_*/**/selection/, and the sweep re-copies on every run.
 results/**/w*ps/*/input.ibs
+__pycache__/
