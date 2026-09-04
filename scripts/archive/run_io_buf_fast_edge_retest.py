@@ -60,7 +60,7 @@ def make_case() -> hspice_rsf.Case:
 def prepare_sources() -> None:
     SOURCE_DIR.mkdir(parents=True, exist_ok=True)
     for name in ("io_buf.sp", "hspice_ngspice.mod"):
-        shutil.copy2(ROOT / "clean_ibis_vs_pybis_matched_pkg" / name, SOURCE_DIR / name)
+        shutil.copy2(ROOT / "sim" / "clean_ibis_vs_pybis_matched_pkg" / name, SOURCE_DIR / name)
 
 
 def run_hspice_retest() -> list[dict[str, object]]:

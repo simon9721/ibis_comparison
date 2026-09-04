@@ -12,9 +12,9 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_ORIG = ROOT / "ngspice_refspice" / "tb_validation_refspice_rsf_batch.raw"
-RAW_NC = ROOT / "ngspice_refspice" / "tb_validation_refspice_rsf_nocoupling_batch.raw"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW_ORIG = ROOT / "sim" / "ngspice_refspice" / "tb_validation_refspice_rsf_batch.raw"
+RAW_NC = ROOT / "sim" / "ngspice_refspice" / "tb_validation_refspice_rsf_nocoupling_batch.raw"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 
 
 def ns(time_s):

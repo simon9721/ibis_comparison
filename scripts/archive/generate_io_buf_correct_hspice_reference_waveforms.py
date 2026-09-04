@@ -40,7 +40,7 @@ FAST_IBIS = (
     / "source"
     / "io_buf.ibs"
 )
-IO_BUF_SP = ROOT / "models" / "io_buf.sp"
+IO_BUF_SP = ROOT / "buffers" / "models" / "io_buf.sp"
 ORIGINAL_MODEL = ROOT.parent / "s2ibispy" / "tests" / "hspice.mod"
 VDD = 3.3
 

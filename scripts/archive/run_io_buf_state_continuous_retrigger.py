@@ -27,7 +27,7 @@ OUT_DIR = ROOT / "results" / "io_buf_state_continuous_retrigger_2026-06-20"
 COMMON_DIR = OUT_DIR / "common"
 CASES_DIR = OUT_DIR / "cases"
 PLOTS_DIR = OUT_DIR / "plots"
-DEFAULT_IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+DEFAULT_IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 DEFAULT_NGSPICE = default_ngspice(console=True)
 DEFAULT_HSPICE = default_hspice()
 

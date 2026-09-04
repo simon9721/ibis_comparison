@@ -10,9 +10,9 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parent.parent
-XYCE = ROOT / "xyce_pybis"
-NGSPICE = ROOT / "ngspice_pybis"
-OUT = ROOT / "plots" / "xyce_pybis"
+XYCE = ROOT / "sim" / "xyce_pybis"
+NGSPICE = ROOT / "sim" / "ngspice_pybis"
+OUT = ROOT / "sim" / "plots" / "xyce_pybis"
 
 
 def load_xyce_csv(path: Path):

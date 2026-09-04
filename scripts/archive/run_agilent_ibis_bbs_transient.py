@@ -27,7 +27,7 @@ NGSPICE_DIR = OUT_DIR / "ngspice_pybis_bbs"
 PLOTS_DIR = OUT_DIR / "plots"
 ARTIFACTS_DIR = OUT_DIR / "artifacts"
 
-IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 AGILENT_S4P = ROOT / "results" / "agilent_e5071b_bbs_s4p_overlay_2026-06-19" / "artifacts" / "Agilent_E5071B_original.s4p"
 BBS_GSPICE = ROOT / "results" / "agilent_e5071b_bbs_s4p_overlay_2026-06-19" / "artifacts" / "Agilent_E5071B_GSPICE.txt"
 NGSPICE_EXE = Path(r"\\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\ngspice-46_64\Spice64\bin\ngspice.exe")

@@ -22,8 +22,8 @@ from eye_diagram import parse_ngspice_raw  # noqa: E402
 DEFAULT_NGSPICE = Path(
     r"\\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\ngspice-46_64\Spice64\bin\ngspice_con.exe"
 )
-CASE_DIR = ROOT / "hspice" / "sparam_ngspice" / "channel_sweep"
-DEFAULT_MODEL = ROOT / "hspice" / "sparam_ngspice" / "Clarity_example.sp"
+CASE_DIR = ROOT / "sim" / "hspice" / "sparam_ngspice" / "channel_sweep"
+DEFAULT_MODEL = ROOT / "sim" / "hspice" / "sparam_ngspice" / "Clarity_example.sp"
 
 
 @dataclass(frozen=True)

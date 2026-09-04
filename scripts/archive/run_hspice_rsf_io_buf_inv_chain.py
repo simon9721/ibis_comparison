@@ -48,7 +48,7 @@ CASES = [
     Case(
         key="io_buf",
         title="io_buf",
-        source_dir=ROOT / "clean_ibis_vs_pybis_matched_pkg",
+        source_dir=ROOT / "sim" / "clean_ibis_vs_pybis_matched_pkg",
         ibis_name="io_buf.ibs",
         ibis_model="driver",
         model_type="io",
@@ -69,7 +69,7 @@ CASES = [
     Case(
         key="inv_chain",
         title="inv_chain",
-        source_dir=ROOT / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg",
+        source_dir=ROOT / "buffers" / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg",
         ibis_name="t2b_0615_v5.ibs",
         ibis_model="driver2",
         model_type="output",

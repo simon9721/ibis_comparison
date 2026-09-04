@@ -22,7 +22,7 @@ import run_hspice_rsf_io_buf_inv_chain as rsf  # noqa: E402
 
 
 OUT_DIR = ROOT / "results" / "io_buf_old_new_four_overlays_2026-06-05"
-OLD_NG_DIR = ROOT / "clean_ibis_vs_pybis_matched_pkg"
+OLD_NG_DIR = ROOT / "sim" / "clean_ibis_vs_pybis_matched_pkg"
 OLD_HSPICE_DIR = ROOT / "results" / "hspice_rsf_io_buf_inv_chain_2026-06-04" / "io_buf" / "benches"
 NEW_DIR = ROOT / "results" / "io_buf_fast_edge_retest_2026-06-05"
 NEW_NG_DIR = NEW_DIR / "ngspice" / "benches"

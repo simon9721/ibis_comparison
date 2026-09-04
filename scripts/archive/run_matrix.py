@@ -36,8 +36,8 @@ from pathlib import Path
 # Paths
 # ---------------------------------------------------------------------------
 ROOT      = Path(__file__).resolve().parents[2]
-PYBIS_DIR = ROOT / "ngspice_pybis"
-REF_DIR   = ROOT / "ngspice_refspice"
+PYBIS_DIR = ROOT / "sim" / "ngspice_pybis"
+REF_DIR   = ROOT / "sim" / "ngspice_refspice"
 NGSPICE   = Path(r"C:\Users\simom\Desktop\spice\ngspice-46_64\Spice64\bin\ngspice_con.exe")
 
 # ---------------------------------------------------------------------------

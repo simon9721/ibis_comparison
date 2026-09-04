@@ -30,7 +30,7 @@ from analyze_refspice_pybis_correlation import (
 
 
 ROOT = Path(__file__).resolve().parent.parent
-PKG = ROOT / "clean_ibis_vs_pybis_matched_pkg"
+PKG = ROOT / "sim" / "clean_ibis_vs_pybis_matched_pkg"
 OUT_DIR = CORR_DIR / "io_buf_input_slew_sweep"
 NGSPICE = ROOT.parent / "spice" / "ngspice-46_64" / "Spice64" / "bin" / "ngspice_con.exe"
 

@@ -27,7 +27,7 @@ from spice_tool_paths import default_hspice  # noqa: E402
 OUT = ROOT / "results" / "io_buf_hspice_capacitance_driver_strength_2026-07-23"
 RUNS = OUT / "runs"
 PLOTS = OUT / "plots"
-IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 FAST_IBIS = (
     ROOT
     / "results"
@@ -35,9 +35,9 @@ FAST_IBIS = (
     / "source"
     / "io_buf.ibs"
 )
-IO_BUF_SP = ROOT / "models" / "io_buf.sp"
+IO_BUF_SP = ROOT / "buffers" / "models" / "io_buf.sp"
 ORIGINAL_MODEL = ROOT.parent / "s2ibispy" / "tests" / "hspice.mod"
-MODIFIED_MODEL = ROOT / "models" / "hspice_ngspice.mod"
+MODIFIED_MODEL = ROOT / "buffers" / "models" / "hspice_ngspice.mod"
 CHARACTERIZATION_T0_TR0 = OUT / "characterization_t0_edge" / "run.tr0"
 VDD = 3.3
 EDGE_RISE_NS = 5.0

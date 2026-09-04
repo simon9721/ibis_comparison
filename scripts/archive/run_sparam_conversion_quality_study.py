@@ -299,7 +299,7 @@ def inventory_paths(args: argparse.Namespace) -> list[tuple[str, Path]]:
         skrf_tests_dir = args.skrf_tests_dir.resolve() if args.skrf_tests_dir else args.study_dir.resolve() / "inputs" / "skrf_tests"
         roots.append(("skrf_tests", skrf_tests_dir))
     if not args.no_repo_local:
-        roots.append(("repo_local", ROOT / "hspice" / "sparam"))
+        roots.append(("repo_local", ROOT / "sim" / "hspice" / "sparam"))
     for extra in args.extra_touchstone_dir or []:
         roots.append(("extra", extra.resolve()))
 

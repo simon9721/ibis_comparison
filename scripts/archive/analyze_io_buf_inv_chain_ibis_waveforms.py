@@ -59,10 +59,10 @@ CASES = [
         "io_buf slow 1 ns",
         "io_buf",
         "1 ns",
-        ROOT / "hspice" / "sparam" / "io_buf.ibs",
+        ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs",
         "MCM Driver 1",
         "driver",
-        ROOT / "models" / "io_buf.sp",
+        ROOT / "buffers" / "models" / "io_buf.sp",
     ),
     ModelCase(
         "io_buf_fast_5ps",
@@ -76,7 +76,7 @@ CASES = [
         / "io_buf.ibs",
         "MCM Driver 1",
         "driver",
-        ROOT / "models" / "io_buf.sp",
+        ROOT / "buffers" / "models" / "io_buf.sp",
     ),
     ModelCase(
         "inv_chain_slow_1ns",
@@ -90,7 +90,7 @@ CASES = [
         / "inv_chain_slow_1ns.ibs",
         "invchain",
         "driver2",
-        ROOT / "inv_chain" / "invchain_subckt_typ.sp",
+        ROOT / "buffers" / "inv_chain" / "invchain_subckt_typ.sp",
     ),
     ModelCase(
         "inv_chain_fast_5ps",
@@ -104,7 +104,7 @@ CASES = [
         / "inv_chain_fast_5ps.ibs",
         "invchain",
         "driver2",
-        ROOT / "inv_chain" / "invchain_subckt_typ.sp",
+        ROOT / "buffers" / "inv_chain" / "invchain_subckt_typ.sp",
     ),
 ]
 

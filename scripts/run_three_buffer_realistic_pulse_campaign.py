@@ -119,7 +119,7 @@ DEVICES = (
         "driver",
         "driver_OutputInput_Typical",
         3.3,
-        ROOT / "hspice" / "sparam" / "io_buf.ibs",
+        ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs",
         # Regenerated at a 50 ps characterization edge. The former 5 ps file put
         # the whole C_comp*dV/dt term into its first sample, which corrupted the
         # endpoint, onset-delay and gate-map fits and made the gate-state model
@@ -132,7 +132,7 @@ DEVICES = (
         # HSPICE and zeroing RDSW makes the output stage ~12% stronger than the
         # I-V tables io_buf.ibs was characterised from -- a settled Kd of 1.118
         # that we were reading as a defect in the IBIS file.
-        (ROOT / "models" / "io_buf.sp", ROOT / "models" / "hspice.mod"),
+        (ROOT / "buffers" / "models" / "io_buf.sp", ROOT / "buffers" / "models" / "hspice.mod"),
         ("v(xdut.n2)", "v(xdut.n3)"),
     ),
     Device(
@@ -147,8 +147,8 @@ DEVICES = (
         ROOT / "results" / "inv_chain_s2ibispy_slow_fast_2026-07-27" / "slow_1ns" / "inv_chain_slow_1ns.ibs",
         ROOT / "results" / "inv_chain_s2ibispy_slow_fast_2026-07-27" / "fast_5ps" / "inv_chain_fast_5ps.ibs",
         (
-            ROOT / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "invchain_ref_ngspice.sub",
-            ROOT / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "HL18G-S3.7S.lib",
+            ROOT / "buffers" / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "invchain_ref_ngspice.sub",
+            ROOT / "buffers" / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "HL18G-S3.7S.lib",
         ),
         ("v(xdut.vout7)",),
     ),
@@ -163,7 +163,7 @@ DEVICES = (
         0.0,
         ROOT / "results" / "ex2_s2ibispy_slow_fast_2026-07-28" / "slow_1ns" / "ex2_slow_1ns.ibs",
         ROOT / "results" / "ex2_s2ibispy_slow_fast_2026-07-28" / "fast_5ps" / "ex2_fast_5ps.ibs",
-        (ROOT / "ex2" / "buffer.sp", ROOT / "ex2" / "hspice.mod"),
+        (ROOT / "buffers" / "ex2" / "buffer.sp", ROOT / "buffers" / "ex2" / "hspice.mod"),
         ("v(xdut.n4)",),
     ),
 )

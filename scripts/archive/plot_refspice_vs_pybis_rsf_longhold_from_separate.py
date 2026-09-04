@@ -19,9 +19,9 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_REF = ROOT / "ngspice_refspice" / "tb_validation_refspice_rsf_longhold_batch.raw"
-RAW_PYBIS = ROOT / "ngspice_pybis" / "tb_validation_rsf_longhold_ngspice_pybis_batch.raw"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW_REF = ROOT / "sim" / "ngspice_refspice" / "tb_validation_refspice_rsf_longhold_batch.raw"
+RAW_PYBIS = ROOT / "sim" / "ngspice_pybis" / "tb_validation_rsf_longhold_ngspice_pybis_batch.raw"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 
 EXPECTED_STOP_NS = 24.0
 MIN_VALID_STOP_NS = 23.0

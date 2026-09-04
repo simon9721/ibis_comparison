@@ -6,9 +6,9 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_REF = ROOT / "ngspice_refspice" / "tb_validation_refspice_fallonly_batch.raw"
-RAW_IBIS = ROOT / "ngspice_pybis" / "tb_validation_fallonly_ngspice_pybis_batch.raw"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW_REF = ROOT / "sim" / "ngspice_refspice" / "tb_validation_refspice_fallonly_batch.raw"
+RAW_IBIS = ROOT / "sim" / "ngspice_pybis" / "tb_validation_fallonly_ngspice_pybis_batch.raw"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 EXPECTED_STOP_S = 8e-9
 MIN_VALID_STOP_S = 7e-9
 

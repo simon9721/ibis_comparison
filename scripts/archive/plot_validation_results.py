@@ -7,8 +7,8 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parent.parent
 SPISIM_DIR = ROOT / "SimIbis_FreeSpice_From_SPISim"
-NG_DIR = ROOT / "ngspice_pybis"
-OUT_DIR = ROOT / "plots" / "validation"
+NG_DIR = ROOT / "sim" / "ngspice_pybis"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 
 
 def parse_ngspice_raw(path: Path):

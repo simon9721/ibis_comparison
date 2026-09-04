@@ -17,9 +17,9 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parent.parent
-XYCE_DIR = ROOT / "xyce_pybis"
-NGSPICE_DIR = ROOT / "ngspice_pybis"
-OUT_DIR = ROOT / "plots" / "xyce_pybis"
+XYCE_DIR = ROOT / "sim" / "xyce_pybis"
+NGSPICE_DIR = ROOT / "sim" / "ngspice_pybis"
+OUT_DIR = ROOT / "sim" / "plots" / "xyce_pybis"
 
 XYCE = Path(r"C:\Program Files\XyceNF_7.10\bin\Xyce.exe")
 

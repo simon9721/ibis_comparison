@@ -20,10 +20,10 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_REF = ROOT / "ngspice_refspice" / "tb_validation_refspice_rsf_batch.raw"
-RAW_PYBIS = ROOT / "ngspice_pybis" / "tb_validation_rfr_ngspice_pybis_12n_batch.raw"
-IBIS_PATH = ROOT / "models" / "io_buf.ibs"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW_REF = ROOT / "sim" / "ngspice_refspice" / "tb_validation_refspice_rsf_batch.raw"
+RAW_PYBIS = ROOT / "sim" / "ngspice_pybis" / "tb_validation_rfr_ngspice_pybis_12n_batch.raw"
+IBIS_PATH = ROOT / "buffers" / "models" / "io_buf.ibs"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 
 EXPECTED_STOP_NS = 12.0
 MIN_VALID_STOP_NS = 11.0

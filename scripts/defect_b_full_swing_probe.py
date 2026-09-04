@@ -49,8 +49,8 @@ import spicelab as sl  # noqa: E402
 from pybis2spice import pybis2spice as pb, subcircuit  # noqa: E402
 
 IBIS = ROOT / "results" / "io_buf_fast_edge_regen_2026-08-19" / "source" / "io_buf_fast_50ps.ibs"
-NETLIST = ROOT / "models" / "io_buf.sp"
-MODCARD = ROOT / "models" / "hspice.mod"
+NETLIST = ROOT / "buffers" / "models" / "io_buf.sp"
+MODCARD = ROOT / "buffers" / "models" / "hspice.mod"
 OUT = ROOT / "results" / "defect_b_full_swing_2026-09-03"
 
 MODEL, COMPONENT = "driver", "MCM Driver 1"

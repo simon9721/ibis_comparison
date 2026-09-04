@@ -24,13 +24,13 @@ OUT_DIR = ROOT / "results" / "inv_chain_s2ibispy_slow_fast_comparison_2026-07-27
 SOURCE_DIR = ROOT / "results" / "inv_chain_s2ibispy_slow_fast_2026-07-27"
 DEFAULT_TRANSISTOR_WRAPPER = (
     ROOT
-    / "inv_chain"
+    / "buffers" / "inv_chain"
     / "clean_ibis_vs_pybis_matched_pkg"
     / "invchain_ref_ngspice.sub"
 )
 DEFAULT_TRANSISTOR_LIBRARY = (
     ROOT
-    / "inv_chain"
+    / "buffers" / "inv_chain"
     / "clean_ibis_vs_pybis_matched_pkg"
     / "HL18G-S3.7S.lib"
 )

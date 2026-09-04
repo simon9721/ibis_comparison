@@ -27,7 +27,7 @@ OUT_DIR = ROOT / "results" / "io_buf_switching_coeff_overlay_2026-06-18"
 HSPICE_DIR = OUT_DIR / "hspice_native_ibis"
 NGSPICE_DIR = OUT_DIR / "ngspice_pybis"
 PLOTS_DIR = OUT_DIR / "plots"
-DEFAULT_IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+DEFAULT_IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 DEFAULT_NGSPICE = default_ngspice(console=True)
 DEFAULT_HSPICE = default_hspice()
 

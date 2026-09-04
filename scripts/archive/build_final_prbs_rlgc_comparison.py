@@ -63,7 +63,7 @@ CASES = [
         simulator="ngspice",
         model="io_buf.sp transistor-level",
         setup="direct transistor model, PRBS7, new 50 ohm RLGC, Rterm=50",
-        path=ROOT / "ngspice_refspice" / "tb_refspice_prbs7_new50ohm_batch.raw",
+        path=ROOT / "sim" / "ngspice_refspice" / "tb_refspice_prbs7_new50ohm_batch.raw",
         fmt="ngspice",
     ),
     Case(
@@ -72,7 +72,7 @@ CASES = [
         simulator="Xyce",
         model="io_buf.sp transistor-level",
         setup="direct transistor model, PRBS7, new 50 ohm RLGC, Rterm=50",
-        path=ROOT / "xyce_refspice" / "tb_refspice_prbs7_new50ohm_xyce.cir.csv",
+        path=ROOT / "sim" / "xyce_refspice" / "tb_refspice_prbs7_new50ohm_xyce.cir.csv",
         fmt="xyce",
     ),
     Case(

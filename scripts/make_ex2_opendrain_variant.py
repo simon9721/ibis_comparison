@@ -28,7 +28,7 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-EX2 = ROOT / "ex2"
+EX2 = ROOT / "buffers" / "ex2"
 BASE_CONFIG = ROOT / "results" / "ex2_s2ibispy_slow_fast_2026-07-28" / "configs" / "ex2_fast_5ps.yaml"
 OUT = ROOT / "results" / "ex2_variants_2026-09-03"
 

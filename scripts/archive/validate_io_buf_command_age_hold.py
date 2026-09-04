@@ -25,7 +25,7 @@ import run_io_buf_two_state_gate_model as two_state  # noqa: E402
 
 RESULT_ROOT = ROOT / "results" / "io_buf_two_state_gate_model_2026-06-30"
 OUT_DIR = RESULT_ROOT / "kd_recovery_diagnostics" / "command_age_hold"
-DEFAULT_IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+DEFAULT_IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 TRAINING_CASE_IDS = [
     "short_pulse_500ps_high",
     "short_pulse_1ns_high",

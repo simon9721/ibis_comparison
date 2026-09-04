@@ -14,14 +14,14 @@ List signals:
 Single transient:
 
     python scripts/transient_plot.py \
-      --trace "ngspice_pybis/tb_pybis_prbs7_new50ohm.raw|v(n10b)|ngspice pybis" \
+      --trace "sim/ngspice_pybis/tb_pybis_prbs7_new50ohm.raw|v(n10b)|ngspice pybis" \
       --window 0ns 120ns --out results/example_single.png
 
 Overlay with zooms and delta panels:
 
     python scripts/transient_plot.py \
-      --trace "ngspice_pybis/tb_pybis_prbs7_new50ohm.raw|v(n10b)|ngspice pybis" \
-      --trace "xyce_refspice/tb_refspice_prbs7_new50ohm_xyce.cir.csv|v(n10b)|Xyce refspice" \
+      --trace "sim/ngspice_pybis/tb_pybis_prbs7_new50ohm.raw|v(n10b)|ngspice pybis" \
+      --trace "sim/xyce_refspice/tb_refspice_prbs7_new50ohm_xyce.cir.csv|v(n10b)|Xyce refspice" \
       --include-full --window 50ns 62ns --diff-to 0 \
       --out results/example_overlay.png --metrics-out results/example_overlay_metrics.csv
 

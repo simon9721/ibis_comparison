@@ -30,7 +30,7 @@ OUT = (
 )
 PLOTS = OUT / "plots"
 
-SLOW_IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+SLOW_IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 FAST_IBIS = (
     ROOT
     / "results"
@@ -38,7 +38,7 @@ FAST_IBIS = (
     / "source"
     / "io_buf.ibs"
 )
-TRANSISTOR = ROOT / "models" / "io_buf.sp"
+TRANSISTOR = ROOT / "buffers" / "models" / "io_buf.sp"
 TRANSISTOR_MODEL = ROOT.parent / "s2ibispy" / "tests" / "hspice.mod"
 
 FLOW_ORDER = ["native_ibis", "native_ibis_fast", "transistor_original_ideal"]

@@ -40,7 +40,7 @@ FAST_HSPICE_STUDY = (
 )
 FAST_GATE_STUDY = ROOT / "results" / "io_buf_correct_hspice_vs_pybis_2026-07-23"
 
-SLOW_IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+SLOW_IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 FAST_IBIS = (
     ROOT
     / "results"

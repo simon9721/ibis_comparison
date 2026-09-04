@@ -43,9 +43,9 @@ PLOTS_DIR = OUT_DIR / "plots"
 DATA_DIR = OUT_DIR / "waveform_data"
 FIT_DIR = OUT_DIR / "fit_diagnostics"
 
-DEFAULT_IBIS = ROOT / "inv_chain" / "t2b_0615_v5.ibs"
-DEFAULT_TRANSISTOR_WRAPPER = ROOT / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "invchain_ref_ngspice.sub"
-DEFAULT_TRANSISTOR_LIBRARY = ROOT / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "HL18G-S3.7S.lib"
+DEFAULT_IBIS = ROOT / "buffers" / "inv_chain" / "t2b_0615_v5.ibs"
+DEFAULT_TRANSISTOR_WRAPPER = ROOT / "buffers" / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "invchain_ref_ngspice.sub"
+DEFAULT_TRANSISTOR_LIBRARY = ROOT / "buffers" / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "HL18G-S3.7S.lib"
 DEFAULT_NGSPICE = default_ngspice(console=True)
 DEFAULT_HSPICE = default_hspice()
 

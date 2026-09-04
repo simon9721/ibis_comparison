@@ -14,8 +14,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parent.parent
-NGSPICE_DIR = ROOT / "ngspice_pybis"
-XYCE_DIR = ROOT / "xyce_pybis"
+NGSPICE_DIR = ROOT / "sim" / "ngspice_pybis"
+XYCE_DIR = ROOT / "sim" / "xyce_pybis"
 OUT_DIR = ROOT / "results" / "prbs_rlgc_clean_2026-05-10"
 
 NGSPICE = Path(r"C:\Users\simom\Desktop\spice\ngspice-46_64\Spice64\bin\ngspice_con.exe")

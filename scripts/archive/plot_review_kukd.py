@@ -484,12 +484,12 @@ def plot_normal_source_edge_history(
         return []
 
     ref_ng = load_signals(
-        ROOT / "ngspice_refspice" / "tb_refspice_prbs7_new50ohm_batch.raw",
+        ROOT / "sim" / "ngspice_refspice" / "tb_refspice_prbs7_new50ohm_batch.raw",
         "ngspice",
         {"in": "v(in_dig)", "pad": "v(pad_ref)", "tx": "v(tx_out)", "rx": "v(n10b)"},
     )
     ref_xy = load_signals(
-        ROOT / "xyce_refspice" / "tb_refspice_prbs7_new50ohm_xyce.cir.csv",
+        ROOT / "sim" / "xyce_refspice" / "tb_refspice_prbs7_new50ohm_xyce.cir.csv",
         "xyce",
         {"in": "v(in_dig)", "pad": "v(pad_ref)", "tx": "v(tx_out)", "rx": "v(n10b)"},
     )
@@ -1309,7 +1309,7 @@ def build_cases() -> list[CaseConfig]:
             / "xyce"
             / "tb_clean_prbs_rlgc_xyce_edge15_flat4p2.cir.csv",
             include_replacements={
-                "prbs7_vstim.inc": ROOT / "ngspice_pybis" / "prbs7_vstim.inc",
+                "prbs7_vstim.inc": ROOT / "sim" / "ngspice_pybis" / "prbs7_vstim.inc",
                 "driver_OutputInput_Typical.sub": ROOT
                 / "results"
                 / "ngspice_kukd_ab_context38_2026-05-11"

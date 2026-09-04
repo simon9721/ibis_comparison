@@ -29,9 +29,9 @@ from spice_tool_paths import default_hspice, default_ngspice  # noqa: E402
 
 OUT_ROOT = ROOT / "results" / "ex2_slow_fast_gate_state_comparison_2026-07-28"
 REGEN_ROOT = ROOT / "results" / "ex2_s2ibispy_slow_fast_2026-07-28"
-ORIGINAL_IBIS = ROOT / "ex2" / "buffer.ibs"
-TRANSISTOR_SP = ROOT / "ex2" / "buffer.sp"
-TRANSISTOR_MODELS = ROOT / "ex2" / "hspice.mod"
+ORIGINAL_IBIS = ROOT / "buffers" / "ex2" / "buffer.ibs"
+TRANSISTOR_SP = ROOT / "buffers" / "ex2" / "buffer.sp"
+TRANSISTOR_MODELS = ROOT / "buffers" / "ex2" / "hspice.mod"
 
 COMPONENT_NAME = "MCM Driver 1"
 MODEL_NAME = "driver"

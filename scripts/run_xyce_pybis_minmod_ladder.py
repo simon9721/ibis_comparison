@@ -36,7 +36,7 @@ from test_xyce_pybis_tail_fixes import (  # noqa: E402
 )
 
 
-PLOTS_DIR = ROOT / "plots" / "xyce_pybis"
+PLOTS_DIR = ROOT / "sim" / "plots" / "xyce_pybis"
 OUT_DIR = ROOT / "results" / "xyce_pybis_minmod_ladder_2026-05-11"
 
 BENCH_ORDER = [

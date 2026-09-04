@@ -14,8 +14,8 @@ from skrf.vectorFitting import VectorFitting
 
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_S2P = ROOT / "hspice" / "sparam" / "Clarity_example.S2P"
-DEFAULT_OUT = ROOT / "hspice" / "sparam_ngspice" / "regenerated_skrf"
+DEFAULT_S2P = ROOT / "sim" / "hspice" / "sparam" / "Clarity_example.S2P"
+DEFAULT_OUT = ROOT / "sim" / "hspice" / "sparam_ngspice" / "regenerated_skrf"
 
 
 def max_singular_from_mats(mats: np.ndarray) -> dict[str, float]:

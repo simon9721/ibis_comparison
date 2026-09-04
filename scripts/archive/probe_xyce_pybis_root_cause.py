@@ -15,8 +15,8 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parent.parent
-XYCE_DIR = ROOT / "xyce_pybis"
-OUT_DIR = ROOT / "plots" / "xyce_pybis"
+XYCE_DIR = ROOT / "sim" / "xyce_pybis"
+OUT_DIR = ROOT / "sim" / "plots" / "xyce_pybis"
 XYCE = Path(r"C:\Program Files\XyceNF_7.10\bin\Xyce.exe")
 
 BASE_MODEL = "driver_OutputInput_Typical_xyce_relaxed92.sub"

@@ -57,7 +57,7 @@ class Case:
 CASES = [
     Case(
         name="io_buf",
-        package_dir=ROOT / "clean_ibis_vs_pybis_matched_pkg",
+        package_dir=ROOT / "sim" / "clean_ibis_vs_pybis_matched_pkg",
         ibis_file="io_buf.ibs",
         pybis_raw="tb_ibis_vs_pybis_rsf_12n_batch.raw",
         ref_raw="tb_refspice_rsf_14n_batch.raw",
@@ -67,7 +67,7 @@ CASES = [
     ),
     Case(
         name="inv_chain",
-        package_dir=ROOT / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg",
+        package_dir=ROOT / "buffers" / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg",
         ibis_file="t2b_0615_v5.ibs",
         pybis_raw="tb_ibis_vs_pybis_rsf_6p5n_batch.raw",
         ref_raw="tb_refspice_rsf_7n_batch.raw",

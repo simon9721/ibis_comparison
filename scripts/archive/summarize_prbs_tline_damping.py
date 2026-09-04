@@ -11,7 +11,7 @@ import numpy as np
 
 
 ROOT = Path(__file__).resolve().parent.parent
-OUT_DIR = ROOT / "plots" / "xyce_pybis"
+OUT_DIR = ROOT / "sim" / "plots" / "xyce_pybis"
 
 
 def read_metric_files() -> list[dict[str, str]]:

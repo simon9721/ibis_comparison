@@ -114,7 +114,7 @@ def ensure_ngspice_edge50_model() -> Path:
     model_dir = OUT_DIR / "models"
     model_dir.mkdir(parents=True, exist_ok=True)
     out_model = model_dir / "driver_OutputInput_Typical_relaxed92_edge50_tailflat4p2_ngspice_syntax.sub"
-    src = ROOT / "xyce_pybis" / "driver_OutputInput_Typical_xyce_relaxed92_edge50_tailflat4p2.sub"
+    src = ROOT / "sim" / "xyce_pybis" / "driver_OutputInput_Typical_xyce_relaxed92_edge50_tailflat4p2.sub"
     lines = []
     for line in src.read_text(encoding="ascii").splitlines():
         if line.startswith("B") and " V={" in line and line.rstrip().endswith("}"):
@@ -140,8 +140,8 @@ Roe_ref  oe_ref_src   oe_ref   1
 Cdec_ref vdd_ref      0        10p
 
 .subckt SPICE_BUF in oe out in_sense vdd vss
-.include '{rel(ROOT / "models" / "hspice_ngspice.mod", cwd)}'
-.include '{rel(ROOT / "models" / "io_buf.sp", cwd)}'
+.include '{rel(ROOT / "buffers" / "models" / "hspice_ngspice.mod", cwd)}'
+.include '{rel(ROOT / "buffers" / "models" / "io_buf.sp", cwd)}'
 .ends SPICE_BUF
 
 XREF in_dig oe_ref pad_ref in_sense_ref vdd_ref 0 SPICE_BUF
@@ -165,7 +165,7 @@ def make_xyce_pybis_deck(case: PatternCase, cwd: Path) -> str:
 Ven   en_sig  0  DC 3.3
 Vdd   vdd     0  DC 3.3
 
-.include '{rel(ROOT / "xyce_pybis" / "driver_OutputInput_Typical_xyce_relaxed92_edge50_tailflat4p2.sub", cwd)}'
+.include '{rel(ROOT / "sim" / "xyce_pybis" / "driver_OutputInput_Typical_xyce_relaxed92_edge50_tailflat4p2.sub", cwd)}'
 XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
 RCH_TX  pad tx_out 1u
 {format_channel(case.channel, "xyce")}

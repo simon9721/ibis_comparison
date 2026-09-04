@@ -103,7 +103,7 @@ DEVICES = (
 
 VARIANTS = {
     "io_buf": (
-        ModelVariant("slow", "slow IBIS", "tr=tf=1 ns", ROOT / "hspice" / "sparam" / "io_buf.ibs"),
+        ModelVariant("slow", "slow IBIS", "tr=tf=1 ns", ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"),
         ModelVariant(
             "fast",
             "fast IBIS",

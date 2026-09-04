@@ -2,7 +2,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-IBIS_PATH = ROOT / "models" / "io_buf.ibs"
+IBIS_PATH = ROOT / "buffers" / "models" / "io_buf.ibs"
 lines = IBIS_PATH.read_text().splitlines()
 
 # Find falling waveform V_fixture=0 and show where the fast transition happens

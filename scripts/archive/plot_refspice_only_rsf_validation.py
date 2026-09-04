@@ -6,8 +6,8 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW = ROOT / "ngspice_refspice" / "tb_validation_refspice_rsf_batch.raw"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW = ROOT / "sim" / "ngspice_refspice" / "tb_validation_refspice_rsf_batch.raw"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 EXPECTED_STOP_S = 14e-9
 MIN_VALID_STOP_S = 13e-9
 

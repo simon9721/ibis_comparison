@@ -6,8 +6,8 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW = ROOT / "ngspice_pybis" / "tb_validation_rfr_ngspice_pybis_batch.raw"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW = ROOT / "sim" / "ngspice_pybis" / "tb_validation_rfr_ngspice_pybis_batch.raw"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 
 
 def ns(time_s):

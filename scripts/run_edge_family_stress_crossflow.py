@@ -234,8 +234,8 @@ Roe_ref  oe_ref_src   oe_ref   1
 Cdec_ref vdd_ref      0        10p
 
 .subckt SPICE_BUF in oe out in_sense vdd vss
-.include '{rel_include(ROOT / "models" / "hspice_ngspice.mod", cwd)}'
-.include '{rel_include(ROOT / "models" / "io_buf.sp", cwd)}'
+.include '{rel_include(ROOT / "buffers" / "models" / "hspice_ngspice.mod", cwd)}'
+.include '{rel_include(ROOT / "buffers" / "models" / "io_buf.sp", cwd)}'
 .ends SPICE_BUF
 
 XREF in_dig oe_ref pad_ref in_sense_ref vdd_ref 0 SPICE_BUF
@@ -258,7 +258,7 @@ RTERM   n10b 0 50
 Ven    en_sig  0  DC 3.3
 Vdd    vdd     0  DC 3.3
 
-.include '{rel_include(ROOT / "ngspice_pybis" / "driver_OutputInput_Typical.sub", cwd)}'
+.include '{rel_include(ROOT / "sim" / "ngspice_pybis" / "driver_OutputInput_Typical.sub", cwd)}'
 XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
 RCH_TX  pad tx_out 1u
 {format_channel(case, "ngspice")}
@@ -282,8 +282,8 @@ Roe_ref  oe_ref_src   oe_ref   1
 Cdec_ref vdd_ref      0        10p
 
 .subckt SPICE_BUF in oe out in_sense vdd vss
-.include '{rel_include(ROOT / "models" / "hspice_ngspice.mod", cwd)}'
-.include '{rel_include(ROOT / "models" / "io_buf.sp", cwd)}'
+.include '{rel_include(ROOT / "buffers" / "models" / "hspice_ngspice.mod", cwd)}'
+.include '{rel_include(ROOT / "buffers" / "models" / "io_buf.sp", cwd)}'
 .ends SPICE_BUF
 
 XREF in_dig oe_ref pad_ref in_sense_ref vdd_ref 0 SPICE_BUF
@@ -305,7 +305,7 @@ RTERM   n10b 0 50
 Ven   en_sig  0  DC 3.3
 Vdd   vdd     0  DC 3.3
 
-.include '{rel_include(ROOT / "xyce_pybis" / XYCE_PYBIS_MODEL_FILE, cwd)}'
+.include '{rel_include(ROOT / "sim" / "xyce_pybis" / XYCE_PYBIS_MODEL_FILE, cwd)}'
 XDRV  pad  in_dig  en_sig  vdd  0  driver_OutputInput_Typical
 RCH_TX  pad tx_out 1u
 {format_channel(case, "xyce")}

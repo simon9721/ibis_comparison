@@ -17,7 +17,7 @@ OUT_DIR = ROOT / "results" / "clarity_bbs_s2p_overlay_2026-06-19"
 PLOTS_DIR = OUT_DIR / "plots"
 ARTIFACTS_DIR = OUT_DIR / "artifacts"
 
-ORIGINAL_S2P = ROOT / "hspice" / "sparam" / "Clarity_example.S2P"
+ORIGINAL_S2P = ROOT / "sim" / "hspice" / "sparam" / "Clarity_example.S2P"
 BBS_STUDY = ROOT / "results" / "sparam_bbs_quality_tuning_v1_2026-06-17"
 BBS_FITTED_S2P = (
     BBS_STUDY

@@ -34,9 +34,9 @@ COMMON_DIR = OUT_DIR / "common"
 CASES_DIR = OUT_DIR / "cases"
 FIGURES_DIR = OUT_DIR / "figures"
 FIT_DIR = OUT_DIR / "fit_diagnostics"
-DEFAULT_IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
-DEFAULT_IO_BUF_SP = ROOT / "models" / "io_buf.sp"
-DEFAULT_MOS_MODEL = ROOT / "models" / "hspice_ngspice.mod"
+DEFAULT_IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
+DEFAULT_IO_BUF_SP = ROOT / "buffers" / "models" / "io_buf.sp"
+DEFAULT_MOS_MODEL = ROOT / "buffers" / "models" / "hspice_ngspice.mod"
 DEFAULT_NGSPICE = default_ngspice(console=True)
 DEFAULT_HSPICE = default_hspice()
 

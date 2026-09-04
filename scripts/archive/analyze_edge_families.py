@@ -50,13 +50,13 @@ CASES = [
     Case(
         key="ngspice_refspice",
         label="ngspice + io_buf.sp",
-        path=ROOT / "ngspice_refspice" / "tb_refspice_prbs7_new50ohm_batch.raw",
+        path=ROOT / "sim" / "ngspice_refspice" / "tb_refspice_prbs7_new50ohm_batch.raw",
         fmt="ngspice",
     ),
     Case(
         key="xyce_refspice",
         label="Xyce + io_buf.sp",
-        path=ROOT / "xyce_refspice" / "tb_refspice_prbs7_new50ohm_xyce.cir.csv",
+        path=ROOT / "sim" / "xyce_refspice" / "tb_refspice_prbs7_new50ohm_xyce.cir.csv",
         fmt="xyce",
     ),
     Case(

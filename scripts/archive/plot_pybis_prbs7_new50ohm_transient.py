@@ -8,8 +8,8 @@ from plot_validation_results import parse_ngspice_raw
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW = ROOT / "ngspice_pybis" / "tb_pybis_prbs7_new50ohm.raw"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW = ROOT / "sim" / "ngspice_pybis" / "tb_pybis_prbs7_new50ohm.raw"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 OUT_PNG = OUT_DIR / "pybis_prbs7_new50ohm_chin_vs_load.png"
 EXPECTED_STOP_S = 1000e-9
 MIN_VALID_STOP_S = 990e-9

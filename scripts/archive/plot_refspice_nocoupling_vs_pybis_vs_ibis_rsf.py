@@ -23,9 +23,9 @@ from plot_refspice_vs_pybis_vs_ibis_rsf import (
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RAW_REF = ROOT / "ngspice_refspice" / "tb_validation_refspice_rsf_nocoupling_batch.raw"
-RAW_PYBIS = ROOT / "ngspice_pybis" / "tb_validation_rfr_ngspice_pybis_12n_batch.raw"
-OUT_DIR = ROOT / "plots" / "validation"
+RAW_REF = ROOT / "sim" / "ngspice_refspice" / "tb_validation_refspice_rsf_nocoupling_batch.raw"
+RAW_PYBIS = ROOT / "sim" / "ngspice_pybis" / "tb_validation_rfr_ngspice_pybis_12n_batch.raw"
+OUT_DIR = ROOT / "sim" / "plots" / "validation"
 
 
 def main():

@@ -19,9 +19,9 @@ if str(SCRIPT_DIR) not in sys.path:
 from eye_diagram import parse_hspice_tr0, parse_ngspice_raw  # noqa: E402
 
 
-DEFAULT_HSPICE_TR0 = ROOT / "hspice" / "sparam" / "tb_ibis_sparam.tr0"
-DEFAULT_NGSPICE_RAW = ROOT / "hspice" / "sparam_ngspice" / "tb_ibis_sparam_batch_vector_3r3c.raw"
-DEFAULT_OUT = ROOT / "hspice" / "sparam_ngspice" / "regenerated_skrf" / "plots"
+DEFAULT_HSPICE_TR0 = ROOT / "sim" / "hspice" / "sparam" / "tb_ibis_sparam.tr0"
+DEFAULT_NGSPICE_RAW = ROOT / "sim" / "hspice" / "sparam_ngspice" / "tb_ibis_sparam_batch_vector_3r3c.raw"
+DEFAULT_OUT = ROOT / "sim" / "hspice" / "sparam_ngspice" / "regenerated_skrf" / "plots"
 
 
 def crossing(t: np.ndarray, y: np.ndarray, threshold: float, direction: str, after: float) -> float:

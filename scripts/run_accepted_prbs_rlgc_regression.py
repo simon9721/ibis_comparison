@@ -17,11 +17,11 @@ LOG_DIR = OUT_DIR / "regression_logs"
 NGSPICE = Path(r"C:\Users\simom\Desktop\spice\ngspice-46_64\Spice64\bin\ngspice_con.exe")
 XYCE = Path(r"C:\Program Files\XyceNF_7.10\bin\Xyce.exe")
 
-NG_REF_DIR = ROOT / "ngspice_refspice"
+NG_REF_DIR = ROOT / "sim" / "ngspice_refspice"
 NG_REF_DECK = "tb_refspice_prbs7_new50ohm_batch.sp"
 NG_REF_RAW = "tb_refspice_prbs7_new50ohm_batch.raw"
 
-XY_REF_DIR = ROOT / "xyce_refspice"
+XY_REF_DIR = ROOT / "sim" / "xyce_refspice"
 XY_REF_DECK = "tb_refspice_prbs7_new50ohm_xyce.cir"
 XY_REF_CSV = "tb_refspice_prbs7_new50ohm_xyce.cir.csv"
 

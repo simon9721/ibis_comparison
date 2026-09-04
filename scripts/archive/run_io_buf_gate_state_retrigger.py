@@ -49,7 +49,7 @@ COMMON_DIR = OUT_DIR / "common"
 CASES_DIR = OUT_DIR / "cases"
 DEMO_DIR = OUT_DIR / "interrupted_switching_demo"
 FIGURES_DIR = DEMO_DIR / "figures"
-DEFAULT_IBIS = ROOT / "hspice" / "sparam" / "io_buf.ibs"
+DEFAULT_IBIS = ROOT / "sim" / "hspice" / "sparam" / "io_buf.ibs"
 DEFAULT_NGSPICE = default_ngspice(console=True)
 
 REQUIRED_CASE_IDS = [

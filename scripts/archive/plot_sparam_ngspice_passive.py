@@ -19,11 +19,11 @@ if str(SCRIPT_DIR) not in sys.path:
 from eye_diagram import parse_ngspice_raw  # noqa: E402
 
 
-DEFAULT_DRIVER_RAW = ROOT / "hspice" / "sparam_ngspice" / "tb_ibis_sparam_batch_vector_3r3c.raw"
+DEFAULT_DRIVER_RAW = ROOT / "sim" / "hspice" / "sparam_ngspice" / "tb_ibis_sparam_batch_vector_3r3c.raw"
 DEFAULT_SWEEP_DIR = (
-    ROOT / "hspice" / "sparam_ngspice" / "regenerated_skrf" / "vector_3r3c" / "channel_sweep"
+    ROOT / "sim" / "hspice" / "sparam_ngspice" / "regenerated_skrf" / "vector_3r3c" / "channel_sweep"
 )
-DEFAULT_OUT = ROOT / "hspice" / "sparam_ngspice" / "regenerated_skrf" / "plots"
+DEFAULT_OUT = ROOT / "sim" / "hspice" / "sparam_ngspice" / "regenerated_skrf" / "plots"
 
 
 def ns(raw: dict[str, np.ndarray]) -> np.ndarray:

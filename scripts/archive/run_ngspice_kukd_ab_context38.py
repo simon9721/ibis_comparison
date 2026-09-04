@@ -43,7 +43,7 @@ def run_variant(case: base.StressCase, variant_key: str, model_file: Path) -> di
     run_dir.mkdir(parents=True, exist_ok=True)
 
     deck_text, raw_name = base.make_deck(case, base.Flow("ngspice_pybis", "ngspice", "pybis", "ngspice", "#ff7f0e"), run_dir)
-    default_inc = base.rel_include(ROOT / "ngspice_pybis" / "driver_OutputInput_Typical.sub", run_dir)
+    default_inc = base.rel_include(ROOT / "sim" / "ngspice_pybis" / "driver_OutputInput_Typical.sub", run_dir)
     model_inc = base.rel_include(model_file, run_dir)
     deck_text = deck_text.replace(default_inc, model_inc)
 
@@ -96,7 +96,7 @@ def main() -> int:
 
     baseline_model = OUT_DIR / "driver_OutputInput_Typical_pre_kukd_3e0bf44.sub"
     write_baseline_from_git(baseline_model)
-    current_model = ROOT / "ngspice_pybis" / "driver_OutputInput_Typical.sub"
+    current_model = ROOT / "sim" / "ngspice_pybis" / "driver_OutputInput_Typical.sub"
 
     rows = [
         run_variant(case, "baseline_pre_kukd", baseline_model),

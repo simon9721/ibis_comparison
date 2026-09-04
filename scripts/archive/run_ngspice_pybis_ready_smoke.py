@@ -56,7 +56,7 @@ def prepare_benches() -> None:
         "io_buf.sp",
         "hspice_ngspice.mod",
     ):
-        shutil.copy2(ROOT / "clean_ibis_vs_pybis_matched_pkg" / name, BENCH_DIR / name)
+        shutil.copy2(ROOT / "sim" / "clean_ibis_vs_pybis_matched_pkg" / name, BENCH_DIR / name)
     shutil.copy2(SOURCE_DIR / "io_buf.ibs", BENCH_DIR / "io_buf.ibs")
 
     convert(
@@ -71,7 +71,7 @@ def prepare_benches() -> None:
 
     # Second conversion check for the companion buffer used in this study.
     convert(
-        ibis_path=ROOT / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "t2b_0615_v5.ibs",
+        ibis_path=ROOT / "buffers" / "inv_chain" / "clean_ibis_vs_pybis_matched_pkg" / "t2b_0615_v5.ibs",
         output_path=NGSPICE_DIR / "driver2_OutputInput_Typical.sub",
         component_name="invchain",
         model_name="driver2",
