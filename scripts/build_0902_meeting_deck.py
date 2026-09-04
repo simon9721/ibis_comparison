@@ -251,25 +251,18 @@ def main() -> int:
     d.add_notes(s, "The control reproduces the shipped solve to 2.4e-08, so the "
                    "method is exact, and in the quiet regions Ku is "
                    "load-independent to four decimals -- the extraction really is "
-                   "a device property, not a fixture artifact.
-
-"
-                   "Ku RMSE against the R-only baseline, all three devices:
-"
-                   "  io_buf     C 0.011   L0.5 0.142   L2 0.164   L+C 0.159
-"
-                   "  inv_chain  C 0.007   L0.5 0.004   L2 0.007   L+C 0.009
-"
-                   "  ex2        C 0.028   L0.5 0.008   L2 0.022   L+C 0.032
-
-"
-                   "Correction worth stating: the plan says added L and C are safe "
-                   "individually and the resonant combination is the problem. The "
-                   "measurement does not support that. On io_buf L alone is the "
-                   "worst case (0.164, peak 7.9) and L+C is no worse (0.159, peak "
-                   "5.2); on the other two devices everything stays under 0.03. "
-                   "The real rule is that series inductance disturbs the solve, by "
-                   "an amount that depends on the buffer.")
+                   "a device property, not a fixture artifact.  "
+                   "Ku RMSE against the R-only baseline:  "
+                   "io_buf C 0.011 / L0.5 0.142 / L2 0.164 / L+C 0.159;  "
+                   "inv_chain C 0.007 / L0.5 0.004 / L2 0.007 / L+C 0.009;  "
+                   "ex2 C 0.028 / L0.5 0.008 / L2 0.022 / L+C 0.032.  "
+                   "Correction worth stating: the plan says added L and C are "
+                   "safe individually and the resonant combination is the "
+                   "problem. The measurement does not support that. On io_buf L "
+                   "alone is the worst case (0.164, peak 7.9) and L+C is no "
+                   "worse (0.159, peak 5.2); on the other two devices everything "
+                   "stays under 0.03. The real rule is that series inductance "
+                   "disturbs the solve, by an amount that depends on the buffer.")
 
     # --------------------------------------------------------------- Ku cap
     s = d.add_slide("The 1.25 max|Ku| cap rejects good models",
