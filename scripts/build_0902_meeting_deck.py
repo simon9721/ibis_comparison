@@ -33,11 +33,13 @@ OUT = R / "meeting_deck_2026-09-04" / "ibis_pybis_status_2026-09-04.pptx"
 F = R / "meeting_deck_2026-09-04" / "figures"
 
 FIG = {
+    "error_budget": F / "error_budget.png",
     "clean_edge": F / "clean_edge.png",
     "offset_chain": F / "offset_chain.png",
     "offset_removed": F / "offset_removed.png",
     "shift_depth": F / "shift_vs_depth.png",
     "ccomp": F / "ccomp.png",
+    "ku_cap": F / "ku_cap.png",
     "variant_kukd": F / "variant_kukd.png",
 }
 
@@ -46,8 +48,21 @@ FIG = {
 FULL = dict(x=0.55, y=1.28, w=12.2, h=5.2)
 
 
-def mono(deck, slide, text, x, y, w, h, size=15.0):
-    """Monospaced block. 15 pt is the floor that stays legible when projected."""
+def mono(deck, slide, text, x, y, w, size=17.0):
+    """Monospaced block, sized to its own content.
+
+    Height is derived from the line count rather than guessed: a fixed height left
+    a third of the slide empty under every table in the first draft. 17 pt is
+    comfortably legible projected, and the box grows to match.
+    """
+    # Guard against a stale call from when this took an explicit height: a
+    # leftover `mono(..., w, 2.8)` silently set the font to 2.8 pt and rendered a
+    # table nobody could read, which is exactly the failure this deck is trying to
+    # avoid.
+    if size < 8:
+        raise ValueError(f"mono(): size={size} pt is a height, not a font size")
+    lines = len(text.splitlines()) or 1
+    h = lines * (size / 72.0) * 1.22 + 0.30
     return deck.add_code_box(slide, text, x, y, w, h, size=size)
 
 
@@ -71,19 +86,21 @@ def main() -> int:
         "Native IBIS is the bar to beat, not the target.",
         "Everything here is measured against the transistor.",
     ], 0.7, 1.4, 5.9, 2.2)
-    mono(d, s, "falling 50% crossing\nvs the transistor\nio_buf, full swing\n\n"
-               "  native IBIS       +34.6 ps\n"
-               "  pybis stock       +38.4 ps\n"
-               "  pybis gate-state  +43.5 ps", 7.0, 1.4, 5.7, 2.9)
-    d.add_text(s, "About 80% of the distance to the transistor is the IBIS format "
-                  "itself, which native pays too. Our command layer costs about "
-                  "5 ps on top of that.", 0.7, 3.9, 12.0, 1.3, size=17)
+    d.add_text(s, "Two things move in any comparison — the IBIS implementation and "
+                  "the SPICE engine. We separated them, and the engine is not the "
+                  "source.", 0.7, 3.9, 12.0, 1.2, size=17)
     d.add_takeaway(s, "We are near the format's floor on clean edges. The distance "
                       "worth attacking is under stress.")
     d.add_notes(s, "Lead with this. Full-swing accuracy is close to as good as the "
                    "format allows, so effort belongs on truncated pulses.")
 
-    # ------------------------------------------------------- 2. clean edge fig
+    # -------------------------------------------------- 2. the error budget
+    s = d.add_slide("Where the error actually comes from", section="Where we are")
+    d.add_picture_contain(s, FIG["error_budget"], x=0.55, y=1.35, w=12.2, h=4.9)
+    d.add_takeaway(s, "The format costs ~35 ps. Our command layer costs ~5 ps on "
+                      "top. We are near the floor on clean edges.")
+
+    # ------------------------------------------------------- 3. clean edge fig
     s = d.add_slide("On a clean edge, all three agree", section="Where we are")
     d.add_picture_contain(s, FIG["clean_edge"], **FULL)
     d.add_takeaway(s, "The gap left on the falling edge is what the format costs. "
@@ -100,7 +117,7 @@ def main() -> int:
                "                   10 ns plot -- not a true DC offset.\n\n"
                "The timing shift   falling 50% crossing 69-99 ps late, on\n"
                "                   every case, where native IBIS is\n"
-               "                   5-26 ps early.", 0.7, 2.5, 12.0, 2.7)
+               "                   5-26 ps early.", 0.7, 2.6, 12.0)
     d.add_takeaway(s, "One is an amplitude error that decays. The other is a timing "
                       "error that does not.")
 
@@ -136,7 +153,7 @@ def main() -> int:
                "  -> the shift persists once the stranded charge is gone\n"
                "  -> they are two defects, not one\n"
                "  -> the offset has a fix; the shift has no mechanism yet",
-         0.7, 2.9, 12.0, 2.3)
+         0.7, 3.0, 12.0)
     d.add_takeaway(s, "A cheap experiment closed a question that was open for "
                       "weeks, with the less convenient answer.")
     d.add_notes(s, "State the caveat honestly: delay_cmd has a known 1.25 ns dead "
@@ -160,7 +177,7 @@ def main() -> int:
         "pybis reproduces all three buffers' own golden waveforms.",
     ], 0.7, 1.4, 6.6, 2.8)
     mono(d, s, "figure of merit   0.03 - 0.41 %\ntiming shift      +4 to +8 ps\n\n"
-               "three buffers, both edges,\nboth fixtures", 7.6, 1.5, 5.1, 2.4)
+               "three buffers, both edges,\nboth fixtures", 7.5, 1.5, 5.2)
     d.add_text(s, "It is now the standing health check, and it settled the C_comp "
                   "question.", 0.7, 4.4, 12.0, 0.8, size=17)
     d.add_takeaway(s, "Whatever is wrong under stress, it is not the I-V times "
@@ -181,7 +198,7 @@ def main() -> int:
                "  pybis in ngspice            5.3371 ns\n"
                "  pybis in HSPICE             5.3375 ns     engine  -0.5 ps\n"
                "  native IBIS in HSPICE       5.3319 ns     model   +5.6 ps",
-         0.7, 2.5, 12.0, 2.0)
+         0.7, 2.6, 12.0)
     d.add_text(s, "The engine is not the source, provided ngspice is converged. At "
                   "a 1 ps step it was an aliasing outlier that doubled the apparent "
                   "lag.", 0.7, 4.7, 12.0, 1.0, size=17)
@@ -205,20 +222,15 @@ def main() -> int:
     # -------------------------------------------------------- 12. the Ku cap
     s = d.add_slide("The 1.25 max|Ku| cap rejects good models",
                     section="What should change")
-    mono(d, s, "ex2 variants                    edge     max|Ku|\n\n"
-               "  slowpre   predriver halved     328 ps     1.047\n"
-               "  base      control              200 ps     1.283\n"
-               "  nomiller  Miller caps removed  208 ps     1.299\n"
-               "  skewp     output PMOS halved   160 ps     1.589\n"
-               "  weak      both devices halved  152 ps     1.779",
-         0.7, 1.35, 12.0, 2.8)
-    d.add_text(s, "Monotonic in C_comp times dV/dt against the device drive. For "
-                  "ex2 that is 82 mA of displacement current against a ~51 mA "
-                  "drive: it exceeds the device, so the solve must push Ku above 1. "
-                  "Healthy baselines differ per silicon, inv_chain 1.03, io_buf "
-                  "1.18, ex2 1.28.", 0.7, 4.3, 12.0, 1.7, size=17)
+    d.add_picture_contain(s, FIG["ku_cap"], x=0.55, y=1.35, w=12.2, h=4.9)
     d.add_takeaway(s, "A high max|Ku| is a real signature of a large die "
                       "capacitance driven fast, not a corrupted extraction.")
+    d.add_notes(s, "For ex2 the displacement current is 5 pF x 3.3 V / 200 ps = "
+                   "82 mA against a ~51 mA drive. It exceeds the device, so the "
+                   "two-fixture solve has to push Ku above 1. Healthy baselines "
+                   "differ per silicon -- inv_chain 1.03, io_buf 1.18, ex2 1.28 -- "
+                   "so no absolute number works. It should be a within-buffer "
+                   "outlier test.")
     d.add_notes(s, "I proposed the wrong cause first, Miller feedthrough, and built "
                    "a nomiller variant to test it. It came back identical to the "
                    "control. Those caps are 20.5 fF against C_comp's 5 pF, 0.41%, "

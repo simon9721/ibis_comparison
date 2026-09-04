@@ -73,3 +73,4 @@ media/
 # results/*_variants_*/**/selection/, and the sweep re-copies on every run.
 results/**/w*ps/*/input.ibs
 __pycache__/
+results/**/slides/

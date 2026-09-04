@@ -86,7 +86,7 @@ def clean_edge() -> None:
     ax.set_xlim(14.95, 15.9)
     ax.set_xlabel("Time (ns)")
     ax.set_ylabel("Pad voltage (V)")
-    ax.set_title("io_buf, full swing — the falling edge all three share")
+    ax.set_title("io_buf  ·  full swing  ·  50 ohm and 2 pF  ·  falling edge")
     finish(fig, ax, OUT / "clean_edge.png")
 
 
@@ -115,7 +115,7 @@ def offset_removed() -> None:
     ax.set_ylim(-0.02, 0.26)
     ax.set_xlabel("Time (ns)")
     ax.set_ylabel("Pad voltage (V)")
-    ax.set_title("io_buf, truncated pulse — the stranded-charge pedestal, and its removal")
+    ax.set_title("io_buf  ·  2354 ps pulse  ·  after the reversal")
     finish(fig, ax, OUT / "offset_removed.png", legend_ncol=2)
 
 
@@ -153,8 +153,70 @@ def shift_vs_depth() -> None:
     ax.axhline(0, color="#111", lw=1.6)
     ax.set_xlabel("depth reached (%)  —  right is closer to a full transition")
     ax.set_ylabel("pybis − transistor (ps)")
-    ax.set_title("The timing shift grows as the pulse is truncated")
+    ax.set_title("measured against the transistor, at 50% of each case's own excursion")
     finish(fig, ax, OUT / "shift_vs_depth.png")
+
+
+def error_budget() -> None:
+    """The clean-edge error budget as a bar, not a table.
+
+    The point is the *proportion* -- that the format costs far more than our
+    command layer -- and a proportion is read from a length faster than from three
+    numbers in a column.
+    """
+    labels = ["native IBIS", "pybis stock", "pybis gate-state"]
+    vals = [34.6, 38.4, 43.5]
+    cols = [NAT, "#8A8A8A", GATE]
+    fig, ax = plt.subplots(figsize=(W, 4.9))
+    bars = ax.barh(labels[::-1], vals[::-1], color=cols[::-1], height=0.55)
+    for b, v in zip(bars, vals[::-1]):
+        ax.text(v + 0.7, b.get_y() + b.get_height() / 2, f"+{v:.1f} ps",
+                va="center", fontsize=18)
+    ax.axvline(34.6, color="#111", ls="--", lw=2.0)
+    # In the white gap between two bars, not above the top one -- at y=2.45 this
+    # sat outside the axes and printed straight through the title.
+    ax.text(34.6 - 1.0, 1.5, "what the IBIS format itself costs",
+            ha="right", va="center", fontsize=17, color="#111",
+            bbox=dict(facecolor="white", edgecolor="none", pad=3))
+    ax.set_xlim(0, 52)
+    ax.set_xlabel("falling 50% crossing, later than the transistor (ps)")
+    ax.set_title("io_buf  ·  full swing  ·  falling edge")
+    ax.grid(axis="x", alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(OUT / "error_budget.png", dpi=DPI)
+    plt.close(fig)
+    print("  error_budget.png")
+
+
+def ku_cap() -> None:
+    """max|Ku| against output edge rate, with the cap that rejects most of them."""
+    # Label offsets are set per point, not uniformly: base (200 ps) and nomiller
+    # (208 ps) sit almost on top of each other, and a shared offset put their two
+    # labels in the same place.
+    data = [("slowpre\npredriver halved", 328, 1.047, (-14, 16), "right"),
+            ("nomiller\nMiller caps out", 208, 1.299, (16, 6), "left"),
+            ("base\ncontrol", 200, 1.283, (-16, -34), "right"),
+            ("skewp\nPMOS halved", 160, 1.589, (18, -4), "left"),
+            ("weak\nboth halved", 152, 1.779, (18, 4), "left")]
+    fig, ax = plt.subplots(figsize=(W, 4.9))
+    ax.plot([d[1] for d in data], [d[2] for d in data], "o", ms=17,
+            color=GATE, zorder=5)
+    for name, x, y, off, ha in data:
+        ax.annotate(name, (x, y), textcoords="offset points", xytext=off,
+                    ha=ha, va="center", fontsize=16)
+    ax.axhline(1.25, color="#C02626", ls="--", lw=2.4, zorder=3)
+    ax.text(355, 1.30, "the 1.25 cap — rejects four of these five",
+            color="#C02626", fontsize=17, va="bottom", ha="right")
+    ax.set_xlabel("output edge rate (ps)  —  faster to the left")
+    ax.set_ylabel("max |Ku|")
+    ax.set_ylim(0.92, 2.02)
+    ax.set_xlim(120, 380)
+    ax.set_title("ex2 variants  ·  all seven characterisation edge rates")
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(OUT / "ku_cap.png", dpi=DPI)
+    plt.close(fig)
+    print("  ku_cap.png")
 
 
 def offset_chain() -> None:
@@ -175,7 +237,7 @@ def offset_chain() -> None:
                  label="GUPCMD — the command capacitor")
     axes[0].axhline(0, color="#111", lw=1.4)
     axes[0].set_ylabel("GUPCMD")
-    axes[0].set_title("Charge stranded in the command capacitor, and what the load sees")
+    axes[0].set_title("io_buf  ·  truncated pulse  ·  command capacitor, then the pad")
     axes[1].plot(d["time_ns"], d["transistor_pad_v"], color=SIL, lw=3.4,
                  label="HSPICE transistor")
     axes[1].plot(d["time_ns"], d["native_pad_v"], color=NAT, lw=2.4, ls="--",
@@ -220,7 +282,7 @@ def ccomp() -> None:
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.set_ylabel("50% crossing shift vs transistor (ps)")
-    ax.set_title("Removing C_comp costs hundreds of picoseconds on a light load")
+    ax.set_title("50% crossing shift vs the transistor, across the load sweep")
     finish(fig, ax, OUT / "ccomp.png", legend_ncol=2)
 
 
@@ -254,8 +316,8 @@ def variant_kukd() -> None:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    for fn in (clean_edge, offset_chain, offset_removed, shift_vs_depth,
-               ccomp, variant_kukd):
+    for fn in (error_budget, clean_edge, offset_chain, offset_removed,
+               shift_vs_depth, ccomp, ku_cap, variant_kukd):
         try:
             fn()
         except Exception as exc:                       # noqa: BLE001

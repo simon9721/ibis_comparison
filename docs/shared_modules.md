@@ -216,6 +216,21 @@ powershell -ExecutionPolicy Bypass -File scripts/setup_presentation_toolkit.ps1
 
 A worked example lives in `examples/presentation_toolkit/build_demo_deck.py`.
 
+### Always look at the deck before sending it
+
+```
+powershell -ExecutionPolicy Bypass -File scripts/render_deck_slides.ps1 `
+    -Deck results/my_study/my_deck.pptx
+```
+
+Exports every slide to PNG through the installed PowerPoint, so the result can be
+checked by eye. Geometry checks are not a substitute. On this study's first deck
+python-pptx reported no off-slide shapes and no overlaps, and the slides were
+still wrong in four ways that only rendering showed: a paragraph running under a
+rounded code box, code boxes centring their text so every monospaced table lost
+its column alignment, an annotation printing through a figure title, and one stale
+call rendering a table at 2.8 pt.
+
 ## `lib/paths` — find the repo root
 
 ```python

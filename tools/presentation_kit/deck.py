@@ -154,7 +154,7 @@ class GreenDeck:
         tf.margin_bottom = Inches(0.04)
         for idx, item in enumerate(items):
             p = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
-            p.text = f"- {item}"
+            p.text = f"•  {item}"
             p.level = 0
             p.font.name = self.theme.body_font
             p.font.size = Pt(size or self.theme.body_size_pt)
@@ -261,11 +261,19 @@ class GreenDeck:
         tf.margin_right = Inches(0.08)
         tf.margin_top = Inches(0.1)
         tf.margin_bottom = Inches(0.08)
-        p = tf.paragraphs[0]
-        p.text = code
-        p.font.name = self.theme.code_font
-        p.font.size = Pt(size)
-        p.font.color.rgb = RGBColor(30, 48, 39)
+        # An autoshape defaults to centred, middle-anchored text. For a code box
+        # that silently destroys column alignment -- a monospaced table comes out
+        # with every row centred on its own width, so nothing lines up. One
+        # paragraph per line, left aligned, anchored top.
+        tf.vertical_anchor = MSO_ANCHOR.TOP
+        lines = code.splitlines() or [""]
+        for idx, line in enumerate(lines):
+            para = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
+            para.text = line
+            para.alignment = PP_ALIGN.LEFT
+            para.font.name = self.theme.code_font
+            para.font.size = Pt(size)
+            para.font.color.rgb = RGBColor(30, 48, 39)
         return shape
 
     def add_picture_contain(
