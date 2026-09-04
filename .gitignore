@@ -66,3 +66,9 @@ media/
 # Local scratch / tool caches
 /.tmp/
 /.pytest_cache/
+
+# Per-case IBIS copies inside sweep run directories. Each case dir gets a
+# shutil.copy2 of its source model so the deck can say file='input.ibs'; for the
+# ex2 variants that is 0.54 MB duplicated ~50 times. The sources are tracked under
+# results/*_variants_*/**/selection/, and the sweep re-copies on every run.
+results/**/w*ps/*/input.ibs
