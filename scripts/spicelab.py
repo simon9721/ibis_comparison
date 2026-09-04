@@ -89,13 +89,32 @@ def run_spice(command: list[str], cwd: Path, log_path: Path, timeout_s: int) -> 
 
 
 def hspice(run_dir: Path, deck: str = "run.sp", stem: str = "run",
-           timeout_s: int = 600, hspice_path: Path | None = None) -> Path | None:
+           timeout_s: int = 600, hspice_path: Path | None = None,
+           allow_ngspice_card: bool = False) -> Path | None:
     """Run HSPICE on `run_dir/deck` and return the .tr0 path, or None on failure.
 
     The deck must already be written into `run_dir`; HSPICE runs there so bare
     `.include` filenames resolve. Reads back nothing -- the caller parses the
     returned path when it wants data.
+
+    Refuses to run a deck that includes `hspice_ngspice.mod`. That card zeroes
+    RDSW/PRWG/PRWB purely so ngspice does not stall on the small devices, and it
+    makes the output stage ~12% stronger than the I-V tables the IBIS models were
+    characterised from. An HSPICE transistor reference built on it is graded
+    against the wrong silicon: on io_buf its first rising edge lands ~110 ps early,
+    which reads as a timing defect in the model and is not one. 536 HSPICE runs
+    across 17 result trees were built this way before the check existed, so this
+    is a mistake the study has already made at scale. Pass
+    `allow_ngspice_card=True` only to reproduce one of those deliberately.
     """
+    deck_path = Path(run_dir) / deck
+    if deck_path.exists() and not allow_ngspice_card:
+        if "hspice_ngspice.mod" in deck_path.read_text(errors="ignore"):
+            raise ValueError(
+                f"{deck_path}: HSPICE deck includes hspice_ngspice.mod (RDSW=0), "
+                "which is ~12% stronger than the card the IBIS model was "
+                "characterised from. Use hspice.mod for HSPICE references. See "
+                "docs/model_card_rule.md")
     exe = Path(hspice_path) if hspice_path else default_hspice()
     code = run_spice([str(exe), "-i", deck, "-o", stem], Path(run_dir),
                      Path(run_dir) / f"{stem}.hspice.log", timeout_s)

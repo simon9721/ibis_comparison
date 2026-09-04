@@ -220,46 +220,42 @@ def command_pad() -> None:
 
 
 def recap() -> None:
-    """The issue recap: the figure shown at the last meeting, pad and Ku/Kd.
+    """The issue recap: pad and coefficients on one truncated io_buf pulse.
 
-    Source is the native-anchored stress sweep, which is where the 0904 deck's
-    recap figure comes from.
+    **Not** drawn from the native-anchored sweep, although the 0904 deck's recap
+    figure is. That sweep picks the pulse width at which *native IBIS* reaches the
+    target, so on its swing_50 case the transistor is 67.6% through its transition
+    while native is only 50.3% through. Plotted on one time axis the transistor's
+    edge then sits ~150 ps to the left, which reads as a propagation-delay error
+    and is not one -- it is the two curves being at different points of the same
+    transition. Measured at 50% of each curve's own peak the gap is still 76 ps to
+    native and 130 ps to gate-state, far larger than anything else in the study.
 
-    The dotted target-voltage line is `native_pad_at_reverse_v` from the sweep's
-    selection.csv -- 0.7174 V on this case, the level the width search anchored
-    to. The pulse width, the reverse edge and the crop window come from the same
-    row, so the figure reproduces the reference rather than approximating it.
+    This uses a transistor-anchored case instead, where all three see the same
+    pulse width. The peaks then agree to within 0.09 V and the crossings to tens of
+    picoseconds -- native -7 ps, gate-state +46 ps -- which is the finding
+    everywhere else. Resampling is not the difference: decimating a fine ngspice
+    trace to an 88 ps grid moves its 50% crossing by under 1.5 ps.
     """
-    src = (R / "three_buffer_native_anchored_stress_sweep_2026-08-19" / "figures"
-           / "io_buf" / "short_high" / "swing_50" / "waveforms.csv")
+    case = "io_buf_short_high_w2354ps.csv"
+    src = MATRIX / "gate_state" / "waveforms" / case
     if not src.exists():
-        print("  recap: missing swing_50 waveforms")
+        print(f"  recap: missing {case}")
         return
     d = read(src)
-    sel = next((r for r in csv.DictReader(
-        (R / "three_buffer_native_anchored_stress_sweep_2026-08-19"
-         / "selection.csv").open())
-        if r["device"] == "io_buf" and r["direction"] == "short_high"
-        and int(float(r["target_percent"])) == 50), None)
-    if sel is None:
-        print("  recap: no selection row")
-        return
-    rev = 5.0 + float(sel["pulse_width_ps"]) / 1000.0
-    target_v = float(sel["native_pad_at_reverse_v"])
-    lo, hi = float(sel["crop_start_ns"]), float(sel["crop_stop_ns"])
+    rev = 5.0 + 2.354
     fig, ax = plt.subplots(figsize=(W, H))
-    ax.plot(d["time_ns"], d["hspice_transistor_pad_v"], color=SIL, lw=6.0,
-            alpha=0.32, label="HSPICE transistor", zorder=2)
-    ax.plot(d["time_ns"], d["hspice_native_pad_v"], color=SIL, lw=2.2,
+    ax.plot(d["time_ns"], d["silicon_pad"], color=SIL, lw=6.0, alpha=0.32,
+            label="HSPICE transistor", zorder=2)
+    ax.plot(d["time_ns"], d["hspice_pad"], color=SIL, lw=2.2,
             label="HSPICE native IBIS", zorder=4)
-    ax.plot(d["time_ns"], d["gate_state_pad_v"], color=GATE, lw=2.4,
+    ax.plot(d["time_ns"], d["pybis_pad"], color=GATE, lw=2.4,
             label="gate-state", zorder=3)
     ax.axvline(rev, color=REV, ls="--", lw=1.8, label="reverse edge")
-    ax.axhline(target_v, color="#C77F0A", ls=":", lw=2.2, label="target voltage")
-    ax.set_xlim(lo, hi)
+    ax.set_xlim(5.4, 11.0)
     ax.set_xlabel("Time (ns)")
     ax.set_ylabel("Pad voltage (V)")
-    title(ax, "io_buf", "short high", "target 50%")
+    title(ax, "io_buf", "2354 ps pulse", "pad voltage")
     ax.grid(alpha=0.3)
     ax.legend(loc="upper right", ncol=2)
     save(fig, OUT / "recap_pad.png")
@@ -267,17 +263,19 @@ def recap() -> None:
     fig, axes = plt.subplots(2, 1, figsize=(W, H), sharex=True)
     for axis, field, label in ((axes[0], "ku", "Ku"), (axes[1], "kd", "Kd")):
         axis.axhspan(-0.05, 1.05, color="#EAF1F7", zorder=0)
-        axis.plot(d["time_ns"], d[f"hspice_native_{field}"], color=SIL, lw=2.2,
+        axis.plot(d["time_ns"], d[f"silicon_{field}"], color=SIL, lw=6.0,
+                  alpha=0.32, label="HSPICE transistor", zorder=2)
+        axis.plot(d["time_ns"], d[f"hspice_{field}"], color=SIL, lw=2.2,
                   label="HSPICE native IBIS", zorder=4)
-        axis.plot(d["time_ns"], d[f"gate_state_{field}"], color=GATE, lw=2.4,
+        axis.plot(d["time_ns"], d[f"pybis_{field}"], color=GATE, lw=2.4,
                   label="gate-state", zorder=3)
         axis.axvline(rev, color=REV, ls="--", lw=1.8)
         axis.set_ylabel(label)
         axis.grid(alpha=0.3)
-    axes[0].set_xlim(lo, hi)
+    axes[0].set_xlim(5.4, 11.0)
     axes[0].set_ylim(-0.25, 1.25)
-    axes[0].legend(loc="upper right", ncol=2, fontsize=13)
-    title(axes[0], "io_buf", "short high", "target 50%", "Ku and Kd")
+    axes[0].legend(loc="upper right", ncol=3, fontsize=13)
+    title(axes[0], "io_buf", "2354 ps pulse", "Ku and Kd")
     axes[1].set_xlabel("Time (ns)")
     save(fig, OUT / "recap_kukd.png")
 

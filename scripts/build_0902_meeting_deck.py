@@ -80,8 +80,7 @@ def main() -> int:
     s = d.add_slide("Issue recap", section="Issue recap")
     points(d, s, [
         "A short pulse reverses before the pad has finished its transition.",
-        "Both IBIS models under-shoot the peak the transistor reaches, and ours "
-        "sits slightly high on the tail after the reversal.",
+        "Through the edge all three agree. Our pad stays high afterwards.",
     ])
     d.add_picture_contain(s, FIG["recap_pad"], **WIDE)
 

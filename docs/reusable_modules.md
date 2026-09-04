@@ -99,6 +99,15 @@ regenerating is always safe, and `--render svg` gives vector output for slides.
 Note the editor handles **one axes and one CSV per recipe** by design; multi-panel
 figures stay script-generated, with each panel exportable separately.
 
+## The model card is not a choice
+
+HSPICE transistor references must use `buffers/models/hspice.mod`.
+`hspice_ngspice.mod` zeroes RDSW to stop ngspice stalling and is ~12% stronger
+than the I-V tables the IBIS models were characterised from; a reference built
+on it runs ~110 ps fast on io_buf, which reads as a model defect. `spicelab.hspice()`
+now refuses such a deck. See [model_card_rule.md](model_card_rule.md) and
+`scripts/audit_model_cards.py`.
+
 ## Anchors are a choice, and must be stated
 
 The stress sweep takes `anchor="transistor"` (default) or `anchor="native"`. This
