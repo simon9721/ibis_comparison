@@ -5,7 +5,8 @@
 This study now has ~250 scripts. The failure mode is not writing a bad script —
 it is writing a *second* definition of something that already had one, and having
 the two drift. This page is the map: before writing a new script, check whether
-one of these already owns what you need.
+one of these already owns what you need. For *how to use* each one, see
+[shared_modules.md](shared_modules.md).
 
 ## The incident that prompted this
 

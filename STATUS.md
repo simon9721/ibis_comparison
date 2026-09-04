@@ -188,7 +188,8 @@ while we worsen, so **model-vs-native** is the framing that isolates our machine
 
 ## Before writing a new script
 
-Read [docs/reusable_modules.md](docs/reusable_modules.md) first. It maps which
+Read [docs/reusable_modules.md](docs/reusable_modules.md) for what owns what, and
+[docs/shared_modules.md](docs/shared_modules.md) for how to use it. It maps which
 module owns which definition -- the stress axis, the Ku/Kd solve, the buffer
 registry, the figure palette -- and records what went wrong when the stress axis
 was rewritten from scratch instead of imported. Note that `scripts/archive/` is
