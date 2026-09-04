@@ -201,9 +201,36 @@ def main() -> int:
     s = d.add_slide("Nine new buffer variants, same stress axis",
                     section="More SPICE buffer mockups")
     points(d, s, [
-        "Slower predriver, halved output devices, skewed PMOS, open-drain.",
-        "Characterised and stressed exactly like the three base buffers.",
-    ])
+        "Built in HSPICE from the real transistor library, then characterised and "
+        "stressed exactly like the three base buffers.",
+    ], y=1.28)
+    d.add_code_box(s, """inv_chain          stages    Wn        Wp       what it changes
+
+  base8            8 (x2)    1.0 um    2.0 um   reference
+  stage4           4         1.0 um    2.0 um   predriver depth halved
+  skewp            8 (x2)    1.0 um    1.0 um   Wp = Wn, rise slower than fall
+  weak             8 (x2)    0.5 um    1.0 um   half drive at every stage
+
+ex2                device widths scaled        what it changes
+
+  base             none                         reference
+  weak             mx15-19 + mx24-28  x0.5      output stage at half width
+  skewp            mx24-28            x0.5      output PMOS only, rise slows
+  slowpre          mx11-14 + mx20-23  x0.5      predriver, delays the onset
+  nomiller         n4->out caps removed         tests Miller feedthrough""",
+                   0.7, 2.15, 12.0, 4.35, size=14.5)
+    d.add_notes(s, "Plus an open-drain build of ex2. The nomiller variant came "
+                   "back identical to the control -- those caps are 20.5 fF "
+                   "against C_comp's 5 pF, 0.41%, so they cannot matter. The null "
+                   "result still rules out the small capacitor and points at "
+                   "C_comp.")
+
+    s = d.add_slide("A variant under the same stress",
+                    section="More SPICE buffer mockups")
+    points(d, s, [
+        "Same characterisation, same stress axis, so the comparison is like for "
+        "like across the family.",
+    ], y=1.28)
     d.add_picture_contain(s, FIG["variant_pad"], **LEFT)
     d.add_picture_contain(s, FIG["variant_kukd"], **RIGHT)
     d.add_notes(s, "Ku and Kd here come from the transistor itself, by driving it "
