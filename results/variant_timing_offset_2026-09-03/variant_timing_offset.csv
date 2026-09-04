@@ -1,0 +1,10 @@
+variant,changed,pybis_rise_ps,pybis_fall_ps,native_rise_ps,native_fall_ps
+inv base8,reference,9.28,7.95,0.29,3.61
+inv stage4,predriver depth halved,9.74,7.54,-0.53,3.03
+inv skewp,output PMOS halved,6.96,5.89,-1.65,1.25
+inv weak,both output devices halved,7.15,4.27,-3.95,-0.19
+ex2 base,reference,-24.99,-14.57,-29.46,-19.17
+ex2 slowpre,predriver halved,-13.28,-17.43,-16.2,-20.54
+ex2 skewp,output PMOS halved,-29.58,-15.0,-33.51,-21.07
+ex2 weak,both output devices halved,-36.98,-16.75,-41.39,-23.67
+ex2 nomiller,n4->out coupling removed,-26.76,-15.72,-32.69,-18.73
