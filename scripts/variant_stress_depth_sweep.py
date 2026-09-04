@@ -83,7 +83,28 @@ def short_high_pwl(sup: float, width_ns: float) -> str:
     return sl.pulse(0.0, sup, [RISE_NS, RISE_NS + width_ns], stop_ns=STOP_NS)
 
 
-def transistor(d: Path, family: str, inputs: Path, sup: float, width: float):
+def _cached_hspice(d: Path, deck: str):
+    """Run `deck` in `d`, reusing the existing .tr0 when the deck is unchanged.
+
+    Same contract as the transistor cache: the result is a function of the deck
+    text alone, so re-running the sweep to fix one build must not re-simulate the
+    others."""
+    sp, tr0 = d / "run.sp", d / "run.tr0"
+    if tr0.exists() and sp.exists() and sp.read_text(encoding="utf-8") == deck:
+        return tr0
+    sp.write_text(deck, encoding="utf-8")
+    return sl.hspice(d, timeout_s=900)
+
+
+def transistor_deck(family: str, inputs: Path, sup: float, width: float,
+                    d: Path) -> str:
+    """Deck text for the transistor run, and the inputs copied in beside it.
+
+    Split out from transistor() so the fixture-loaded variants used for the
+    silicon Ku/Kd solve can reuse exactly this netlist and stimulus, changing only
+    the load. Any drift between the two would put the coefficients and the pad
+    voltage on different circuits.
+    """
     d.mkdir(parents=True, exist_ok=True)
     for n in os.listdir(inputs):
         shutil.copy2(inputs / n, d / n)
@@ -110,33 +131,20 @@ Cload pad 0 {C_LOAD_PF}p
 .tran 0.002n {STOP_NS}n
 .end
 """
+    return deck
+
+
+def transistor(d: Path, family: str, inputs: Path, sup: float, width: float):
     # The transistor result depends only on the netlist, the pulse width and the
     # load -- never on which pybis build is being compared against it. So an
     # existing run with a byte-identical deck is reused. Restarting this sweep to
     # change the model build should not re-simulate the silicon.
-    existing, tr0 = d / "run.sp", d / "run.tr0"
-    if tr0.exists() and existing.exists() and existing.read_text(encoding="utf-8") == deck:
-        r = sl.parse_hspice_tr0(tr0)
-        return sl.time_ns(r), sl.signal(r, "v(pad)")
-    existing.write_text(deck, encoding="utf-8")
-    tr0 = sl.hspice(d, timeout_s=900)
+    deck = transistor_deck(family, inputs, sup, width, d)
+    tr0 = _cached_hspice(d, deck)
     if tr0 is None:
         return None
     r = sl.parse_hspice_tr0(tr0)
     return sl.time_ns(r), sl.signal(r, "v(pad)")
-
-
-def _cached_hspice(d: Path, deck: str):
-    """Run `deck` in `d`, reusing the existing .tr0 when the deck is unchanged.
-
-    Same contract as the transistor cache: the result is a function of the deck
-    text alone, so re-running the sweep to fix one build must not re-simulate the
-    others."""
-    sp, tr0 = d / "run.sp", d / "run.tr0"
-    if tr0.exists() and sp.exists() and sp.read_text(encoding="utf-8") == deck:
-        return tr0
-    sp.write_text(deck, encoding="utf-8")
-    return sl.hspice(d, timeout_s=900)
 
 
 def native(d: Path, ibis: Path, model: str, sup: float, width: float, mode: int = 2):
