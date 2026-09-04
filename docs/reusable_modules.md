@@ -33,7 +33,8 @@ owns before assuming.
 
 | Concern | Owner | Notes |
 |---|---|---|
-| Running a simulator, parsing output, building stimuli | `scripts/spicelab.py` | `run_spice`, `hspice`, `ngspice`, `pwl`/`pulse`/`clock`, `signal`/`trace`/`time_ns`/`load_waveform`, `parse_hspice_tr0`/`parse_ngspice_raw` |
+| **Running** a simulator, parsing output, building stimuli | `scripts/spicelab.py` | `run_spice`, `hspice`, `ngspice`, `pwl`/`pulse`/`clock`, `signal`/`trace`/`time_ns`/`load_waveform`, `parse_hspice_tr0`/`parse_ngspice_raw` |
+| **Writing** deck text — HSPICE, ngspice, pybis subckts | `scripts/decks.py` | `hspice_header`, `ngspice_header`, `tran`, `load`, `fixture`, `supply`, `native_ibis`, `PybisSubckt` |
 | Threshold crossing | `spicelab.cross` | direction-aware, interpolated, NaN when it never crosses |
 | Which native V-T tables exist, and at what fixture | `spicelab.vt_fixtures` | needed to read any `ramp_rwf=1` result |
 | Finding the repo root | `scripts/lib/paths.py` → `repo_root()` | by marker, not `parents[N]` |
@@ -43,6 +44,30 @@ owns before assuming.
 | Which pybis builds exist, and their subckt names | `scripts/run_stress_method_matrix.py` → `METHODS` | `gate_state` → `…DirectionalDualResidualFull`, `delay_cmd` → `…DelayCommandFull`, `legacy` → plain `InputDriven` |
 | Per-case figure conventions and palette | `scripts/archive/plot_stress_matrix_methods.py` | `SILICON`, `NATIVE`, `METHOD_COLORS`; keep new figures readable beside the existing 496 |
 | The IBIS model itself | `tools/pybis2spice/` | `DataModel`, `solve_k_params_output`, `generating_current_data`, `subcircuit.generate_spice_model` |
+
+## Two deck traps the module makes unrepresentable
+
+`decks.py` exists because deck text was the most-copied thing in the study, and
+two of the copies had already caused silent failures:
+
+* **`.option post=2` as the deck's first line is swallowed as the title**, so no
+  .tr0 is written and the run looks like the simulator doing nothing. This was the
+  root cause of several "no output" failures. `hspice_header` emits a comment
+  line, then `.title`, then `.option`, so the ordering cannot be got wrong.
+* **Driving EN to the wrong rail silently disables the buffer** and the pad never
+  moves — which reads as a model defect. pybis writes `NENABLE ... V(EN,VSS) <`
+  for active-low and `>` for active-high, so `PybisSubckt.enable_level` reads the
+  polarity out of the generated file rather than trusting a flag. Verified against
+  a real open-drain subcircuit, which correctly returns 0 V.
+
+`native_ibis` also carries the `ramp_rwf` contract: it is *how many* V-T tables to
+use, not which one, and mode 2 (the default) silently produces a dead pad on ex2.
+
+**Migration caveat.** `decks.py` formats numbers with `%g`, so `50.0` becomes `50`
+and `22.0n` becomes `22n`. That is identical to SPICE but *not* byte-identical, so
+converting an existing script invalidates its deck-text run cache and forces
+re-simulation. Migrate when writing something new, or when a script's results are
+being regenerated anyway — not as a standalone tidy-up.
 
 ## Anchors are a choice, and must be stated
 
@@ -62,6 +87,9 @@ Measured across active (non-archived) scripts:
 | `SILICON`/`NATIVE`/`METHOD_COLORS` | 4 | should import from the plot module |
 | `ramp_rwf=2` literal | 13 | it is the documented default, so correct — but see [native_vt_waveform_modes.md](native_vt_waveform_modes.md) before trusting a native result |
 | tr0/raw parsing | 2 | should use `spicelab` |
+| `.option post=2` header | 14 | should use `decks.hspice_header` |
+| `BIBIS` native element | 15 | should use `decks.native_ibis` |
+| `.SUBCKT` parse + pin map + enable | 11 / 7 / 5 | should use `decks.PybisSubckt` |
 
 The `cross` count is the one that matters: eight incompatible contracts for the
 same operation, where a rising-only copy silently returns NaN on a falling edge —
