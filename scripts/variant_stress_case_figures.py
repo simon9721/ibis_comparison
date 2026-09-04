@@ -13,8 +13,9 @@ full excursion (ex2_base 11%, ex2_nomiller 11%, ex2_slowpre 19%, ex2_skewp 46%).
 Those are precisely the rows that had to be excluded from the timing summary as
 uninterpretable -- where the models make a transition several times larger than
 the transistor, no crossing-based metric separates timing from amplitude. Depth
-targets are now 50/70/85/100% of each variant's own full-swing excursion, so
-every case is measurable.
+targets are 90/80/70/60/50% of each variant's own full-swing excursion -- the
+same five levels the base-buffer stress matrix uses -- so every case is both
+measurable and directly comparable to the existing figures.
 
 **Ku/Kd is recorded and plotted.** Two builds can land the same pad voltage
 through a different Ku/Kd split, and only the coefficients show it:
@@ -63,7 +64,11 @@ from extract_silicon_kukd import solve_silicon_kukd  # noqa: E402
 OUT = ROOT / "results" / "variant_stress_cases_2026-09-04"
 PRIOR = ROOT / "results" / "variant_stress_depth_2026-09-03" / "variant_stress_depth.csv"
 
-DEPTH_TARGETS = (50, 70, 85, 100)
+# The study's own stress convention, from
+# results/three_buffer_loaded_swing_stress_sweep_2026-08-14/selection.csv:
+# five stressed levels, no full-swing case. Matching it is what makes these
+# variant figures readable beside the 496 base-buffer ones.
+DEPTH_TARGETS = (90, 80, 70, 60, 50)
 R_FIXTURE = 50.0
 
 # Same palette as plot_stress_matrix_methods.py, so the variant figures can be
