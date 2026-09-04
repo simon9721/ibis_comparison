@@ -170,7 +170,7 @@ while we worsen, so **model-vs-native** is the framing that isolates our machine
    figures use raw unaligned RMSE; conclusions about which build is better may move.
 4. **ex2 variant comparison runs** — transistor vs native vs pybis, once the
    characterization gate is sorted.
-5. **Item 5 restructure** — `.tr0` untracking and directory nesting (`item5_followups.md`).
+5. **Item 5 restructure** — `.tr0` untracking and directory nesting (`docs/item5_followups.md`).
 6. **io_buf falling V=0 golden spike** — 280 mV localized, unlike its other tables.
 7. `run_three_buffer_prbs_phase1.py:307` uses the wrong model card for io_buf.
 8. More of the book: Appendix I (IBIS quality checklist) and ch 12's common-errors
@@ -178,8 +178,8 @@ while we worsen, so **model-vs-native** is the framing that isolates our machine
 
 ## Where things live
 
-- `book_study_notes.md` — Leventhal & Green study notes
-- `s2ibispy_findings.md`, `delay_cmd_explained.md`, `item5_followups.md`
+- `docs/book_study_notes.md` — Leventhal & Green study notes
+- `docs/s2ibispy_findings.md`, `docs/delay_cmd_explained.md`, `docs/item5_followups.md`
 - `results/golden_waveform_*_2026-09-03/` — golden-waveform tests (3 buffers)
 - `results/defect_b_full_swing_2026-09-03/` — the defect-B probe
 - `results/pybis_engine_model_decoupling_2026-09-03/` — the engine/model 2×2
