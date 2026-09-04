@@ -46,18 +46,18 @@ with physical clock-folded eye plots generated from the transient output.
 ## Where To Start
 
 - Current consolidated master report: [docs/MASTER_WORK_REPORT_2026-06-25.md](docs/MASTER_WORK_REPORT_2026-06-25.md)
-- AI-agent handoff/reference: [docs/AI_AGENT_REFERENCE.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/AI_AGENT_REFERENCE.md)
-- Current plan: [ibis_comparison_plan.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/ibis_comparison_plan.md)
-- Detailed progress report: [docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md)
-- Pybis stressed-channel behavior summary: [docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md)
-- Transient/eye review summary: [docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md)
-- Reusable transient plotting tool: [docs/TRANSIENT_PLOT_TOOL.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/TRANSIENT_PLOT_TOOL.md)
-- Reusable ngspice CLI/GUI testbench tool: [docs/ngspice_lab.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/docs/ngspice_lab.md)
+- AI-agent handoff/reference: [docs/AI_AGENT_REFERENCE.md](docs/AI_AGENT_REFERENCE.md)
+- Current plan: [ibis_comparison_plan.md](ibis_comparison_plan.md)
+- Detailed progress report: [docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md](docs/reports/IBIS_COMPARISON_PROGRESS_REPORT_2026-05-11.md)
+- Pybis stressed-channel behavior summary: [docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md](docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md)
+- Transient/eye review summary: [docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md](docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md)
+- Reusable transient plotting tool: [docs/TRANSIENT_PLOT_TOOL.md](docs/TRANSIENT_PLOT_TOOL.md)
+- Reusable ngspice CLI/GUI testbench tool: [docs/ngspice_lab.md](docs/ngspice_lab.md)
 - Reusable PowerPoint toolkit: [tools/presentation_kit/README.md](tools/presentation_kit/README.md)
 - Reusable data figure editor: [tools/figure_editor/README.md](tools/figure_editor/README.md)
-- Current review plot bundle: [results/transient_review_plots_2026-05-13/README.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/results/transient_review_plots_2026-05-13/README.md)
-- Accepted benchmark bundle: [results/final_prbs_rlgc_comparison_2026-05-11/README.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/results/final_prbs_rlgc_comparison_2026-05-11/README.md)
-- Xyce pybis ladder bundle: [results/xyce_pybis_minmod_ladder_2026-05-11/README.md](C:/Users/simom/Desktop/Projects/IBIS_Comparison/results/xyce_pybis_minmod_ladder_2026-05-11/README.md)
+- Current review plot bundle: [results/transient_review_plots_2026-05-13/README.md](results/transient_review_plots_2026-05-13/README.md)
+- Accepted benchmark bundle: [results/final_prbs_rlgc_comparison_2026-05-11/README.md](results/final_prbs_rlgc_comparison_2026-05-11/README.md)
+- Xyce pybis ladder bundle: [results/xyce_pybis_minmod_ladder_2026-05-11/README.md](results/xyce_pybis_minmod_ladder_2026-05-11/README.md)
 
 ## Current Commands
 
