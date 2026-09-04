@@ -2,58 +2,52 @@
 
 `ibis_pybis_status_2026-09-04.pptx`, built by
 `scripts/build_0902_meeting_deck.py` from the deliverables in `0902_plan.md`.
+14 slides.
 
-16 slides, 6 figures. Every figure is **real measured data**, redrawn at slide
-size by `scripts/build_deck_figures.py` — no schematics, nothing invented.
+## Style
 
-## Readability
+Follows the earlier `0825_Simon` deck, which reads better than this one's first
+drafts:
 
-The print figures in `results/` are 11–13 in wide and up to 13 in tall with ~10 pt
-labels. Dropped into a slide box they shrink with the box: measured on the first
-draft, every figure's axis text landed at **3.9–5.6 pt**. Present, unreadable.
+* **Simulation figures only.** No bar charts, no scatter plots, no schematics.
+  A number is explained by listing it on the slide, not by drawing it as a bar.
+  An earlier draft turned the error budget, the C_comp sweep and the max|Ku| table
+  into charts; they looked tidy and said less than the plain numbers.
+* **Short bullets, then the picture.** Two or three lines state the point; the
+  rest of the slide is the waveform.
+* **Pad and coefficients side by side** for the same case, so the pad shape and
+  the Ku/Kd behind it are read together.
+* Bold pipe-separated figure titles (`device | pulse | quantity`), the transistor
+  as a thick pale trace with native IBIS drawn over it, and the reversal marked.
 
-Enlarging the box cannot fix a figure taller than the slide, so the deck figures
-are redrawn at 12.2 x 5.2 in with 15–19 pt fonts. Placed at a 12.2 in box the
-scale is 1.0 and the text is the size it says. The five-panel offset chain is cut
-to the two panels that carry the argument rather than shrunk into illegibility.
-
-Audited after building: nothing below 13 pt except the template's own section
-eyebrow, no shape off the canvas, no content in the takeaway band.
-
-Rebuild figures first if results change, then the deck:
+## Rebuild
 
 ```
 py -3.14 scripts/build_deck_figures.py
 py -3.14 scripts/build_0902_meeting_deck.py
+powershell -ExecutionPolicy Bypass -File scripts/render_deck_slides.ps1 `
+    -Deck results/meeting_deck_2026-09-04/ibis_pybis_status_2026-09-04.pptx
 ```
 
-Figure sources:
-
-| slide | figure |
-|---|---|
-| clean edge | `defect_b_full_swing_2026-09-03/` |
-| the offset | `settled_offset_diagnosis_2026-08-27/03_offset_chain.png` |
-| delay_cmd | `settled_offset_diagnosis_2026-08-27/04_offset_fix.png` |
-| shift vs depth | `timing_shift_decomposition_2026-09-03/` |
-| golden waveforms | `golden_waveform_test_2026-09-03/` |
-| C_comp | `pybis_ccomp_converged_2026-09-03/` |
-| new buffers | `variant_stress_cases_2026-09-04/inv_base8/depth50_w102ps/kukd.png` |
+The third step exports every slide to `slides/` as PNG. **Do not send the deck
+without looking at it.** Geometry checks are not a substitute: python-pptx
+reported no off-slide shapes and no overlaps on drafts that had a paragraph
+running under a code box, centred monospace tables with broken column alignment, a
+figure contradicting its own slide title, and a table rendered at 2.8 pt.
 
 ## Two deliberate choices
 
-**The wrong turns are on the slides, not omitted.** The C_comp double-counting
-claim that the golden-waveform test overturned, and the Miller-feedthrough
-hypothesis that `nomiller` disproved, both appear with the correction. A reviewer
-who finds a reversal afterwards trusts everything else less.
+**The wrong turns are on the slides.** The C_comp double-counting claim the
+golden-waveform test overturned, and the Miller-feedthrough hypothesis `nomiller`
+disproved, both appear with their correction.
 
-**One question is answered differently from the plan.** `0902_plan.md` lists
-"does delay_cmd fix the timing too?" as the highest-value open item. It has since
-been measured: delay_cmd improved timing on **0 of 19** stress cases, so the
-offset and the timing shift are two mechanisms, not one. The slide reports that
-rather than the question.
+**One question is answered differently from the plan.** It lists "does delay_cmd
+fix the timing too?" as the highest-value open item. It has since been measured:
+0 of 19 stress cases improved, so the slide reports two mechanisms rather than an
+open question.
 
 ## Not yet in the deck
 
-The nine-variant stress run is still in progress. Its finished result — the
-timing shift growing under truncation on 9 of 9 variants, and the native
-two-waveform failure on ex2 — belongs on slides 8 and 14 once complete.
+The nine-variant stress run is still going. Slide 13 shows one completed case;
+the finished result — the shift growing under truncation on 9 of 9, and native's
+two-waveform failure on ex2 — belongs there once it lands.
