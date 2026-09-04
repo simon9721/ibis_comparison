@@ -42,13 +42,23 @@ OUT = ROOT / "results" / "command_mechanism_2026-09-04"
 
 MODEL, COMPONENT = "driver", "MCM Driver 1"
 SUPPLY, R_LOAD, C_LOAD_PF = 3.3, 50.0, 2.0
-RISE_NS, WIDTH_NS, STOP_NS = 5.0, 2.354, 22.0   # the case the offset slide uses
+# 1792 ps is the swing-60 case, where the stranded charge is *positive* and so
+# survives the min(max(x,0),1) clamp and reaches the pad (+0.036 -> 76 mV). At
+# 2354 ps the residue is negative and the clamp hides it.
+RISE_NS, WIDTH_NS, STOP_NS = 5.0, 1.792, 22.0
 
 BUILDS = (("gate_state", "InputDrivenTwoStateGateDirectionalDualResidualFull"),
           ("delay_cmd", "InputDrivenTwoStateGateDelayCommandFull"))
 
 # Command, the gate state it drives, the coefficient, and the pad.
-PROBES = ("gupcmd", "gup", "ku", "kd")
+# hnx is time since the last input edge; cmdsettled is the restore gate,
+# which is what last week's fix depends on.
+# riseedge/falledge are the edge detectors; puonp/puoffp are those pulses
+# after the fitted on/off delays, and are what the charge packets are
+# proportional to. Probing them tests, rather than assumes, whether the
+# two packets cancel.
+PROBES = ("gupcmd", "gup", "ku", "kd", "hnx", "cmdsettled",
+          "riseedge", "falledge", "puonp", "puoffp")
 
 
 def run(tag: str, subckt: str) -> dict[str, np.ndarray] | None:

@@ -280,6 +280,74 @@ def recap() -> None:
     save(fig, OUT / "recap_kukd.png")
 
 
+def restore_gate() -> None:
+    """Why last week's restore term could not fix the offset.
+
+    The restore term is a cleanup: it pulls GUPCMD back toward the input level
+    with tau 1.127 ns, but only once CMDSETTLED asserts, and CMDSETTLED is
+    `V(HNX) > 2.958` where HNX is time since the last input edge.
+
+    Measured on this case: the reverse edge is at 6.792 ns, the offset is read in
+    the window 7.792-8.492 ns, and the gate does not open until 9.754 ns --
+    reversal +2.962 ns. It is switched off for the whole measurement window.
+
+    The gate cannot simply be moved earlier: a legitimate command takes the
+    on-delay (0.993 ns) plus tau (1.127 ns) to complete, so an earlier gate would
+    have the cleanup fighting commands still in flight. Fixing the offset needs
+    action within ~1 ns; not corrupting normal edges needs ~3 ns of patience.
+    Those are the same requirement pulling in opposite directions, which is why
+    the cleanup halved the error instead of removing it.
+    """
+    src = R / "command_mechanism_2026-09-04" / "command_mechanism.csv"
+    if not src.exists():
+        print("  restore_gate: run scripts/probe_command_mechanism.py first")
+        return
+    d = read(src)
+    t = d["time_ns"]
+    rev = 5.0 + 1.792
+    gate_on = t[(d["gate_state_cmdsettled"] > 0.5) & (t > rev)]
+    gate_t = float(gate_on[0]) if len(gate_on) else float("nan")
+
+    fig, axes = plt.subplots(2, 1, figsize=(W, H), sharex=True,
+                             gridspec_kw={"height_ratios": [3, 1]})
+    ax = axes[0]
+    ax.axvspan(rev + 1.0, rev + 1.7, color="#F3D9D9", zorder=0,
+               label="window the offset is read in")
+    ax.axhline(0, color="#111", lw=1.4)
+    ax.plot(t, d["gate_state_gupcmd"], color=GATE, lw=2.8,
+            label="gate-state: charge integrated on a capacitor")
+    ax.plot(t, d["delay_cmd_gupcmd"], color=DELAY, lw=2.8,
+            label="delay_cmd: a delayed copy of the input level")
+    ax.axvline(rev, color=REV, ls="--", lw=1.8)
+    ax.text(rev - 0.08, 0.86, "reverse edge", rotation=90, ha="right",
+            va="top", fontsize=13, color="#555")
+    if np.isfinite(gate_t):
+        ax.axvline(gate_t, color="#111", ls="-.", lw=2.0)
+        # Label to the LEFT of the line: at +0.35 ns it ran off the right edge.
+        ax.annotate("restore term switches on, "
+                    f"reversal +{gate_t - rev:.2f} ns",
+                    xy=(gate_t, 0.42), xytext=(gate_t - 0.45, 0.72), fontsize=14,
+                    ha="right",
+                    arrowprops=dict(arrowstyle="->", color="#111", lw=1.6))
+    ax.set_ylim(-0.30, 1.15)
+    ax.set_ylabel("command (GUPCMD)")
+    title(ax, "io_buf", "1792 ps pulse", "the cleanup arrives after the window")
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper left", fontsize=13)
+
+    axes[1].axvspan(rev + 1.0, rev + 1.7, color="#F3D9D9", zorder=0)
+    axes[1].plot(t, d["gate_state_cmdsettled"], color="#111", lw=2.6)
+    axes[1].axvline(rev, color=REV, ls="--", lw=1.8)
+    axes[1].set_ylim(-0.15, 1.25)
+    axes[1].set_yticks([0, 1])
+    axes[1].set_yticklabels(["off", "on"])
+    axes[1].set_ylabel("restore gate")
+    axes[1].set_xlabel("Time (ns)")
+    axes[1].grid(alpha=0.3)
+    axes[0].set_xlim(5.6, 11.5)
+    save(fig, OUT / "restore_gate.png")
+
+
 def clean_edge() -> None:
     """Full swing: the transistor, native IBIS and our model all agree."""
     d = R / "defect_b_full_swing_2026-09-03"
@@ -515,7 +583,8 @@ def fixture_kukd() -> None:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    for fn in (recap, clean_edge, stress_pair, timing_shift, offset_chain,
+    for fn in (recap, restore_gate, clean_edge, stress_pair, timing_shift,
+               offset_chain,
                command_mechanism, command_pad, offset_removed,
                variant_pair, fixture_kukd):
         try:
