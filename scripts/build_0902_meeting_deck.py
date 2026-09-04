@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """Build the meeting deck for the deliverables in 0902_plan.md.
 
-Every figure is a real result file from `results/`; nothing is redrawn or
-schematised for the slide. Numbers are quoted from the plan and from the study
-directories it points at, including the results that overturned earlier claims --
-those are on the slides rather than left out, because a reviewer who spots the
-reversal later trusts the rest less.
+Every figure is a real result — measured data, redrawn only for size. Numbers are
+quoted from the plan and from the study directories it points at, including the
+results that overturned earlier claims; those stay on the slides, because a
+reviewer who spots a reversal afterwards trusts the rest less.
 
+Figures come from `scripts/build_deck_figures.py`, not from the print versions in
+the results directories. The print figures are 11–13 inches wide and up to 13 tall
+with ~10 pt labels; measured in the first draft of this deck, shrinking them into
+a slide box put their axis text at **3.9–5.6 pt**. The redraws are 12.2 x 5.2 in
+with 15–19 pt fonts, so at a 12.2 in box the scale is 1.0 and text is the size it
+claims to be.
+
+    py -3.14 scripts/build_deck_figures.py     # first, if results changed
     py -3.14 scripts/build_0902_meeting_deck.py
 """
 from __future__ import annotations
@@ -23,26 +30,24 @@ from tools.presentation_kit import GreenDeck  # noqa: E402
 
 R = ROOT / "results"
 OUT = R / "meeting_deck_2026-09-04" / "ibis_pybis_status_2026-09-04.pptx"
+F = R / "meeting_deck_2026-09-04" / "figures"
 
 FIG = {
-    "full_swing": R / "defect_b_full_swing_2026-09-03" / "defect_b_full_swing.png",
-    "offset_chain": R / "settled_offset_diagnosis_2026-08-27" / "03_offset_chain.png",
-    "offset_fix": R / "settled_offset_diagnosis_2026-08-27" / "04_offset_fix.png",
-    "dead_zone": R / "settled_offset_diagnosis_2026-08-27" / "05_delay_cmd_dead_zone.png",
-    "shift_depth": R / "timing_shift_decomposition_2026-09-03" / "timing_shift_vs_depth.png",
-    "golden": R / "golden_waveform_test_2026-09-03" / "golden_waveform_test.png",
-    "ccomp": R / "pybis_ccomp_converged_2026-09-03" / "ccomp_validation.png",
-    "variant_kukd": (R / "variant_stress_cases_2026-09-04" / "inv_base8"
-                     / "depth50_w102ps" / "kukd.png"),
+    "clean_edge": F / "clean_edge.png",
+    "offset_chain": F / "offset_chain.png",
+    "offset_removed": F / "offset_removed.png",
+    "shift_depth": F / "shift_vs_depth.png",
+    "ccomp": F / "ccomp.png",
+    "variant_kukd": F / "variant_kukd.png",
 }
 
-# Portrait figures need the text beside them; wide ones sit under it.
-TALL = dict(x=7.9, y=1.15, w=5.0, h=5.15)
-WIDE = dict(x=0.7, y=3.05, w=12.0, h=3.25)
-HALF = dict(x=6.9, y=1.5, w=6.0, h=4.3)
+# One figure box, sized so the redraw lands at scale 1.0 and still clears the
+# takeaway band at 6.63.
+FULL = dict(x=0.55, y=1.28, w=12.2, h=5.2)
 
 
-def mono(deck, slide, text, x, y, w, h, size=12.0):
+def mono(deck, slide, text, x, y, w, h, size=15.0):
+    """Monospaced block. 15 pt is the floor that stays legible when projected."""
     return deck.add_code_box(slide, text, x, y, w, h, size=size)
 
 
@@ -50,7 +55,8 @@ def main() -> int:
     OUT.parent.mkdir(parents=True, exist_ok=True)
     missing = [k for k, v in FIG.items() if not v.exists()]
     if missing:
-        print("missing figures: " + ", ".join(missing))
+        print("missing figures: " + ", ".join(missing)
+              + "\n  run: py -3.14 scripts/build_deck_figures.py")
         return 1
 
     d = GreenDeck()
@@ -59,266 +65,208 @@ def main() -> int:
         "IBIS buffer modelling — status\n4 September 2026")
 
     # ---------------------------------------------------------------- 1. goal
-    s = d.add_slide("What we are actually trying to do", section="Where we are")
+    s = d.add_slide("What we are trying to do", section="Where we are")
     d.add_bullets(s, [
-        "The transistor netlist in HSPICE is ground truth. Native IBIS is the bar "
-        "to beat, not the target.",
-        "Everything below is measured against the transistor, never against "
-        "native IBIS.",
-        "Two things are in play at once in any comparison — the IBIS "
-        "implementation and the SPICE engine. We separated them (slide 10).",
-    ], 0.7, 1.3, 6.0, 2.6)
-    mono(d, s, """falling 50% crossing vs transistor, io_buf full swing
+        "The transistor netlist in HSPICE is ground truth.",
+        "Native IBIS is the bar to beat, not the target.",
+        "Everything here is measured against the transistor.",
+    ], 0.7, 1.4, 5.9, 2.2)
+    mono(d, s, "falling 50% crossing\nvs the transistor\nio_buf, full swing\n\n"
+               "  native IBIS       +34.6 ps\n"
+               "  pybis stock       +38.4 ps\n"
+               "  pybis gate-state  +43.5 ps", 7.0, 1.4, 5.7, 2.9)
+    d.add_text(s, "About 80% of the distance to the transistor is the IBIS format "
+                  "itself, which native pays too. Our command layer costs about "
+                  "5 ps on top of that.", 0.7, 3.9, 12.0, 1.3, size=17)
+    d.add_takeaway(s, "We are near the format's floor on clean edges. The distance "
+                      "worth attacking is under stress.")
+    d.add_notes(s, "Lead with this. Full-swing accuracy is close to as good as the "
+                   "format allows, so effort belongs on truncated pulses.")
 
-  native IBIS            +34.6 ps
-  pybis InputDriven      +38.4 ps
-  pybis gate-state       +43.5 ps""", 7.2, 1.4, 5.5, 2.2)
-    d.add_text(s, "On a clean edge about 80% of the distance to the transistor is "
-                  "the IBIS format itself — native pays it too. Our command layer "
-                  "costs roughly 5 ps on top.", 7.2, 3.8, 5.5, 1.2, size=14)
-    d.add_takeaway(s, "We are already near the format's floor on clean edges. "
-                      "The distance worth attacking is under stress.")
-    d.add_notes(s, "Lead with this. It reframes the goal: full-swing accuracy is "
-                   "close to as good as the format allows, so effort belongs on "
-                   "truncated pulses.")
-
-    # ------------------------------------------------------- 2. full swing fig
-    s = d.add_slide("On a clean edge, all three agree closely",
-                    section="Where we are")
-    d.add_text(s, "io_buf, full swing into 50 Ω and 2 pF. Native IBIS and stock "
-                  "pybis sit almost on top of each other; both are slightly late "
-                  "on the falling edge against the transistor.",
-               0.7, 1.15, 12.0, 0.8, size=15)
-    d.add_picture_contain(s, FIG["full_swing"], **WIDE)
-    d.add_source(s, "results/defect_b_full_swing_2026-09-03/")
-    d.add_notes(s, "The gap that remains on the falling edge is the ~35 ps the "
-                   "format costs. It is not something our command layer created.")
+    # ------------------------------------------------------- 2. clean edge fig
+    s = d.add_slide("On a clean edge, all three agree", section="Where we are")
+    d.add_picture_contain(s, FIG["clean_edge"], **FULL)
+    d.add_takeaway(s, "The gap left on the falling edge is what the format costs. "
+                      "We did not create it.")
 
     # -------------------------------------------------------- 3. two defects
-    s = d.add_slide("Under stress there are two separate problems",
+    s = d.add_slide("Under stress there are two problems",
                     section="The two defects")
-    d.add_text(s, "Stress here means a truncated pulse — the input reverses "
-                  "before the pad finishes its transition. Targets are 90/80/70/"
-                  "60/50% of the transistor's settled swing.",
-               0.7, 1.2, 12.0, 0.7, size=15)
-    mono(d, s, """The offset          a settled-state Ku error, on 90/60/50 only.
-                    Not a true DC offset -- a ~6 ns tail that
-                    looks permanent on a 10 ns plot.
-
-The timing shift    falling 50% crossing 69-99 ps late vs the
-                    transistor, on every case, where native
-                    IBIS is 5-26 ps *early*.""", 0.7, 2.1, 12.0, 2.6, size=13)
-    d.add_text(s, "They were assumed to be one mechanism, because truncation "
-                  "triggers both. We tested that, and they are not — see slide 7.",
-               0.7, 4.9, 12.0, 0.8, size=15)
-    d.add_takeaway(s, "One is an amplitude error that decays; the other is a "
-                      "timing error that does not.")
+    d.add_text(s, "Stress means a truncated pulse: the input reverses before the "
+                  "pad finishes its transition. Targets are 90/80/70/60/50% of the "
+                  "transistor's settled swing.", 0.7, 1.3, 12.0, 1.0, size=17)
+    mono(d, s, "The offset         a settled-state Ku error, on 90/60/50 only.\n"
+               "                   A ~6 ns tail that looks permanent on a\n"
+               "                   10 ns plot -- not a true DC offset.\n\n"
+               "The timing shift   falling 50% crossing 69-99 ps late, on\n"
+               "                   every case, where native IBIS is\n"
+               "                   5-26 ps early.", 0.7, 2.5, 12.0, 2.7)
+    d.add_takeaway(s, "One is an amplitude error that decays. The other is a timing "
+                      "error that does not.")
 
     # ---------------------------------------------------------- 4. the offset
-    s = d.add_slide("The offset: a command capacitor with no DC path",
-                    section="The two defects")
-    d.add_bullets(s, [
-        "GUPCMD is a capacitor across 1e15 Ω, charged by a fixed packet on each "
-        "input edge.",
-        "A truncated pulse strands charge in it, and there is no resistive path "
-        "to remove that charge.",
-        "The stranded charge maps through the gate state into Ku, and Ku into the "
-        "pad — that is the chain on the right.",
-        "The sign of the stranded charge flips with the timestep, which is why "
-        "tuning it looked like it worked and then did not.",
-    ], 0.7, 1.3, 7.0, 3.4)
-    d.add_picture_contain(s, FIG["offset_chain"], **TALL)
-    d.add_source(s, "results/settled_offset_diagnosis_2026-08-27/")
-    d.add_notes(s, "The last bullet matters: it is an integration error, so any "
-                   "fix by tuning a coefficient is a coin flip.")
+    s = d.add_slide("Where the offset comes from", section="The two defects")
+    d.add_picture_contain(s, FIG["offset_chain"], **FULL)
+    d.add_takeaway(s, "GUPCMD is a capacitor across 1e15 ohm. A truncated pulse "
+                      "strands charge with no path to remove it.")
+    d.add_notes(s, "The sign of the stranded charge flips with the timestep, so it "
+                   "is an integration error. Any fix by tuning a coefficient is a "
+                   "coin flip, which is why the retuned version helped on some "
+                   "cases and not others.")
 
     # ------------------------------------------------------ 5. delay_cmd fixes
-    s = d.add_slide("delay_cmd removes the offset", section="The two defects")
-    d.add_bullets(s, [
-        "delay_cmd is level-driven: the command is a function of the current "
-        "input level, not of accumulated edge history.",
-        "So it returns to exactly zero and strands nothing.",
-    ], 0.7, 1.3, 7.0, 1.4)
-    mono(d, s, """settled pad offset at reversal
-
-  gate-state (as shipped)   63.9 mV
-  delay_cmd                  3.7 mV
-  transistor                 7.5 mV
-  native IBIS                6.4 mV
-
-across all 29 matched stress cases
-  RMSE  108.6 mV -> 92.2 mV
-  the only build that beats native IBIS""", 0.7, 2.8, 7.0, 3.0, size=12.5)
-    d.add_picture_contain(s, FIG["offset_fix"], **TALL)
+    s = d.add_slide("delay_cmd removes it", section="The two defects")
+    d.add_picture_contain(s, FIG["offset_removed"], **FULL)
     d.add_takeaway(s, "Level-driven commands fix the offset. This part is settled.")
+    d.add_notes(s, "delay_cmd is level-driven: the command is a function of the "
+                   "current input level, not of accumulated edge history, so it "
+                   "returns to exactly zero and strands nothing. On this case the "
+                   "pedestal goes from 97.9 mV to 5.2 mV against the transistor's "
+                   "2.1 mV. Across all 29 matched stress cases RMSE goes from "
+                   "108.6 to 92.2 mV, the only build that beats native IBIS.")
 
     # ------------------------------------------------- 6. but not the timing
-    s = d.add_slide("But it does not fix the timing — they are two mechanisms",
-                    section="The two defects")
-    d.add_text(s, "The open question in the plan was whether the offset and the "
-                  "timing shift were one mechanism showing up twice. If they "
-                  "were, delay_cmd would already fix both. Its amplitude had been "
-                  "measured; its timing never had.",
-               0.7, 1.2, 12.0, 1.1, size=15)
-    mono(d, s, """We measured it.  delay_cmd improved the timing on 0 of 19 stress cases.
-
-  -> the shift persists when the stranded charge is gone
-  -> they are genuinely two defects, not one
-  -> the offset has a fix; the timing shift has no candidate mechanism yet""",
-         0.7, 2.5, 12.0, 1.9, size=13)
-    d.add_text(s, "Worth stating plainly: delay_cmd also has a known 1.25 ns dead "
-                  "zone after a reversal where neither device is commanded on, "
-                  "which is why predriver_cmd was previously preferred.",
-               0.7, 4.6, 12.0, 1.0, size=14)
-    d.add_takeaway(s, "A cheap experiment closed a question that had been open "
-                      "for weeks — with the less convenient answer.")
+    s = d.add_slide("It does not fix the timing", section="The two defects")
+    d.add_text(s, "The open question was whether the offset and the timing shift "
+                  "were one mechanism showing up twice. If they were, delay_cmd "
+                  "would already fix both. Its amplitude had been measured; its "
+                  "timing never had.", 0.7, 1.3, 12.0, 1.4, size=17)
+    mono(d, s, "We measured it.\n\n"
+               "  delay_cmd improved the timing on 0 of 19 stress cases.\n\n"
+               "  -> the shift persists once the stranded charge is gone\n"
+               "  -> they are two defects, not one\n"
+               "  -> the offset has a fix; the shift has no mechanism yet",
+         0.7, 2.9, 12.0, 2.3)
+    d.add_takeaway(s, "A cheap experiment closed a question that was open for "
+                      "weeks, with the less convenient answer.")
+    d.add_notes(s, "State the caveat honestly: delay_cmd has a known 1.25 ns dead "
+                   "zone after a reversal where neither device is commanded on, "
+                   "which is why predriver_cmd was previously preferred.")
 
     # ----------------------------------------------------- 7. shift vs depth
-    s = d.add_slide("The timing shift grows as the pulse is truncated",
+    s = d.add_slide("The shift grows as the pulse is truncated",
                     section="The two defects")
-    d.add_text(s, "Measured against the transistor across the depth family. The "
-                  "shift is not a fixed penalty — it grows as the pulse gets "
-                  "shorter, on every buffer we have tried.",
-               0.7, 1.15, 12.0, 0.8, size=15)
-    d.add_picture_contain(s, FIG["shift_depth"], **WIDE)
-    d.add_source(s, "results/timing_shift_decomposition_2026-09-03/")
-    d.add_notes(s, "Nine buffer variants later confirmed this: the shift grows on "
-                   "9 of 9, and full swing and stress carry opposite signs, so "
-                   "neither number is a proxy for the other.")
+    d.add_picture_contain(s, FIG["shift_depth"], **FULL)
+    d.add_takeaway(s, "Not a fixed penalty. It grows with truncation on every "
+                      "buffer we have tried.")
 
     # -------------------------------------------------------- 8. golden test
     s = d.add_slide("The core reconstruction is sound", section="Confidence")
     d.add_bullets(s, [
         "A golden-waveform test replays a model's own V-T tables into the fixture "
         "that produced them.",
-        "It is self-contained — no transistor, no native IBIS, no engine "
-        "confound. We had never done this before.",
-        "pybis reproduces all three buffers' own golden waveforms: "
-        "figure of merit 0.03–0.41%, shift +4 to +8 ps.",
-        "It is now the standing health check, and it settled the C_comp question.",
-    ], 0.7, 1.3, 6.0, 3.4)
-    d.add_picture_contain(s, FIG["golden"], **TALL)
-    d.add_takeaway(s, "Whatever is wrong under stress, it is not the I-V × Ku(t) "
-                      "reconstruction itself.")
+        "Self-contained: no transistor, no native IBIS, no engine confound. We had "
+        "never done this.",
+        "pybis reproduces all three buffers' own golden waveforms.",
+    ], 0.7, 1.4, 6.6, 2.8)
+    mono(d, s, "figure of merit   0.03 - 0.41 %\ntiming shift      +4 to +8 ps\n\n"
+               "three buffers, both edges,\nboth fixtures", 7.6, 1.5, 5.1, 2.4)
+    d.add_text(s, "It is now the standing health check, and it settled the C_comp "
+                  "question.", 0.7, 4.4, 12.0, 0.8, size=17)
+    d.add_takeaway(s, "Whatever is wrong under stress, it is not the I-V times "
+                      "Ku(t) reconstruction.")
 
     # ------------------------------------------------------------- 9. C_comp
     s = d.add_slide("C_comp is handled correctly", section="Confidence")
-    d.add_text(s, "Nominal C_comp beats zero on all 12 tables, and the margin "
-                  "scales with the die capacitance — ex2 at 5 pF needs a −124 to "
-                  "−178 ps correction without it. I had this backwards at first: "
-                  "I misapplied the book's double-counting diagnostic and reported "
-                  "that pybis over-applies C_comp. The golden-waveform test "
-                  "overturned that.",
-               0.7, 1.15, 12.0, 1.4, size=15)
-    d.add_picture_contain(s, FIG["ccomp"], **WIDE)
-    d.add_source(s, "results/pybis_ccomp_converged_2026-09-03/")
+    d.add_picture_contain(s, FIG["ccomp"], **FULL)
+    d.add_takeaway(s, "I had this backwards first. The golden-waveform test "
+                      "overturned my own claim that pybis over-applies C_comp.")
 
     # ------------------------------------------------------- 10. engine split
     s = d.add_slide("Is it the engine or the model?", section="Method")
-    d.add_text(s, "Every native-IBIS-vs-pybis number changes two things at once: "
-                  "the IBIS implementation and the SPICE engine. We wrote a "
-                  "translator so the same pybis model runs in both.",
-               0.7, 1.2, 12.0, 0.9, size=15)
-    mono(d, s, """                              50% crossing
-
-  pybis model in ngspice          5.3371 ns
-  pybis model in HSPICE           5.3375 ns      engine:  -0.5 ps rising, -0.0 falling
-  native IBIS in HSPICE           5.3319 ns      model:   +5.6 ps""",
-         0.7, 2.3, 12.0, 1.8, size=12.5)
-    d.add_bullets(s, [
-        "The engine is not the source of the difference — provided ngspice is run "
-        "converged.",
-        "That proviso is real: at a 1 ps step ngspice was an aliasing outlier that "
-        "doubled the apparent lag and inflated a whole validation sweep.",
-    ], 0.7, 4.3, 12.0, 1.4)
-    d.add_source(s, "results/pybis_engine_model_decoupling_2026-09-03/")
+    d.add_text(s, "Every native-vs-pybis number changes two things at once: the "
+                  "IBIS implementation and the SPICE engine. We wrote a translator "
+                  "so the same model runs in both.", 0.7, 1.3, 12.0, 1.0, size=17)
+    mono(d, s, "                          50% crossing\n\n"
+               "  pybis in ngspice            5.3371 ns\n"
+               "  pybis in HSPICE             5.3375 ns     engine  -0.5 ps\n"
+               "  native IBIS in HSPICE       5.3319 ns     model   +5.6 ps",
+         0.7, 2.5, 12.0, 2.0)
+    d.add_text(s, "The engine is not the source, provided ngspice is converged. At "
+                  "a 1 ps step it was an aliasing outlier that doubled the apparent "
+                  "lag.", 0.7, 4.7, 12.0, 1.0, size=17)
+    d.add_takeaway(s, "Converged, the two engines agree to half a picosecond.")
 
     # ---------------------------------------------------------- 11. fixtures
     s = d.add_slide("What fixtures do to the extracted Ku/Kd", section="Method")
     d.add_bullets(s, [
-        "The control reproduces the shipped solve to 2.4e−08, so the method is "
+        "The control reproduces the shipped solve to 2.4e-08, so the method is "
         "exact.",
-        "In quiet regions Ku is load-independent to four decimals — the "
-        "extraction is a device property, not a fixture artifact.",
+        "In quiet regions Ku is load-independent to four decimals. It is a device "
+        "property, not a fixture artifact.",
         "A resonant R+L+C fixture corrupts Ku for 1.14 ns, reaching 0.26 of error.",
-    ], 0.7, 1.4, 12.0, 2.4)
-    d.add_text(s, "Practical conclusion: added L and C are safe individually. The "
-                  "resonant combination has to be avoided when characterising.",
-               0.7, 4.0, 12.0, 0.9, size=15)
-    d.add_takeaway(s, "The two-fixture extraction is trustworthy — as long as the "
+    ], 0.7, 1.5, 12.0, 3.0)
+    d.add_text(s, "Added L and C are safe individually. The resonant combination "
+                  "has to be avoided when characterising.",
+               0.7, 4.6, 12.0, 1.0, size=17)
+    d.add_takeaway(s, "The two-fixture extraction is trustworthy, as long as the "
                       "fixture is not resonant.")
 
     # -------------------------------------------------------- 12. the Ku cap
     s = d.add_slide("The 1.25 max|Ku| cap rejects good models",
                     section="What should change")
-    mono(d, s, """ex2 variants, all seven edge rates
-
-  variant                          output edge   max|Ku|
-  slowpre  (predriver halved)         328 ps      1.047
-  base     (control)                  200 ps      1.283
-  nomiller (Miller caps removed)      208 ps      1.299
-  skewp    (output PMOS halved)       160 ps      1.589
-  weak     (both output devices /2)   152 ps      1.779""",
-         0.7, 1.3, 7.6, 2.7, size=12)
-    d.add_bullets(s, [
-        "Monotonic in C_comp × dV/dt against the device drive.",
-        "For ex2: 5 pF × 3.3 V / 200 ps = 82 mA of displacement current against a "
-        "~51 mA drive. It exceeds the device, so the solve must push Ku above 1.",
-        "Healthy baselines differ per silicon — inv_chain 1.03, io_buf 1.18, "
-        "ex2 1.28 — so no absolute number works.",
-    ], 8.5, 1.3, 4.3, 3.0)
-    d.add_text(s, "I proposed the wrong cause first: gate-to-drain (Miller) "
-                  "feedthrough. The nomiller variant came back identical to the "
-                  "control. Those caps are 20.5 fF against C_comp's 5 pF — 0.41%, "
-                  "250× too small — which is arithmetic I should have done before "
-                  "building the variant. The null result still helps: it rules out "
-                  "the small capacitor and points at C_comp.",
-               0.7, 4.2, 12.0, 1.5, size=14)
+    mono(d, s, "ex2 variants                    edge     max|Ku|\n\n"
+               "  slowpre   predriver halved     328 ps     1.047\n"
+               "  base      control              200 ps     1.283\n"
+               "  nomiller  Miller caps removed  208 ps     1.299\n"
+               "  skewp     output PMOS halved   160 ps     1.589\n"
+               "  weak      both devices halved  152 ps     1.779",
+         0.7, 1.35, 12.0, 2.8)
+    d.add_text(s, "Monotonic in C_comp times dV/dt against the device drive. For "
+                  "ex2 that is 82 mA of displacement current against a ~51 mA "
+                  "drive: it exceeds the device, so the solve must push Ku above 1. "
+                  "Healthy baselines differ per silicon, inv_chain 1.03, io_buf "
+                  "1.18, ex2 1.28.", 0.7, 4.3, 12.0, 1.7, size=17)
     d.add_takeaway(s, "A high max|Ku| is a real signature of a large die "
-                      "capacitance driven fast. The cap should be a within-buffer "
-                      "outlier test.")
+                      "capacitance driven fast, not a corrupted extraction.")
+    d.add_notes(s, "I proposed the wrong cause first, Miller feedthrough, and built "
+                   "a nomiller variant to test it. It came back identical to the "
+                   "control. Those caps are 20.5 fF against C_comp's 5 pF, 0.41%, "
+                   "250x too small, which is arithmetic I should have done before "
+                   "building the variant. The null result still rules out the small "
+                   "capacitor and points at C_comp.")
 
     # ------------------------------------------------------ 13. new buffers
     s = d.add_slide("New buffers, and what they are for",
                     section="What should change")
     d.add_bullets(s, [
-        "We built nine variants of inv_chain and ex2 in HSPICE using the real "
-        "transistor library — slower predriver, halved output devices, skewed "
-        "PMOS, Miller caps removed, plus an open-drain build.",
+        "Nine variants of inv_chain and ex2 built in HSPICE with the real "
+        "transistor library: slower predriver, halved output devices, skewed PMOS, "
+        "Miller caps removed, plus an open-drain build.",
         "The point is to test whether what we learned on three buffers holds "
-        "across different silicon, rather than being a property of one netlist.",
-        "Each one goes through the same s2ibispy characterisation and the same "
-        "stress axis, so the comparison is like for like.",
-    ], 0.7, 1.3, 6.0, 3.2)
-    d.add_picture_contain(s, FIG["variant_kukd"], **HALF)
-    d.add_text(s, "Ku and Kd for one stressed case. The coefficients show things "
-                  "the pad trace hides — here the gate-state build starts moving "
-                  "before the transistor does.",
-               0.7, 4.8, 6.0, 1.1, size=14)
+        "across different silicon.",
+        "Same characterisation, same stress axis, so the comparison is like for "
+        "like.",
+    ], 0.7, 1.4, 12.0, 2.8)
+    d.add_text(s, "Running now: the same 90-50% stress axis on all nine, with Ku "
+                  "and Kd solved from the transistor for every case.",
+               0.7, 4.5, 12.0, 1.0, size=17)
+    d.add_takeaway(s, "Ku and Kd show what the pad trace hides.")
 
-    # ------------------------------------------------------------- 14. status
+    # -------------------------------------------------- 14. variant figure
+    s = d.add_slide("The coefficients under stress",
+                    section="What should change")
+    d.add_picture_contain(s, FIG["variant_kukd"], **FULL)
+    d.add_takeaway(s, "The gate-state build starts moving before the transistor "
+                      "does. Visible in Ku, invisible in the pad.")
+
+    # ------------------------------------------------------------- 15. status
     s = d.add_slide("Where this leaves us", section="Summary")
     d.add_bullets(s, [
-        "Settled — C_comp is handled correctly; the engine is not a confounder; "
-        "pybis reproduces its own golden waveforms; the offset has a working fix "
-        "in delay_cmd.",
-        "Open — the timing shift has no candidate mechanism, and it grows with "
+        "Settled: C_comp is right, the engine is not a confounder, pybis "
+        "reproduces its own golden waveforms, and delay_cmd fixes the offset.",
+        "Open: the timing shift has no candidate mechanism, and it grows with "
         "truncation on every buffer tried.",
-        "Open — the 1.25 max|Ku| cap needs replacing with a within-buffer outlier "
-        "test before it rejects more good models.",
-        "Running now — the same stress axis applied to all nine variants, with "
-        "Ku/Kd solved from the transistor for each case.",
-    ], 0.7, 1.3, 12.0, 3.6)
-    d.add_text(s, "Two rules that cost us real time, worth not re-learning: any "
-                  "bench for this model must start with a real edge and never a "
-                  "held level, because it initialises pulldown-on and latches "
-                  "state only on an edge. And ngspice must be converged before any "
-                  "conclusion is drawn from it.",
-               0.7, 5.0, 12.0, 1.3, size=14)
+        "Open: the 1.25 max|Ku| cap needs replacing before it rejects more good "
+        "models.",
+    ], 0.7, 1.4, 12.0, 3.0)
+    d.add_text(s, "Two rules worth not re-learning: any bench for this model must "
+                  "start with a real edge, never a held level. And ngspice must be "
+                  "converged before drawing any conclusion from it.",
+               0.7, 4.7, 12.0, 1.4, size=17)
 
     path = d.save(OUT)
-    print(f"wrote {path.relative_to(ROOT)}  ({path.stat().st_size/1024:.0f} KB, "
-          f"{len(d.prs.slides.__iter__.__self__._sldIdLst)} slides)")
+    print(f"wrote {path.relative_to(ROOT)}  ({path.stat().st_size/1024:.0f} KB)")
     return 0
 
 

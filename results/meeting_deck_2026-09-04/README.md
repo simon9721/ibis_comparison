@@ -3,8 +3,31 @@
 `ibis_pybis_status_2026-09-04.pptx`, built by
 `scripts/build_0902_meeting_deck.py` from the deliverables in `0902_plan.md`.
 
-15 slides, 7 figures. **Every figure is a real result file** copied straight from
-its results directory — nothing redrawn or schematised for the slide:
+16 slides, 6 figures. Every figure is **real measured data**, redrawn at slide
+size by `scripts/build_deck_figures.py` — no schematics, nothing invented.
+
+## Readability
+
+The print figures in `results/` are 11–13 in wide and up to 13 in tall with ~10 pt
+labels. Dropped into a slide box they shrink with the box: measured on the first
+draft, every figure's axis text landed at **3.9–5.6 pt**. Present, unreadable.
+
+Enlarging the box cannot fix a figure taller than the slide, so the deck figures
+are redrawn at 12.2 x 5.2 in with 15–19 pt fonts. Placed at a 12.2 in box the
+scale is 1.0 and the text is the size it says. The five-panel offset chain is cut
+to the two panels that carry the argument rather than shrunk into illegibility.
+
+Audited after building: nothing below 13 pt except the template's own section
+eyebrow, no shape off the canvas, no content in the takeaway band.
+
+Rebuild figures first if results change, then the deck:
+
+```
+py -3.14 scripts/build_deck_figures.py
+py -3.14 scripts/build_0902_meeting_deck.py
+```
+
+Figure sources:
 
 | slide | figure |
 |---|---|
@@ -15,8 +38,6 @@ its results directory — nothing redrawn or schematised for the slide:
 | golden waveforms | `golden_waveform_test_2026-09-03/` |
 | C_comp | `pybis_ccomp_converged_2026-09-03/` |
 | new buffers | `variant_stress_cases_2026-09-04/inv_base8/depth50_w102ps/kukd.png` |
-
-Rebuild after new results with `py -3.14 scripts/build_0902_meeting_deck.py`.
 
 ## Two deliberate choices
 
