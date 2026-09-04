@@ -4,7 +4,7 @@ An explainer of the ideas we took from Leventhal & Green, *Semiconductor
 Modeling: For Simulating Signal, Power, and Electromagnetic Integrity*
 (Springer, 2006) — written so it can be read without the book to hand.
 
-Terse notes with chapter pointers live in `docs/book_study_notes.md`. This document
+Terse notes with chapter pointers live in `book_study_notes.md`. This document
 explains the concepts and what each one changed for us.
 
 ---
