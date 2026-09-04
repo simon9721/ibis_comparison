@@ -94,44 +94,76 @@ def prior_depths() -> dict[str, list[tuple[float, float]]]:
     return out
 
 
+FLOOR_PCT = 50.0
+
+
 def widths_for_targets(key: str, fam: str, inputs: Path, sup: float,
                        known: list[tuple[float, float]], d: Path) -> list[tuple[int, float]]:
-    """Widths (ps) hitting each depth target, as a fraction of full excursion.
+    """Widths (ps) for each depth target, never landing below the 50% floor.
 
-    Full swing is the widest already-simulated width. Intermediate widths are
-    interpolated from the known (width, excursion) pairs and verified by
-    simulation; a miss is corrected once by re-interpolating with the new point
-    included. Bisection to convergence is unnecessary -- the depth targets are
-    reporting bins, not physical thresholds, and one refinement puts every case
-    comfortably inside its bin.
+    Interpolating the known (width, excursion) pairs cannot reach below the
+    narrowest width already simulated. On three variants that width is *already*
+    above 70% of full swing -- inv_stage4 80%, inv_skewp 72%, ex2_weak 82% -- so
+    the 50% and 70% targets both clamp onto it, collapsing into a duplicate case
+    and leaving the shallow end uncovered.
+
+    Collapses are resolved by probing narrower, bounded to at most two extra
+    transistor runs per collapsed target: try 85% of the narrowest known width,
+    and if that undershoots the floor, split the difference back upward. The floor
+    is the requirement here, not hitting 50/70/85 exactly, so a short guarded
+    search buys real shallow coverage without a full bisection.
     """
     pts = sorted(known)
     if not pts:
         raise SystemExit(f"{key}: no prior widths to interpolate from")
     full = max(e for _, e in pts)
+
+    def depth_at(w: float) -> float | None:
+        """Excursion at width `w` ps, simulating only if not already known."""
+        w = round(w, 1)
+        hit = next((e for ww, e in pts if abs(ww - w) < 1.0), None)
+        if hit is not None:
+            return hit
+        tr = vs.transistor(d / f"probe_w{int(round(w))}ps", fam, inputs, sup, w / 1000.0)
+        if tr is None:
+            return None
+        tt, si = tr
+        base = float(np.median(si[tt < vs.RISE_NS - 0.5]))
+        hit = float(si.max() - base)
+        pts.append((w, hit))
+        pts.sort()
+        return hit
+
+    def interp(want: float) -> float:
+        return float(np.interp(want, [e for _, e in pts], [w for w, _ in pts]))
+
     chosen: list[tuple[int, float]] = []
     for target in DEPTH_TARGETS:
         if target == 100:
             chosen.append((target, max(w for w, _ in pts)))
             continue
         want = full * target / 100.0
-        w = float(np.interp(want, [e for _, e in pts], [wv for wv, _ in pts]))
-        for _ in range(2):
-            hit = next((e for ww, e in pts if abs(ww - w) < 1.0), None)
-            if hit is None:
-                tr = vs.transistor(d / f"probe_w{int(round(w))}ps", fam, inputs, sup,
-                                   w / 1000.0)
-                if tr is None:
-                    break
-                t, si = tr
-                base = float(np.median(si[t < vs.RISE_NS - 0.5]))
-                hit = float(si.max() - base)
-                pts.append((round(w, 1), hit))
-                pts.sort()
-            if abs(hit - want) / full < 0.05:
-                break
-            w = float(np.interp(want, [e for _, e in pts], [wv for wv, _ in pts]))
+        w = interp(want)
+        got = depth_at(w)
+        if got is not None and abs(got - want) / full > 0.05:
+            w = interp(want)                      # refine once with the new point
         chosen.append((target, round(w, 1)))
+
+    # Break collapses, shallowest target first.
+    for i, (target, w) in enumerate(chosen):
+        if target == 100 or sum(1 for _, x in chosen if abs(x - w) < 1.0) == 1:
+            continue
+        best = w
+        lo, hi = 0.85 * min(ww for ww, _ in pts), min(ww for ww, _ in pts)
+        for _ in range(2):
+            got = depth_at(lo)
+            if got is None:
+                break
+            if 100.0 * got / full >= FLOOR_PCT:
+                best = lo                          # narrower and still above floor
+                break
+            lo = 0.5 * (lo + hi)                   # undershot -- back off upward
+        chosen[i] = (target, round(best, 1))
     return chosen
 
 
