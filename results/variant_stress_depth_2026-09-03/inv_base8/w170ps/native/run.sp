@@ -1,5 +1,5 @@
 * variant stressed native
-.title stressed native
+.title stressed native rwf2
 .option post=2 probe accurate ingold=2
 .temp 27
 Vin in_dig 0 PWL(0n 0  5n 0  5.001n 1.8  5.17n 1.8  5.171n 0  22n 0)
