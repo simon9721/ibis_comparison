@@ -1,0 +1,92 @@
+{
+  "csv_path": "waveforms.csv",
+  "x_column": "time_ns",
+  "series": [
+    {
+      "column": "silicon_pad",
+      "label": "silicon",
+      "color": "#111111",
+      "linewidth": 2.8,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 6,
+      "visible": true
+    },
+    {
+      "column": "native_pad",
+      "label": "native",
+      "color": "#2B6CA3",
+      "linewidth": 1.7,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 5,
+      "visible": true
+    },
+    {
+      "column": "native_rwf1_pad",
+      "label": "native rwf1",
+      "color": "#7FB3D5",
+      "linewidth": 1.4,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 4,
+      "visible": true
+    },
+    {
+      "column": "gate_state_pad",
+      "label": "gate state",
+      "color": "#C02626",
+      "linewidth": 1.4,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 3,
+      "visible": true
+    },
+    {
+      "column": "delay_cmd_pad",
+      "label": "delay cmd",
+      "color": "#1B7F5A",
+      "linewidth": 1.4,
+      "linestyle": "-",
+      "marker": "",
+      "markersize": 4.0,
+      "alpha": 1.0,
+      "zorder": 3,
+      "visible": true
+    }
+  ],
+  "figure": {
+    "title": "inv_base8 \u00b7 90% of full swing \u00b7 130 ps pulse \u2014 Pad voltage (V)",
+    "xlabel": "Time (ns)",
+    "ylabel": "Pad voltage (V)",
+    "title_size": 16.0,
+    "label_size": 12.0,
+    "tick_size": 10.0,
+    "legend_size": 10.0,
+    "legend_location": "best",
+    "legend_columns": 3,
+    "show_legend": true,
+    "show_grid": true,
+    "grid_alpha": 0.45,
+    "x_min": null,
+    "x_max": null,
+    "y_min": null,
+    "y_max": null,
+    "width_in": 11.0,
+    "height_in": 4.6,
+    "dpi": 160,
+    "background": "#ffffff",
+    "transparent": false,
+    "font_family": "DejaVu Sans",
+    "x_scale": "linear",
+    "y_scale": "linear"
+  }
+}

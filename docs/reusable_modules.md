@@ -42,7 +42,9 @@ owns before assuming.
 | Silicon Ku/Kd from two fixtures | `scripts/extract_silicon_kukd.py` → `solve_silicon_kukd`, `FixtureWaveform`, `R_FIXTURE`, `CORNER` | mirrors `pybis2spice.solve_k_params_output`; only the waveform source differs |
 | Buffer/​case registries and transistor decks | `scripts/run_three_buffer_realistic_pulse_campaign.py` | `Device`, `Profile`, `PulseCase`, `DEVICES`, `transistor_deck`, `copy_transistor_inputs`, `fmt` |
 | Which pybis builds exist, and their subckt names | `scripts/run_stress_method_matrix.py` → `METHODS` | `gate_state` → `…DirectionalDualResidualFull`, `delay_cmd` → `…DelayCommandFull`, `legacy` → plain `InputDriven` |
-| Per-case figure conventions and palette | `scripts/archive/plot_stress_matrix_methods.py` | `SILICON`, `NATIVE`, `METHOD_COLORS`; keep new figures readable beside the existing 496 |
+| Figure palette, draw order, editor recipes | `scripts/figures.py` | active entry point; re-exports the palette from the archived module rather than copying it. `ORDER`, `recipe_for_case`, `case_title` |
+| Per-case figure conventions (source of the palette) | `scripts/archive/plot_stress_matrix_methods.py` | `SILICON`, `NATIVE`, `METHOD_COLORS` — the conventions the existing 496 figures follow |
+| Restyling a generated figure without touching code | `tools/figure_editor/` + `scripts/make_figure_recipes.py` | see below |
 | The IBIS model itself | `tools/pybis2spice/` | `DataModel`, `solve_k_params_output`, `generating_current_data`, `subcircuit.generate_spice_model` |
 
 ## Two deck traps the module makes unrepresentable
@@ -68,6 +70,33 @@ and `22.0n` becomes `22n`. That is identical to SPICE but *not* byte-identical, 
 converting an existing script invalidates its deck-text run cache and forces
 re-simulation. Migrate when writing something new, or when a script's results are
 being regenerated anyway — not as a standalone tidy-up.
+
+## Restyling figures without re-running anything
+
+`tools/figure_editor/` is a CSV-backed Matplotlib editor. It stores every style
+choice in a JSON recipe beside the data, reopens it in a GUI, and renders
+headlessly:
+
+```
+scripts\launch_figure_editor.cmd <recipe>.json
+py -3.14 tools/figure_editor/figure_editor.py <recipe>.json --render out.svg
+```
+
+The piece that was missing is the recipe. Without one, restyling a generated
+figure meant editing a plotting script and re-running the sweep — sometimes hours
+of simulation to change a colour. `scripts/make_figure_recipes.py` closes that:
+it walks a results tree and writes one recipe per field (pad, Ku, Kd) beside each
+per-case CSV, already carrying the study palette and draw order.
+
+```
+py -3.14 scripts/make_figure_recipes.py                        # default tree
+py -3.14 scripts/make_figure_recipes.py --root results/foo --render svg
+```
+
+Recipes are cheap deterministic text referencing the CSV by relative path, so
+regenerating is always safe, and `--render svg` gives vector output for slides.
+Note the editor handles **one axes and one CSV per recipe** by design; multi-panel
+figures stay script-generated, with each panel exportable separately.
 
 ## Anchors are a choice, and must be stated
 
