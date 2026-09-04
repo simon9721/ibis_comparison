@@ -36,8 +36,9 @@ OUT = R / "meeting_deck_2026-09-04" / "ibis_pybis_status_2026-09-04.pptx"
 F = R / "meeting_deck_2026-09-04" / "figures"
 
 FIG = {k: F / f"{k}.png" for k in
-       ("clean_edge", "stress_pad", "stress_kukd", "offset_chain",
-        "offset_removed", "variant_pad", "variant_kukd")}
+       ("clean_edge", "stress_pad", "stress_kukd", "timing_shift",
+        "offset_chain", "command_node", "command_pad", "offset_removed",
+        "fixture_vt", "fixture_ku", "variant_pad", "variant_kukd")}
 
 # One wide figure under two lines of text, and the pair layout beside it.
 WIDE = dict(x=0.55, y=2.02, w=12.2, h=4.95)
@@ -93,11 +94,12 @@ def main() -> int:
     d.add_picture_contain(s, FIG["clean_edge"], **WIDE)
 
     # ---------------------------------------------------------------- stress
-    s = d.add_slide("Under a truncated pulse, two things go wrong",
+    s = d.add_slide("Defect 1: the pad does not settle",
                     section="The two defects")
     points(d, s, [
         "The input reverses before the pad finishes its transition.",
-        "Left: the pad comes back up. Right: Ku stays part-on instead of returning.",
+        "Left: our pad comes back up where the transistor does not. "
+        "Right: Ku stays part-on instead of returning to zero.",
     ])
     d.add_picture_contain(s, FIG["stress_pad"], **LEFT)
     d.add_picture_contain(s, FIG["stress_kukd"], **RIGHT)
@@ -106,6 +108,21 @@ def main() -> int:
                    "permanent on a 10 ns plot. The timing shift is the falling 50% "
                    "crossing 69-99 ps late on every case, where native IBIS is "
                    "5-26 ps early.")
+
+    # ------------------------------------------------------- the timing shift
+    s = d.add_slide("Defect 2: our crossing is late", section="The two defects")
+    points(d, s, [
+        "A separate defect: the 50% crossing arrives later than native IBIS.",
+        "Over the five stress cases per device — io_buf native +11..+18 ps, ours "
+        "+27..+34;  inv_chain native −6..−5, ours +8..+12;  ex2 both early.",
+    ])
+    d.add_picture_contain(s, FIG["timing_shift"], **WIDE)
+    d.add_notes(s, "The plan quotes 69-99 ps late where native is 5-26 ps early. "
+                   "That is not reproducible from the data on disk with this "
+                   "metric -- what the stress matrix shows is about 15 ps later "
+                   "than native on io_buf and inv_chain, and on ex2 both are early "
+                   "with ours the closer. The defect is real and device-dependent, "
+                   "but smaller and less one-sided than the plan states.")
 
     # ------------------------------------------------------------ the offset
     s = d.add_slide("The offset: charge stranded in the command capacitor",
@@ -120,11 +137,30 @@ def main() -> int:
                    "coin flip, which is why the retuned version helped on some "
                    "cases and not others.")
 
+    # --------------------------------------------------- how delay_cmd works
+    s = d.add_slide("How delay_cmd works", section="The two defects")
+    points(d, s, [
+        "gate-state: GUPCMD is a capacitor across 1e15 Ω, given a fixed packet of "
+        "charge on each input edge — an integrator with no DC path.",
+        "delay_cmd: GUPCMD is driven straight from the present input level.",
+    ])
+    d.add_picture_contain(s, FIG["command_node"], **LEFT)
+    d.add_picture_contain(s, FIG["command_pad"], **RIGHT)
+    d.add_notes(s, "One line of the generated subcircuit separates them. "
+                   "gate_state: CGUPCMD across RGUPCMD 1e15 with BGUPCMDON "
+                   "injecting a packet per edge. delay_cmd: BGUPCMD GUPCMD 0 "
+                   "V = V(PUCMDLVL). On the tail after the reversal gate_state "
+                   "sits at -0.144 and creeps back over ~3 ns; delay_cmd is at "
+                   "exactly 0. On this particular bench the stranded charge is "
+                   "negative and the command clamp removes it before it reaches "
+                   "Ku, so the two pads agree to 5 mV -- the pad consequence on "
+                   "the right is the case where the charge is positive.")
+
     # ------------------------------------------------------------- delay_cmd
     s = d.add_slide("delay_cmd removes the offset", section="The two defects")
     points(d, s, [
-        "The command becomes a function of the input level, not of edge history.",
-        "It returns to exactly zero, so nothing is stranded.",
+        "The command returns to exactly zero, so nothing is stranded.",
+        "The pedestal goes from 97.9 mV to 5.2 mV, against the transistor's 2.1.",
     ])
     d.add_picture_contain(s, FIG["offset_removed"], **WIDE)
     d.add_notes(s, "On this case the pedestal goes from 97.9 mV to 5.2 mV against "
@@ -204,15 +240,20 @@ def main() -> int:
     # ------------------------------------------------------------- fixtures
     s = d.add_slide("What fixtures do to the extracted Ku/Kd", section="Method")
     points(d, s, [
-        "The control reproduces the shipped solve to 2.4e−08, so the method is "
-        "exact.",
-        "In quiet regions Ku is load-independent to four decimals — a device "
-        "property, not a fixture artifact.",
-        "A resonant R+L+C fixture corrupts Ku for 1.14 ns, reaching 0.26 of error.",
+        "Ku re-solved on five different characterisation fixtures, against the "
+        "R-only baseline. Through the transition all five sit on top of each other.",
+        "The resonant L+C fixture rings for nanoseconds after the reversal; L and "
+        "C on their own do not.",
     ])
-    d.add_text(s, "Added L and C are safe individually. The resonant combination "
-                  "has to be avoided when characterising.",
-               0.7, 4.3, 12.0, 0.8, size=17)
+    d.add_picture_contain(s, FIG["fixture_vt"], **LEFT)
+    d.add_picture_contain(s, FIG["fixture_ku"], **RIGHT)
+    d.add_notes(s, "The control reproduces the shipped solve to 2.4e-08, so the "
+                   "method is exact. In quiet regions Ku is load-independent to "
+                   "four decimals, which is the point: the extraction is a device "
+                   "property, not a fixture artifact. On io_buf the mean Ku error "
+                   "is 0.011 for C alone, 0.14-0.16 for L, and the worst-case "
+                   "excursion reaches 7.9 on L 2 nH. Practical rule: avoid a "
+                   "resonant fixture when characterising.")
 
     # --------------------------------------------------------------- Ku cap
     s = d.add_slide("The 1.25 max|Ku| cap rejects good models",
