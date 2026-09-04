@@ -240,11 +240,9 @@ def main() -> int:
     # ------------------------------------------------------------- fixtures
     s = d.add_slide("What fixtures do to the extracted Ku/Kd", section="Method")
     points(d, s, [
-        "Ku re-solved on five characterisation fixtures against the R-only "
-        "baseline. Through the transition all five sit on top of each other, and "
-        "in the quiet regions they agree to four decimals.",
-        "Series inductance is what disturbs it, and only on io_buf: Ku RMSE 0.14–"
-        "0.16 with excursions to 7.9, against ≤0.03 on inv_chain and ex2.",
+        "Five fixtures, Ku re-solved on each. In the quiet regions all five "
+        "agree to four decimals.",
+        "Series inductance disturbs it, and only on io_buf.",
     ])
     d.add_picture_contain(s, FIG["fixture_vt"], **LEFT)
     d.add_picture_contain(s, FIG["fixture_ku"], **RIGHT)
