@@ -223,9 +223,12 @@ def recap() -> None:
     """The issue recap: the figure shown at the last meeting, pad and Ku/Kd.
 
     Source is the native-anchored stress sweep, which is where the 0904 deck's
-    recap figure comes from. The reference draws a dotted "target voltage" line;
-    its value is not recoverable from the sweep outputs on disk, so it is left out
-    rather than guessed.
+    recap figure comes from.
+
+    The dotted target-voltage line is `native_pad_at_reverse_v` from the sweep's
+    selection.csv -- 0.7174 V on this case, the level the width search anchored
+    to. The pulse width, the reverse edge and the crop window come from the same
+    row, so the figure reproduces the reference rather than approximating it.
     """
     src = (R / "three_buffer_native_anchored_stress_sweep_2026-08-19" / "figures"
            / "io_buf" / "short_high" / "swing_50" / "waveforms.csv")
@@ -233,7 +236,17 @@ def recap() -> None:
         print("  recap: missing swing_50 waveforms")
         return
     d = read(src)
-    rev = 5.0 + 1.7998
+    sel = next((r for r in csv.DictReader(
+        (R / "three_buffer_native_anchored_stress_sweep_2026-08-19"
+         / "selection.csv").open())
+        if r["device"] == "io_buf" and r["direction"] == "short_high"
+        and int(float(r["target_percent"])) == 50), None)
+    if sel is None:
+        print("  recap: no selection row")
+        return
+    rev = 5.0 + float(sel["pulse_width_ps"]) / 1000.0
+    target_v = float(sel["native_pad_at_reverse_v"])
+    lo, hi = float(sel["crop_start_ns"]), float(sel["crop_stop_ns"])
     fig, ax = plt.subplots(figsize=(W, H))
     ax.plot(d["time_ns"], d["hspice_transistor_pad_v"], color=SIL, lw=6.0,
             alpha=0.32, label="HSPICE transistor", zorder=2)
@@ -242,7 +255,8 @@ def recap() -> None:
     ax.plot(d["time_ns"], d["gate_state_pad_v"], color=GATE, lw=2.4,
             label="gate-state", zorder=3)
     ax.axvline(rev, color=REV, ls="--", lw=1.8, label="reverse edge")
-    ax.set_xlim(4.8, 9.8)
+    ax.axhline(target_v, color="#C77F0A", ls=":", lw=2.2, label="target voltage")
+    ax.set_xlim(lo, hi)
     ax.set_xlabel("Time (ns)")
     ax.set_ylabel("Pad voltage (V)")
     title(ax, "io_buf", "short high", "target 50%")
@@ -260,7 +274,7 @@ def recap() -> None:
         axis.axvline(rev, color=REV, ls="--", lw=1.8)
         axis.set_ylabel(label)
         axis.grid(alpha=0.3)
-    axes[0].set_xlim(4.8, 9.8)
+    axes[0].set_xlim(lo, hi)
     axes[0].set_ylim(-0.25, 1.25)
     axes[0].legend(loc="upper right", ncol=2, fontsize=13)
     title(axes[0], "io_buf", "short high", "target 50%", "Ku and Kd")
