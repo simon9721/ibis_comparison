@@ -59,7 +59,7 @@ Two worth knowing:
   order differs per buffer: `inv_chain` is (1.8, 0.0) while `io_buf` and `ex2` are
   (0.0, 3.3).
 
-## `decks` — write the deck text
+## `spice_decks` — write the deck text
 
 The write side.
 
@@ -75,7 +75,7 @@ The write side.
 | `PybisSubckt.parse(path)` | a generated `driver.sub`: `.name`, `.pins`, `.enable_level(v)`, `.nodes()`, `.instance()` |
 
 ```python
-import decks as dk
+import spice_decks as dk
 
 deck = (dk.hspice_header("stressed native")
         + f"Vin in_dig 0 {sl.pulse(0.0, 1.8, [5.0, 5.104], stop_ns=22.0)}\n"
@@ -109,7 +109,7 @@ deck = (dk.ngspice_header()
         + dk.load("OUT", 50.0, 2.0))
 ```
 
-**Migration caveat:** `decks` formats numbers with `%g`, so `50.0` → `50`. That is
+**Migration caveat:** `spice_decks` formats numbers with `%g`, so `50.0` → `50`. That is
 identical to SPICE but *not byte-identical*, so converting an existing script
 invalidates its deck-text run cache and forces re-simulation. Convert when writing
 something new, or when results are being regenerated anyway.
@@ -163,6 +163,58 @@ a colour. Now it is a GUI edit and a headless re-render.
 **Scope:** the editor handles one axes and one CSV per recipe by design.
 Multi-panel figures stay script-generated; export each panel separately when it
 needs manual styling.
+
+## `tools/presentation_kit` — build the PowerPoint
+
+A scripted deck builder on the lab's green template. It opens the checked-in
+`.pptx` and uses its real masters and layouts rather than approximating the design
+in Python, so output matches the house style.
+
+```python
+from tools.presentation_kit import GreenDeck
+
+deck = GreenDeck()
+deck.set_title_slide("Project title", "Presenter
+Date")
+
+slide = deck.add_slide("A technical result", section="Results")
+deck.add_bullets(slide, ["First result", "Second"], 0.7, 1.3, 5.0, 2.0)
+deck.add_equation(slide, r"I_{pad}=K_u I_{pu}(V)+K_d I_{pd}(V)", 6.2, 1.4, 5.6, 1.0)
+deck.add_picture_contain(slide, str(png_path), 0.7, 3.5, 5.0, 2.6)
+deck.add_takeaway(slide, "One sentence the audience should remember.")
+deck.add_notes(slide, "Presenter notes are written into the PPTX.")
+deck.save("results/my_study/my_deck.pptx")
+```
+
+| Method | Does |
+|---|---|
+| `set_title_slide`, `add_slide(title, section=, notes=)` | template title and content slides |
+| `add_text`, `add_bullets` | text regions |
+| `add_box`, `add_arrow` | process diagrams |
+| `add_code_box` | monospaced code |
+| `add_picture_contain` | image scaled to fit a box without distortion |
+| `add_equation` | cached TeX (MathJax 4, or Matplotlib MathText fallback) |
+| `add_takeaway`, `add_source` | the standard bands |
+| `add_notes`, `save` | presenter notes, write the file |
+
+Equations are content-addressed and cached under
+`.codex_deps/presentation/equation_cache`, so rebuilding a deck does not re-render
+unchanged ones. Each inserted equation carries its TeX as PowerPoint alt text.
+
+`python-pptx` 1.0.2 is vendored alongside matplotlib. The template lives at
+`assets/presentation_templates/mst_green_16x9.pptx` and `theme.py` resolves it as
+`<repo root>/assets/...` — **moving `assets/` breaks the kit**, which is exactly
+what a root tidy-up did once; the failure is a `FileNotFoundError` at
+`GreenDeck()`.
+
+Optional one-time setup for the MathJax backend (a portable Node runtime; the
+Matplotlib fallback needs nothing):
+
+```
+powershell -ExecutionPolicy Bypass -File scripts/setup_presentation_toolkit.ps1
+```
+
+A worked example lives in `examples/presentation_toolkit/build_demo_deck.py`.
 
 ## `lib/paths` — find the repo root
 

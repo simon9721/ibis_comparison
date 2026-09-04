@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Deck construction shared across the study: HSPICE, ngspice, and pybis subckts.
+"""SPICE deck construction: HSPICE, ngspice, and pybis subcircuits.
+
+Named `spice_decks` rather than `decks` because this repo also has
+`tools/presentation_kit/deck.py`, which builds PowerPoint decks. "Deck" is
+ambiguous here, so both names say which kind.
 
 `spicelab` owns *running* a simulator and reading what comes back. This owns
 *writing* what goes in. The two halves were split because deck text had been
