@@ -88,7 +88,7 @@ def main() -> int:
     ], 0.7, 1.4, 5.9, 2.2)
     d.add_text(s, "Two things move in any comparison — the IBIS implementation and "
                   "the SPICE engine. We separated them, and the engine is not the "
-                  "source.", 0.7, 3.9, 12.0, 1.2, size=17)
+                  "source.", 0.7, 3.3, 12.0, 1.2, size=17)
     d.add_takeaway(s, "We are near the format's floor on clean edges. The distance "
                       "worth attacking is under stress.")
     d.add_notes(s, "Lead with this. Full-swing accuracy is close to as good as the "
@@ -179,7 +179,7 @@ def main() -> int:
     mono(d, s, "figure of merit   0.03 - 0.41 %\ntiming shift      +4 to +8 ps\n\n"
                "three buffers, both edges,\nboth fixtures", 7.5, 1.5, 5.2)
     d.add_text(s, "It is now the standing health check, and it settled the C_comp "
-                  "question.", 0.7, 4.4, 12.0, 0.8, size=17)
+                  "question.", 0.7, 3.6, 12.0, 0.8, size=17)
     d.add_takeaway(s, "Whatever is wrong under stress, it is not the I-V times "
                       "Ku(t) reconstruction.")
 
@@ -215,7 +215,7 @@ def main() -> int:
     ], 0.7, 1.5, 12.0, 3.0)
     d.add_text(s, "Added L and C are safe individually. The resonant combination "
                   "has to be avoided when characterising.",
-               0.7, 4.6, 12.0, 1.0, size=17)
+               0.7, 3.2, 12.0, 1.0, size=17)
     d.add_takeaway(s, "The two-fixture extraction is trustworthy, as long as the "
                       "fixture is not resonant.")
 
@@ -275,7 +275,9 @@ def main() -> int:
     d.add_text(s, "Two rules worth not re-learning: any bench for this model must "
                   "start with a real edge, never a held level. And ngspice must be "
                   "converged before drawing any conclusion from it.",
-               0.7, 4.7, 12.0, 1.4, size=17)
+               0.7, 3.5, 12.0, 1.4, size=17)
+    d.add_takeaway(s, "The offset is solved. The timing shift is the open one, "
+                      "and it is where the nine variants will land.")
 
     path = d.save(OUT)
     print(f"wrote {path.relative_to(ROOT)}  ({path.stat().st_size/1024:.0f} KB)")

@@ -120,41 +120,57 @@ def offset_removed() -> None:
 
 
 def shift_vs_depth() -> None:
-    """pybis minus transistor at 50% of each case's own excursion, vs depth."""
-    src = R / "_baseline_edgecmd" / "waveforms"
-    colours = {"io_buf": "#C02626", "ex2": "#2B6CA3", "inv_chain": "#1B6B4F"}
+    """pybis minus transistor against depth, over the nine buffer variants.
+
+    An earlier version drew this from results/_baseline_edgecmd/, which was wrong
+    twice over. It merged short_high and short_low onto one line per device, and
+    that set has only two or three depths per device and direction. Split by
+    direction it shows the shift essentially *flat* with depth, and on io_buf
+    short-high growing toward full swing -- the opposite of the slide's claim.
+
+    The claim is supported by the variant sweep, which controlled depth properly
+    across nine buffers and four widths each, and where the shift grows
+    monotonically as the pulse is truncated on 9 of 9.
+
+    The x axis is depth relative to the widest pulse tested, not to a settled full
+    swing: that sweep predates the settled-reference correction, so the widest
+    stressed width is itself ~3-9% short of settled. It is a relative trend, and
+    labelled as one.
+    """
+    src = R / "variant_stress_depth_2026-09-03" / "variant_stress_depth.csv"
+    if not src.exists():
+        print("  shift_vs_depth: missing variant sweep CSV")
+        return
+    rows = list(csv.DictReader(src.open()))
+    by: dict[str, list[tuple[float, float]]] = {}
+    for r in rows:
+        by.setdefault(r["variant"], []).append(
+            (float(r["tx_excursion_v"]), float(r["gate_state_vs_tx_ps"])))
     fig, ax = plt.subplots(figsize=(W, H))
-    import re
-    pts: dict[str, list[tuple[int, float]]] = {}
-    for f in sorted(src.glob("*.csv")):
-        dev = f.stem.split("_short")[0]
-        direction = "short_" + f.stem.split("_short_")[1].split("_")[0]
-        depth = int(re.search(r"depth(\d+)", f.stem).group(1))
-        d = read(f)
-        t, si, py = d["time_ns"], d["silicon_pad"], d["pybis_pad"]
-        if direction == "short_high":
-            base = float(np.median(si[t < t[0] + 0.2 * (t[-1] - t[0])]))
-            lvl = base + 0.5 * (si.max() - base)
-            after = t[0] + 0.2 * (t[-1] - t[0])
-            a = sl.cross(t, si, lvl, after=after)
-            b = sl.cross(t, py, lvl, after=after)
-        else:
-            plateau = float(np.median(si[(t > 9.0) & (t < 10.2)]))
-            win = (t > 10.2) & (t < 12.5)
-            lvl = plateau - 0.5 * (plateau - si[win].min())
-            a = sl.cross(t, si, lvl, rising=False, after=10.2)
-            b = sl.cross(t, py, lvl, rising=False, after=10.2)
-        if np.isfinite(a) and np.isfinite(b):
-            pts.setdefault(dev, []).append((depth, (b - a) * 1e3))
-    for dev, vals in pts.items():
-        vals.sort()
-        ax.plot([v[0] for v in vals], [v[1] for v in vals], "o-",
-                color=colours.get(dev, "#444"), ms=10, label=dev)
+    fam = {"inv": "#1B6B4F", "ex2": "#2B6CA3"}
+    for variant, vals in sorted(by.items()):
+        full = max(v[0] for v in vals)
+        # Below 30% the models make a transition several times larger than the
+        # transistor, so no crossing metric separates timing from amplitude.
+        # Those points are excluded here for the same reason the written summary
+        # excludes them, rather than being drawn and then caveated.
+        pts = sorted(((100.0 * v[0] / full, v[1]) for v in vals
+                      if 100.0 * v[0] / full >= 30.0))
+        if len(pts) < 2:
+            continue
+        colour = fam["inv"] if variant.startswith("inv") else fam["ex2"]
+        # No per-line labels: nine of them collided in the middle of the plot, and
+        # the message is the family trend, which the two colours already carry.
+        ax.plot([p[0] for p in pts], [p[1] for p in pts], "o-", color=colour,
+                ms=8, lw=2.0, alpha=0.8)
     ax.axhline(0, color="#111", lw=1.6)
-    ax.set_xlabel("depth reached (%)  —  right is closer to a full transition")
+    ax.plot([], [], "o-", color=fam["inv"], label="inv_chain variants")
+    ax.plot([], [], "o-", color=fam["ex2"], label="ex2 variants")
+    ax.set_xlabel("excursion reached, % of the widest pulse tested")
     ax.set_ylabel("pybis − transistor (ps)")
-    ax.set_title("measured against the transistor, at 50% of each case's own excursion")
-    finish(fig, ax, OUT / "shift_vs_depth.png")
+    ax.set_title("nine buffer variants  ·  four pulse widths each  ·  depths below 30% omitted")
+    ax.set_xlim(28, 106)
+    finish(fig, ax, OUT / "shift_vs_depth.png", legend_ncol=2)
 
 
 def error_budget() -> None:
@@ -236,6 +252,12 @@ def offset_chain() -> None:
     axes[0].plot(d["time_ns"], d["gupcmd"], color=GATE, lw=3.0,
                  label="GUPCMD — the command capacitor")
     axes[0].axhline(0, color="#111", lw=1.4)
+    # Zoomed to the residue. On a 0-to-1 scale the commanded pulse dominates and
+    # the charge left behind -- the entire point of the slide -- is invisible.
+    axes[0].set_ylim(-0.006, 0.05)
+    # Left side: at the right it sat underneath the legend.
+    axes[0].text(0.015, 0.86, "commanded pulse reaches 1.0, off scale",
+                 transform=axes[0].transAxes, ha="left", fontsize=15, color="#555")
     axes[0].set_ylabel("GUPCMD")
     axes[0].set_title("io_buf  ·  truncated pulse  ·  command capacitor, then the pad")
     axes[1].plot(d["time_ns"], d["transistor_pad_v"], color=SIL, lw=3.4,
@@ -304,9 +326,11 @@ def variant_kukd() -> None:
         ax.set_ylabel(label)
         ax.grid(alpha=0.3)
     edge = 5.0
-    axes[0].set_xlim(edge - 0.1, edge + 0.9)
-    axes[0].legend(ncol=5, framealpha=0.95)
-    axes[0].set_title(f"{src.parent.parent.name} — the coefficients under stress")
+    axes[0].set_xlim(edge - 0.06, edge + 0.55)
+    # Above the axes, not inside: at ncol=5 the box covered the Ku plateau.
+    axes[0].legend(ncol=5, loc="lower center", bbox_to_anchor=(0.5, 1.02),
+                   framealpha=0.95, fontsize=14)
+    axes[0].set_title("")
     axes[1].set_xlabel("Time (ns)")
     fig.tight_layout()
     fig.savefig(OUT / "variant_kukd.png", dpi=DPI)
