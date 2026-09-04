@@ -36,7 +36,8 @@ OUT = R / "meeting_deck_2026-09-04" / "ibis_pybis_status_2026-09-04.pptx"
 F = R / "meeting_deck_2026-09-04" / "figures"
 
 FIG = {k: F / f"{k}.png" for k in
-       ("clean_edge", "stress_pad", "stress_kukd", "timing_shift",
+       ("recap_pad", "recap_kukd",
+        "clean_edge", "stress_pad", "stress_kukd", "timing_shift",
         "offset_chain", "command_node", "command_pad", "offset_removed",
         "fixture_vt", "fixture_ku", "variant_pad", "variant_kukd")}
 
@@ -62,71 +63,39 @@ def main() -> int:
 
     d = GreenDeck()
     d.set_title_slide(
-        "Getting our IBIS model closer to the transistor",
-        "IBIS buffer modelling — status\n4 September 2026")
+        "IBIS Simulation Short Pulse Handling",
+        "Simon Hwang\nDr. Chulsoon Hwang\nDr. Zhiping Yang\n9/4/2026")
 
-    # ------------------------------------------------------------------- goal
-    s = d.add_slide("What we are comparing", section="Where we are")
+    # ---------------------------------------------------------------- contents
+    s = d.add_slide("Table of contents")
     points(d, s, [
-        "HSPICE transistor — ground truth",
-        "HSPICE native IBIS — the bar to beat, not the target",
-        "Our IBIS model in ngspice — measured against the transistor",
-    ])
-    d.add_text(s, "Falling 50% crossing on io_buf at full swing, later than the "
-                  "transistor:", 0.7, 2.9, 12.0, 0.5, size=17)
-    points(d, s, [
-        "native IBIS          +34.6 ps",
-        "our model, stock     +38.4 ps",
-        "our model, gate-state  +43.5 ps",
-    ], y=3.5)
-    d.add_text(s, "So the IBIS format itself costs about 35 ps, which native pays "
-                  "too. Our command layer costs about 5 ps on top.",
-               0.7, 5.5, 12.0, 0.8, size=17)
-    d.add_notes(s, "Lead with this. Full-swing accuracy is close to as good as the "
-                   "format allows, so the effort belongs on truncated pulses.")
+        "Issue recap",
+        "Delaying the input command",
+        "RLC fixture effects on V-t waveforms and Ku/Kd",
+        "Pybis in HSPICE vs. NgSPICE",
+        "More SPICE buffer mockups",
+    ], y=1.5)
 
-    # ------------------------------------------------------------ clean edge
-    s = d.add_slide("At full swing all three agree", section="Where we are")
+    # ------------------------------------------------------------ issue recap
+    s = d.add_slide("Issue recap", section="Issue recap")
     points(d, s, [
-        "The three curves sit on top of each other through the transition.",
-        "What is left on the falling edge is the format's ~35 ps, not our layer.",
+        "A short pulse reverses before the pad has finished its transition.",
+        "Both IBIS models under-shoot the peak the transistor reaches, and ours "
+        "sits slightly high on the tail after the reversal.",
     ])
-    d.add_picture_contain(s, FIG["clean_edge"], **WIDE)
+    d.add_picture_contain(s, FIG["recap_pad"], **WIDE)
 
-    # ---------------------------------------------------------------- stress
-    s = d.add_slide("Defect 1: the pad does not settle",
-                    section="The two defects")
+    s = d.add_slide("Issue recap — the coefficients", section="Issue recap")
     points(d, s, [
-        "The input reverses before the pad finishes its transition.",
-        "Left: our pad comes back up where the transistor does not. "
-        "Right: Ku stays part-on instead of returning to zero.",
+        "Ku(t) and Kd(t) assume the transition starts from a settled state.",
+        "When the reverse edge arrives first, they are still replayed from fully "
+        "settled, and Ku does not return to zero.",
     ])
-    d.add_picture_contain(s, FIG["stress_pad"], **LEFT)
-    d.add_picture_contain(s, FIG["stress_kukd"], **RIGHT)
-    d.add_notes(s, "Two separate defects. The offset is a settled-state Ku error, "
-                   "on the 90/60/50 targets only -- a ~6 ns tail that looks "
-                   "permanent on a 10 ns plot. The timing shift is the falling 50% "
-                   "crossing 69-99 ps late on every case, where native IBIS is "
-                   "5-26 ps early.")
-
-    # ------------------------------------------------------- the timing shift
-    s = d.add_slide("Defect 2: our crossing is late", section="The two defects")
-    points(d, s, [
-        "A separate defect: the 50% crossing arrives later than native IBIS.",
-        "Over the five stress cases per device — io_buf native +11..+18 ps, ours "
-        "+27..+34;  inv_chain native −6..−5, ours +8..+12;  ex2 both early.",
-    ])
-    d.add_picture_contain(s, FIG["timing_shift"], **WIDE)
-    d.add_notes(s, "The plan quotes 69-99 ps late where native is 5-26 ps early. "
-                   "That is not reproducible from the data on disk with this "
-                   "metric -- what the stress matrix shows is about 15 ps later "
-                   "than native on io_buf and inv_chain, and on ex2 both are early "
-                   "with ours the closer. The defect is real and device-dependent, "
-                   "but smaller and less one-sided than the plan states.")
+    d.add_picture_contain(s, FIG["recap_kukd"], **WIDE)
 
     # ------------------------------------------------------------ the offset
     s = d.add_slide("The offset: charge stranded in the command capacitor",
-                    section="The two defects")
+                    section="Delaying the input command")
     points(d, s, [
         "GUPCMD is a capacitor across 1e15 ohm, charged once per input edge.",
         "A truncated pulse leaves charge in it with no resistive path out.",
@@ -138,7 +107,7 @@ def main() -> int:
                    "cases and not others.")
 
     # --------------------------------------------------- how delay_cmd works
-    s = d.add_slide("How delay_cmd works", section="The two defects")
+    s = d.add_slide("How delay_cmd works", section="Delaying the input command")
     points(d, s, [
         "gate-state: GUPCMD is a capacitor across 1e15 Ω, given a fixed packet of "
         "charge on each input edge — an integrator with no DC path.",
@@ -157,7 +126,7 @@ def main() -> int:
                    "the right is the case where the charge is positive.")
 
     # ------------------------------------------------------------- delay_cmd
-    s = d.add_slide("delay_cmd removes the offset", section="The two defects")
+    s = d.add_slide("delay_cmd removes the offset", section="Delaying the input command")
     points(d, s, [
         "The command returns to exactly zero, so nothing is stranded.",
         "The pedestal goes from 97.9 mV to 5.2 mV, against the transistor's 2.1.",
@@ -170,59 +139,26 @@ def main() -> int:
                    "after a reversal where neither device is commanded on.")
 
     # -------------------------------------------------- but not the timing
-    s = d.add_slide("It does not fix the timing", section="The two defects")
+    s = d.add_slide("It does not fix the timing", section="Delaying the input command")
     points(d, s, [
-        "If the offset and the timing shift were one mechanism, delay_cmd would "
-        "fix both. Its amplitude had been measured; its timing never had.",
+        "delay_cmd improved the timing on 0 of 19 stress cases — so the offset and "
+        "the shift are two mechanisms, not one.",
+        "Our 50% crossing still arrives after native's: io_buf +27..+34 ps against "
+        "native's +11..+18.",
     ])
-    d.add_text(s, "We measured it:", 0.7, 2.4, 12.0, 0.5, size=17)
-    points(d, s, [
-        "delay_cmd improved the timing on 0 of 19 stress cases",
-        "the shift persists once the stranded charge is gone",
-        "they are two defects, not one",
-    ], y=3.0)
-    d.add_text(s, "The offset has a fix. The timing shift has no candidate "
-                  "mechanism yet, and it grows as the pulse is truncated — on all "
-                  "nine buffer variants tested so far.",
-               0.7, 5.1, 12.0, 1.0, size=17)
-
-    # ----------------------------------------------------------- confidence
-    s = d.add_slide("The core reconstruction is sound", section="Confidence")
-    points(d, s, [
-        "A golden-waveform test replays a model's own V-T tables into the fixture "
-        "that produced them — no transistor, no native IBIS, no engine confound.",
-        "We had never done this before. It is now the standing health check.",
-    ])
-    d.add_text(s, "Our model against its own golden waveforms, three buffers, both "
-                  "edges, both fixtures:", 0.7, 3.1, 12.0, 0.5, size=17)
-    points(d, s, [
-        "figure of merit   0.03 – 0.41 %",
-        "timing shift      +4 to +8 ps",
-    ], y=3.7)
-    d.add_text(s, "So whatever is wrong under stress, it is not the I-V × Ku(t) "
-                  "reconstruction.", 0.7, 5.0, 12.0, 0.8, size=17)
-
-    # --------------------------------------------------------------- C_comp
-    s = d.add_slide("C_comp is handled correctly", section="Confidence")
-    points(d, s, [
-        "Nominal C_comp beats zero on all 12 tables, and the margin scales with "
-        "the die capacitance.",
-    ])
-    d.add_text(s, "50% crossing shift against the transistor, with C_comp at "
-                  "nominal and set to zero:", 0.7, 2.2, 12.0, 0.5, size=17)
-    points(d, s, [
-        "50 Ω, 0 pF     +6.7 ps        −277.8 ps",
-        "500 Ω, 2 pF    −0.2 ps          −0.9 ps",
-        "1 kΩ, 5 pF     −1.3 ps          −1.1 ps",
-    ], y=2.8)
-    d.add_text(s, "I had this backwards at first. I misapplied the book's "
-                  "double-counting diagnostic and reported that our model "
-                  "over-applies C_comp; the golden-waveform test overturned it.",
-               0.7, 4.9, 12.0, 1.1, size=17)
+    d.add_picture_contain(s, FIG["timing_shift"], **WIDE)
+    d.add_notes(s, "The plan quotes 69-99 ps late where native is 5-26 ps early. "
+                   "That is not reproducible from the data on disk with a "
+                   "50%-of-excursion metric. The stress matrix gives io_buf native "
+                   "+11..+18 against ours +27..+34; inv_chain native -6..-5 "
+                   "against ours +8..+12; ex2 both early with ours closer. The "
+                   "defect is real and device-dependent, but smaller and less "
+                   "one-sided than the plan states. It also grows as the pulse is "
+                   "truncated, on all nine buffer variants tested so far.")
 
     # --------------------------------------------------------------- engine
     s = d.add_slide("Is the difference the engine or the model?",
-                    section="Method")
+                    section="Pybis in HSPICE vs. NgSPICE")
     points(d, s, [
         "Every native-vs-ours number changes two things at once. We wrote a "
         "translator so the same model runs in both simulators.",
@@ -238,7 +174,7 @@ def main() -> int:
                   "apparent lag.", 0.7, 5.0, 12.0, 1.0, size=17)
 
     # ------------------------------------------------------------- fixtures
-    s = d.add_slide("What fixtures do to the extracted Ku/Kd", section="Method")
+    s = d.add_slide("What fixtures do to the extracted Ku/Kd", section="RLC fixture effects")
     points(d, s, [
         "Five fixtures, Ku re-solved on each. In the quiet regions all five "
         "agree to four decimals.",
@@ -262,34 +198,9 @@ def main() -> int:
                    "stays under 0.03. The real rule is that series inductance "
                    "disturbs the solve, by an amount that depends on the buffer.")
 
-    # --------------------------------------------------------------- Ku cap
-    s = d.add_slide("The 1.25 max|Ku| cap rejects good models",
-                    section="What should change")
-    d.add_text(s, "ex2 variants, across all seven characterisation edge rates:",
-               0.7, 1.3, 12.0, 0.5, size=17)
-    points(d, s, [
-        "slowpre   predriver halved      328 ps      1.047",
-        "base      control               200 ps      1.283",
-        "nomiller  Miller caps removed   208 ps      1.299",
-        "skewp     output PMOS halved    160 ps      1.589",
-        "weak      both devices halved   152 ps      1.779",
-    ], y=1.9)
-    d.add_text(s, "It follows C_comp × dV/dt against the device drive. For ex2 that "
-                  "is 82 mA of displacement current against a ~51 mA drive — it "
-                  "exceeds the device, so the solve has to push Ku above 1.\n"
-                  "Healthy baselines differ per silicon: inv_chain 1.03, io_buf "
-                  "1.18, ex2 1.28. No absolute number works; it should be a "
-                  "within-buffer outlier test.",
-               0.7, 4.9, 12.0, 1.6, size=17)
-    d.add_notes(s, "I proposed the wrong cause first -- Miller feedthrough -- and "
-                   "built the nomiller variant to test it. It came back identical "
-                   "to the control. Those caps are 20.5 fF against C_comp's 5 pF, "
-                   "0.41%, 250x too small, which is arithmetic I should have done "
-                   "before building the variant.")
-
     # ---------------------------------------------------------- new buffers
     s = d.add_slide("Nine new buffer variants, same stress axis",
-                    section="What should change")
+                    section="More SPICE buffer mockups")
     points(d, s, [
         "Slower predriver, halved output devices, skewed PMOS, open-drain.",
         "Characterised and stressed exactly like the three base buffers.",

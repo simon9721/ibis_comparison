@@ -58,7 +58,10 @@ plt.rcParams.update({
 })
 
 SIL, NAT = fg.SILICON, fg.NATIVE
-GATE, DELAY = fg.METHOD_COLORS["gate_state"], fg.METHOD_COLORS["delay_cmd"]
+# The 0904 deck draws gate-state in purple and delay_cmd in green; matched
+# here so the recap figure is the one the audience already saw.
+GATE = "#7B2CBF"
+DELAY = fg.METHOD_COLORS["delay_cmd"]
 REV = "#8A8A8A"
 
 
@@ -214,6 +217,55 @@ def command_pad() -> None:
     ax.grid(alpha=0.3)
     ax.legend(loc="upper right", fontsize=12)
     save(fig, OUT / "command_pad.png")
+
+
+def recap() -> None:
+    """The issue recap: the figure shown at the last meeting, pad and Ku/Kd.
+
+    Source is the native-anchored stress sweep, which is where the 0904 deck's
+    recap figure comes from. The reference draws a dotted "target voltage" line;
+    its value is not recoverable from the sweep outputs on disk, so it is left out
+    rather than guessed.
+    """
+    src = (R / "three_buffer_native_anchored_stress_sweep_2026-08-19" / "figures"
+           / "io_buf" / "short_high" / "swing_50" / "waveforms.csv")
+    if not src.exists():
+        print("  recap: missing swing_50 waveforms")
+        return
+    d = read(src)
+    rev = 5.0 + 1.7998
+    fig, ax = plt.subplots(figsize=(W, H))
+    ax.plot(d["time_ns"], d["hspice_transistor_pad_v"], color=SIL, lw=6.0,
+            alpha=0.32, label="HSPICE transistor", zorder=2)
+    ax.plot(d["time_ns"], d["hspice_native_pad_v"], color=SIL, lw=2.2,
+            label="HSPICE native IBIS", zorder=4)
+    ax.plot(d["time_ns"], d["gate_state_pad_v"], color=GATE, lw=2.4,
+            label="gate-state", zorder=3)
+    ax.axvline(rev, color=REV, ls="--", lw=1.8, label="reverse edge")
+    ax.set_xlim(4.8, 9.8)
+    ax.set_xlabel("Time (ns)")
+    ax.set_ylabel("Pad voltage (V)")
+    title(ax, "io_buf", "short high", "target 50%")
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper right", ncol=2)
+    save(fig, OUT / "recap_pad.png")
+
+    fig, axes = plt.subplots(2, 1, figsize=(W, H), sharex=True)
+    for axis, field, label in ((axes[0], "ku", "Ku"), (axes[1], "kd", "Kd")):
+        axis.axhspan(-0.05, 1.05, color="#EAF1F7", zorder=0)
+        axis.plot(d["time_ns"], d[f"hspice_native_{field}"], color=SIL, lw=2.2,
+                  label="HSPICE native IBIS", zorder=4)
+        axis.plot(d["time_ns"], d[f"gate_state_{field}"], color=GATE, lw=2.4,
+                  label="gate-state", zorder=3)
+        axis.axvline(rev, color=REV, ls="--", lw=1.8)
+        axis.set_ylabel(label)
+        axis.grid(alpha=0.3)
+    axes[0].set_xlim(4.8, 9.8)
+    axes[0].set_ylim(-0.25, 1.25)
+    axes[0].legend(loc="upper right", ncol=2, fontsize=13)
+    title(axes[0], "io_buf", "short high", "target 50%", "Ku and Kd")
+    axes[1].set_xlabel("Time (ns)")
+    save(fig, OUT / "recap_kukd.png")
 
 
 def clean_edge() -> None:
@@ -451,7 +503,7 @@ def fixture_kukd() -> None:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    for fn in (clean_edge, stress_pair, timing_shift, offset_chain,
+    for fn in (recap, clean_edge, stress_pair, timing_shift, offset_chain,
                command_mechanism, command_pad, offset_removed,
                variant_pair, fixture_kukd):
         try:
