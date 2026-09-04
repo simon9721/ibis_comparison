@@ -126,11 +126,33 @@ Cload pad 0 {C_LOAD_PF}p
     return sl.time_ns(r), sl.signal(r, "v(pad)")
 
 
-def native(d: Path, ibis: Path, model: str, sup: float, width: float):
+def _cached_hspice(d: Path, deck: str):
+    """Run `deck` in `d`, reusing the existing .tr0 when the deck is unchanged.
+
+    Same contract as the transistor cache: the result is a function of the deck
+    text alone, so re-running the sweep to fix one build must not re-simulate the
+    others."""
+    sp, tr0 = d / "run.sp", d / "run.tr0"
+    if tr0.exists() and sp.exists() and sp.read_text(encoding="utf-8") == deck:
+        return tr0
+    sp.write_text(deck, encoding="utf-8")
+    return sl.hspice(d, timeout_s=900)
+
+
+def native(d: Path, ibis: Path, model: str, sup: float, width: float, mode: int = 2):
+    """Native IBIS. `mode` is HSPICE's ramp_rwf/ramp_fwf: 2 = use two waveform
+    tables (the documented default, the two-fixture solve IBIS intends), 1 = use
+    only the first table.
+
+    Both are run because they disagree badly on ex2: the default silently produces
+    a dead pad (0.03 V on a pulse the transistor takes to 1.47 V) while mode 1
+    tracks the transistor. Reporting only one of them would either slander native
+    or hide a real failure of its two-fixture solve."""
     d.mkdir(parents=True, exist_ok=True)
     shutil.copy2(ibis, d / "input.ibs")
-    (d / "run.sp").write_text(f"""* variant stressed native
-.title stressed native
+    rwf = fwf = mode
+    deck = (f"""* variant stressed native
+.title stressed native rwf{mode}
 .option post=2 probe accurate ingold=2
 .temp 27
 Vin in_dig 0 {short_high_pwl(sup, width)}
@@ -140,14 +162,14 @@ VPC pc_ref 0 DC {sup}
 VGC gc_ref 0 DC 0
 BIBIS pu_ref pd_ref pad in_dig pc_ref gc_ref
 + file='input.ibs' model='{model}' buffer=2 typ=typ power=off interpol=1
-+ ramp_rwf=2 ramp_fwf=2
++ ramp_rwf={rwf} ramp_fwf={fwf}
 Rload pad 0 {R_LOAD}
 Cload pad 0 {C_LOAD_PF}p
 .probe tran V(pad)
 .tran 0.002n {STOP_NS}n
 .end
-""", encoding="utf-8")
-    tr0 = sl.hspice(d, timeout_s=900)
+""")
+    tr0 = _cached_hspice(d, deck)
     if tr0 is None:
         return None
     r = sl.parse_hspice_tr0(tr0)
@@ -170,7 +192,7 @@ def pybis_run(d: Path, ibis: Path, model: str, comp: str, sup: float, width: flo
     nd = {"OUT": "OUT", "IN": "IN", "EN": "EN", "VCC": "VCC", "VSS": "0"}
     nodes = [nd.get(p.upper(), p) for p in pins]
     en = 0.0 if re.search(r"NENABLE\s+0\s+V\s*=\s*\(\s*V\(EN[^)]*\)\s*<", text) else sup
-    (d / "run.sp").write_text(f"""* variant stressed pybis
+    deck = f"""* variant stressed pybis
 .options reltol=1e-3 abstol=1e-9 vntol=1e-6 gmin=1e-10 method=gear
 .include driver.sub
 Vdd VCC 0 DC {sup}
@@ -182,8 +204,16 @@ Cload OUT 0 {C_LOAD_PF}p
 .tran 0.002n {STOP_NS}n
 .save V(OUT)
 .end
-""", encoding="utf-8")
-    raw = sl.ngspice(d, timeout_s=900)
+"""
+    # Subcircuit generation is cheap; the ngspice solve is not. Reuse an existing
+    # result whenever the deck is byte-identical, so fixing the native build does
+    # not re-simulate every pybis case.
+    sp, prev = d / "run.sp", d / "run.raw"
+    if prev.exists() and sp.exists() and sp.read_text(encoding="utf-8") == deck:
+        raw = prev
+    else:
+        sp.write_text(deck, encoding="utf-8")
+        raw = sl.ngspice(d, timeout_s=900)
     if raw is None:
         return None
     r = sl.parse_ngspice_raw(raw)
@@ -203,8 +233,9 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     out_csv = OUT / "variant_stress_depth.csv"
     rows = []
-    print(f"{"variant":<14}{"width":>8}{"tx exc":>9}{"nat exc":>8}{"gate exc":>9}{"dcmd exc":>9}"
-          f"{'nat-tx':>8}{'gate-tx':>10}{'dcmd-tx':>10}", flush=True)
+    print(f"{"variant":<14}{"width":>8}{"tx exc":>9}{"nat2":>8}{"nat1":>9}"
+          f"{"gate exc":>9}{"dcmd exc":>9}"
+          f"{'nat2-tx':>8}{'nat1-tx':>10}{'gate-tx':>10}{'dcmd-tx':>10}", flush=True)
     for key, fam, sup, ibis, inputs, model, comp, widths in VARIANTS:
         if not ibis.exists():
             print(f"{key:<14}  model missing", flush=True)
@@ -227,7 +258,8 @@ def main() -> int:
             txc = cross(t, si, base + 0.5 * exc, RISE_NS - 0.5)
             res, peak = {}, {}
             builds = (
-                ("native", native(d / "native", ibis, model, sup, w)),
+                ("native", native(d / "native", ibis, model, sup, w, 2)),
+                ("native1", native(d / "native_rwf1", ibis, model, sup, w, 1)),
                 # The study's own naming calls plain "InputDriven" the *legacy*
                 # build. It has no command layer, which is the machinery that
                 # exists to handle a truncated pulse, so it is the wrong thing to
@@ -255,15 +287,19 @@ def main() -> int:
                 # sweep.
                 res[nm] = (cross(gt, gv, gb + 0.5 * ge, RISE_NS - 0.5) - txc) * 1e3
             print(f"{key:<14}{w*1000:>7.0f}p{exc:>9.3f}"
-                  f"{peak['native']:>8.3f}{peak['gate_state']:>9.3f}{peak['delay_cmd']:>9.3f}"
-                  f"{res['native']:>8.1f}p{res['gate_state']:>9.1f}p{res['delay_cmd']:>9.1f}p",
+                  f"{peak['native']:>8.3f}{peak['native1']:>9.3f}"
+                  f"{peak['gate_state']:>9.3f}{peak['delay_cmd']:>9.3f}"
+                  f"{res['native']:>8.1f}p{res['native1']:>9.1f}p"
+                  f"{res['gate_state']:>9.1f}p{res['delay_cmd']:>9.1f}p",
                   flush=True)
             rows.append({"variant": key, "width_ps": round(w * 1000, 1),
                          "tx_excursion_v": round(exc, 4),
                          "native_excursion_v": round(peak["native"], 4),
+                         "native_rwf1_excursion_v": round(peak["native1"], 4),
                          "gate_state_excursion_v": round(peak["gate_state"], 4),
                          "delay_cmd_excursion_v": round(peak["delay_cmd"], 4),
                          "native_vs_tx_ps": round(res["native"], 2),
+                         "native_rwf1_vs_tx_ps": round(res["native1"], 2),
                          "gate_state_vs_tx_ps": round(res["gate_state"], 2),
                          "delay_cmd_vs_tx_ps": round(res["delay_cmd"], 2)})
             with out_csv.open("w", newline="", encoding="utf-8") as h:

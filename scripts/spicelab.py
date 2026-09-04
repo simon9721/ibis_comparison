@@ -23,6 +23,7 @@ covers the common case.
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -44,6 +45,7 @@ __all__ = [
     "run_spice", "hspice", "ngspice",
     "pwl", "pulse", "clock",
     "signal", "trace", "time_ns", "load_waveform",
+    "vt_fixtures",
 ]
 
 
@@ -214,3 +216,45 @@ if __name__ == "__main__":
     print("pulse low-start 5..15ns:", pulse(0.0, 3.3, [5, 15], stop_ns=22))
     print("clock 2ns x3:          ", clock(2.0, 3, 0.0, 1.8))
     print("default_hspice:        ", default_hspice())
+
+
+# --------------------------------------------------------------------------- #
+# Native IBIS V-T table selection
+# --------------------------------------------------------------------------- #
+
+def vt_fixtures(ibis: Path) -> dict[str, list[float | None]]:
+    """[V_fixture] of each [Rising]/[Falling] Waveform table, in file order.
+
+    Needed to interpret HSPICE's `ramp_rwf` / `ramp_fwf`, which choose how much
+    V-T data the B-element uses -- **not** which table:
+
+        0 = use [Ramp] data
+        1 = use one waveform  (the first of that kind in the file)
+        2 = use two waveforms (the first two)   -- the documented default
+
+    So under `=1` the fixture of the *first* table is what the model is played
+    back into, and that order is set by whoever wrote the .ibs:
+
+        inv_chain   (1.8, 0.0)      io_buf   (0.0, 3.3)      ex2   (0.0, 3.3)
+
+    Every bench here loads the pad with 50 ohm to ground, so a `=1` run is
+    load-matched on io_buf and ex2 but not on inv_chain. Worth checking before
+    reading across buffers, because the two-waveform default silently produces a
+    dead output on ex2 while `=1` tracks the transistor.
+    """
+    kinds: dict[str, list[float | None]] = {"rising": [], "falling": []}
+    cur: str | None = None
+    for line in Path(ibis).read_text(errors="ignore").splitlines():
+        s = line.strip()
+        if s.startswith("["):
+            m = re.match(r"\[(Rising|Falling) Waveform\]", s, re.I)
+            cur = m.group(1).lower() if m else None
+            if cur:
+                kinds[cur].append(None)
+            continue
+        if cur is None:
+            continue
+        m = re.match(r"V_fixture\s*=\s*([-+0-9.eE]+)", s, re.I)
+        if m and kinds[cur] and kinds[cur][-1] is None:
+            kinds[cur][-1] = float(m.group(1))
+    return kinds
