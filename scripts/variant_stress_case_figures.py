@@ -44,7 +44,13 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-for _p in (ROOT / "scripts", ROOT / "tools" / "pybis2spice",
+# scripts/archive is on the path deliberately: the loaded-swing stress sweep
+# lives there but is still the authoritative definition of this study's stress
+# axis -- the active stress matrix reads the selection.csv it produced. Importing
+# it is how the variants get stressed on the same terms as the base buffers,
+# rather than by a second, subtly different definition written here.
+for _p in (ROOT / "scripts", ROOT / "scripts" / "archive",
+           ROOT / "tools" / "pybis2spice",
            ROOT / ".codex_deps" / "presentation" / "python"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
@@ -99,34 +105,63 @@ def prior_depths() -> dict[str, list[tuple[float, float]]]:
     return out
 
 
-FLOOR_PCT = 50.0
+# The stress axis is not redefined here. These come from the sweep that produced
+# results/three_buffer_loaded_swing_stress_sweep_2026-08-14/selection.csv, which
+# is still the axis the active stress matrix reads, so the variants are stressed
+# on exactly the terms the three base buffers were.
+#   TARGETS              (0.9, 0.8, 0.7, 0.6, 0.5)
+#   TARGET_TOLERANCE     0.01 V on the excursion
+#   MAX_SEARCH_ITERATIONS 10
+#   control_case()       a 10 ns pulse -- the settled full-swing reference
+#   LOAD                 50 ohm, 2 pF -- matches vs.R_LOAD / vs.C_LOAD_PF
+import run_three_buffer_loaded_swing_stress_sweep as canon  # noqa: E402
+
+DEPTH_TARGETS = tuple(int(round(f * 100)) for f in canon.TARGETS)
+TOLERANCE_V = canon.TARGET_TOLERANCE
+MAX_ITER = canon.MAX_SEARCH_ITERATIONS
+FULL_SWING_NS = canon.control_case().pulse_width_ns
+
+
+def full_swing_excursion(d: Path, fam: str, inputs: Path, sup: float) -> float | None:
+    """The transistor's *settled* excursion into the study load -- the 100% mark.
+
+    Measured from the canonical long control pulse, not from the widest stressed
+    width. That distinction matters: the widest stressed pulse is still truncated,
+    reaching only 90.8% of the settled level on inv_weak, 94.2% on ex2_base and
+    96.9% on inv_base8. Normalising to it inflates every reported depth, so a case
+    labelled 50% would really sit near 45%.
+
+    The reference is the transistor and only the transistor -- never native IBIS,
+    never pybis, both of which mis-swing on exactly these buffers.
+    """
+    tr = vs.transistor(d / "full_swing", fam, inputs, sup, FULL_SWING_NS)
+    if tr is None:
+        return None
+    tt, si = tr
+    base = float(np.median(si[tt < vs.RISE_NS - 0.5]))
+    return float(si.max() - base)
 
 
 def widths_for_targets(key: str, fam: str, inputs: Path, sup: float,
-                       known: list[tuple[float, float]], d: Path) -> list[tuple[int, float]]:
-    """Widths (ps) for each depth target, never landing below the 50% floor.
+                       known: list[tuple[float, float]], d: Path,
+                       full: float) -> list[tuple[int, float]]:
+    """Bisect pulse width until the *transistor* reaches each target excursion.
 
-    Interpolating the known (width, excursion) pairs cannot reach below the
-    narrowest width already simulated. On three variants that width is *already*
-    above 70% of full swing -- inv_stage4 80%, inv_skewp 72%, ex2_weak 82% -- so
-    the 50% and 70% targets both clamp onto it, collapsing into a duplicate case
-    and leaving the shallow end uncovered.
+    Same contract as the canonical sweep: the stress axis is anchored on the
+    transistor, bisected to within TOLERANCE_V, capped at MAX_ITER evaluations.
+    Interpolating instead -- as an earlier version of this did -- cannot reach
+    below the narrowest width already simulated, which on three variants sits
+    above 70% of full swing and collapsed the two shallowest targets onto one
+    duplicate case.
 
-    Collapses are resolved by probing narrower, bounded to at most two extra
-    transistor runs per collapsed target: try 85% of the narrowest known width,
-    and if that undershoots the floor, split the difference back upward. The floor
-    is the requirement here, not hitting 50/70/85 exactly, so a short guarded
-    search buys real shallow coverage without a full bisection.
+    Widths already simulated by the depth sweep seed the bracket, so the search
+    starts from real measurements rather than paying for them again.
     """
     pts = sorted(known)
-    if not pts:
-        raise SystemExit(f"{key}: no prior widths to interpolate from")
-    full = max(e for _, e in pts)
 
     def depth_at(w: float) -> float | None:
-        """Excursion at width `w` ps, simulating only if not already known."""
         w = round(w, 1)
-        hit = next((e for ww, e in pts if abs(ww - w) < 1.0), None)
+        hit = next((e for ww, e in pts if abs(ww - w) < 0.5), None)
         if hit is not None:
             return hit
         tr = vs.transistor(d / f"probe_w{int(round(w))}ps", fam, inputs, sup, w / 1000.0)
@@ -139,36 +174,49 @@ def widths_for_targets(key: str, fam: str, inputs: Path, sup: float,
         pts.sort()
         return hit
 
-    def interp(want: float) -> float:
-        return float(np.interp(want, [e for _, e in pts], [w for w, _ in pts]))
-
     chosen: list[tuple[int, float]] = []
     for target in DEPTH_TARGETS:
-        if target == 100:
-            chosen.append((target, max(w for w, _ in pts)))
-            continue
         want = full * target / 100.0
-        w = interp(want)
-        got = depth_at(w)
-        if got is not None and abs(got - want) / full > 0.05:
-            w = interp(want)                      # refine once with the new point
-        chosen.append((target, round(w, 1)))
-
-    # Break collapses, shallowest target first.
-    for i, (target, w) in enumerate(chosen):
-        if target == 100 or sum(1 for _, x in chosen if abs(x - w) < 1.0) == 1:
-            continue
-        best = w
-        lo, hi = 0.85 * min(ww for ww, _ in pts), min(ww for ww, _ in pts)
-        for _ in range(2):
-            got = depth_at(lo)
+        lo = max((w for w, e in pts if e < want), default=None)
+        hi = min((w for w, e in pts if e >= want), default=None)
+        # Widen the bracket by stepping outward, not by extrapolating a curve
+        # that saturates.
+        steps = 0
+        while lo is None and steps < 6:
+            cand = min(w for w, _ in pts) * 0.75 ** (steps + 1)
+            got = depth_at(cand)
             if got is None:
                 break
-            if 100.0 * got / full >= FLOOR_PCT:
-                best = lo                          # narrower and still above floor
+            if got < want:
+                lo = cand
+            steps += 1
+        while hi is None and steps < 12:
+            cand = max(w for w, _ in pts) * 1.35 ** (steps + 1)
+            got = depth_at(cand)
+            if got is None:
                 break
-            lo = 0.5 * (lo + hi)                   # undershot -- back off upward
-        chosen[i] = (target, round(best, 1))
+            if got >= want:
+                hi = cand
+            steps += 1
+        if lo is None or hi is None:
+            chosen.append((target, round(hi if hi is not None else max(w for w, _ in pts), 1)))
+            continue
+        best = hi
+        for _ in range(MAX_ITER):
+            mid = 0.5 * (lo + hi)
+            got = depth_at(mid)
+            if got is None:
+                break
+            if abs(got - want) <= TOLERANCE_V:
+                best = mid
+                break
+            if got < want:
+                lo = mid
+            else:
+                hi, best = mid, mid
+            if hi - lo < 0.5:
+                break
+        chosen.append((target, round(best, 1)))
     return chosen
 
 
@@ -423,8 +471,16 @@ def main() -> int:
         d = OUT / key
         d.mkdir(parents=True, exist_ok=True)
         print(f"\n=== {key} ===", flush=True)
-        targets = widths_for_targets(key, fam, inputs, sup, known.get(key, []), d)
-        full_exc[key] = max(e for _, e in known.get(key, [(0, 1.0)]))
+        full = full_swing_excursion(d, fam, inputs, sup)
+        if full is None:
+            print(f"{key}: full-swing reference run failed", flush=True)
+            continue
+        full_exc[key] = full
+        print(f"    settled full-swing excursion: {full:.4f} V "
+              f"(widest stressed width reaches "
+              f"{100 * max(e for _, e in known.get(key, [(0, full)])) / full:.1f}%)",
+              flush=True)
+        targets = widths_for_targets(key, fam, inputs, sup, known.get(key, []), d, full)
         print("    depth target -> width: "
               + ", ".join(f"{t}%={w:.0f}ps" for t, w in targets), flush=True)
 
@@ -494,9 +550,8 @@ def main() -> int:
 
     if summary:
         for row in summary:
-            same = [r for r in summary if r["variant"] == row["variant"]]
-            full = max(r["tx_excursion_v"] for r in same)
-            row["depth_achieved_pct"] = round(100 * row["tx_excursion_v"] / full, 1)
+            row["depth_achieved_pct"] = round(
+                100 * row["tx_excursion_v"] / full_exc[row["variant"]], 1)
         csv_path = OUT / "cases.csv"
         with csv_path.open("w", newline="", encoding="utf-8") as h:
             wr = csv.DictWriter(h, fieldnames=list(summary[0]))
