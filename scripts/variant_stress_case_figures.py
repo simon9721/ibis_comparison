@@ -77,12 +77,13 @@ PRIOR = ROOT / "results" / "variant_stress_depth_2026-09-03" / "variant_stress_d
 DEPTH_TARGETS = (90, 80, 70, 60, 50)
 R_FIXTURE = 50.0
 
-# Same palette as plot_stress_matrix_methods.py, so the variant figures can be
-# read side by side with the 496 base-buffer ones.
-SILICON = "#111111"
-NATIVE = "#2B6CA3"
+# Palette is imported, not restated, so these figures cannot drift away from the
+# 496 base-buffer ones they are meant to be read beside. NATIVE1 is the only
+# addition -- the base matrix had no second native mode to draw.
+import plot_stress_matrix_methods as ps  # noqa: E402
+
+SILICON, NATIVE, METHOD_COLORS = ps.SILICON, ps.NATIVE, ps.METHOD_COLORS
 NATIVE1 = "#7FB3D5"
-METHOD_COLORS = {"gate_state": "#C02626", "delay_cmd": "#1B7F5A"}
 
 BUILDS = (("gate_state", "InputDrivenTwoStateGateDirectionalDualResidualFull"),
           ("delay_cmd", "InputDrivenTwoStateGateDelayCommandFull"))

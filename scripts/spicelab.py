@@ -45,7 +45,7 @@ __all__ = [
     "run_spice", "hspice", "ngspice",
     "pwl", "pulse", "clock",
     "signal", "trace", "time_ns", "load_waveform",
-    "vt_fixtures",
+    "vt_fixtures", "cross",
 ]
 
 
@@ -258,3 +258,34 @@ def vt_fixtures(ibis: Path) -> dict[str, list[float | None]]:
         if m and kinds[cur] and kinds[cur][-1] is None:
             kinds[cur][-1] = float(m.group(1))
     return kinds
+
+
+# --------------------------------------------------------------------------- #
+# Threshold crossing
+# --------------------------------------------------------------------------- #
+
+def cross(t, y, level: float, *, rising: bool = True,
+          after: float | None = None) -> float:
+    """First time `y` crosses `level`, linearly interpolated. NaN if it never does.
+
+    Ten active scripts had grown their own copy of this, in eight mutually
+    incompatible forms -- some direction-aware, some rising-only, one with a
+    hardcoded `after=4.7`. That is a correctness hazard rather than mere
+    duplication: a rising-only copy returns NaN on a falling edge, which reads as
+    "no event" instead of "wrong function".
+
+    `after` skips everything at or before that time, which is how a stimulus edge
+    or a settled plateau is excluded. NaN is returned rather than raising, since
+    a model genuinely failing to cross is a result worth plotting, not an error.
+    """
+    y = np.asarray(y, dtype=float)
+    t = np.asarray(t, dtype=float)
+    for i in range(1, len(y)):
+        if after is not None and t[i] < after:
+            continue
+        a, b = y[i - 1], y[i]
+        if (rising and a < level <= b) or (not rising and a > level >= b):
+            if b == a:
+                return float(t[i])
+            return float(t[i - 1] + (level - a) * (t[i] - t[i - 1]) / (b - a))
+    return float("nan")

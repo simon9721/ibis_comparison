@@ -185,3 +185,12 @@ while we worsen, so **model-vs-native** is the framing that isolates our machine
 - `results/pybis_engine_model_decoupling_2026-09-03/` — the engine/model 2×2
 - `results/ex2_variants_2026-09-03/`, `results/inv_chain_variants_2026-09-02/`
 - `scripts/spicelab.py` — shared SPICE plumbing (runner, stimulus, trace lookup)
+
+## Before writing a new script
+
+Read [docs/reusable_modules.md](docs/reusable_modules.md) first. It maps which
+module owns which definition -- the stress axis, the Ku/Kd solve, the buffer
+registry, the figure palette -- and records what went wrong when the stress axis
+was rewritten from scratch instead of imported. Note that `scripts/archive/` is
+not dead code: the stress axis and the figure conventions both live there and are
+still authoritative.
