@@ -1,6 +1,0 @@
-flow,flow_label,fit_range_pf,delay_intercept_ns,delay_slope_ns_per_pf,fit_rmse_ps
-native_ibis,"Native IBIS, old slow-edge file",<=2,2.2488253597920425,0.05723464406546105,0.6150217047802622
-native_ibis_fast,"Native IBIS, regenerated 5 ps file",<=2,1.745509640014671,0.05762163186872801,0.9592313679337118
-transistor_original_ideal,"Transistor, original HSPICE model, ideal supply",<=2,1.7460910104385345,0.05233010436833858,0.8111739665483664
-transistor_original_fixture,"Transistor, original HSPICE model, 1 ohm supply",<=2,1.7379511239146492,0.05262599060620547,0.9286831373598976
-transistor_modified_fixture,"Previous transistor reference, modified model",<=2,1.554116973580317,0.053101707525170516,0.8381356207866624

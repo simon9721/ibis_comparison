@@ -1,4 +1,0 @@
-device,selected_ui_ns,selected_data_rate_gbps,native_partial_directions,transistor_partial_directions,stress_direction,selection_score,selection_gate
-io_buf,1.75,0.5714285714285714,1,1,short_high,1.1880130831011277,BOTH_REFERENCES_ONE_DIRECTION
-inv_chain,0.1,10.0,2,1,short_high,1.4053799104273148,BOTH_REFERENCES_ONE_DIRECTION
-ex2,0.75,1.3333333333333333,1,2,short_high,1.4796308300014234,BOTH_REFERENCES_ONE_DIRECTION

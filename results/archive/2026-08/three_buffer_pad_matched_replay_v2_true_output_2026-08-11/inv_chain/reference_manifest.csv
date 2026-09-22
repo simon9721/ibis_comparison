@@ -1,3 +1,0 @@
-device,profile,load_ohm,load_pf,case_id,reference,source,tr0,edge_ps
-inv_chain,fast_5ps,50.0,2.0,short_high_custom_100ps,hspice_native_ibis,run,results\three_buffer_pad_matched_replay_v2_true_output_2026-08-11\inv_chain\hspice_references\inv_chain\fast_5ps\r50_c2pf\short_high_custom_100ps\native\run.tr0,
-inv_chain,fast_5ps,50.0,2.0,short_high_custom_100ps,hspice_transistor,run,results\three_buffer_pad_matched_replay_v2_true_output_2026-08-11\inv_chain\hspice_references\inv_chain\transistor\r50_c2pf\short_high_custom_100ps\run.tr0,50.0

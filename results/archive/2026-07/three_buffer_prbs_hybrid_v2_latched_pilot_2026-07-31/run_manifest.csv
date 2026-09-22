@@ -1,2 +1,0 @@
-device,case_id,ui_ps,flow,status,return_code,source,solver_profile,raw,log
-ex2,prbs7_ui_500ps_edge_50ps,500.0,ngspice_hybrid_v2,COMPLETED,0,run,trap_relaxed,results\three_buffer_prbs_hybrid_v2_latched_pilot_2026-07-31\runs\ex2\prbs7_ui_500ps_edge_50ps\ngspice_hybrid_v2\trap_relaxed\run.raw,results\three_buffer_prbs_hybrid_v2_latched_pilot_2026-07-31\runs\ex2\prbs7_ui_500ps_edge_50ps\ngspice_hybrid_v2\trap_relaxed\ngspice_stdout.log

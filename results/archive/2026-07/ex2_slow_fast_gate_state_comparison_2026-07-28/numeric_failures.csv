@@ -1,3 +1,0 @@
-profile,case_id,flow,status,reason,timeout_s,partial_raw_bytes,log
-slow_1ns,edge_1ps_base_50r_2pf,dual_hybrid,NUMERIC_FAIL,hybrid_state_timestep_collapse,240,351346548,results\ex2_slow_fast_gate_state_comparison_2026-07-28\slow_1ns\cases\edge_1ps_base_50r_2pf\ngspice_dual_hybrid\ngspice_stdout.log
-fast_5ps,edge_1ps_base_50r_2pf,gate_full,NUMERIC_FAIL,directional_map_branch_chatter_near_settled_state,240,343815370,results\ex2_slow_fast_gate_state_comparison_2026-07-28\fast_5ps\cases\edge_1ps_base_50r_2pf\ngspice_gate_full\ngspice_stdout.log

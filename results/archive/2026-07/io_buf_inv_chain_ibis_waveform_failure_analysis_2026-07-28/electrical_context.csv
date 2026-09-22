@@ -1,3 +1,0 @@
-device,vdd_v,settled_high_v_50ohm,effective_pullup_r_ohm,c_comp_pf,output_pfet_effective_width_um,output_nfet_effective_width_um,output_length_um,source
-io_buf,3.3,1.544661,56.8196,1.2,210.75,105.75,0.9,results/io_buf_hspice_capacitance_driver_strength_2026-07-23/metrics.csv; models/io_buf.sp
-inv_chain,1.8,1.4308080869565218,12.90151755532735,0.468,256.0,128.0,0.18,results/inv_chain_s2ibispy_slow_fast_2026-07-27/hspice_sanity_metrics.csv; inv_chain/invchain_subckt_typ.sp

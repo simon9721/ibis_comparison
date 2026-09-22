@@ -1,4 +1,0 @@
-device,direction,depth_target,pulse_width_ps,status
-io_buf,short_high,nan,10000.0,NGSPICE_FAIL
-io_buf,short_high,nan,6000.0,OK
-inv_chain,short_high,nan,3000.0,OK

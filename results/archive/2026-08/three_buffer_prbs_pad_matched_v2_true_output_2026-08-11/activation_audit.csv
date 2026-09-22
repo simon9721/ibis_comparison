@@ -1,4 +1,0 @@
-device,reversal_count,native_midtransition_count,v2_active_count,true_active_count,missed_midtransition_count,false_active_count,ambiguous_count
-io_buf,9,2,4,2,0,2,2
-inv_chain,9,1,9,1,0,8,3
-ex2,9,1,6,1,0,5,3

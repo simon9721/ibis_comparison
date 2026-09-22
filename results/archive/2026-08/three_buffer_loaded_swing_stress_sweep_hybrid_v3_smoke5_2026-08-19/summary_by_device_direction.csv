@@ -1,3 +1,0 @@
-device,direction,flow,mean_pad_rmse_mv,mean_ku_rmse,mean_kd_rmse,stress_vs_pad_rmse_correlation,stress_vs_ku_rmse_correlation,stress_vs_kd_rmse_correlation,mean_post_reverse_sse_fraction,dominant_mechanisms,hybrid_triggered_cases,case_count
-io_buf,short_high,gate_state,647.3108041979839,0.4071025166086858,0.332658972982183,nan,nan,nan,0.7879862069441295,BASE_AND_RECOVERY_MISMATCH,0,1
-io_buf,short_high,hybrid,28.797586319405752,0.12923778119016233,0.39350129029616915,nan,nan,nan,0.8634825897077748,REVERSAL_RECOVERY_DOMINATED,1,1

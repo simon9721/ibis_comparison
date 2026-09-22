@@ -1,2 +1,0 @@
-device,profile,case_id,error
-io_buf,fast,short_pulse_2ns_high,prior hybrid ngspice run did not complete

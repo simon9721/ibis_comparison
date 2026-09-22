@@ -1,2 +1,0 @@
-component,model,ibis,ibis_sha256,worst_rmse,worst_max_error,gate,pu_on_delay_ns,pu_off_delay_ns,pd_on_delay_ns,pd_off_delay_ns,pu_on_tau_ns,pu_off_tau_ns,pd_on_tau_ns,pd_off_tau_ns
-invchain,driver2,results\inv_chain_s2ibispy_slow_fast_2026-07-27\slow_1ns\inv_chain_slow_1ns.ibs,eca4d9eb2e67c0bdcd1a2759f36c29819722350c7f5399e99b96a38d0f8922b4,0.0194460627785766,0.06635509929344739,PASS,0.8645593426503051,0.843449827114672,0.8740244964339724,0.837525626340295,0.02,0.026214253819733968,0.0376968073961047,0.02786059922425302

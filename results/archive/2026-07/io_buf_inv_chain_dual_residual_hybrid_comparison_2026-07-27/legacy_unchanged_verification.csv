@@ -1,3 +1,0 @@
-device,comparison,body_identical,normalized_sha256,note
-io_buf,fresh legacy generation vs pre-experiment legacy model,True,643f925d2db82ace5b2a493994186a57fec41a81faf965f84878a1b0ca29fa77,Only the IBIS filename provenance header differs
-inv_chain,fresh legacy generation vs pre-experiment legacy model,True,460dc4edc917a90e984bf0747c41c85ac8623933e55567b712182672764f65ed,Only the IBIS filename provenance header differs

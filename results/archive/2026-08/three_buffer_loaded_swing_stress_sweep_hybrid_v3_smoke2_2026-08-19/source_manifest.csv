@@ -1,2 +1,0 @@
-device,direction,target_percent,baseline_waveform,hybrid_raw,hybrid_log,hspice_reused
-io_buf,short_high,70,results\three_buffer_loaded_swing_stress_sweep_2026-08-14\figures\io_buf\short_high\swing_70\waveforms.csv,results\three_buffer_loaded_swing_stress_sweep_hybrid_v3_smoke2_2026-08-19\ngspice_runs\io_buf\edge_50ps\fast_5ps\cases\short_high_swing70\ngspice_hybrid\run.raw,results\three_buffer_loaded_swing_stress_sweep_hybrid_v3_smoke2_2026-08-19\ngspice_runs\io_buf\edge_50ps\fast_5ps\cases\short_high_swing70\ngspice_hybrid\ngspice_stdout.log,True

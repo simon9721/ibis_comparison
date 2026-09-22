@@ -1,3 +1,0 @@
-device,profile,load,case_id,figure
-io_buf,fast_5ps,r50_c2pf,short_high_custom_1p75ns,results\three_buffer_pad_matched_replay_v2_true_output_2026-08-11\io_buf\plots\cases\io_buf\fast_5ps\r50_c2pf\short_high_custom_1p75ns.png
-io_buf,fast_5ps,r50_c2pf,short_high_custom_1p75ns,results\three_buffer_pad_matched_replay_v2_true_output_2026-08-11\io_buf\plots\diagnostics\io_buf\fast_5ps\short_high_custom_1p75ns.png

@@ -1,5 +1,0 @@
-native_fall_shift_ps,native_rise_shift_ps,native_rmse_mv,native_worst_mv,pybis_fall_shift_ps,pybis_rise_shift_ps,pybis_rmse_mv,pybis_worst_mv,seconds,variant
-3.7091,-0.0136,3.8488,91.8585,7.9477,9.3448,11.2545,188.7472,112.7,base8
-3.3785,0.8563,3.2206,83.4207,7.5364,9.5301,10.9497,178.9747,110.0,stage4
-1.4185,-2.77,1.9504,40.5767,5.8928,7.1211,6.403,115.1765,107.6,skewp
-0.0448,-3.2798,1.9185,36.4942,4.2666,7.2303,5.4673,64.4849,125.0,weak

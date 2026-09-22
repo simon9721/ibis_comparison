@@ -74,3 +74,8 @@ media/
 results/**/w*ps/*/input.ibs
 __pycache__/
 results/**/slides/
+
+# The archive's month folders live on OneDrive (ibis_comparison_results_archive/, one zip
+# per month); results/ARCHIVE_INDEX.md says which zip holds what. Only the archive's
+# README.md and BATCH_*.md stay tracked here.
+results/archive/*/

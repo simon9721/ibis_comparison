@@ -1,7 +1,0 @@
-{
-  "sparameter_smoothing": {
-    "fitting": "mean",
-    "matrix": "All",
-    "window_width": 2
-  }
-}
