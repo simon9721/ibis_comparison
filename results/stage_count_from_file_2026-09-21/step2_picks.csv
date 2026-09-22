@@ -1,0 +1,12 @@
+buffer,netlist_K,pick_by_lag_at_calib_width,pick_by_fullswing_vs_shipped,pick_by_worst_peak
+ex2,3,3,3,4
+ex2_base,3,3,3,4
+ex2_slowpre,3,3,3,2
+ex2_skewp,3,3,3,5
+ex2_weak,3,3,3,4
+ex2_nomiller,3,3,3,4
+inv_chain,7,7,7,6
+inv_base8,7,7,8,6
+inv_stage4,3,3,3,3
+inv_skewp,7,8,9,7
+inv_weak,7,8,9,9
