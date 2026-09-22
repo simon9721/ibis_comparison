@@ -60,7 +60,7 @@ This runs the Hibiki I3C 0.125 mA IBIS model with five pulses into `1160 ohm` to
   --low-ns 20 `
   --edge-ps 5 `
   --vdd 1.2 `
-  --output-dir results\ngspice_lab_hibiki_1160_5pulse
+  --output-dir results/archive/2026-06/ngspice_lab_hibiki_1160_5pulse
 ```
 
 ## Config-Driven CLI
@@ -68,13 +68,13 @@ This runs the Hibiki I3C 0.125 mA IBIS model with five pulses into `1160 ohm` to
 Write an example config:
 
 ```powershell
-& 'C:\Users\simom\Desktop\Projects\spice\pybis2spice\.venv\Scripts\python.exe' scripts\ngspice_lab.py example-config results\ngspice_lab_example_config.json
+& 'C:\Users\simom\Desktop\Projects\spice\pybis2spice\.venv\Scripts\python.exe' scripts\ngspice_lab.py example-config results/archive/2026-06/loose_files/ngspice_lab_example_config.json
 ```
 
 Run from config:
 
 ```powershell
-& 'C:\Users\simom\Desktop\Projects\spice\pybis2spice\.venv\Scripts\python.exe' scripts\ngspice_lab.py run --config results\ngspice_lab_example_config.json
+& 'C:\Users\simom\Desktop\Projects\spice\pybis2spice\.venv\Scripts\python.exe' scripts\ngspice_lab.py run --config results/archive/2026-06/loose_files/ngspice_lab_example_config.json
 ```
 
 Each run writes:
@@ -101,5 +101,5 @@ The tool was verified on:
 
 Generated verified output:
 
-- `results/ngspice_lab_hibiki_1160_5pulse/plots/transient_overlay.png`
-- `results/ngspice_lab_hibiki_1160_5pulse/plots/testbench_schematic.png`
+- `results/archive/2026-06/ngspice_lab_hibiki_1160_5pulse/plots/transient_overlay.png`
+- `results/archive/2026-06/ngspice_lab_hibiki_1160_5pulse/plots/testbench_schematic.png`

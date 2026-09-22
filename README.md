@@ -55,9 +55,9 @@ with physical clock-folded eye plots generated from the transient output.
 - Reusable ngspice CLI/GUI testbench tool: [docs/ngspice_lab.md](docs/ngspice_lab.md)
 - Reusable PowerPoint toolkit: [tools/presentation_kit/README.md](tools/presentation_kit/README.md)
 - Reusable data figure editor: [tools/figure_editor/README.md](tools/figure_editor/README.md)
-- Current review plot bundle: [results/transient_review_plots_2026-05-13/README.md](results/transient_review_plots_2026-05-13/README.md)
-- Accepted benchmark bundle: [results/final_prbs_rlgc_comparison_2026-05-11/README.md](results/final_prbs_rlgc_comparison_2026-05-11/README.md)
-- Xyce pybis ladder bundle: [results/xyce_pybis_minmod_ladder_2026-05-11/README.md](results/xyce_pybis_minmod_ladder_2026-05-11/README.md)
+- Current review plot bundle: [results/archive/2026-05/transient_review_plots_2026-05-13/README.md](results/archive/2026-05/transient_review_plots_2026-05-13/README.md)
+- Accepted benchmark bundle: [results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11/README.md](results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11/README.md)
+- Xyce pybis ladder bundle: [results/archive/2026-05/xyce_pybis_minmod_ladder_2026-05-11/README.md](results/archive/2026-05/xyce_pybis_minmod_ladder_2026-05-11/README.md)
 
 ## Current Commands
 

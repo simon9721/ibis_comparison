@@ -47,16 +47,16 @@ All paths below are absolute.
 ### Core `io_buf` IBIS and pybis correlation
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\io_buf_old_new_four_overlays_2026-06-05
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/io_buf_old_new_four_overlays_2026-06-05
 C:\Users\sh3qm\code\ibis_comparison\results\hspice_rsf_io_buf_inv_chain_2026-06-04
-C:\Users\sh3qm\code\ibis_comparison\results\io_buf_fast_edge_retest_2026-06-05
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/io_buf_fast_edge_retest_2026-06-05
 ```
 
 ### Switching coefficients and interrupted transition studies
 
 ```text
 C:\Users\sh3qm\code\ibis_comparison\results\io_buf_switching_coeff_overlay_2026-06-18
-C:\Users\sh3qm\code\ibis_comparison\results\io_buf_switching_coeff_sweep_2026-06-19
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19
 C:\Users\sh3qm\code\ibis_comparison\results\io_buf_state_continuous_retrigger_2026-06-20
 C:\Users\sh3qm\code\ibis_comparison\results\io_buf_coeff_state_retrigger_2026-06-20
 C:\Users\sh3qm\code\ibis_comparison\results\io_buf_shortpulse_hybrid_retrigger_2026-06-21
@@ -69,9 +69,9 @@ C:\Users\sh3qm\code\ibis_comparison\results\io_buf_value_matched_replay_2026-06-
 ### S-parameter trust workflow and reports
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_conversion_quality_2026-06-08
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_trust_workflow_calibration_v1_2026-06-09
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_rx_trust_v2_2026-06-11
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_conversion_quality_2026-06-08
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_trust_workflow_calibration_v1_2026-06-09
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_rx_trust_v2_2026-06-11
 C:\Users\sh3qm\code\ibis_comparison\results\visual_support_pack_2026-06-12
 C:\Users\sh3qm\code\ibis_comparison\results\status_bucket_overlays_2026-06-12
 C:\Users\sh3qm\code\ibis_comparison\results\simple_good_bad_overlays_2026-06-12
@@ -80,38 +80,38 @@ C:\Users\sh3qm\code\ibis_comparison\results\simple_good_bad_overlays_2026-06-12
 ### Converted SPICE model comparison and Clarity demo
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\converted_sp_comparison_2026-06-12
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/converted_sp_comparison_2026-06-12
 ```
 
 Important document:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\converted_sp_comparison_2026-06-12\share_pack\case_01_Clarity_example_s2p\CLARITY_SP_MODEL_WALKTHROUGH.md
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/converted_sp_comparison_2026-06-12\share_pack\case_01_Clarity_example_s2p\CLARITY_SP_MODEL_WALKTHROUGH.md
 ```
 
 ### scikit-rf vector fitting campaign
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_vector_fit_campaign_v1_2026-06-12
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_vector_fit_campaign_v1_2026-06-17_fast_overnight
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_vector_fit_campaign_v1_2026-06-17_fast_overnight_v2
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_vector_fit_campaign_v1_2026-06-12
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_vector_fit_campaign_v1_2026-06-17_fast_overnight
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_vector_fit_campaign_v1_2026-06-17_fast_overnight_v2
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18
 ```
 
 Important documents:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18\README.md
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18\OVERNIGHT_ANALYSIS.md
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18\README.md
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18\OVERNIGHT_ANALYSIS.md
 ```
 
 ### BroadbandSPICE / BBS integration
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_bbs_integration_v1_2026-06-16
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_bbs_quality_tuning_v1_2026-06-17
-C:\Users\sh3qm\code\ibis_comparison\results\clarity_bbs_s2p_overlay_2026-06-19
-C:\Users\sh3qm\code\ibis_comparison\results\agilent_e5071b_bbs_s4p_overlay_2026-06-19
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_bbs_integration_v1_2026-06-16
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_bbs_quality_tuning_v1_2026-06-17
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/clarity_bbs_s2p_overlay_2026-06-19
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/agilent_e5071b_bbs_s4p_overlay_2026-06-19
 C:\Users\sh3qm\code\ibis_comparison\results\agilent_io_buf_ibis_bbs_transient_2026-06-19
 C:\Users\sh3qm\code\ibis_comparison\results\agilent_io_buf_ibis_bbs_pulsetrain_2026-06-19
 C:\Users\sh3qm\code\ibis_comparison\results\agilent_io_buf_ibis_bbs_pulsetrain_settled_2026-06-19
@@ -198,7 +198,7 @@ That slow transition was too slow for the `io_buf` reference transistor model. R
 Result folder:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\io_buf_old_new_four_overlays_2026-06-05
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/io_buf_old_new_four_overlays_2026-06-05
 ```
 
 Key numbers from that folder:
@@ -284,7 +284,7 @@ Finding:
 Result folder:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\io_buf_switching_coeff_sweep_2026-06-19
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19
 ```
 
 Key findings:
@@ -297,7 +297,7 @@ Key findings:
 The key demo folder is:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\io_buf_switching_coeff_sweep_2026-06-19\interrupted_switching_demo
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19\interrupted_switching_demo
 ```
 
 For `short_pulse_2ns_high`:
@@ -555,7 +555,7 @@ C:\Users\sh3qm\code\ibis_comparison\scripts\run_sparam_conversion_quality_study.
 ### Main v2 result
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_rx_trust_v2_2026-06-11
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_rx_trust_v2_2026-06-11
 ```
 
 Important files:
@@ -603,7 +603,7 @@ The v2 study was a linear 50 ohm pulse bench, not a nonlinear IBIS driver bench.
 
 ### v2 result summary
 
-From `results/sparam_rx_trust_v2_2026-06-11/README.md`:
+From `results/archive/2026-06/sparam_rx_trust_v2_2026-06-11/README.md`:
 
 - Candidate metric rows: 682.
 - Selected channels: 149.
@@ -668,7 +668,7 @@ C:\Users\sh3qm\code\ibis_comparison\scripts\run_sparam_vector_fit_campaign.py
 Main result:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18
 ```
 
 Important files:
@@ -735,13 +735,13 @@ This independent edge-bandwidth gate explained the HSPICE audit results better t
 Result folder:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\converted_sp_comparison_2026-06-12
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/converted_sp_comparison_2026-06-12
 ```
 
 Detailed walkthrough:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\converted_sp_comparison_2026-06-12\share_pack\case_01_Clarity_example_s2p\CLARITY_SP_MODEL_WALKTHROUGH.md
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/converted_sp_comparison_2026-06-12\share_pack\case_01_Clarity_example_s2p\CLARITY_SP_MODEL_WALKTHROUGH.md
 ```
 
 This document compares:
@@ -766,7 +766,7 @@ Test whether BroadbandSPICE/BBS can convert `sNp` to SPICE models that ngspice c
 Main BBS integration result:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\sparam_bbs_integration_v1_2026-06-16
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/sparam_bbs_integration_v1_2026-06-16
 ```
 
 Key result:
@@ -778,7 +778,7 @@ Key result:
 ### Clarity BBS overlay
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\clarity_bbs_s2p_overlay_2026-06-19
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/clarity_bbs_s2p_overlay_2026-06-19
 ```
 
 We investigated a suspicious plot where converted `S21/S12` looked like straight blue lines. The source issue was in how the converted model response was being evaluated/overlaid, not a simple conclusion that the channel itself was flat.
@@ -788,7 +788,7 @@ We investigated a suspicious plot where converted `S21/S12` looked like straight
 Important folders:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\agilent_e5071b_bbs_s4p_overlay_2026-06-19
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-06/agilent_e5071b_bbs_s4p_overlay_2026-06-19
 C:\Users\sh3qm\code\ibis_comparison\results\agilent_io_buf_ibis_bbs_transient_2026-06-19
 C:\Users\sh3qm\code\ibis_comparison\results\agilent_io_buf_ibis_bbs_pulsetrain_settled_2026-06-19
 ```
@@ -916,16 +916,16 @@ These are the most important commands for reproducing the main studies.
 
 ```powershell
 py -3.14 scripts/run_sparam_conversion_quality_study.py qualify `
-  --study-dir results/sparam_rx_trust_v2_2026-06-11 `
+  --study-dir results/archive/2026-06/sparam_rx_trust_v2_2026-06-11 `
   --skrf-target "$env:TEMP\ibis_skrf_target" `
-  --skrf-tests-dir results/sparam_conversion_quality_2026-06-08/inputs/skrf_tests `
+  --skrf-tests-dir results/archive/2026-06/sparam_conversion_quality_2026-06-08/inputs/skrf_tests `
   --extra-touchstone-dir hspice/sparam `
   --fast-calibration-profile `
   --dense-samples 501 `
   --sim-timeout 180
 
 py -3.14 scripts/run_sparam_conversion_quality_study.py audit-hspice `
-  --study-dir results/sparam_rx_trust_v2_2026-06-11 `
+  --study-dir results/archive/2026-06/sparam_rx_trust_v2_2026-06-11 `
   --skrf-target "$env:TEMP\ibis_skrf_target" `
   --sim-timeout 240 `
   --audit-stop-ns 35 `
@@ -933,16 +933,16 @@ py -3.14 scripts/run_sparam_conversion_quality_study.py audit-hspice `
   --resume
 
 py -3.14 scripts/run_sparam_conversion_quality_study.py report `
-  --study-dir results/sparam_rx_trust_v2_2026-06-11
+  --study-dir results/archive/2026-06/sparam_rx_trust_v2_2026-06-11
 ```
 
 ### Vector fitting campaign
 
 ```powershell
 py -3.14 scripts/run_sparam_vector_fit_campaign.py fit `
-  --study-dir results/sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18 `
+  --study-dir results/archive/2026-06/sparam_vector_fit_campaign_v2_phase1_overnight_2026-06-18 `
   --skrf-target "$env:TEMP\ibis_skrf_target" `
-  --skrf-tests-dir results/sparam_conversion_quality_2026-06-08/inputs/skrf_tests `
+  --skrf-tests-dir results/archive/2026-06/sparam_conversion_quality_2026-06-08/inputs/skrf_tests `
   --extra-touchstone-dir hspice/sparam `
   --phase-profile phase1 `
   --candidate-timeout-s 900 `
@@ -992,10 +992,10 @@ Purpose:
 Important result folders referenced by that report:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\prbs_rlgc_clean_2026-05-10
-C:\Users\sh3qm\code\ibis_comparison\results\final_prbs_rlgc_comparison_2026-05-11
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-05/prbs_rlgc_clean_2026-05-10
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11
 C:\Users\sh3qm\code\ibis_comparison\results\io_buf_sp_physical_eye_2026-05-11
-C:\Users\sh3qm\code\ibis_comparison\results\xyce_pybis_minmod_ladder_2026-05-11
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-05/xyce_pybis_minmod_ladder_2026-05-11
 ```
 
 ### Pybis stressed-channel behavior
@@ -1015,7 +1015,7 @@ Purpose:
 Important result folder:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\pybis_spike_trend_sweep_2026-05-12
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-05/pybis_spike_trend_sweep_2026-05-12
 ```
 
 ### Transient and eye review plots
@@ -1033,7 +1033,7 @@ Purpose:
 Important result folder:
 
 ```text
-C:\Users\sh3qm\code\ibis_comparison\results\transient_review_plots_2026-05-13
+C:\Users\sh3qm\code\ibis_comparison\results/archive/2026-05/transient_review_plots_2026-05-13
 ```
 
 ### Other historical reports

@@ -10,7 +10,7 @@ s2ibispy recipe: [io_buf_50ps.yaml](./source/io_buf_50ps.yaml) (`tr`/`tf` = `5.0
 A 20 ps candidate is retained for reference. It was tried first and rejected --
 see "Why 50 ps and not 20 ps" below.
 
-Previous file, retained: `results/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`
+Previous file, retained: `results/archive/2026-06/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`
 
 ## Why the 5 ps file had to be replaced
 

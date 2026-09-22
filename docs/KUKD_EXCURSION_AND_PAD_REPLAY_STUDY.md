@@ -171,11 +171,11 @@ The experiment is nevertheless valuable:
 
 ## Evidence Locations
 
-- Ku/Kd decomposition: `results/three_buffer_kukd_excursion_decomposition_2026-08-04`
-- Solve conditioning: `results/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning`
-- V1 nominal campaign: `results/three_buffer_pad_matched_replay_2026-08-04`
-- V1 event evidence: `results/three_buffer_pad_matched_replay_2026-08-04/event_evidence`
-- V1 load portability: `results/three_buffer_pad_matched_replay_load_portability_2026-08-04`
+- Ku/Kd decomposition: `results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04`
+- Solve conditioning: `results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning`
+- V1 nominal campaign: `results/archive/2026-08/three_buffer_pad_matched_replay_2026-08-04`
+- V1 event evidence: `results/archive/2026-08/three_buffer_pad_matched_replay_2026-08-04/event_evidence`
+- V1 load portability: `results/archive/2026-08/three_buffer_pad_matched_replay_load_portability_2026-08-04`
 - V2 campaign: `results/three_buffer_pad_matched_replay_v2_2026-08-04`
 
 ## Implementation Ownership

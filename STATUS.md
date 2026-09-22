@@ -181,8 +181,8 @@ while we worsen, so **model-vs-native** is the framing that isolates our machine
 - `docs/book_study_notes.md` — Leventhal & Green study notes
 - `docs/s2ibispy_findings.md`, `docs/delay_cmd_explained.md`, `docs/item5_followups.md`
 - `results/golden_waveform_*_2026-09-03/` — golden-waveform tests (3 buffers)
-- `results/defect_b_full_swing_2026-09-03/` — the defect-B probe
-- `results/pybis_engine_model_decoupling_2026-09-03/` — the engine/model 2×2
+- `results/archive/2026-09/defect_b_full_swing_2026-09-03/` — the defect-B probe
+- `results/archive/2026-09/pybis_engine_model_decoupling_2026-09-03/` — the engine/model 2×2
 - `results/ex2_variants_2026-09-03/`, `results/inv_chain_variants_2026-09-02/`
 - `scripts/spicelab.py` — shared SPICE plumbing (runner, stimulus, trace lookup)
 

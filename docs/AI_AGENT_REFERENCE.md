@@ -142,8 +142,8 @@ Core files:
 - `pcbauto/Wmodel.sp`
 - `scripts/run_hibiki_wmodel_baseline_ngspice.py`
 - `scripts/run_hibiki_wmodel_cascade_ngspice.py`
-- `results/hibiki_i3c_tx_0p125ma_wmodel_baseline_ngspice_2026-05-29/`
-- `results/hibiki_i3c_tx_0p125ma_wmodel_cascade_ngspice_2026-05-29/`
+- `results/archive/2026-05/hibiki_i3c_tx_0p125ma_wmodel_baseline_ngspice_2026-05-29/`
+- `results/archive/2026-05/hibiki_i3c_tx_0p125ma_wmodel_cascade_ngspice_2026-05-29/`
 
 Purpose:
 
@@ -190,7 +190,7 @@ The frozen accepted benchmark is:
 
 Primary accepted result folder:
 
-- `results/final_prbs_rlgc_comparison_2026-05-11/`
+- `results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11/`
 
 Primary accepted commands:
 
@@ -291,7 +291,7 @@ Important reports and plots:
 
 - `docs/reports/PYBIS_TWO_BEHAVIORS_2026-05-13.md`
 - `docs/reports/TRANSIENT_EYE_REVIEW_2026-05-13.md`
-- `results/transient_review_plots_2026-05-13/stressed_edge50_prbs80_channel/`
+- `results/archive/2026-05/transient_review_plots_2026-05-13/stressed_edge50_prbs80_channel/`
 
 Two documented stressed behaviors:
 
@@ -398,7 +398,7 @@ The model:
 Matched `1160 ohm` ground-terminated 5-pulse run:
 
 - result folder:
-  `results/hibiki_i3c_tx_0p125ma_1160ohm_ground_5pulse_ngspice_2026-05-28/`
+  `results/archive/2026-05/hibiki_i3c_tx_0p125ma_1160ohm_ground_5pulse_ngspice_2026-05-28/`
 - average high: about `0.6034 V`
 - average low: about `0.0005 V`
 - average 10-90 rise: about `3.561 ns`
@@ -594,36 +594,36 @@ Plans and summary docs:
 
 Accepted io_buf benchmark:
 
-- `results/final_prbs_rlgc_comparison_2026-05-11/`
-- `results/final_prbs_rlgc_comparison_2026-05-11/final_metrics_summary.csv`
-- `results/final_prbs_rlgc_comparison_2026-05-11/pairwise_error_summary.csv`
+- `results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11/`
+- `results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11/final_metrics_summary.csv`
+- `results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11/pairwise_error_summary.csv`
 
 Normal/stressed review plots:
 
-- `results/transient_review_plots_2026-05-13/normal_prbs_channel/`
-- `results/transient_review_plots_2026-05-13/stressed_edge50_prbs80_channel/`
+- `results/archive/2026-05/transient_review_plots_2026-05-13/normal_prbs_channel/`
+- `results/archive/2026-05/transient_review_plots_2026-05-13/stressed_edge50_prbs80_channel/`
 
 Pybis behavior sweeps:
 
-- `results/pybis_spike_trend_sweep_2026-05-12/`
+- `results/archive/2026-05/pybis_spike_trend_sweep_2026-05-12/`
 
 Refspice/pybis correlation:
 
-- `results/refspice_pybis_correlation_study_2026-05-27/`
+- `results/archive/2026-05/refspice_pybis_correlation_study_2026-05-27/`
 - `clean_ibis_vs_pybis_matched_pkg/`
 - `inv_chain/`
 
 Hibiki weak-driver:
 
-- `results/hibiki_i3c_tx_0p125ma_ngspice_2026-05-28/`
-- `results/hibiki_i3c_tx_0p125ma_1160ohm_ngspice_2026-05-28/`
-- `results/hibiki_i3c_tx_0p125ma_1160ohm_ground_5pulse_ngspice_2026-05-28/`
+- `results/archive/2026-05/hibiki_i3c_tx_0p125ma_ngspice_2026-05-28/`
+- `results/archive/2026-05/hibiki_i3c_tx_0p125ma_1160ohm_ngspice_2026-05-28/`
+- `results/archive/2026-05/hibiki_i3c_tx_0p125ma_1160ohm_ground_5pulse_ngspice_2026-05-28/`
 
 Hibiki Wmodel:
 
 - `pcbauto/Wmodel.sp`
-- `results/hibiki_i3c_tx_0p125ma_wmodel_baseline_ngspice_2026-05-29/`
-- `results/hibiki_i3c_tx_0p125ma_wmodel_cascade_ngspice_2026-05-29/`
+- `results/archive/2026-05/hibiki_i3c_tx_0p125ma_wmodel_baseline_ngspice_2026-05-29/`
+- `results/archive/2026-05/hibiki_i3c_tx_0p125ma_wmodel_cascade_ngspice_2026-05-29/`
 
 Reusable tools:
 
@@ -639,7 +639,7 @@ Reusable tools:
 
 For io_buf comparison:
 
-1. Keep `results/final_prbs_rlgc_comparison_2026-05-11/` as the accepted
+1. Keep `results/archive/2026-05/final_prbs_rlgc_comparison_2026-05-11/` as the accepted
    benchmark baseline unless the user explicitly changes the benchmark.
 2. If continuing Xyce pybis research, focus on reducing modification level from
    `edge15_flat4p2` toward less-relaxed variants without losing the 1000 ns

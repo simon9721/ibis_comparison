@@ -37,10 +37,10 @@ At an interrupted transition, the targets can reverse quickly, but the capacitor
 
 ### Figures
 
-- [io_buf GUP/GDN waveforms](../results/three_buffer_gup_gdn_waveforms_2026-08-04/plots/io_buf_gup_gdn_waveforms.png)
-- [inv_chain GUP/GDN waveforms](../results/three_buffer_gup_gdn_waveforms_2026-08-04/plots/inv_chain_gup_gdn_waveforms.png)
-- [ex2 GUP/GDN waveforms](../results/three_buffer_gup_gdn_waveforms_2026-08-04/plots/ex2_gup_gdn_waveforms.png)
-- [Runtime reversal example](../results/ibis_kukd_handwritten_notes_deck/generated_assets/04_real_gup_gdn_reversal.png)
+- [io_buf GUP/GDN waveforms](../results/archive/2026-08/three_buffer_gup_gdn_waveforms_2026-08-04/plots/io_buf_gup_gdn_waveforms.png)
+- [inv_chain GUP/GDN waveforms](../results/archive/2026-08/three_buffer_gup_gdn_waveforms_2026-08-04/plots/inv_chain_gup_gdn_waveforms.png)
+- [ex2 GUP/GDN waveforms](../results/archive/2026-08/three_buffer_gup_gdn_waveforms_2026-08-04/plots/ex2_gup_gdn_waveforms.png)
+- [Runtime reversal example](../results/archive/2026-07/ibis_kukd_handwritten_notes_deck/generated_assets/04_real_gup_gdn_reversal.png)
 
 The direct three-buffer figures contain three columns:
 
@@ -52,7 +52,7 @@ Blue is the capacitor-backed state, gray is its command target, red is the mappe
 
 The numerical data behind every panel are under:
 
-`results/three_buffer_gup_gdn_waveforms_2026-08-04/source_data/`
+`results/archive/2026-08/three_buffer_gup_gdn_waveforms_2026-08-04/source_data/`
 
 ## 2. GUP/GDN and Ku/Kd Are Different Quantities
 
@@ -114,8 +114,8 @@ The solve was not close to singular. The excursion was driven primarily by the d
 
 Evidence:
 
-- [Solve-conditioning report](../results/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning/README.md)
-- [Conditioning versus excursion figure](../results/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning/solve_conditioning_vs_excursion.png)
+- [Solve-conditioning report](../results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning/README.md)
+- [Conditioning versus excursion figure](../results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning/solve_conditioning_vs_excursion.png)
 
 ## 4. Fast and Slow io_buf Behave Differently
 
@@ -152,9 +152,9 @@ The base map and residual were keyed by inconsistent progress information during
 
 Evidence:
 
-- [Hybrid Kd excursion decomposition](../results/three_buffer_kukd_excursion_decomposition_2026-08-04/plots/02_io_buf_hybrid_kd_excursion_decomposition.png)
-- [Hybrid event samples](../results/three_buffer_kukd_excursion_decomposition_2026-08-04/io_buf_hybrid_event_samples.csv)
-- [Hybrid excursion summary](../results/three_buffer_kukd_excursion_decomposition_2026-08-04/io_buf_hybrid_excursion_summary.csv)
+- [Hybrid Kd excursion decomposition](../results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/plots/02_io_buf_hybrid_kd_excursion_decomposition.png)
+- [Hybrid event samples](../results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/io_buf_hybrid_event_samples.csv)
+- [Hybrid excursion summary](../results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/io_buf_hybrid_excursion_summary.csv)
 
 ## 6. Practical Rule
 

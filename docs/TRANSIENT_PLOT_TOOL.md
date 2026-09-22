@@ -82,9 +82,9 @@ each non-reference trace.
 
 ```powershell
 python scripts\transient_plot.py `
-  --trace "results\pybis_spike_trend_sweep_2026-05-12\runs\hist_h1_g1_p3_30cm_loss5\xyce_ref\hist_h1_g1_p3_30cm_loss5_xyce_ref.cir.csv|v(n10b)|Xyce refspice|xyce" `
-  --trace "results\pybis_spike_trend_sweep_2026-05-12\runs\hist_h1_g1_p3_30cm_loss5\xyce_pybis\hist_h1_g1_p3_30cm_loss5_xyce_pybis.cir.csv|v(n10b)|Xyce pybis|xyce" `
-  --trace "results\pybis_spike_trend_sweep_2026-05-12\runs\hist_h1_g1_p3_30cm_loss5\ngspice_pybis_corrected\hist_h1_g1_p3_30cm_loss5_ngspice_pybis_corrected.raw|v(n10b)|ngspice pybis corrected|ngspice" `
+  --trace "results/archive/2026-05/pybis_spike_trend_sweep_2026-05-12\runs\hist_h1_g1_p3_30cm_loss5\xyce_ref\hist_h1_g1_p3_30cm_loss5_xyce_ref.cir.csv|v(n10b)|Xyce refspice|xyce" `
+  --trace "results/archive/2026-05/pybis_spike_trend_sweep_2026-05-12\runs\hist_h1_g1_p3_30cm_loss5\xyce_pybis\hist_h1_g1_p3_30cm_loss5_xyce_pybis.cir.csv|v(n10b)|Xyce pybis|xyce" `
+  --trace "results/archive/2026-05/pybis_spike_trend_sweep_2026-05-12\runs\hist_h1_g1_p3_30cm_loss5\ngspice_pybis_corrected\hist_h1_g1_p3_30cm_loss5_ngspice_pybis_corrected.raw|v(n10b)|ngspice pybis corrected|ngspice" `
   --window 11.5ns 14ns `
   --marker 12.77ns:rise-spike `
   --diff-to 0 `
@@ -98,7 +98,7 @@ The tool was tested against real files from all three simulator families.
 
 Output folder:
 
-- `results/transient_plot_tool_validation_2026-05-13/`
+- `results/archive/2026-05/transient_plot_tool_validation_2026-05-13/`
 
 Generated examples:
 

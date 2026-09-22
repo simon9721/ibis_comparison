@@ -13,16 +13,16 @@ The purpose is to make every later short-pulse experiment answer one clean quest
 - IBIS model: `driver`
 - pybis mode for the frozen baseline: `InputDriven`
 - HSPICE reference: native IBIS `B` element
-- Main baseline result folder: `results/io_buf_switching_coeff_sweep_2026-06-19`
-- Main interrupted-switching demo: `results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo`
+- Main baseline result folder: `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19`
+- Main interrupted-switching demo: `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo`
 
 ## Reference Integrity Update: 2026-07-23
 
 The frozen studies above use the old slow-characterized `hspice/sparam/io_buf.ibs`. They remain valid measurements of how pybis and HSPICE replay that specific file, but they are not yet a production baseline for the regenerated 5 ps IBIS.
 
-A controlled HSPICE sweep in `results/io_buf_hspice_capacitance_driver_strength_2026-07-23` found two stale-reference effects:
+A controlled HSPICE sweep in `results/archive/2026-07/io_buf_hspice_capacitance_driver_strength_2026-07-23` found two stale-reference effects:
 
-- The native-IBIS short-pulse reference selected the old slow-edge file. The regenerated file is `results/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`.
+- The native-IBIS short-pulse reference selected the old slow-edge file. The regenerated file is `results/archive/2026-06/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`.
 - The previous transistor reference used `models/hspice_ngspice.mod`, which was modified for ngspice. The IBIS source transistor uses the original HSPICE card `../s2ibispy/tests/hspice.mod`.
 
 With `50 ohm || 2 pF`, the old IBIS is `511.3 ps` later than the correct source transistor on the rising edge. The regenerated 5 ps IBIS differs from that transistor by only `9.0 ps` on rise and `3.9 ps` on fall. Their loaded strength also agrees: `56.81 ohm` versus `56.82 ohm` effective pullup resistance.
@@ -189,13 +189,13 @@ Notes:
 
 For the short-pulse baseline, the actual deck is:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.sp`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.sp`
 
 The matching HSPICE outputs are:
 
-- `results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.tr0`
-- `results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.lis`
-- `results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/hspice_stdout.log`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.tr0`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.lis`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/hspice_stdout.log`
 
 ## ngspice+pybis Baseline Setup
 
@@ -209,12 +209,12 @@ py -3.14 scripts/convert_ibis_to_pybis.py `
   --io-type Output `
   --subcircuit-type InputDriven `
   --corner Typical `
-  --out results/io_buf_switching_coeff_sweep_2026-06-19/common/driver_OutputInput_Typical.sub
+  --out results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/common/driver_OutputInput_Typical.sub
 ```
 
 The generated subcircuit is:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/common/driver_OutputInput_Typical.sub`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/common/driver_OutputInput_Typical.sub`
 
 The short-pulse ngspice deck instantiates that subcircuit like this:
 
@@ -241,12 +241,12 @@ Notes:
 
 For the short-pulse baseline, the actual deck is:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.sp`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.sp`
 
 The matching ngspice outputs are:
 
-- `results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.raw`
-- `results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/ngspice_stdout.log`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.raw`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/ngspice_stdout.log`
 
 The local unattended ngspice executable is:
 
@@ -263,7 +263,7 @@ Run example:
 
 Run it from the ngspice case folder:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis`
 
 ## Cached Reference Artifacts
 
@@ -279,7 +279,7 @@ The current scripts use two reuse layers:
 
 2. Existing per-study output:
 
-   `results/io_buf_switching_coeff_sweep_2026-06-19/cases/<case>/hspice_native_ibis/*.tr0`
+   `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/<case>/hspice_native_ibis/*.tr0`
 
 The cache key includes:
 
@@ -316,11 +316,11 @@ For `short_pulse_2ns_high`:
 
 - Baseline raw:
 
-  `results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.raw`
+  `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.raw`
 
 - Common aligned waveform CSV:
 
-  `results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/aligned_waveforms.csv`
+  `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/aligned_waveforms.csv`
 
 Use this frozen baseline when the question is:
 
@@ -377,7 +377,7 @@ Interpretation:
 
 The cleanest baseline figures are in:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/figures`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/figures`
 
 Main figures:
 
@@ -388,11 +388,11 @@ Main figures:
 
 The demo README is:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/README.md`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/README.md`
 
 The demo metrics are:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/demo_metrics.csv`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/demo_metrics.csv`
 
 ## Standard Figure Set For New Redo Studies
 
@@ -501,7 +501,7 @@ Use either:
 
 For `short_pulse_2ns_high`, the reference waveform is:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.tr0`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/hspice_native_ibis/short_pulse_2ns_high_hspice_native_ibis.tr0`
 
 ### Optional HSPICE Transistor-Level Pad Reference
 
@@ -528,7 +528,7 @@ This transistor-level flow does not replace the HSPICE native IBIS coefficient r
 
 Use the legacy baseline when judging improvement:
 
-`results/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.raw`
+`results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/short_pulse_2ns_high/ngspice_pybis/short_pulse_2ns_high_ngspice_pybis.raw`
 
 The comparison should include:
 
@@ -591,9 +591,9 @@ py -3.14 scripts/run_io_buf_switching_coeff_sweep.py
 
 This regenerates:
 
-- `results/io_buf_switching_coeff_sweep_2026-06-19/metrics_by_case.csv`
-- `results/io_buf_switching_coeff_sweep_2026-06-19/cases/*`
-- `results/io_buf_switching_coeff_sweep_2026-06-19/plots/*`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/metrics_by_case.csv`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/cases/*`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/plots/*`
 
 With the current cache behavior, unchanged HSPICE references should be restored/reused rather than rerun.
 
@@ -605,9 +605,9 @@ py -3.14 scripts/make_io_buf_interrupted_switching_demo.py
 
 This regenerates:
 
-- `results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/README.md`
-- `results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/demo_metrics.csv`
-- `results/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/figures/*`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/README.md`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/demo_metrics.csv`
+- `results/archive/2026-06/io_buf_switching_coeff_sweep_2026-06-19/interrupted_switching_demo/figures/*`
 
 Clean value-matched replay redo with transistor reference:
 
@@ -630,7 +630,7 @@ This writes:
 Keep these fixed unless the experiment explicitly says otherwise:
 
 - For reproduction of the frozen old-file study: `hspice/sparam/io_buf.ibs`.
-- For the next production rebaseline: `results/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`.
+- For the next production rebaseline: `results/archive/2026-06/io_buf_fast_edge_retest_2026-06-05/source/io_buf.ibs`.
 - Component/model: `MCM Driver 1` / `driver`
 - HSPICE native IBIS settings
 - Input PWL timing for the selected case
@@ -684,11 +684,11 @@ retrigger, so their sum is not a consistent physical state.
 
 Evidence:
 
-- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/README.md`
-- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/coefficient_ranges_by_case.csv`
-- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/io_buf_hybrid_excursion_summary.csv`
-- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/plots/02_io_buf_hybrid_kd_excursion_decomposition.png`
-- `results/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning/README.md`
+- `results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/README.md`
+- `results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/coefficient_ranges_by_case.csv`
+- `results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/io_buf_hybrid_excursion_summary.csv`
+- `results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/plots/02_io_buf_hybrid_kd_excursion_decomposition.png`
+- `results/archive/2026-08/three_buffer_kukd_excursion_decomposition_2026-08-04/solve_conditioning/README.md`
 
 The exact offline 2x2 solve is not near singular. At the worst fast-`io_buf`
 falling sample, `Ku=2.193`, matrix condition is `2.919`, capacitive current is
@@ -761,9 +761,9 @@ Evidence and implementation:
 
 - `scripts/run_three_buffer_pad_matched_replay.py`
 - `scripts/analyze_three_buffer_pad_matched_replay.py`
-- `results/three_buffer_pad_matched_replay_2026-08-04/README.md`
-- `results/three_buffer_pad_matched_replay_2026-08-04/event_evidence/README.md`
-- `results/three_buffer_pad_matched_replay_2026-08-04/event_evidence/case_outcomes.csv`
+- `results/archive/2026-08/three_buffer_pad_matched_replay_2026-08-04/README.md`
+- `results/archive/2026-08/three_buffer_pad_matched_replay_2026-08-04/event_evidence/README.md`
+- `results/archive/2026-08/three_buffer_pad_matched_replay_2026-08-04/event_evidence/case_outcomes.csv`
 
 ### V2 Finding
 

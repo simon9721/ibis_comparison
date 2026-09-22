@@ -13,7 +13,7 @@ This repo's bundled `tools/pybis2spice` copy is ready to use on this machine wit
 Convert a model:
 
 ```powershell
-py -3 scripts\convert_ibis_to_pybis.py results\io_buf_fast_edge_retest_2026-06-05\source\io_buf.ibs --component "MCM Driver 1" --model driver --out results\io_buf_fast_edge_retest_2026-06-05\ngspice\driver_OutputInput_Typical.sub --list
+py -3 scripts\convert_ibis_to_pybis.py results/archive/2026-06/io_buf_fast_edge_retest_2026-06-05\source\io_buf.ibs --component "MCM Driver 1" --model driver --out results/archive/2026-06/io_buf_fast_edge_retest_2026-06-05\ngspice\driver_OutputInput_Typical.sub --list
 ```
 
 Run the smoke test:
@@ -31,5 +31,5 @@ The smoke test uses `NGSPICE_EXE` when set. If unset, it uses:
 Latest verified outputs are under:
 
 ```text
-results\io_buf_fast_edge_retest_2026-06-05\ngspice
+results/archive/2026-06/io_buf_fast_edge_retest_2026-06-05\ngspice
 ```

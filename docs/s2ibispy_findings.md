@@ -127,7 +127,7 @@ clearly-bad model and advisory on a borderline one.
 
 ## Evidence
 
-- `results/s2ibispy_edge_rate_sweep_2026-09-02/` — the four-decade `tr` sweep,
+- `results/archive/2026-09/s2ibispy_edge_rate_sweep_2026-09-02/` — the four-decade `tr` sweep,
   the 0.70 × tr law, determinism, the timeout diagnosis
 - `results/s2ibispy_parameter_selection_*_2026-09-02/` — the selector on all
   three buffers; `FINDINGS.md` in the io_buf folder covers all three

@@ -36,7 +36,7 @@ Section 11.8.2, *Is Ccomp Being Double-Counted?*, gives the diagnostic:
 > value, say 50 pF. ... If the buffer rise time changes as C_comp is varied,
 > then C_comp may be getting double counted in the simulation.
 
-**CORRECTION (see results/golden_waveform_test_2026-09-03).** I originally read
+**CORRECTION (see results/archive/2026-09/golden_waveform_test_2026-09-03).** I originally read
 this as pybis failing the test. It does not apply to pybis: 11.8.2 describes a
 simulator that uses V-T/ramp data *directly* and also hangs C_comp on the output.
 pybis back-solves Ku with the C_comp current removed, so its Ku is C_comp-free
@@ -81,7 +81,7 @@ One consequence:
 And 16.5.1: *the test circuit load should match the load specified in the V-T
 table being verified.*
 
-**We have now run this** (`results/golden_waveform_test_2026-09-03`), and it is
+**We have now run this** (`results/archive/2026-09/golden_waveform_test_2026-09-03`), and it is
 what settled the C_comp question. Originally: Everything we did compared pybis to native and to
 the transistor into an *arbitrary* load (50 ohm + 2 pF). The golden-waveform
 test is self-contained: simulate the model into the exact fixture its
