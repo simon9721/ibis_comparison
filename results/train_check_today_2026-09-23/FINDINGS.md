@@ -21,8 +21,8 @@ Rerun with the builds that choose K **and the curve shape** from the pad run's t
 
 | buffer | model | pulse 1 | settled |
 |---|---|---:|---:|
-| inv_chain | shipped | +17.5 % | -8.3 % |
-| inv_chain | file-only (universal shape) | +41.2 % | +9.6 % |
+| inv_chain | shipped | +17.5 % | -8.4 % |
+| inv_chain | file-only (universal shape) | +41.2 % | +9.7 % |
 | inv_chain | **file + shape (K6, 0.4/0.9)** | **+6.9 %** | **-6.8 %** |
 | ex2 | file + shape | -17.5 % | -19.1 % (the selector kept the universal shape, so this is the same build) |
 | io_buf | file + shape (K1, 0.5/0.7) | +6.6 % | +6.6 % |
@@ -32,14 +32,15 @@ not the 0.4/0.9 build that ngspice could not simulate on a train - so the final 
 produce that failure. The guard against scoring a truncated run stays.)*
 
 * **inv_chain's shape fix carries to the train**: better than the shipped model on both the
-  first pulse (+6.9 against +17.5 %) and settled (-6.8 against -8.3 %), where the universal
-  shape was +41.2 / +9.6 %. One buffer, but it is the one the recipe used to fail.
-* **io_buf's selected shape will not simulate a train.** The build scores 6.1 % on single
-  pulses, and on the 40 ns train deck ngspice collapses its timestep ("Reference value ..."
-  repeated) and writes a single point at t = 0. Scoring that empty trace reads as -100 %,
-  which is not a model error - the script now detects a truncated run and says so instead.
-  This is the io_buf stall the 09-10 round hit during pad calibration, and a shape the
-  selector prefers can trigger it: a robustness problem in the recipe, not just in one run.
+  first pulse (+6.9 against +17.5 %) and settled (-6.8 against -8.4 %), where the universal
+  shape was +41.2 / +9.7 %. One buffer, but it is the one the recipe used to fail.
+* **One io_buf build will not simulate a train.** The timing rule's pick (K1, 0.4/0.9) scores
+  6.1 % on single pulses, and on the 40 ns train deck ngspice collapses its timestep
+  ("Reference value ..." repeated) and writes a single point at t = 0. Scoring that empty trace
+  reads as -100 %, which is not a model error - the script now detects a truncated run and says
+  so. The waveform selector happens to pick 0.5/0.7 instead, so the final recipe avoids it, but
+  a recipe that *can* select an unsimulable model still needs a guard. This is the io_buf stall
+  the 09-10 round hit during pad calibration.
 
 ## Result: the train is where our model loses to the shipped one
 
@@ -61,8 +62,9 @@ Peak error against the transistor, per pulse and settled (pulses 4-7):
 * **On ex2 and io_buf the shipped model wins.** Our chain is built and calibrated for the
   single-pulse regime, and on a settled train it is 6-15 points worse than the model it is
   meant to improve on.
-* **Only inv_chain's track-1 build beats shipped** (-4.8 against -8.3 %), and even there the
-  file-only build does not (+9.6 %).
+* **On inv_chain both of ours beat shipped**: track-1 -4.8 % and the final file-only build
+  -6.8 %, against shipped -8.4 %. (The file-only build with the universal shape, +9.7 %, does
+  not - the shape is what turns it round.)
 * **The first pulse is the single-pulse regime** and reads like it: inv_chain +17...+41 %,
   ex2 -1...-18 %. The chain's error on pulse 1 and its error when settled are different
   quantities, and a calibration that fixes one does not fix the other.
