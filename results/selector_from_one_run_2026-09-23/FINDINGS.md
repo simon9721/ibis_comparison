@@ -63,9 +63,27 @@ one waveform** - but nothing from the other widths, which are the score. Three c
 
   The score here is the worst stressed **peak**, and a chain that turns on late can hit the
   peak while getting the pulse wrong - the same trap step 2 found when the peak alone chose K.
-  So the rms selector is not giving up 4 points; it is declining a bad trade, and the gap to
-  the oracle is mostly an artifact of scoring peaks. A fairer target would score the waveform
-  at every width, not its height.
+
+## Scored on the waveform instead, the selector is already at the limit
+
+Judging the *same* picks by the pad waveform at every width (mean rms against the transistor,
+over each pulse and its return - the thing the worst-peak number stands in for):
+
+| picks | mean | worst |
+|---|---:|---:|
+| by timing | 52.4 mV | 87.3 mV |
+| **by pad rms** | **52.3 mV** | 87.3 mV |
+| best in grid by peak | **217.3 mV** | 598.6 mV |
+| best possible in the grid | 51.7 mV | 87.3 mV |
+
+**The waveform selector is within 1 % of the best model the grid contains**, and the
+peak-chasing pick is four times worse. So there is no selector headroom left to chase on this
+grid: what remains is the model's own error, not which build gets picked. The 2.9 % "oracle"
+on the peak is a model that arrives 155-300 ps late.
+
+That also says the peak is the wrong headline number. Every result in these studies is scored
+on it, including the 12 of 12 above; a waveform score would rank some of them differently and
+would not reward a late chain.
 
 ## What it does not say
 

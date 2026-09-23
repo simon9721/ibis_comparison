@@ -62,10 +62,23 @@ def builds(dev: str):
     return out
 
 
-def pad_rms(dev: str, folder: Path) -> float:
-    """rms between the model's pad and the transistor's, over the calibration-width pulse only."""
+def pad_rms(dev: str, folder: Path, which="calib") -> float:
+    """rms between the model's pad and the transistor's, in mV.
+
+    which="calib": over the calibration-width pulse only - what a user can measure, and what the
+    selector is allowed to see. which="all": averaged over all five widths - the score the
+    worst-peak number stands in for, and a fairer one, since a model that turns on late can hit
+    the peak while getting the pulse wrong."""
     cs = gp.cases(dev)
-    depth, w, dref = cs[-1]                                # the calibration width is the deepest case
+    if which == "all":
+        v = [pad_rms_one(dev, folder, c) for c in cs]
+        v = [x for x in v if x == x]
+        return float(np.mean(v)) if v else float("nan")
+    return pad_rms_one(dev, folder, cs[-1])
+
+
+def pad_rms_one(dev: str, folder: Path, case) -> float:
+    depth, w, dref = case
     raw = folder / f"d{depth}" / "run.raw"
     # the matrix buffers keep the transistor run in the case folder; the variants one level in
     ref = dref / "run.tr0" if dev in gp.MATRIX_SET else dref / "transistor" / "run.tr0"
@@ -89,10 +102,12 @@ def main() -> int:
             continue
         for b in bs:
             b["rms"] = pad_rms(dev, b["dir"])
+            b["rms_all"] = pad_rms(dev, b["dir"], "all")
             rows.append(dict(buffer=dev, K=b["key"][0], vt=b["key"][1], alpha=b["key"][2],
                              worst_peak_pct=round(b["worst"], 1), lag_calib_ps=round(b["lag"]),
                              peak_at_calib_pct=round(b["peak_calib"], 1),
-                             pad_rms_at_calib_mV=round(b["rms"], 1) if b["rms"] == b["rms"] else ""))
+                             pad_rms_at_calib_mV=round(b["rms"], 1) if b["rms"] == b["rms"] else "",
+                             pad_rms_all_widths_mV=round(b["rms_all"], 1) if b["rms_all"] == b["rms_all"] else ""))
         ok = [b for b in bs if b["rms"] == b["rms"]]
         if not ok:
             continue
@@ -109,7 +124,12 @@ def main() -> int:
                           rms_peak=f"K{by_rms_peak['key'][0]} {by_rms_peak['key'][1]:g}/{by_rms_peak['key'][2]:g}",
                           rms_peak_pct=round(by_rms_peak["worst"], 1),
                           best_possible_pct=round(best["worst"], 1),
-                          best=f"K{best['key'][0]} {best['key'][1]:g}/{best['key'][2]:g}"))
+                          best=f"K{best['key'][0]} {best['key'][1]:g}/{best['key'][2]:g}",
+                          # the same picks judged on the waveform at every width, not the peak
+                          timing_rms_all_mV=round(by_timing["rms_all"], 1),
+                          rms_rms_all_mV=round(by_rms["rms_all"], 1),
+                          best_by_peak_rms_all_mV=round(best["rms_all"], 1),
+                          best_rms_all_mV=round(min(b["rms_all"] for b in ok), 1)))
     for name, rs in (("selector_builds.csv", rows), ("selector_picks.csv", picks)):
         with (OUT / name).open("w", newline="") as fh:
             w = csv.DictWriter(fh, fieldnames=list(rs[0]))
@@ -121,10 +141,15 @@ def main() -> int:
               f"{o['rms']:>11s} {o['rms_pct']:6.1f} % {o['rms_peak']:>17s} {o['rms_peak_pct']:6.1f} % "
               f"{o['best']:>11s} {o['best_possible_pct']:5.1f} %")
     for k, label in (("timing_pct", "timing"), ("rms_pct", "pad rms"), ("rms_peak_pct", "rms + peak gate"),
-                     ("best_possible_pct", "best in grid")):
+                     ("best_possible_pct", "best in grid, by peak")):
         v = [o[k] for o in picks]
-        print(f"  {label:16s} within 10 %: {sum(1 for x in v if x <= 10)} of {len(v)}   "
+        print(f"  {label:22s} within 10 %: {sum(1 for x in v if x <= 10)} of {len(v)}   "
               f"mean {sum(v) / len(v):.1f} %   worst {max(v):.1f} %")
+    print("\n  the same picks judged on the pad waveform at every width (mean rms, mV - lower is better)")
+    for k, label in (("timing_rms_all_mV", "timing"), ("rms_rms_all_mV", "pad rms"),
+                     ("best_by_peak_rms_all_mV", "best in grid, by peak"), ("best_rms_all_mV", "best possible")):
+        v = [o[k] for o in picks]
+        print(f"  {label:22s} mean {sum(v) / len(v):6.1f} mV   worst {max(v):6.1f} mV")
     print(f"  wrote {OUT / 'selector_picks.csv'}")
     return 0
 
