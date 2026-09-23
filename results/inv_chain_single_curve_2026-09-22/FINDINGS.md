@@ -37,11 +37,36 @@ handoff step); and the average of the two. `single_curve.csv`.
   handoff matters to the chain build, not to the shipped one. The shipped model's 66 % at the
   narrowest width is a separate, larger failure.
 
+## The rest of it: the gate is the right height and the wrong pulse
+
+The map's *level* is not the cause. `physics_map_gate_2026-09-10` fitted inv_chain's measured
+Ku-vs-gate curve with this very prior (vt 0.49, alpha 0.60, rms 0.070), and where the two
+differ - above Ku 0.8 - the real map saturates *earlier*, so the prior under-drives there. It
+cannot make the pad 17 % high.
+
+Measuring the whole gate pulse instead of its height settles it
+(`scripts/gate_pulse_shape.py`, `gate_shape.csv`, read off the step-7 builds, no new runs):
+
+| inv_chain, K = 7 | 135 | 119 | 111 | 106 | 104 |
+|---|---|---|---|---|---|
+| height, model / transistor | 1.00/1.00 | 1.00/0.99 | 0.99/0.97 | 0.95/0.94 | 0.77/0.88 |
+| peaks at (ps after the reversal) | 282/248 | 284/242 | 280/236 | 278/234 | 276/230 |
+| width at half height (ps) | 138/128 | 120/106 | 110/90 | 96/80 | 84/76 |
+| **area above 0.1 (the charge)** | **+7 %** | **+14 %** | **+22 %** | **+18 %** | **-7 %** |
+| pad peak error | +3.0 | +9.6 | +19.2 | +25.8 | +4.1 % |
+
+**The pad error tracks the gate's area, not its height.** The modelled gate reaches the right
+height, arrives ~45 ps late, and stays up 10-20 ps too long; that surplus charge is the
+overshoot. ex2 says the same from the other side: its gate area runs a steady -4...-5 % and
+its pad a steady -5...-8 %, at every width.
+
+So the stage law gets *how far* the gate goes right and *how fast it comes back* wrong. On a
+buffer whose real gate turns round in 29 ps, 10-20 ps of extra width is most of the pulse.
+
 ## Open
 
-What over-drives the pad at 106-111 ps with the gate correct and the handoff removed. Two
-candidates, neither tested: the rising branch's **level** (inv_chain's map is a 2-parameter
-prior fitted to the file, vt 0.49 / alpha 0.60 - the measured Ku-vs-gate curve may sit lower),
-and the **timing** of the drive (the build still lands 33-50 ps late, and a late drive on a
-pad that is still rising reads as a higher peak). The track-2 measured map for inv_chain is
-the direct way to separate them.
+Why the chain's gate falls too slowly. The current-limited stage has one drive per direction
+(`s_up`, `s_dn`) and the discharge fraction `x_lin * XLIN_DN_RATIO`; inv_chain is fitted with
+`x_lin` free. Whether the fall can be sharpened without spoiling the full swing - which is what
+fixes `s_dn` - is the next question, and it is the same degree of freedom the 09-10 train work
+concluded was missing.
