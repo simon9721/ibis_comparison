@@ -125,7 +125,7 @@ Read by many scripts; regenerate rather than edit.
 
 | folder | what it is | write-up | written by |
 |---|---|---|---|
-| `shape_from_stressed_run_2026-09-22` | (no write-up) | - | `scripts/shape_from_stressed_run.py` |
+| `shape_from_stressed_run_2026-09-22` | Can the one stressed run choose the Ku-vs-gate shape? | FINDINGS.md | `scripts/shape_from_stressed_run.py` |
 | `inv_chain_fall_rate_2026-09-22` | Can the chain's gate be made to fall faster? | FINDINGS.md | `scripts/inv_chain_fall_rate.py` |
 
 ## Loose files at the `results/` root
