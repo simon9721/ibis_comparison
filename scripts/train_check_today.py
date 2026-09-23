@@ -49,6 +49,7 @@ def models(dev: str):
     t7 = sc.build_dir("step2f", dev, b["k_net"][0], b["k_net"][1])
     if t7 is not None:
         out.append(("track-1", (t7 / "driver_chain.sub").read_text(encoding="utf-8"), f"K={b['k_net'][0]}"))
+    kd = sc.plateau_band(dev, "pull-down")[0] if b["k_net"][1] is not None else None
     sel = None
     p = sc.OUT / "step6_endtoend.csv"
     if p.exists():
@@ -56,10 +57,21 @@ def models(dev: str):
             if r["buffer"] == dev:
                 sel = int(r["K_selected"])
     if sel is not None:
-        kd = sc.plateau_band(dev, "pull-down")[0] if b["k_net"][1] is not None else None
         t6 = sc.build_dir("step6", dev, sel, kd)
         if t6 is not None:
             out.append(("file-only", (t6 / "driver_chain.sub").read_text(encoding="utf-8"), f"K={sel}"))
+    # step 8: the same recipe with the curve shape chosen alongside K
+    p8 = sc.OUT / "step8_picks.csv"
+    if p8.exists():
+        for r in csv.DictReader(p8.open()):
+            if r["buffer"] != dev:
+                continue
+            vt, al = (float(x) for x in r["shape_selected"].split("/"))
+            t8 = (sc.build_dir("step8", dev, int(r["K_selected"]), kd, (vt, al))
+                  or sc.build_dir("step6", dev, int(r["K_selected"]), kd))
+            if t8 is not None:
+                out.append(("file+shape", (t8 / "driver_chain.sub").read_text(encoding="utf-8"),
+                            f"K={r['K_selected']} {r['shape_selected']}"))
     return out
 
 
@@ -78,6 +90,15 @@ def main() -> int:
         print(f"\n{dev}: train W {width * 1e3:.0f} ps x {args.n}", flush=True)
         for label, text, note in models(dev):
             t_m, m = tc.run_train(OUT / dev / label.replace("/", "_"), text, sup, width, args.n)
+            if len(t_m) < 100 or float(t_m.max()) < 0.9 * pt.stop_ns(width, args.n):
+                # ngspice gave up (io_buf stalls on some builds: "Reference value ..." then nothing).
+                # Scoring the empty trace would read as -100 %, which is not a model error.
+                rows.append(dict(buffer=dev, model=label, note=note, first_pulse_err_pct="",
+                                 first_pulse_lag_ps="", settled_err_pct="", settled_lag_ps="",
+                                 transistor_peak_V="", per_pulse_err_pct="ngspice did not converge"))
+                print(f"  {label:10s} {note:6s} ngspice did not converge "
+                      f"({len(t_m)} points, {float(t_m.max()):.1f} of {pt.stop_ns(width, args.n):.1f} ns)", flush=True)
+                continue
             # settled_error returns percentages: (settled %, settled shift ps, pulse-1 %, pulse-1 shift ps)
             settled_pct, settled_lag, first_pct, first_lag = tc.settled_error(t_si, si, t_m, m, width, args.n)
             per = tc.per_pulse_aligned(t_si, si, t_m, m, width, args.n)

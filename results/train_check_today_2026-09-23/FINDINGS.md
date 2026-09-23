@@ -14,6 +14,29 @@ Three models per buffer: the converter's own **shipped** model, the **track-1** 
 C_comp, family shape, netlist K) and the **file-only** build (knee C_comp, universal shape, K
 from the timing selector). 8 pulses at 50 % duty, the width each buffer's train study used.
 
+## Step 8's models on the train: inv_chain improves, io_buf will not simulate
+
+Rerun with the builds that choose K **and the curve shape** from the pad run's timing
+(step 8), which fixed inv_chain's single-pulse error (34 -> 5 %):
+
+| buffer | model | pulse 1 | settled |
+|---|---|---:|---:|
+| inv_chain | shipped | +17.5 % | -8.3 % |
+| inv_chain | file-only (universal shape) | +41.2 % | +9.6 % |
+| inv_chain | **file + shape (K6, 0.4/0.9)** | **+6.9 %** | **-6.8 %** |
+| ex2 | file + shape | -17.5 % | -19.1 % (the selector kept the universal shape, so this is the same build) |
+| io_buf | file + shape (K1, 0.4/0.9) | - | **ngspice did not converge** |
+
+* **inv_chain's shape fix carries to the train**: better than the shipped model on both the
+  first pulse (+6.9 against +17.5 %) and settled (-6.8 against -8.3 %), where the universal
+  shape was +41.2 / +9.6 %. One buffer, but it is the one the recipe used to fail.
+* **io_buf's selected shape will not simulate a train.** The build scores 6.1 % on single
+  pulses, and on the 40 ns train deck ngspice collapses its timestep ("Reference value ..."
+  repeated) and writes a single point at t = 0. Scoring that empty trace reads as -100 %,
+  which is not a model error - the script now detects a truncated run and says so instead.
+  This is the io_buf stall the 09-10 round hit during pad calibration, and a shape the
+  selector prefers can trigger it: a robustness problem in the recipe, not just in one run.
+
 ## Result: the train is where our model loses to the shipped one
 
 Peak error against the transistor, per pulse and settled (pulses 4-7):
