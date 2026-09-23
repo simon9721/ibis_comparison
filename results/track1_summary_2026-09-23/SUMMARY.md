@@ -21,8 +21,8 @@ The recipe reads four things from the file plus one measurement:
 | what | where it comes from | study |
 |---|---|---|
 | C_comp | the file's own Ku overshoot knee - Ku cannot exceed 1, so the file rejects an impossible value | `ccomp_from_file_2026-09-22` |
-| stage count K | fit K = 1...10 to that model's Ku(t), build the band, keep the K whose **pad timing** matches | `stage_count_from_file_2026-09-21` step 6 |
-| curve shape | chosen with K, from the same timing | step 8 |
+| stage count K | fit K = 1...10 to that model's Ku(t), build the band, keep the pair whose **pad waveform** matches the one stressed run | steps 6 and 8, `selector_from_one_run_2026-09-23` |
+| curve shape | chosen together with K, from that same waveform | step 8 + the selector |
 | stage threshold | calibrated on the same stressed run | (existing) |
 
 `endtoend.png` is the per-buffer picture; the shipped IBIS model is at 35-70 % on the same
@@ -39,8 +39,8 @@ pulses where ours is at 5-10 %.
 * **A correction you should know about.** inv_chain's older 7 % numbers were wrong: the models
   they used carried the converter's old input threshold (1.4 V, from the 2 V Vinh its IBIS
   declares on a 1.8 V part), which masks its error threefold. Rebuilt on today's converter it
-  is 25.8 %, and the 12-of-12 baseline is really 11 of 12. Only inv_chain moved; every other
-  buffer is identical to the decimal.
+  is 25.8 %, so the **track-1** baseline (measured C_comp, measured shape, netlist K) is 11 of
+  12, not 12 of 12. Only inv_chain moved; every other buffer is identical to the decimal.
 * **io_buf is not the well-behaved buffer** - only its pull-up is. On short-LOW pulses it is
   16-21 points too shallow, and the reason is structural: its pull-down chain never turns on
   at all (each stage must drag the next past 0.7 of the swing, so a 163-322 ps pulse dies in
@@ -67,12 +67,16 @@ pulses where ours is at 5-10 %.
 
 ## Where I would go next
 
-1. **A better selector.** Timing alone leaves 1-6 points on the table on most buffers. Using
-   timing and peak together over the (K, shape) grid is cheap - the builds already exist.
-2. **The train as the second characterisation point**, to pin C_comp and the recovery the
-   single pulse cannot see.
-3. **io_buf's pull-down**, which needs its own stressed point and a chain that a short pulse
-   can actually propagate through.
+1. **Score the waveform, not the peak.** The worst-peak score rewards a chain that turns on
+   late (the "best" pairs in the grid lag 155-300 ps). Scoring the pad waveform at every width
+   would rank models by what we actually care about, and would change which of these results
+   look good.
+2. **The train as the second characterisation point**, to pin C_comp (its settled error is
+   monotone in C_comp where the single pulse is blind) and the recovery underneath it.
+3. **io_buf's pull-down**, which needs its own stressed point and a chain a short pulse can
+   propagate through at all.
+4. **Robustness**: one selected build (io_buf 0.4/0.9) cannot be simulated on a train. A recipe
+   that can pick an unsimulable model needs a guard.
 
 ## The studies
 
@@ -86,3 +90,4 @@ pulses where ours is at 5-10 %.
 | `io_buf_pulldown_depth_2026-09-22` | Kd is unidentifiable; the pull-down direction is 16-21 points shallow |
 | `io_buf_pulldown_calib_2026-09-23` | why: the pull-down chain is inert; the pull-up's turn-off is the knob |
 | `train_check_today_2026-09-23` | the train, where the shipped model still wins |
+| `selector_from_one_run_2026-09-23` | selecting on the whole waveform: 12 of 12 |
