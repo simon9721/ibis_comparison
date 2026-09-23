@@ -48,8 +48,9 @@ pulses where ours is at 5-10 %.
   releasing into the load. What sets the depth is the **pull-up's turn-off**: scaling that by
   1.2 takes the worst error from 21.3 to 8.9 points. `io_buf_pulldown.png`.
 * **The train is where we still lose.** On a stressed 8-pulse train the *shipped* model beats
-  ours on ex2 (-3.8 against -9.5 / -19.1 %) and io_buf (-2.0 against +4.7 / +6.6 %); only
-  inv_chain's track-1 build wins. Everything tonight optimised the single-pulse regime.
+  ours on ex2 (-3.7 against -9.5 / -19.1 %) and io_buf (-2.0 against +4.6 / +6.6 %). On
+  inv_chain the final file-only build is -6.8 % against shipped -8.4 %, and the shape fix
+  carries: its first pulse goes +41.2 -> +6.9 %. Everything tonight optimised single pulses.
 * **But the train carries C_comp**: its settled error is monotone in C_comp at about -5 % per
   pF on ex2, where the single-pulse peak is nearly blind to it. A stressed train is the
   obvious second characterisation point - though no C_comp zeroes the train error, so there is
@@ -62,8 +63,11 @@ pulses where ours is at 5-10 %.
   but when the scale is *fitted* against the full-swing Ku(t) the fit chooses 1.0 - the full
   swing cannot see it. Another parameter only a stressed observation can select.
 * **The timing selector is loose** - it reads one number out of a measured waveform. Using the
-  whole waveform instead takes the recipe to 12 of 12 and rescues ex2_weak, which the timing
-  rule had cost (8.7 -> 10.7 %).
+  whole waveform instead takes the recipe to 12 of 12 and rescues ex2_weak (10.7 -> 8.7 %).
+  Judged on the waveform at every width, that selector is **within 1 % of the best build the
+  grid contains** (52.3 against 51.7 mV), so selection is no longer the limiting part - and the
+  "best by peak" builds are four times worse on the waveform (217 mV), because the peak rewards
+  a chain that turns on late.
 
 ## Where I would go next
 

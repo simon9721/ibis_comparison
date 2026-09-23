@@ -25,7 +25,11 @@ Rerun with the builds that choose K **and the curve shape** from the pad run's t
 | inv_chain | file-only (universal shape) | +41.2 % | +9.6 % |
 | inv_chain | **file + shape (K6, 0.4/0.9)** | **+6.9 %** | **-6.8 %** |
 | ex2 | file + shape | -17.5 % | -19.1 % (the selector kept the universal shape, so this is the same build) |
-| io_buf | file + shape (K1, 0.4/0.9) | - | **ngspice did not converge** |
+| io_buf | file + shape (K1, 0.5/0.7) | +6.6 % | +6.6 % |
+
+*(Updated after the waveform selector replaced the timing rule: on io_buf it picks 0.5/0.7,
+not the 0.4/0.9 build that ngspice could not simulate on a train - so the final recipe does not
+produce that failure. The guard against scoring a truncated run stays.)*
 
 * **inv_chain's shape fix carries to the train**: better than the shipped model on both the
   first pulse (+6.9 against +17.5 %) and settled (-6.8 against -8.3 %), where the universal
@@ -43,14 +47,15 @@ Peak error against the transistor, per pulse and settled (pulses 4-7):
 
 | buffer | model | pulse 1 | settled |
 |---|---|---:|---:|
-| ex2 | shipped | -1.0 % | **-3.8 %** |
+| ex2 | shipped | -1.0 % | **-3.7 %** |
 | ex2 | track-1 | -9.2 % | -9.5 % |
 | ex2 | file-only | -17.5 % | -19.1 % |
-| inv_chain | shipped | +17.5 % | -8.3 % |
+| inv_chain | shipped | +17.5 % | -8.4 % |
 | inv_chain | track-1 | +19.7 % | **-4.8 %** |
-| inv_chain | file-only | +41.2 % | +9.6 % |
+| inv_chain | file-only | +41.2 % | +9.7 % |
+| inv_chain | **file + shape (final)** | **+6.9 %** | **-6.8 %** |
 | io_buf | shipped | -1.9 % | **-2.0 %** |
-| io_buf | track-1 | +5.2 % | +4.7 % |
+| io_buf | track-1 | +5.2 % | +4.6 % |
 | io_buf | file-only | +6.6 % | +6.6 % |
 
 * **On ex2 and io_buf the shipped model wins.** Our chain is built and calibrated for the
@@ -98,10 +103,11 @@ Two cautions before treating that as a recipe:
 The 8th pulse scores nonsense for **every** model, shipped included (+100 % on ex2, +214 % on
 io_buf): the scoring window runs past the end of the train, so the "peak" it finds is the
 settle to the rail. The settled numbers above average pulses 4-7 only.
-`gate_chain_train_calib.settled_error` averages pulses 4-8, so any settled figure taken from it
-- including those in the 09-10 and 09-13 write-ups - is contaminated by that window. It is a
-ratio of means, so the damage varies: on these nine runs it moved the answer by 0.1-0.5 points,
-not enough to change any conclusion, but the metric should be fixed before it is trusted again.
+`gate_chain_train_calib.settled_error` averaged pulses 4-8, so any settled figure taken from it
+- including those in the 09-10 and 09-13 write-ups - carries that window. It is a ratio of
+means, so the damage varies: on these runs it moved the answer by 0.1-0.5 points, not enough to
+change a conclusion. **Fixed 09-23**: it now averages pulses 4 to n-1, and the numbers in this
+file are from the fixed version.
 
 ## What follows
 

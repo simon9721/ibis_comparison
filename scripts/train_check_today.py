@@ -60,13 +60,15 @@ def models(dev: str):
         t6 = sc.build_dir("step6", dev, sel, kd)
         if t6 is not None:
             out.append(("file-only", (t6 / "driver_chain.sub").read_text(encoding="utf-8"), f"K={sel}"))
-    # step 8: the same recipe with the curve shape chosen alongside K
-    p8 = sc.OUT / "step8_picks.csv"
+    # the final recipe: K and shape chosen on the whole pad waveform of the one stressed run
+    p8 = ROOT / "results" / "selector_from_one_run_2026-09-23" / "selector_picks.csv"
     if p8.exists():
         for r in csv.DictReader(p8.open()):
             if r["buffer"] != dev:
                 continue
-            vt, al = (float(x) for x in r["shape_selected"].split("/"))
+            kk, sh = r["rms"].split(" ")
+            r = dict(r, K_selected=kk[1:], shape_selected=sh)
+            vt, al = (float(x) for x in sh.split("/"))
             t8 = (sc.build_dir("step8", dev, int(r["K_selected"]), kd, (vt, al))
                   or sc.build_dir("step6", dev, int(r["K_selected"]), kd))
             if t8 is not None:
