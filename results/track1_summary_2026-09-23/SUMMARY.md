@@ -12,8 +12,9 @@ made it. Nothing here is pushed; nine commits on
 The last point came free: selecting the stage count and curve shape on the **whole** pad
 waveform of that one run, rather than on the alignment of its falling leg, takes the recipe
 from 11 of 12 to 12 of 12 (mean 6.9 %) with no new simulation
-(`selector_from_one_run_2026-09-23`). The best pairs in the same grid average 2.9 %, so the
-selector is still the limiting part, not the model.
+(`selector_from_one_run_2026-09-23`). The best pairs in that grid average 2.9 % on the peak,
+but they get there by arriving up to 300 ps late with 4-7x the waveform error - the peak
+metric rewarding a wrong waveform - so that is not headroom the selector is missing.
 
 The recipe reads four things from the file plus one measurement:
 
@@ -60,9 +61,9 @@ pulses where ours is at 5-10 %.
   discharge rate improves the stressed pad by hand (25.8 -> 16.6 %) and the full swing with it,
   but when the scale is *fitted* against the full-swing Ku(t) the fit chooses 1.0 - the full
   swing cannot see it. Another parameter only a stressed observation can select.
-* **The timing selector is loose.** The step-8 grid contains builds at 1.2-4.2 % on nine
-  buffers; timing picks them on two. It is what makes K identifiable at all, but it is a proxy
-  for the peak, and ex2_weak got worse (8.7 -> 10.7 %) when the shape search followed it.
+* **The timing selector is loose** - it reads one number out of a measured waveform. Using the
+  whole waveform instead takes the recipe to 12 of 12 and rescues ex2_weak, which the timing
+  rule had cost (8.7 -> 10.7 %).
 
 ## Where I would go next
 

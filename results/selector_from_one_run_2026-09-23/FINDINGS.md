@@ -46,8 +46,26 @@ one waveform** - but nothing from the other widths, which are the score. Three c
 * A bonus on io_buf: the rms rule picks 0.5/0.7, avoiding the 0.4/0.9 build that the timing
   rule picks and that **ngspice cannot simulate on a train**
   (`results/train_check_today_2026-09-23/`).
-* The oracle - the best pair in the grid, which needs the answer - averages 2.9 %. So a
-  better selector is still worth 4 points on average, and the grid already contains the builds.
+* The oracle - the best pair in the grid, which needs the answer - averages 2.9 % on the peak.
+  **That headroom is not real** (corrected after first writing this): those builds win the peak
+  by arriving late with a badly wrong waveform.
+
+| buffer | rms pick: lag / pad rms | best-by-peak: lag / pad rms |
+|---|---|---|
+| ex2 | -7 ps / 56 mV | **+300 ps / 400 mV** |
+| ex2_base | -2 ps / 64 mV | +207 ps / 238 mV |
+| ex2_slowpre | +8 ps / 36 mV | +300 ps / 313 mV |
+| ex2_skewp | -27 ps / 61 mV | +155 ps / 99 mV |
+| ex2_weak | +17 ps / 40 mV | +300 ps / 204 mV |
+| ex2_nomiller | -11 ps / 59 mV | +204 ps / 238 mV |
+| inv_base8 | -9 ps / 21 mV | -58 ps / 142 mV |
+| inv_skewp | -8 ps / 15 mV | -25 ps / 58 mV |
+
+  The score here is the worst stressed **peak**, and a chain that turns on late can hit the
+  peak while getting the pulse wrong - the same trap step 2 found when the peak alone chose K.
+  So the rms selector is not giving up 4 points; it is declining a bad trade, and the gap to
+  the oracle is mostly an artifact of scoring peaks. A fairer target would score the waveform
+  at every width, not its height.
 
 ## What it does not say
 
