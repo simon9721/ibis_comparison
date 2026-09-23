@@ -22,7 +22,8 @@ GROUPS = [
      r"gate_step_prototype|gate_chain_train_calib|predriver_stages|physics_map_gate|current_limited_stages|gate_physics|"
      r"full_swing_fixtures|full_swing_silicon_kukd|residual_depth_rule|variant_gate_probe|silicon_kukd_conditioning_2026-09|"
      r"ex2_ccomp_correction|edge_rate_check|two_pulse|review_|ccomp_from_file|inv_chain_single_curve|"
-     r"inv_chain_fall_rate|shape_from_stressed_run|io_buf_pulldown_depth)"),
+     r"inv_chain_fall_rate|shape_from_stressed_run|io_buf_pulldown|inv_chain_last_stage|"
+     r"selector_from_one_run|train_check_today|track1_summary)"),
     ("Pulse trains", "", r"^(pulse_train|track2_train_check|variant_train_check)"),
     ("Open-drain", "", r"^(opendrain_|s2ibispy_parameter_selection_ex2_od_)"),
     ("Native IBIS behaviour", "", r"^native_"),
