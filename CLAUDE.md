@@ -26,6 +26,7 @@ which needs the transistor's internal nodes.
 | source netlists, model cards, vendor IBIS (inputs, never generated) | `buffers/README.md` |
 | buffer name -> supply and IBIS file | `VARIANTS` in `scripts/gate_ramp_prototype.py` |
 | variant IBIS files | `results/{ex2,inv_chain}_variants_*/<variant>/selection/tr1ps/*.ibs` |
+| **the track-1 recipe, step by step - what is fitted, selected, assumed, and why** | `docs/track1_recipe.md` |
 | the IBIS -> SPICE converter | `tools/pybis2spice/` (model text: `pybis2spice/subcircuit.py`) |
 | IBIS file -> chain model `driver.sub`, one command | `scripts/build_chain_model.py` |
 | simulator runs, parsing, stimuli, `cross()` | `scripts/spicelab.py`; deck text: `scripts/spice_decks.py` |
