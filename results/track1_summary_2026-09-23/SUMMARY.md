@@ -6,8 +6,14 @@ made it. Nothing here is pushed; nine commits on
 
 ## The headline
 
-**A model built from the IBIS file and one stressed pad run now holds 11 of 12 buffers within
+**A model built from the IBIS file and one stressed pad run now holds 12 of 12 buffers within
 ±10 %, and on inv_chain it beats the model built from probed silicon.**
+
+The last point came free: selecting the stage count and curve shape on the **whole** pad
+waveform of that one run, rather than on the alignment of its falling leg, takes the recipe
+from 11 of 12 to 12 of 12 (mean 6.9 %) with no new simulation
+(`selector_from_one_run_2026-09-23`). The best pairs in the same grid average 2.9 %, so the
+selector is still the limiting part, not the model.
 
 The recipe reads four things from the file plus one measurement:
 
