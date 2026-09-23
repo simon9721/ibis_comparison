@@ -188,6 +188,54 @@ I-V clamping the converter added changes nothing on its own.)*
 **With the loop-measured C_comp and one universal shape, 8 of 12 stay within ±10 %; the four
 misses are at 10.4-10.9 %.** C_comp is the input track 1 still takes from the probed gate.
 
+## Step 8 (09-23): choosing K and the shape together fixes inv_chain
+
+Step 6 chose K by the pad run's timing with the shape fixed at the universal default; the
+09-22 shape grid showed the same selector picks a better shape where the shape matters. Both
+come from one observation, so step 8 searches them together: every K in the file's plateau band
+x three shapes (the universal default and the grid's two best), 102 builds, of which step 6's
+34 are reused. The pair with the smallest |lag| at the calibration width wins.
+`step8_all.csv`, `step8_picks.csv`.
+
+| buffer | K / netlist | shape chosen | worst peak | with the universal shape | best pair in the grid |
+|---|---|---|---:|---:|---|
+| ex2 | 3 / 3 | 0.5 / 0.7 | 8.3 % | 8.3 | 2.3 % (K5, 0.5/0.7) |
+| ex2_base | 3 / 3 | 0.5 / 0.7 | 7.0 % | 7.0 | 2.2 % (K4) |
+| ex2_slowpre | 3 / 3 | 0.5 / 0.7 | 5.4 % | 5.4 | 2.5 % (K4) |
+| ex2_skewp | 3 / 3 | 0.5 / 0.7 | 10.0 % | 10.0 | 1.2 % (K4, 0.4/0.9) |
+| ex2_weak | 3 / 3 | 0.4 / 0.9 | **10.7 %** | 8.7 | 1.9 % (K5, 0.4/0.6) |
+| ex2_nomiller | 3 / 3 | 0.5 / 0.7 | 7.2 % | 7.2 | 1.9 % (K4) |
+| **inv_chain** | 6 / 7 | 0.4 / 0.9 | **5.1 %** | 34.2 | 5.1 % (the pick) |
+| inv_base8 | 7 / 7 | 0.4 / 0.6 | 8.4 % | 9.6 | 2.4 % (K5) |
+| inv_stage4 | 3 / 3 | 0.4 / 0.9 | 3.2 % | 3.7 | 2.9 % (K3, 0.4/0.6) |
+| inv_skewp | 7 / 7 | 0.4 / 0.6 | 8.1 % | 9.9 | 4.2 % (K6) |
+| inv_weak | 7 / 7 | 0.4 / 0.6 | 4.1 % | 5.1 | 1.9 % (K6) |
+| io_buf | 1 / 1 | 0.4 / 0.9 | 6.1 % | 7.7 | 6.1 % (the pick) |
+| **within ±10 %** | | | **11 of 12** | | |
+
+**inv_chain goes from 34.2 % to 5.1 %** - peaks -0.7 / +2.5 / +5.1 / -0.9 / -3.6, lag -9 ps,
+and its full-swing rms improves as well (35.8 against 54.0 mV). Its gate now rolls off with the
+pulse width, 1.00 / 0.98 / 0.95 / 0.87 / 0.80 against the transistor's 1.00 / 0.99 / 0.97 /
+0.94 / 0.88, instead of pinning at 1.00 until it collapses.
+
+**So inv_chain's failure was the map shape, not the discharge.** The 09-22 diagnosis - the gate
+staying up too long, the pad error tracking the gate's area - was the symptom of a wrong
+(map, gate) pairing: the tables fix only the product, and with the universal shape the implied
+gate was square where the real one rolls off. A faster final stage helped (25.8 -> 16.6 %)
+because it acts on the same coupling; changing the shape removes the cause.
+
+Note also that this file-only build now beats the **track-1** build on inv_chain (5.1 against
+25.8 %), which uses the loop-measured C_comp, the measured family shape and the netlist K.
+
+Two things the table does not hide:
+
+* **ex2_weak regresses**, 8.7 -> 10.7 %: the timing selector chose 0.4/0.9 where the universal
+  shape scored better on the peak. The count stays 11 of 12 because inv_chain enters as
+  ex2_weak leaves.
+* **The selector is not finding the best pair.** The grid contains builds at 1.2-4.2 % on nine
+  buffers; the timing picks them on only two. Timing is what makes K identifiable at all, but
+  it is a loose proxy for the peak, and a selector that used both is the obvious next step.
+
 ## Step 6 (09-22): the whole chain from the file - 11 of 12
 
 Steps 1-5 each tested one link while holding the others at a known value. Step 6 runs the

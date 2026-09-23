@@ -42,6 +42,34 @@ Peak error against the transistor, per pulse and settled (pulses 4-7):
   from the knee (ex2 2.64 pF against the measured 1.7), which the single-pulse peak is
   insensitive to - the train is not.
 
+## On the train, C_comp matters - where on a single pulse it does not
+
+The file-only build differs from the track-1 one in two ways, and steps 3, 4a and 4b already
+built each alone, so the split needed only their trains (ex2, settled):
+
+| build | C_comp | shape | settled train |
+|---|---|---|---:|
+| track-1 | 1.7 (measured) | family | **-9.5 %** |
+| step 4b | 1.7 | universal | -14.5 % |
+| file-only | 2.64 (knee) | universal | -19.1 % |
+| step 4a | 5.0 (declared) | family | -23.6 % |
+| step 3 | 5.0 | universal | -26.2 % |
+
+At the universal shape the C_comp axis is monotone and steep: **1.7 -> -14.5 %, 2.64 -> -19.1 %,
+5.0 -> -26.2 %**, about -5 % per pF. The single-pulse peak is nearly blind to C_comp once K is
+right (ex2 scores *better* at the estimated 2.31 pF than at the measured 1.7); the settled
+train is not. **So a stressed train is an observation that carries C_comp**, which is exactly
+what track 1 lacks - and it is a measurement a user can make at the pad.
+
+Two cautions before treating that as a recipe:
+
+* the shape costs 5 points on the train too (track-1 against step 4b), so the train does not
+  isolate C_comp any more than the single pulse isolates K;
+* **no C_comp zeroes it.** Extrapolating -5 %/pF from -14.5 % at 1.7 pF reaches zero only at a
+  negative C_comp. Under the settled train there is a deficit of roughly 6-9 % that C_comp
+  cannot explain - the chain's recovery between pulses, which is what the 09-10 round could not
+  fix with `x_lin` either.
+
 ## Caveat, and a defect in the earlier metric
 
 The 8th pulse scores nonsense for **every** model, shipped included (+100 % on ex2, +214 % on
