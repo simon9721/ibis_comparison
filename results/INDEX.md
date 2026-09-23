@@ -15,7 +15,10 @@ The current work. The chain is fitted to the IBIS file's Ku(t) (track 1) or to a
 
 | folder | what it is | write-up | written by |
 |---|---|---|---|
+| `shape_from_stressed_run_2026-09-22` | Can the one stressed run choose the Ku-vs-gate shape? | FINDINGS.md | `scripts/shape_from_stressed_run.py` |
+| `io_buf_pulldown_depth_2026-09-22` | io_buf's pull-down: does its chain depth matter, and does the model track it? | FINDINGS.md | `scripts/io_buf_pulldown_depth.py` |
 | `inv_chain_single_curve_2026-09-22` | Is inv_chain's 26 % the handoff between the two Ku curves? | FINDINGS.md | `scripts/gate_pulse_shape.py`, `scripts/inv_chain_single_curve.py` |
+| `inv_chain_fall_rate_2026-09-22` | Can the chain's gate be made to fall faster? | FINDINGS.md | `scripts/inv_chain_fall_rate.py` |
 | `ccomp_from_file_2026-09-22` | Can C_comp be recovered from the IBIS file alone? | FINDINGS.md | `scripts/ccomp_from_file.py` |
 | `stage_count_from_file_2026-09-21` | Can track 1 find the predriver stage count from the IBIS file? | FINDINGS.md PLAN.md | `scripts/stage_count_from_file.py` |
 | `edge_rate_check_2026-09-17` | Does model accuracy depend on the input edge rate? | README.md (generated) | `scripts/edge_rate_check.py` |
@@ -94,7 +97,6 @@ Read by many scripts; regenerate rather than edit.
 
 | folder | what it is | write-up | written by |
 |---|---|---|---|
-| `io_buf_pulldown_depth_2026-09-22` | io_buf's pull-down: does its chain depth matter, and does the model track it? | FINDINGS.md | `scripts/io_buf_pulldown_depth.py` |
 | `variant_stress_cases_2026-09-04` | Per-case figures — nine buffer variants | FIGURES.md | `scripts/variant_stress_case_figures.py` |
 | `ex2_variants_2026-09-03` | ex2 open-drain: the structural test the study had been missing | FINDINGS.md README.md | `scripts/make_ex2_opendrain_variant.py`, `scripts/make_ex2_variants.py` |
 | `inv_chain_variants_2026-09-02` | Four inverter-chain variants: what changing the silicon does | FINDINGS.md README.md | `scripts/make_inv_chain_variants.py` |
@@ -120,13 +122,6 @@ Read by many scripts; regenerate rather than edit.
 | `meeting_deck_2026-09-17` | Meeting deck — 17 September 2026 | README.md | `scripts/build_0917_deck.py`, `scripts/build_0917_deck_figures.py` |
 | `meeting_deck_2026-09-11` | Update the 2026-09-11 deck. Inserted, in order: | README.md (generated) | `scripts/build_0911_deck.py`, `scripts/build_0911_deck_figures.py` |
 | `meeting_deck_2026-09-04` | Meeting deck — 4 September 2026 | README.md | `scripts/build_0902_meeting_deck.py`, `scripts/build_cmd_clean_slides.py` |
-
-## Other
-
-| folder | what it is | write-up | written by |
-|---|---|---|---|
-| `shape_from_stressed_run_2026-09-22` | Can the one stressed run choose the Ku-vs-gate shape? | FINDINGS.md | `scripts/shape_from_stressed_run.py` |
-| `inv_chain_fall_rate_2026-09-22` | Can the chain's gate be made to fall faster? | FINDINGS.md | `scripts/inv_chain_fall_rate.py` |
 
 ## Loose files at the `results/` root
 
