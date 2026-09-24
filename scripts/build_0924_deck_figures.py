@@ -311,6 +311,9 @@ def main() -> int:
     sampling_grid("ex2")
     stage_nonlinear("ex2")
     stage_law()
+    model_blocks()
+    k_choice()
+    calib_select()
     for dev in DEV:
         works_levels(dev)
         gate_shape(dev)
@@ -403,6 +406,163 @@ def stage_nonlinear(dev: str = "ex2", depth: int | None = None) -> None:
                      fontsize=14, fontweight="bold")
         fig.tight_layout(rect=(0, 0.06, 1, 0.9))
         save(fig, f"stage_nonlinear_{dev}")
+
+
+# --------------------------------------------------------------------------- #
+# the method, step by step: what is fitted, what cannot be, and how one run decides
+# --------------------------------------------------------------------------- #
+SC = ROOT / "results" / "stage_count_from_file_2026-09-21"
+CAND = {                      # (K, shape) -> the build folder, for ex2's nine candidates
+    (k, sh): (SC / ("step6" if sh == "0.5_0.7" else "step8") / "ex2_c2.64" /
+              f"ibis_prior_K{k}_prior{sh}_xlin0.45_calibpad810")
+    for k in (3, 4, 5) for sh in ("0.5_0.7", "0.4_0.6", "0.4_0.9")
+}
+SHIPPED_FULL = SC / "knee_models" / "ex2_c2.64" / "shipped" / "full" / "run.raw"
+KCOL = {3: "#B03060", 4: "#D9842B", 5: "#2E7D6E"}
+PICK = (3, "0.5_0.7")
+
+
+def _cand(folder, which):
+    raw = sl.parse_ngspice_raw(folder / which / "run.raw")
+    t = sl.time_ns(raw) - 5.0
+    return t, sl.signal(raw, "v(x1.ku)"), sl.trace(raw, "out")
+
+
+def model_blocks() -> None:
+    """The architecture, with what is known before any measurement marked."""
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(12.4, 3.5))
+        a.set_xlim(0, 124)
+        a.set_ylim(0, 34)
+        a.axis("off")
+        def box(x, w, label, sub, fc, ec):
+            a.add_patch(plt.Rectangle((x, 16), w, 10, facecolor=fc, edgecolor=ec, lw=2.0))
+            a.text(x + w / 2, 21.4, label, ha="center", va="center", fontsize=13, fontweight="bold")
+            if sub:
+                a.text(x + w / 2, 12.6, sub, ha="center", va="top", fontsize=10.5, color=ec)
+        def arrow(x0, x1, lab=""):
+            a.annotate("", (x1, 21), (x0, 21), arrowprops=dict(arrowstyle="-|>", lw=1.8, color="#555555"))
+            if lab:
+                a.text((x0 + x1) / 2, 27.5, lab, ha="center", fontsize=11.5, fontweight="bold")
+        a.text(2, 21, "input", fontsize=13, fontweight="bold", va="center")
+        arrow(11, 17)
+        for i, x in enumerate((17, 28, 39)):
+            box(x, 9, str(i + 1), "", "#EFEFEF", "#666666")
+        a.text(51.5, 21, "\u2026", ha="center", va="center", fontsize=15)
+        box(55, 9, "K", "", "#EFEFEF", "#666666")
+        a.text(38, 8.5, "K identical current-limited stages", ha="center", fontsize=11.5,
+               color="#666666", fontweight="bold")
+        arrow(64, 72, "gate g")
+        box(72, 16, "the map", "", "#EFEFEF", REAL)
+        arrow(88, 96, "Ku")
+        box(96, 18, "I-V tables", "", "#EFEFEF", "#666666")
+        arrow(114, 121)
+        a.text(122, 21, "pad", fontsize=13, fontweight="bold", va="center")
+        # one label under both: two centred captions ran into each other
+        a.plot([72, 72, 114, 114], [14.5, 12.5, 12.5, 14.5], color="#999999", lw=1.4)
+        a.text(93, 8.5, "both straight from the file, unchanged", ha="center", fontsize=11.5,
+               color="#666666", fontweight="bold")
+        a.text(62, 1.5, "each stage:   dv/dt = s_up\u00b7h(u)\u00b7min(1, (1\u2212v)/x_lin)  \u2212  "
+                        "s_dn\u00b7h(1\u2212u)\u00b7min(1, v/x_lin),    h(u) = clip((u \u2212 vt)/(1 \u2212 vt), 0, 1)",
+               ha="center", fontsize=11, family="monospace")
+        fig.tight_layout()
+        save(fig, "model_blocks")
+
+
+def k_choice(dev: str = "ex2") -> None:
+    """What the file sees (a plateau in the fit) against what a stressed pulse sees."""
+    import csv as _csv
+    rms = None
+    with (SC / "step1_summary.csv").open(encoding="utf-8") as fh:
+        for r in _csv.DictReader(fh):
+            if r["pass_"] == "est_knee" and r["buffer"] == "ex2" and r["chain"] == "pull-up":
+                rms = [float(x) for x in r["rms_by_K"].split()]
+    Ks = np.arange(1, len(rms) + 1)
+    best = min(rms)
+    band = [k for k, v in zip(Ks, rms) if v <= 1.25 * best][:3]
+    t_si, si, _r = f17.transistor_pad("ex2", 810)
+    t_si, w = t_si - 5.0, 0.810
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(12.2, 4.3))
+        a = ax[0]
+        a.axhspan(0, 1.25 * best, color=REAL, alpha=0.10)
+        a.axhline(1.25 * best, color=REAL, lw=1.5, ls="--")
+        a.plot(Ks, rms, "o-", color=SIL, lw=2.6, ms=8, zorder=3)
+        for k in band:
+            a.plot(k, rms[k - 1], "o", color=REAL, ms=14, zorder=4)
+        a.annotate("within 25 % of the best fit:\nthe file cannot separate these",
+                   (band[1], rms[band[1] - 1]), textcoords="offset points", xytext=(28, 54),
+                   fontsize=11.5, fontweight="bold", color=REAL,
+                   arrowprops=dict(arrowstyle="->", color=REAL, lw=1.5))
+        a.set_xticks(Ks)
+        a.set_xlabel("number of stages, K")
+        a.set_ylabel("fit error against the file's Ku(t)")
+        a.set_ylim(0, max(rms) * 1.12)
+        a.set_title("what the file sees \u2014 a plateau", fontsize=13, fontweight="bold")
+        a.grid(alpha=0.3)
+
+        b = ax[1]
+        b.plot(t_si, si, color=SIL, lw=4.0, label="transistor (truth)", zorder=4)
+        for k in band:
+            t, _ku, pad = _cand(CAND[(int(k), "0.5_0.7")], "d810")
+            e, _ = _peak_err(t, pad, t_si, si, w)
+            b.plot(t, pad, color=KCOL[int(k)], lw=2.4, label=f"K = {k}   peak {e:+.0f} %")
+        b.set_xlim(w - 0.35, w + 2.0)
+        b.set_ylim(-0.12, 1.5)
+        b.set_title("what one stressed pulse sees \u2014 three different buffers",
+                    fontsize=13, fontweight="bold")
+        b.set_xlabel("time (ns)")
+        b.set_ylabel("pad (V)")
+        b.grid(alpha=0.3)
+        b.legend(loc="upper right", fontsize=10.5)
+        fig.suptitle("ex2  |  the file narrows K to a band of three and cannot choose inside it",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.91))
+        save(fig, "k_choice")
+
+
+def calib_select(dev: str = "ex2") -> None:
+    """After calibration every candidate hits the measured peak; the tail is what separates them."""
+    t_si, si, _r = f17.transistor_pad("ex2", 810)
+    t_si, w = t_si - 5.0, 0.810
+    grid = np.arange(w - 0.1, w + 1.5, 0.004)
+    ref = np.interp(grid, t_si, si)
+    rows = []
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(11.6, 4.5))
+        a.plot(t_si, si, color=SIL, lw=4.4, label="transistor (truth)", zorder=5)
+        for (k, sh), d in CAND.items():
+            t, _ku, pad = _cand(d, "d810")
+            rms = 1e3 * float(np.sqrt(np.mean((np.interp(grid, t, pad) - ref) ** 2)))
+            rows.append(((k, sh), rms))
+            is_pick = (k, sh) == PICK
+            a.plot(t, pad, color=REAL if is_pick else "#9AA5A8",
+                   lw=3.0 if is_pick else 1.5, alpha=1.0 if is_pick else 0.8,
+                   zorder=4 if is_pick else 2,
+                   label="the one it picks  (K3, 0.5/0.7)" if is_pick else None)
+        a.plot([], [], color="#9AA5A8", lw=1.5, label="the other eight candidates")
+        pk = float(si[(t_si >= w - 0.3) & (t_si <= w + 2.6)].max())
+        a.annotate("every candidate matches the measured peak:\nthe calibration put it there",
+                   (1.45, pk), textcoords="offset points", xytext=(-238, 44), fontsize=11.5,
+                   fontweight="bold", color="#444444",
+                   arrowprops=dict(arrowstyle="->", color="#444444", lw=1.4))
+        a.annotate("they separate here", (2.05, 0.26), textcoords="offset points",
+                   xytext=(30, 40), fontsize=11.5, fontweight="bold", color=REAL,
+                   arrowprops=dict(arrowstyle="->", color=REAL, lw=1.4))
+        a.set_xlim(w - 0.3, w + 2.1)
+        a.set_ylim(-0.12, 1.25)
+        a.set_xlabel("time from the input edge (ns)")
+        a.set_ylabel("pad (V)")
+        a.grid(alpha=0.3)
+        a.legend(loc="upper right", fontsize=11)
+        a.set_title("ex2  |  the calibration spends the peak, so the rest of the waveform "
+                    "is what chooses", fontsize=14, fontweight="bold")
+        fig.tight_layout()
+        save(fig, "calib_select")
+    best = min(rows, key=lambda r: r[1])
+    print("    waveform rms at the calibration width (mV): "
+          + ", ".join(f"K{k} {sh} {v:.0f}" for (k, sh), v in sorted(rows, key=lambda r: r[1])[:4]))
+    print(f"    best = K{best[0][0]} {best[0][1]}; the recipe picks K{PICK[0]} {PICK[1]}")
 
 
 if __name__ == "__main__":

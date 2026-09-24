@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 18 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 23 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout are taken from Simon's 09-18 deck; none of
 his slides are carried over.
@@ -17,15 +17,20 @@ one runs in the order the work actually went, which is the order Simon asked for
 | 4–6 | **show it works**: that map, driven by the real gate, tracks the transistor at every stress level, where native IBIS and our gate-state model do not |
 | 7–8 | **show why ours fails**: the real gate changes shape as the pulse shortens, GUP keeps one shape, and that difference is the whole error |
 | 9 | **only now the motivation**: reproduce the gate's shape from what is in the file |
-| 10 | what the file gives, and the specific way it is blind: a full transition visits only the two ends of the gate's travel |
-| 11 | one stressed pulse reaches the interior – the five widths stop the gate at 0.76 / 0.80 / 0.84 / 0.88 / 0.94, so the stress sweep is a sampling grid |
+| 10 | what the file gives, and the specific way it is blind: Ku(t) fixes the composition, not the split |
+| 11 | one stressed pulse reaches the gate – the five widths stop it at 0.76 / 0.80 / 0.84 / 0.88 / 0.94, so the stress sweep is a sampling grid |
 | 12 | what shape the gate may be: every stage under-reaches a linear filter, and the gap compounds to 0.50 against 1.00 at the pad |
 | 13 | the physics, and the four numbers it forces – drawn, not listed |
-| 14 | what we build, with the stage law written out |
-| 15 | where every number comes from, and why the peak cannot be used to choose |
-| 16 | where the recipe stands: 12 of 12 within ±10 %, and what it costs |
-| 17 | what it does not cover yet |
-| 18 | backup: inv_chain's input threshold |
+| 14 | **the model we build** |
+| 15 | step 1: C_comp, rejected by the file's own Ku ≤ 1 test |
+| 16 | step 2: the four numbers, fitted to the file's Ku(t), costing no measurement |
+| 17 | step 3: what the file cannot choose — the fit plateaus, the stressed pulse does not |
+| 18 | step 4: the stressed run's first job — bisect vt until the peak matches |
+| 19 | step 5: its second job — all nine now share the peak, so the waveform picks |
+| 20 | the recipe on one slide |
+| 21 | where it stands: 12 of 12 within ±10 %, and what it costs |
+| 22 | what it does not cover yet |
+| 23 | backup: inv_chain's input threshold |
 
 ## The correction that changed slides 4–6
 
@@ -54,16 +59,30 @@ result; slide 18 says so.
 
 ## The method half
 
-Written to the same rule as the first half: one question per slide, and nothing before the thing
-that motivates it. Three figures are new.
+Seven slides, one idea each, every one with something on screen. The first version compressed
+all of it into two text slides, which is not something a viewer can follow in sequence.
 
-`sampling_grid` puts the five probed gates on one axis with the full transition behind them, so
-"each width stops the clock at a different point of the same path" is something you can see
-rather than a claim. `stage_nonlinear` is the evidence for the stage law: every probed stage
-against what a linear filter would give at the deepest pulse, with the gap compounding down the
-chain — 1.03 against 1.04 at the first stage, 0.50 against 1.00 at the pad. The superposition
-itself comes from `predriver_stage_probe`, which owns it. `stage_law` draws the four numbers as
-geometry rather than listing them, because a threshold, a slope and a taper are easier seen.
+Four figures are new and all are drawn from candidate builds already on disk in
+`stage_count_from_file_2026-09-21` — ex2's nine candidates (3 stage counts × 3 map shapes),
+each with a full-swing run and five stressed ones.
+
+`model_blocks` separates what we build from what comes out of the file untouched. `k_choice` is
+the crux: on the left the fit error against the file's Ku(t) at every K, flat past K = 3 — what
+the file sees; on the right the three candidates inside that band on one 810 ps pulse, three
+completely different buffers. `calib_select` then shows all nine after calibration, sharing the
+measured peak by construction and separating in the tail, with the picked one on the transistor.
+Its rms numbers are computed when the figure builds: 59 mV for the pick against 84, 140 and
+worse — on this buffer the rule picks the best of the nine outright.
+
+Two numbers on slide 18 come from the build log rather than a figure: the file-fitted threshold
+vt = 0.700 leaves ex2's 810 ps pad **97 % low**, and the bisection moves it to 0.632.
+
+### A figure that had to be rebuilt
+
+`k_choice` first drew the nine built models' full-swing Ku(t) captioned "indistinguishable".
+They are not — they are post-calibration, and the calibration moves vt, which moves the
+timing. What the file actually sees is the fit residual before any stressed run touches the
+model, so the panel now shows that instead.
 
 ## Known gaps, stated on the slides
 

@@ -205,7 +205,7 @@ slide("6 · What the file gives, and what is missing",
        "**That is why our GUP passes the full-swing check and fails under stress:** it is one "
        "legal split, and not the right one."],
       size=17,
-      notes="Slide 15 is the measured form of this - at K = 7 and K = 9 the model fits the file "
+      notes="Slide 13 is the measured form of this - at K = 7 and K = 9 the model fits the file "
             "to the same four decimal places and predicts stressed gates running from "
             "extinguished to almost intact. Same composition, different split.")
 
@@ -246,39 +246,93 @@ slide("9 \u00b7 The physics that explains it, and the four numbers it forces",
             "at 0.45 on most buffers, inside the 0.37-0.63 the real probed stages fitted. This "
             "slide answers 'what are the equations and where do the numbers come from'.")
 
-slide("10 · What we build",
-      ["**input  →  K identical current-limited stages  →  gate g  →  the map  "
-       "→  Ku  →  the file's own I-V tables  →  the pad**",
-       "",
-       "Each stage:   dv/dt = s_up·h(u)·min(1, (1−v)/x_lin)  −  "
-       "s_dn·h(1−u)·min(1, v/x_lin),   with h(u) = clip((u − vt)/(1 − vt), 0, 1)",
-       "",
-       "All K stages share one set of the four numbers — a real tapered predriver is "
-       "approximately that, and letting them differ makes the fit degenerate.",
-       "**Two things are still unknown: how many stages, and the shape of the map.** Neither can "
-       "be fitted to the file — that is what the stressed run is spent on."],
-      size=17,
-      notes="The map here is the two-parameter MOSFET-shaped curve, not the measured one: track "
-            "1 has no probe. Its shape is one of the two things the stressed run selects.")
+slide("The model we build",
+      ["Everything to the right of the gate is the file's own, untouched: the map turns the gate "
+       "into Ku, and Ku scales the file's I-V tables. That part we have already shown is right.",
+       "**What we are building is the left-hand box** — a chain of K identical current-limited "
+       "stages standing in for the predriver we cannot see."],
+      F24 / "model_blocks.png",
+      notes="Worth saying out loud that the right-hand half is not ours and is not in question. "
+            "The whole method is about producing a gate.")
 
-slide("11 · Where every number comes from",
-      ["**From the file alone:** C_comp — kept unless the file's own arithmetic rejects it, "
-       "since Ku cannot exceed 1 and ex2's declared 5.0 pF implies 1.24 — and s_up, s_dn, "
-       "vt, x_lin, fitted to the file's Ku(t).",
-       "**From the one stressed pad run:** the stage count K and the map's shape. The file "
-       "narrows K to a band of about three and cannot choose inside it: at K = 7 and K = 9 it "
-       "fits to the same four decimal places, while the gate they predict runs from extinguished "
-       "to almost intact.",
-       "**The run is spent twice, in order:** first it sets the amplitude by moving vt, then it "
-       "picks among the nine candidates (3 stage counts × 3 shapes) on the whole pad waveform.",
-       "**Not on the peak** — the first step has just matched the peak for every candidate, "
-       "so the peak has no information left to rank them with."],
+slide("Step 1 — C_comp, from the file's own arithmetic",
+      ["C_comp is not a model parameter. It is a number in the file that **the file's own Ku "
+       "tables were solved with**, so a wrong value inflates the curve everything downstream is "
+       "fitted to.",
+       "Ku is a conducting fraction, so it cannot exceed 1. **ex2's declared 5.0 pF implies "
+       "Ku = 1.24** — impossible, so the file rejects its own declared value.",
+       "Rule: keep what the file declares unless it implies Ku > 1; then take the value at which "
+       "Ku just reaches 1. On ex2 that reads 2.64 pF, against 1.70 measured by the loop.",
+       "**55 % off the measured value, and it still works** — the stressed peak is not sharp "
+       "in C_comp once it is in the right range."],
       size=17,
-      notes="The peak point is the one that cost a night's work: ranking on the peak selects "
-            "chains that turn on 155-300 ps late and hit the right height with the wrong pulse "
-            "under it.")
+      notes="The loop measurement is the hysteresis plot from slide 3, used as an instrument - "
+            "a wrong C_comp opens the loop because dV/dt flips sign between rise and fall. Track "
+            "1 cannot use it, because it needs the probed gate.")
 
-slide("12 · Where the file-only recipe stands",
+slide("Step 2 — the four numbers, fitted to the file",
+      ["For a given number of stages, the four numbers are fitted so that the chain's output, "
+       "put through the map, reproduces **the file's own full-swing Ku(t)**.",
+       "Nelder–Mead, three restarts. No measurement is involved — the target is a curve "
+       "the file already contains.",
+       "**So the stage law costs nothing. What it does not give us is K, or the map's shape.**",
+       "",
+       "Why not? Because a stage count that fits the file worse by a few per cent can behave "
+       "completely differently under stress — which is the next slide."],
+      size=17,
+      notes="x_lin is pinned at 0.45 on most buffers rather than fitted, a value inside the "
+            "0.37-0.63 the real probed stages gave. p is assumed at 1.")
+
+slide("Step 3 — what the file cannot choose",
+      ["Left: the fit error against the file's Ku(t), for every stage count. Past K = 3 it is "
+       "**flat** — the file has nothing left to say.",
+       "Right: the three candidates inside that band, on one 810 ps stressed pulse. Same file, "
+       "same fit quality, **three completely different buffers**.",
+       "**So the file gives a band of three, and the map's shape is under-determined in exactly "
+       "the same way.** Three stage counts × three map shapes = nine candidates."],
+      F24 / "k_choice.png",
+      notes="The three shapes are (0.50, 0.70), (0.40, 0.60) and (0.40, 0.90). Note on the right "
+            "that all three already match the PEAK - that is the calibration of the next slide, "
+            "and it is why the peak cannot be the thing that chooses.")
+
+slide("Step 4 — the stressed run, first job: set the amplitude",
+      ["Now the one measured waveform enters. Its first job is to fix how hard the chain drives.",
+       "**The parameters fitted to the file alone are nowhere near right under stress.** On ex2 "
+       "at K = 3 the fitted threshold vt = 0.700 gives a pad **97 % too low** on the 810 ps pulse.",
+       "So bisect vt until the model's peak matches the measured one — seven ngspice runs, "
+       "0.700 → **0.632**.",
+       "**Why vt and not the drive rates?** The rates were fitted to reproduce the full swing, "
+       "and moving them breaks it. vt changes *when* the chain hands off, not how fast it runs."],
+      size=17,
+      notes="The bracket the bisection starts from, printed in the build log: vt = 0 gives "
+            "+40.1 %, vt = 0.7 gives -97.1 %. Every one of the nine candidates gets this "
+            "treatment, which is what makes the peak useless for choosing between them.")
+
+slide("Step 5 — the stressed run, second job: pick one",
+      ["All nine candidates have now been calibrated, so **all nine hit the measured peak** — "
+       "the calibration put it there. The peak has no information left in it.",
+       "They differ everywhere else. Compare the **whole** measured waveform instead, over the "
+       "pulse and its return, and one candidate wins: K = 3 with the 0.50/0.70 shape, at 59 mV "
+       "rms against 84, 140 and worse for the rest.",
+       "**Ranking on the peak instead picks a chain that arrives up to 300 ps late** with four "
+       "times the waveform error."],
+      F24 / "calib_select.png",
+      notes="The rms numbers are computed in build_0924_deck_figures.calib_select and printed "
+            "when it runs. On this buffer the rule picks the best of the nine outright.")
+
+slide("The recipe, on one slide",
+      ["**From the file alone:** C_comp, kept unless the file's own Ku > 1 test rejects it; then "
+       "s_up, s_dn, vt and x_lin fitted to the file's Ku(t), for each stage count in the band.",
+       "**From the file, but undetermined by it:** the stage count K (a band of three) and the "
+       "map's shape (three candidates) — nine models in all.",
+       "**From one stressed pad run, in order:** bisect vt until the peak matches; then pick the "
+       "candidate whose whole waveform matches.",
+       "**Nothing is probed.** The only measurement is a pad voltage, taken from outside the "
+       "chip with ordinary equipment."],
+      size=17,
+      notes="This is the slide to leave up during questions.")
+
+slide("Where the file-only recipe stands",
       ["**12 of 12 buffers within ±10 % on the worst stressed pulse; mean 6.9 %.**",
        "On inv_chain the file-only build reaches 5.1 %, against 25.8 % for a build that uses the "
        "probed silicon — the shape choice matters more than the measurement.",
@@ -289,7 +343,7 @@ slide("12 · Where the file-only recipe stands",
       notes="Grey is the shipped model, blue the build using probed silicon, red the file-only "
             "one. Full numbers in docs/track1_recipe.md.")
 
-slide("13 · What this does not cover yet",
+slide("What this does not cover yet",
       ["**Direction.** Everything here is a short HIGH pulse. Only io_buf has been run pulling "
        "down, where the model is 16–21 points too shallow — its pull-down chain never "
        "turns on at all on a short pulse.",
