@@ -322,6 +322,9 @@ def main() -> int:
     map_summary()
     what_we_have()
     coverage()
+    four_numbers()
+    ccomp_reject()
+    pick_rank()
     for dev in DEV:
         works_levels(dev)
         gate_shape(dev)
@@ -470,9 +473,6 @@ def model_blocks() -> None:
         a.plot([72, 72, 114, 114], [14.5, 12.5, 12.5, 14.5], color="#999999", lw=1.4)
         a.text(93, 8.5, "both straight from the file, unchanged", ha="center", fontsize=11.5,
                color="#666666", fontweight="bold")
-        a.text(62, 1.5, "each stage:   dv/dt = s_up\u00b7h(u)\u00b7min(1, (1\u2212v)/x_lin)  \u2212  "
-                        "s_dn\u00b7h(1\u2212u)\u00b7min(1, v/x_lin),    h(u) = clip((u \u2212 vt)/(1 \u2212 vt), 0, 1)",
-               ha="center", fontsize=11, family="monospace")
         fig.tight_layout()
         save(fig, "model_blocks")
 
@@ -664,7 +664,7 @@ def fit_search() -> None:
             a.plot(t, cur[i], color=(0.12, 0.31, 0.48, sh), lw=2.0,
                    label="the chain, as the search improves it" if rank == 0 else None)
         a.plot(t, cur[-1], color=REAL, lw=2.8, label="where it lands", zorder=4)
-        a.set_xlim(4.6, 8.2)
+        a.set_xlim(-0.25, 3.0)     # the rise; fit_t runs -0.4 to 13 ns, input on at 0
         a.set_ylim(-0.08, 1.18)
         a.set_xlabel("time (ns)")
         a.set_ylabel("Ku")
@@ -705,7 +705,7 @@ def bisection() -> None:
             a.plot(t, cur[i], color=(0.48, 0.17, 0.38, sh), lw=1.8,
                    label="each bisection step" if rank == 0 else None)
         a.plot(t, cur[-1], color=REAL, lw=2.8, label=f"where it stops (vt {vt[-1]:.3f})", zorder=4)
-        a.set_xlim(w + 4.55, w + 7.2)
+        a.set_xlim(-0.25, 2.4)     # bis_t is already measured from the input edge
         a.set_xlabel("time (ns)")
         a.set_ylabel("pad (V)")
         a.grid(alpha=0.3)
@@ -718,9 +718,13 @@ def bisection() -> None:
         b.axhline(vt[-1], color=REAL, lw=1.4, ls="--")
         b.annotate(f"vt = {vt[-1]:.3f}", (len(vt), vt[-1]), textcoords="offset points",
                    xytext=(-92, 16), fontsize=12, fontweight="bold", color=REAL)
+        for i in (1, 2):      # steps 2 and 3 probe the ends of the bracket, hence the spikes
+            b.annotate("bracket\nend", (i + 1, vt[i]), textcoords="offset points",
+                       xytext=(6, 12 if vt[i] < 0.35 else -30), fontsize=10.5,
+                       color="#777777", fontweight="bold")
         b.set_xlabel("bisection step")
         b.set_ylabel("the threshold vt")
-        b.set_ylim(-0.05, 0.78)
+        b.set_ylim(-0.08, 0.80)
         b.grid(alpha=0.3)
         b.set_title("bracket 0 \u2026 0.7, then halve", fontsize=13, fontweight="bold")
         fig.suptitle("ex2  |  step 4: the stressed run sets the amplitude, by moving vt alone",
@@ -888,6 +892,153 @@ def coverage() -> None:
         fig.suptitle("what this has been tested on", fontsize=14, fontweight="bold")
         fig.tight_layout(rect=(0, 0, 1, 0.94))
         save(fig, "coverage")
+
+
+def four_numbers() -> None:
+    """The stage law dissected: every term coloured, every symbol defined."""
+    C = {"s": "#1F6F8B", "h": "#8E44AD", "x": "#B0563C", "v": "#444444"}
+
+    def run(ax, fig, x, y, parts, size):
+        """Draw coloured segments left to right, advancing by what each one measured."""
+        for txt, col in parts:
+            t = ax.text(x, y, txt, fontsize=size, family="monospace", color=col,
+                        fontweight="bold" if col != C["v"] else "normal", va="center")
+            fig.canvas.draw()
+            x += t.get_window_extent().width / fig.get_size_inches()[0] / fig.dpi * 100
+        return x
+
+    with plt.rc_context(BODY):
+        fig = plt.figure(figsize=(12.6, 5.5))
+        a = fig.add_axes([0, 0.52, 1, 0.46])
+        a.axis("off")
+        a.set_xlim(0, 100)
+        a.set_ylim(0, 30)
+        a.text(50, 27, "one stage, as the physics on the last slide requires it",
+               ha="center", fontsize=13, fontweight="bold", color="#333333")
+        run(a, fig, 3.5, 16, [
+            ("dv/dt  =  ", C["v"]), ("s_up", C["s"]), ("\u00b7h(u)\u00b7", C["h"]),
+            ("min(1, (1\u2212v)/", C["v"]), ("x_lin", C["x"]), (")", C["v"]),
+            ("   \u2212   ", C["v"]), ("s_dn", C["s"]), ("\u00b7h(1\u2212u)\u00b7", C["h"]),
+            ("min(1, v/", C["v"]), ("x_lin", C["x"]), (")", C["v"])], 15)
+        x = run(a, fig, 3.5, 5, [
+            ("with   h(u) = clip((u \u2212 ", C["v"]), ("vt", C["h"]),
+            (")/(1 \u2212 ", C["v"]), ("vt", C["h"]), ("), 0, 1)", C["v"])], 14)
+        a.text(x + 6, 5, "u = the stage's input,   v = its output", fontsize=13,
+               family="monospace", color="#888888", va="center")
+
+        b = fig.add_axes([0.03, 0.02, 0.94, 0.46])
+        b.axis("off")
+        b.set_xlim(0, 100)
+        b.set_ylim(0, 100)
+        cols = [2, 13, 40, 72]
+        for cx, h in zip(cols, ["", "is", "what it decides", "where its value comes from"]):
+            b.text(cx, 92, h, fontsize=11.5, fontweight="bold", color="#777777")
+        rows = [
+            ("s_up", C["s"], "the charging current",
+             "where the gate is when the pulse ends", "fitted to the file's Ku(t)"),
+            ("s_dn", C["s"], "the discharging current",
+             "how quickly the gate lets go again", "fitted to the file's Ku(t)"),
+            ("vt", C["h"], "the input it needs to react",
+             "how much of a pulse survives each hop", "fitted, then re-set by the run"),
+            ("x_lin", C["x"], "where saturation ends",
+             "the shape of the approach to the rail", "fitted (pinned 0.45 on most)"),
+        ]
+        for i, (sym, col, is_, dec, src) in enumerate(rows):
+            y = 76 - i * 19
+            b.plot([0.2, 1.1], [y + 2, y + 2], color=col, lw=5, solid_capstyle="butt")
+            b.text(cols[0], y, sym, fontsize=14, family="monospace", fontweight="bold", color=col)
+            b.text(cols[1], y, is_, fontsize=12.5, color="#222222")
+            b.text(cols[2], y, dec, fontsize=12.5, color="#222222")
+            b.text(cols[3], y, src, fontsize=12.5, color="#222222")
+        save(fig, "four_numbers")
+
+
+def ccomp_reject() -> None:
+    """Why the file rejects its own declared C_comp: Ku cannot exceed 1."""
+    import csv as _csv
+    cc, ku = [], []
+    with (ROOT / "results/ccomp_from_file_2026-09-22/ccomp_curves.csv").open(encoding="utf-8") as fh:
+        for r in _csv.DictReader(fh):
+            if r["buffer"] == "ex2":
+                cc.append(float(r["c_comp_pF"])); ku.append(float(r["max_ku"]))
+    cc, ku = np.array(cc), np.array(ku)
+    knee, decl, loop = 2.64, 5.0, 1.70
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(10.4, 4.6))
+        a.axhspan(1.0, max(ku) * 1.04, color="#B0563C", alpha=0.10)
+        a.plot(cc, ku, color=SIL, lw=3.4, zorder=3)
+        a.axhline(1.0, color="#B0563C", lw=2.0, ls="--")
+        a.text(0.12, 1.008, "Ku cannot exceed 1 \u2014 a fraction of the device's own current",
+               fontsize=11.5, color="#B0563C", fontweight="bold", va="bottom")
+        a.text(0.12, max(ku) * 1.0, "everything above this line is impossible",
+               fontsize=11.5, color="#B0563C", va="top")
+        for x, lab, col in ((loop, f"loop-measured\n{loop} pF", REAL),
+                            (knee, f"the knee\n{knee} pF", "#1F6F8B"),
+                            (decl, f"declared in the file\n{decl} pF", "#B0563C")):
+            y = float(np.interp(x, cc, ku))
+            a.plot([x, x], [0.97, y], color=col, lw=1.6, ls=":")
+            a.plot(x, y, "o", color=col, ms=11, zorder=5)
+            a.annotate(f"{lab}\nKu = {y:.2f}", (x, y), textcoords="offset points",
+                       xytext=(-16 if x == decl else 10, 18 if x != knee else -58),
+                       fontsize=11.5, fontweight="bold", color=col,
+                       ha="right" if x == decl else "left")
+        a.set_xlim(0, 5.6)
+        a.set_ylim(0.97, max(ku) * 1.04)
+        a.set_xlabel("C_comp assumed when solving the file (pF)")
+        a.set_ylabel("peak Ku the solve returns")
+        a.grid(alpha=0.3)
+        a.set_title("ex2  |  the file rejects its own declared C_comp",
+                    fontsize=14, fontweight="bold")
+        fig.tight_layout()
+        save(fig, "ccomp_reject")
+
+
+def pick_rank() -> None:
+    """How the choice is made: the nine candidates ranked by waveform error."""
+    t_si, si, _r = f17.transistor_pad("ex2", 810)
+    t_si, w = t_si - 5.0, 0.810
+    grid = np.arange(w - 0.1, w + 1.5, 0.004)
+    ref = np.interp(grid, t_si, si)
+    rows = []
+    for (k, sh), d in CAND.items():
+        t, _ku, pad = _cand(d, "d810")
+        rms = 1e3 * float(np.sqrt(np.mean((np.interp(grid, t, pad) - ref) ** 2)))
+        pk, _ = _peak_err(t, pad, t_si, si, w)
+        rows.append((f"K{k}  {sh.replace('_', '/')}", rms, pk, (k, sh) == PICK))
+    rows.sort(key=lambda r: r[1])
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(12.4, 4.6), sharey=True)
+        y = np.arange(len(rows))[::-1]
+        a = ax[0]
+        a.barh(y, [r[1] for r in rows],
+               color=[REAL if r[3] else "#AAB4B7" for r in rows], height=0.62)
+        for yy, r in zip(y, rows):
+            a.text(r[1] + 4, yy, f"{r[1]:.0f}", va="center", fontsize=11.5,
+                   fontweight="bold", color=REAL if r[3] else "#555555")
+        a.set_yticks(y, [r[0] for r in rows], fontsize=11.5)
+        a.set_xlabel("error over the whole measured waveform (mV rms)")
+        a.set_title("ranked on the waveform \u2014 what the recipe uses",
+                    fontsize=13, fontweight="bold")
+        a.set_xlim(0, max(r[1] for r in rows) * 1.18)
+        a.grid(alpha=0.3, axis="x")
+        a.annotate("the one it picks", (rows[0][1], y[0]), textcoords="offset points",
+                   xytext=(70, 30), fontsize=12, fontweight="bold", color=REAL,
+                   arrowprops=dict(arrowstyle="->", color=REAL, lw=1.5))
+
+        b = ax[1]
+        b.barh(y, [abs(r[2]) for r in rows],
+               color=[REAL if r[3] else "#AAB4B7" for r in rows], height=0.62)
+        for yy, r in zip(y, rows):
+            b.text(abs(r[2]) + 0.12, yy, f"{r[2]:+.1f} %", va="center", fontsize=11.5,
+                   color=REAL if r[3] else "#555555")
+        b.set_xlabel("error at the peak only (%)")
+        b.set_title("ranked on the peak \u2014 no order at all", fontsize=13, fontweight="bold")
+        b.set_xlim(0, max(abs(r[2]) for r in rows) * 1.35)
+        b.grid(alpha=0.3, axis="x")
+        fig.suptitle("ex2  |  the same nine candidates, scored two ways",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.92))
+        save(fig, "pick_rank")
 
 
 if __name__ == "__main__":

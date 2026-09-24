@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 25 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 27 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout come from Simon's 09-18 deck; none of his
 slides are carried over.
@@ -28,22 +28,24 @@ asserted rather than shown.
 | 7 | 4 · Why our gate fails: the real gate changes shape, GUP does not |
 | 8 | 4 · What that shape difference does downstream |
 | 9 | 5 · So the problem is now a precise one |
-| 10 | 6 · Where Ku(t) comes from, and what it is |
-| 11 | 7 · What Ku(t) fixes, and what it leaves open |
-| 12 | 8 · One stressed pulse is the measurement that reaches the gate |
-| 13 | 9 · What shape may the gate be?  Measure a stage |
-| 14 | 10 · The physics behind it — a stage is a current source with a threshold |
-| 15 | 11 · What each of the four numbers does |
-| 16 | 12 · What we build |
+| 10 | 6 · What the file fixes, and what it leaves open |
+| 11 | 7 · So we need one more measurement — and a stressed pulse is the one |
+| 12 | 8 · But a few samples need a family of shapes to choose from |
+| 13 | 9 · The family: a stage is a current source with a threshold |
+| 14 | 10 · The four numbers that picture requires |
+| 15 | 11 · What each of the four actually does |
+| 16 | 12 · Why a chain of K of them |
 | 17 | 13 · Step 1 — C_comp, rejected by the file's own arithmetic |
-| 18 | 14 · Step 2 — the four numbers, fitted to the file |
+| 18 | 14 · Step 2 — the four numbers, fitted to the file's Ku(t) |
 | 19 | 15 · Step 3 — what the file cannot choose |
 | 20 | 16 · Step 4 — the stressed run, first job: set the amplitude |
 | 21 | 17 · Step 5 — the stressed run, second job: pick one |
 | 22 | 18 · The recipe, end to end |
 | 23 | Where the file-only recipe stands |
 | 24 | What this does not cover yet |
-| 25 | Backup · inv_chain's input threshold |
+| 25 | Backup · where Ku(t) comes from |
+| 26 | Backup · the nine candidates as waveforms |
+| 27 | Backup · inv_chain's input threshold |
 
 ## Built on the 09-17 method film
 
@@ -83,6 +85,34 @@ is the real gate through the map **measured at full swing**: ex2 +1.2 to −4.7 
 "indistinguishable". They are not — they are post-calibration, and the calibration moves vt,
 which moves the timing. What the file actually sees is the fit residual before any stressed run
 touches the model, so the panel shows that instead.
+
+## What the slide-by-slide review changed
+
+A read-through of every slide found more than the figures. In order:
+
+* **Where Ku(t) comes from** was a detour for an audience that already knows IBIS — moved to
+  backup.
+* **Two figures were plotting empty windows.** `fit_search` and `bisection` both drew a flat
+  black line and nothing else, because I had assumed a 5 ns input offset that is not in the
+  film's export: `fit_t` runs −0.4 to 13 ns with the input at 0, and `bis_t` is already
+  measured from the edge. Both windows corrected.
+* **The four numbers were described in prose.** They now have a slide of their own: the stage
+  law written out with each term coloured, and a table giving each symbol, what it is, what it
+  decides, and where its value comes from.
+* **The stage equation had no source and K appeared unexplained.** The equation now follows the
+  physics slide and is dissected on the definition slide; the block diagram no longer repeats
+  it; and K is justified from the probed chain rather than asserted.
+* **The C_comp slide showed a result, not an argument.** A bar chart of twelve buffers is
+  replaced by the mechanism: solved peak Ku against assumed C_comp, with the Ku = 1 ceiling and
+  the declared value sitting above it at 1.24.
+* **The selection slide showed the winner but not the choosing.** It now ranks all nine
+  candidates twice — on the whole waveform, where they run 59 to 425 mV, and on the peak,
+  where every one is within 2.5 % and there is no order at all.
+
+Two numbers were wrong and are corrected. The calibration slide quoted “97 % low” from a
+different build than its own figure showed: in the film's data the fit lands on vt 0.528, which
+leaves the pad **27.6 %** low, and −98.7 % is the far end of the *bracket*, not the starting
+point. And the selection slide said the peak spread was “within 2 %” when it is 2.5 %.
 
 ## Bench and sources
 

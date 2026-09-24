@@ -198,109 +198,109 @@ slide("5 · So the problem is now a precise one",
             "asserted the motivation before showing that.")
 
 # --------------------------------------------------------------------------- 6  method, briefly
-slide("6 · Where Ku(t) comes from, and what it is",
-      ["Before asking what the file cannot give, be clear about what it does. The file holds the "
-       "pull-up and pull-down I-V curves, and recordings of one transition into **two different "
-       "loads**.",
-       "At any instant the pad took some current, and it is the two branches together that "
-       "supplied it. Two loads give two equations in the same two unknowns.",
-       "**Solve them at every instant and you have Ku(t) and Kd(t)** — the fraction of each "
-       "branch that was conducting. No fitting anywhere."],
-      F24 / "solve_ku.png",
-      notes="Data from the 09-17 method film's export. This is the beat the film spends most "
-            "time on, and the deck previously skipped: Ku(t) is solved, not fitted.")
-
-slide("7 · What Ku(t) fixes, and what it leaves open",
-      ["Ku(t) has shape at every instant — shape is not what is missing.",
+slide("6 · What the file fixes, and what it leaves open",
+      ["The file gives Ku(t) — a complete waveform, with shape at every instant. Shape is not "
+       "what is missing.",
        "**What is missing is the split.** Ku(t) = map(gate(t)) fixes the composition and nothing "
        "more: pick any gate trajectory, and the map is forced to be whatever reproduces Ku(t). "
        "Every such pair matches the file exactly.",
-       "**A truncated pulse breaks the tie** — the chain then makes a different gate "
-       "trajectory, and where it turns round depends on how fast the gate was really travelling.",
-       "**That is why our GUP passes the full-swing check and fails under stress:** it is one "
-       "legal split, and not the right one."],
+       "With no probe we cannot measure the map, so its shape has to be assumed — and the "
+       "assumed shape and the measured one are not the same curve.",
+       "**Assume a different map and the fit hands you a different gate. That is the whole "
+       "difficulty.**"],
       F24 / "prior_shape.png",
       size=16,
-      notes="The figure is the same point in the other factor: with no probe the map's shape has "
-            "to be assumed, and the assumed shape and the measured one differ. Which shape you "
-            "assume forces which gate the fit produces.")
+      notes="Slide 10 in the earlier cut explained where Ku(t) itself comes from - the "
+            "two-fixture solve. It is now a backup slide: this audience knows it.")
 
-slide("8 · One stressed pulse is the measurement that reaches the gate",
-      ["Cutting the input short stops the clock partway through the gate's travel. What the pad "
-       "does next depends on where the gate had got to.",
-       "**Each stressed width is one sample of the same path** — here the five widths stop "
-       "the gate at 0.76, 0.80, 0.84, 0.88 and 0.94.",
-       "So the stress sweep is a sampling grid, and one pad measurement per buffer, taken from "
-       "outside the chip, is the extra input track 1 needs."],
+slide("7 · So we need one more measurement — and a stressed pulse is the one",
+      ["A full transition cannot separate them. A truncated one can: the chain then produces a "
+       "**different** gate trajectory, and where it turns round depends on how fast the gate was "
+       "really travelling.",
+       "Each stressed width stops the gate at a different height on the same path — here at "
+       "0.76, 0.80, 0.84, 0.88 and 0.94.",
+       "**So the five stress levels are five independent tests of the split, and one pad "
+       "measurement is what track 1 asks the user for.**"],
       F24 / "sampling_grid_ex2.png",
-      notes="Grey is the full transition; the coloured curves follow it and peel off at different "
-            "points.")
+      notes="Grey is the full transition; the coloured curves follow it and peel off at "
+            "different points. This is why the recipe needs exactly one extra measurement.")
 
-slide("9 · What shape may the gate be?  Measure a stage",
-      ["A sample only helps if we know what gate shapes are possible — five samples cannot "
-       "pick a curve out of all curves.",
-       "So probe every stage under a short pulse, and compare with what a **linear** filter would "
+slide("8 · But a few samples need a family of shapes to choose from",
+      ["Five samples cannot pick a curve out of all possible curves. They can pick one out of a "
+       "small family — so what family does this circuit actually produce?",
+       "Probe every stage under a short pulse and compare against what a **linear** filter would "
        "give: its own step response, superposed.",
        "**Every stage under-reaches, and the gap compounds down the chain — at the pad the "
-       "linear prediction says 1.00 where the transistor does 0.50.**"],
+       "linear prediction says 1.00 where the transistor does 0.50. So the family is not "
+       "linear.**"],
       F24 / "stage_nonlinear_ex2.png",
-      notes="This rules out RC cascades, delay-plus-RC and superposition, which is what the "
+      size=17,
+      notes="This rules out RC cascades, delay-plus-RC and superposition - which is what the "
             "shipped model is built from.")
 
-slide("10 · The physics behind it — a stage is a current source with a threshold",
+slide("9 · The family: a stage is a current source with a threshold",
       ["A CMOS inverter driving a large load is a **current source** while its input sits at the "
        "rail, because its conducting device is in saturation. Only near the destination rail does "
        "it leave saturation and become a resistor.",
-       "A constant current into a gate capacitance is a **ramp**, tapering at the end.",
-       "**So a stage needs four numbers, and the picture says which four:** how hard it charges "
-       "and discharges, how much input it needs before it does anything, and how near the rail "
-       "the current gives way."],
+       "**A constant current into a gate capacitance is a ramp, tapering at the end** — which "
+       "is what the measured stages do."],
       F24 / "stage_law.png",
-      notes="The left panel is the input and its threshold; the right is the output the constant "
-            "current produces. The next slide shows what each of the four actually does.")
+      notes="Left: the input and the threshold it must pass. Right: the output the constant "
+            "current produces. The next slide turns this picture into the four numbers.")
 
-slide("11 · What each of the four numbers does",
-      ["Each swept on its own about the value the fit chose, on the 810 ps pulse. The thick black trace is the fitted value.",
-       "**Look at the vt panel: pushed high enough the gate never leaves the floor — a chain can extinguish a short pulse, not merely shrink it.**"],
+slide("10 · The four numbers that picture requires",
+      ["Written out, the stage law has exactly four free numbers and no more. Each one is a "
+       "named part of the picture on the last slide, not a fitting coefficient.",
+       "**Three are fitted to the file and cost nothing. One, vt, is fitted and then re-set by "
+       "the single stressed run — that is step 4.**"],
+      F24 / "four_numbers.png",
+      notes="Colours tie each term of the equation to its row. u is the stage's input, v its "
+            "output, both on their own 0-to-1 swing.")
+
+slide("11 · What each of the four actually does",
+      ["Each swept on its own about the value the fit chose, on the 810 ps pulse. The thick black "
+       "trace is the fitted value.",
+       "**Look at the vt panel: pushed high enough the gate never leaves the floor — a chain "
+       "can extinguish a short pulse, not merely shrink it.**"],
       F24 / "knobs.png",
-      size=16,
-      notes="Simulated with the project's own stage model from the fitted values the film "
-            "exported. Note the vt panel: at the top of its range the pulse dies completely.")
+      notes="Simulated with the project's own stage model from the fitted values the 09-17 film "
+            "exported.")
 
-slide("12 · What we build",
-      ["Everything to the right of the gate is the file's own, untouched: the map turns the gate "
-       "into Ku, and Ku scales the file's I-V tables. That half we have already shown is right.",
-       "**What we build is the left-hand box** — K identical stages of the kind the last two "
-       "slides measured, standing in for the predriver we cannot see."],
+slide("12 · Why a chain of K of them",
+      ["The real predriver **is** a chain — the schematic earlier showed three inverters between "
+       "ex2's input and its output gate, and the stage walk watched a pulse lose height at each.",
+       "We cannot see how many a vendor's part has, so the count K is a parameter. The stages are "
+       "held **identical**: a real tapered predriver approximately is, and letting them differ "
+       "makes the fit degenerate.",
+       "**Everything to the right of the gate is the file's own, untouched — the map and the "
+       "I-V tables. We are only building the left-hand box.**"],
       F24 / "model_blocks.png",
-      notes="Worth saying out loud that the right-hand half is not ours and is not in question.")
+      size=17,
+      notes="Degenerate: a free fit splits the delay into one sluggish stage plus one quick one, "
+            "reproduces the full swing slightly better, and predicts a stressed gate of 0.23 "
+            "against a measured 0.76.")
 
 slide("13 · Step 1 — C_comp, rejected by the file's own arithmetic",
-      ["C_comp is not a model parameter. It is a number in the file that **the file's own Ku "
-       "tables were solved with** — the solve on slide 6 subtracts it — so a wrong "
-       "value inflates the curve everything downstream is fitted to.",
-       "Ku is a conducting fraction, so it cannot exceed 1. **ex2's declared 5.0 pF implies "
-       "Ku = 1.24**: the file rejects its own declared value.",
-       "Rule: keep what the file declares unless it implies Ku > 1, then take the value at which "
-       "Ku just reaches 1 — 2.64 pF here, against 1.70 measured by the loop.",
-       "**55 % off, and it still works:** the stressed peak is not sharp in C_comp once it is in "
-       "the right range."],
-      ROOT / "results/track1_summary_2026-09-23/ccomp.png",
-      size=16,
-      notes="The loop measurement is slide 3's hysteresis plot used as an instrument - a wrong "
-            "C_comp opens the loop, because dV/dt flips sign between rise and fall. Track 1 "
-            "cannot use it, since it needs the probed gate.")
+      ["Ku is a fraction of the device's own current, so it cannot exceed 1. Solve the file at a "
+       "range of assumed C_comp and watch what the solve returns.",
+       "**ex2's declared 5.0 pF makes the file imply Ku = 1.24 — impossible. The file rejects "
+       "its own declared value.**",
+       "So: keep what the file declares unless it implies Ku > 1, then take the value at which Ku "
+       "just reaches 1. That reads 2.64 pF here, against 1.70 measured with a probe — 55 % "
+       "off, and it still works, because the stressed peak is not sharp in C_comp."],
+      F24 / "ccomp_reject.png",
+      size=17,
+      notes="C_comp is not a model parameter: it is a number the file's own Ku tables were "
+            "solved with, so a wrong value inflates the curve everything downstream is fitted to.")
 
-slide("14 · Step 2 — the four numbers, fitted to the file",
+slide("14 · Step 2 — the four numbers, fitted to the file's Ku(t)",
       ["The four are searched until the chain's output, put through the map, reproduces **the "
-       "file's own full-swing Ku(t)**. Nelder–Mead, three restarts.",
-       "**No measurement is involved.** The target is a curve the file already contains, so the "
-       "stage law costs nothing.",
-       "Here the search runs from an error of 0.28 down to 0.0098, landing on "
-       "s_up 2.59, s_dn 2.38, vt 0.51, x_lin 0.66."],
+       "file's own full-swing Ku(t)** — the black curve. Nelder–Mead, three restarts.",
+       "Error 0.284 down to 0.0098, landing on s_up 2.59, s_dn 2.38, vt 0.51, x_lin 0.66.",
+       "**No measurement is involved: the target is a curve the file already contains.**"],
       F24 / "fit_search.png",
-      notes="Every trial the optimiser actually took, exported live by the 09-17 film. What this "
-            "does NOT give us is K or the map's shape - the next slide.")
+      notes="Every trial the optimiser actually took, exported live by the 09-17 film. What it "
+            "does NOT give us is K, or the map's shape.")
 
 slide("15 · Step 3 — what the file cannot choose",
       ["Left: the fit error against the file's Ku(t), for every stage count. Past K = 3 it is "
@@ -315,26 +315,26 @@ slide("15 · Step 3 — what the file cannot choose",
             "peak cannot be what chooses.")
 
 slide("16 · Step 4 — the stressed run, first job: set the amplitude",
-      ["Now the measured waveform enters. **The parameters fitted to the file alone are nowhere "
-       "near right under stress:** on ex2 the fitted threshold leaves the 810 ps pad 97 % low.",
-       "So bisect vt against the measured peak — bracket 0 to 0.7, then halve. Ten runs, "
-       "landing on 0.487.",
-       "**Why vt and not the drive rates?** The rates were fitted to reproduce the full swing, "
-       "and moving them breaks it. vt changes *when* the chain hands off, not how fast it runs."],
+      ["Now the measured waveform enters. **Fitted to the file alone the chain leaves the 810 ps pad 28 % low** — the file can set the shape, but not the amplitude.",
+       "So bisect vt against the measured peak. The two spikes are the bracket being probed first: vt = 0 overshoots by 26 %, vt = 0.7 kills the pulse entirely at −99 %. Then halve. Ten runs, landing on vt 0.487 and +1.4 %.",
+       "**Why vt and not the drive rates? The rates were fitted to reproduce the full swing, and moving them breaks it. vt changes when the chain hands off, not how fast it runs.**"],
       F24 / "bisection.png",
       notes="Every iteration the calibration actually wrote, recovered from the netlists it "
             "emitted. The vt here is the film's ex2 case; the deck's own K = 3 build lands on "
             "0.632 from a different starting fit.")
 
 slide("17 · Step 5 — the stressed run, second job: pick one",
-      ["All nine candidates have been calibrated, so **all nine hit the measured peak** — "
-       "the calibration put it there. The peak has no information left in it.",
-       "They differ everywhere else. Compare the **whole** measured waveform and one wins: "
-       "K = 3 with the 0.50/0.70 shape, 59 mV rms against 84, 140 and worse.",
-       "**Ranking on the peak instead picks a chain that arrives up to 300 ps late** with four "
-       "times the waveform error."],
-      F24 / "calib_select.png",
-      notes="On this buffer the rule picks the best of the nine outright.")
+      ["All nine candidates are now calibrated, so **all nine hit the measured peak** — the "
+       "calibration put it there. Right-hand panel: ranked on the peak every one is within 2.5 %, "
+       "in no meaningful order.",
+       "Left-hand panel: score each one against the **whole** measured waveform instead, over the "
+       "pulse and its return. Now they separate, from 59 mV to over 200.",
+       "**That ranking is the choice. The recipe keeps the top row — here K = 3 with the "
+       "0.50/0.70 shape, which is also the best of the nine outright.**"],
+      F24 / "pick_rank.png",
+      size=17,
+      notes="Ranking on the peak instead picks a chain that arrives up to 300 ps late with four "
+            "times the waveform error. The nine waveforms themselves are the backup slide.")
 
 slide("18 · The recipe, end to end",
       ["**From the file alone:** C_comp, kept unless its own Ku > 1 test rejects it; then s_up, "
@@ -374,6 +374,21 @@ slide("What this does not cover yet",
             "headline number.")
 
 # --------------------------------------------------------------------------- backup
+slide("Backup · where Ku(t) comes from",
+      ["The file holds the I-V curves and recordings of one transition into **two different "
+       "loads**. At any instant the pad took some current, and both branches supplied it.",
+       "Two loads give two equations in the same two unknowns, so one instant gives Ku and Kd "
+       "outright — no fitting. Repeat at every instant and the result is Ku(t)."],
+      F24 / "solve_ku.png",
+      notes="Moved out of the main line: this audience knows where Ku comes from.")
+
+slide("Backup · the nine candidates as waveforms",
+      ["The same nine as step 5, drawn rather than ranked: all sharing the measured peak because "
+       "the calibration put it there, and separating in the tail.",
+       "**The one the recipe picks sits on the transistor.**"],
+      F24 / "calib_select.png",
+      notes="This was the main slide before; the ranking says the same thing more directly.")
+
 slide("Backup · inv_chain's input threshold",
       ["inv_chain's IBIS file declares Vinh 2.0 V on a 1.8 V part, so our input comparator fires "
        "late and trims about 29 ps off every pulse.",
