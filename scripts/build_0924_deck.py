@@ -193,17 +193,21 @@ slide("5 · So the problem is now a precise one",
 
 # --------------------------------------------------------------------------- 6  method, briefly
 slide("6 · What the file gives, and what is missing",
-      ["The file records Ku(t) on one full transition — and Ku(t) is the map applied to the "
-       "gate. One curve, two unknowns.",
-       "We now know the map is a real, fixed, measurable curve. So the missing factor is the "
-       "gate's trajectory.",
-       "**A full transition only ever visits the two ends of the gate's travel** — it starts "
-       "at rest and finishes at the rail. Any gate that agrees at the ends reproduces the whole "
-       "full-swing waveform, so the file cannot pick one.",
-       "**That is exactly why our GUP passes the full-swing check and fails under stress.**"],
-      notes="The file is not wrong; it is blind in a specific way. Our GUP reproduces the "
-            "vendor's own full-swing waveform - that is how it was built - and the endpoints "
-            "are all the full swing constrains.")
+      ["The file records Ku(t) on one full transition. That is a complete waveform — it has "
+       "shape at every instant, not just at its ends. Shape is not what is missing.",
+       "**What is missing is the split.** Ku(t) = map(gate(t)) fixes the composition and nothing "
+       "more: pick any gate trajectory you like, and the map is forced to be whatever reproduces "
+       "Ku(t). Every such pair matches the file exactly.",
+       "**A truncated pulse breaks the tie** — because the chain then produces a different gate "
+       "trajectory, and where it turns round depends on how fast the gate was really travelling. "
+       "A fast gate is near the rail at the reversal, a slow one is only halfway, and the same "
+       "static map reads different values off them.",
+       "**That is why our GUP passes the full-swing check and fails under stress:** it is one "
+       "legal split, and not the right one."],
+      size=17,
+      notes="Slide 15 is the measured form of this - at K = 7 and K = 9 the model fits the file "
+            "to the same four decimal places and predicts stressed gates running from "
+            "extinguished to almost intact. Same composition, different split.")
 
 slide("7 · One stressed pulse is the measurement that reaches the gate",
       ["Cutting the input short stops the clock partway through the gate's travel. What the pad "
@@ -280,7 +284,7 @@ slide("12 · Where the file-only recipe stands",
        "probed silicon — the shape choice matters more than the measurement.",
        "**What it costs:** the full transition is worse than the shipped model on 10 of 12 "
        "buffers, and a stressed pulse train is still lost on ex2 and io_buf. We buy accuracy in "
-       "the interior with accuracy at the endpoints."],
+       "stressed accuracy with full-swing accuracy."],
       ROOT / "results/track1_summary_2026-09-23/endtoend.png",
       notes="Grey is the shipped model, blue the build using probed silicon, red the file-only "
             "one. Full numbers in docs/track1_recipe.md.")
@@ -310,5 +314,13 @@ slide("Backup · inv_chain's input threshold",
             "win. review_2026-09-09 item 12B has the measurement.")
 
 OUTDIR.mkdir(parents=True, exist_ok=True)
-prs.save(OUT)
-print(f"wrote {OUT.relative_to(ROOT).as_posix()}  ({len(prs.slides._sldIdLst)} slides)")
+# an open deck is locked by PowerPoint, so fall back to a versioned name rather than fail and
+# lose the build (the repo rule: never save over a deck someone has open)
+dest = OUT
+try:
+    prs.save(dest)
+except PermissionError:
+    dest = OUT.with_name(OUT.stem + "_v2.pptx")
+    prs.save(dest)
+    print(f"  {OUT.name} is open in PowerPoint; wrote a versioned copy instead")
+print(f"wrote {dest.relative_to(ROOT).as_posix()}  ({len(prs.slides._sldIdLst)} slides)")

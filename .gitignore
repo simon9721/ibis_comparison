@@ -79,3 +79,6 @@ results/**/slides/
 # per month); results/ARCHIVE_INDEX.md says which zip holds what. Only the archive's
 # README.md and BATCH_*.md stay tracked here.
 results/archive/*/
+
+# PowerPoint lock files, written while a deck is open
+~$*

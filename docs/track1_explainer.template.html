@@ -172,9 +172,11 @@ of the recipe has to be where it is.</p>
   <p><strong>1.</strong> IBIS gives you Ku(t), and Ku(t) is a product: <em>map( gate(t) )</em>.<br>
   <strong>2.</strong> A truncated pulse depends on the factors, not the product — the reversal
   asks where the gate was.<br>
-  <strong>3.</strong> A full transition visits only the two ends of the gate's travel, so nothing
-  done to the file alone can factor it. A truncated pulse stops the clock mid-travel: it is the
-  only probe that reaches the interior from outside the chip.<br>
+  <strong>3.</strong> Ku(t) has shape at every instant — but it fixes only the
+  <em>composition</em>. Pair any gate trajectory with the map that reproduces it and the
+  full-swing waveform is identical, so the file cannot choose. A truncated pulse can: the chain
+  then makes a <em>different</em> gate trajectory, and where it turns round depends on the gate's
+  real speed.<br>
   <strong>4.</strong> But a few samples cannot pick a path out of infinitely many, so we need a
   physics prior on which gate paths this kind of circuit produces.<br>
   <strong>5.</strong> <strong>Prior + samples = the factorisation.</strong> The recipe is then
@@ -297,15 +299,15 @@ off at any reversal and never partway. That single choice is most of the 35–76
 measurement, not of the analysis, and the rest of the page is organised around it.</p>
 
 <p><strong>What the figure shows.</strong> One gate trajectory, rising through a transition.
-The two ringed points are its endpoints. The filled dots are the instants at which each of our
-five stressed pulse widths reverses the input.</p>
+The filled dots are the instants at which each of our five stressed pulse widths reverses the
+input — and the gate is at a different height at each of them.</p>
 
 <figure>
   <div class="plate">What does cutting the pulse short actually buy?</div>
   <svg viewBox="0 0 560 296" role="img"
-       aria-label="The command gate's trajectory. A full transition only ever visits its two
-       ends, so it cannot separate the gate from the map. Each truncated pulse stops the clock
-       at a different instant of the travel, reading out the interior of the path.">
+       aria-label="The command gate's trajectory. Each truncated pulse reverses the input at a
+       different instant, so the gate is at a different height when it turns round - 0.53, 0.64,
+       0.74, 0.84 and 0.93 of its travel.">
     <text class="hd" x="20" y="24">the command gate, during one transition</text>
     <g transform="translate(100,44)">
       <path class="ax" d="M0,0 v116 h360"/>
@@ -315,21 +317,18 @@ five stressed pulse widths reverses the input.</p>
       <path class="dash" d="M144,116 V38"/><circle cx="144" cy="38" r="4.5" fill="var(--fail)"/>
       <path class="dash" d="M194,116 V27"/><circle cx="194" cy="27" r="4.5" fill="var(--fail)"/>
       <path class="dash" d="M281,116 V18"/><circle cx="281" cy="18" r="4.5" fill="var(--fail)"/>
-      <circle cx="0" cy="116" r="5" fill="none" stroke="var(--ours)" stroke-width="2.4"/>
-      <circle cx="355" cy="10" r="5" fill="none" stroke="var(--ours)" stroke-width="2.4"/>
       <text class="sm" x="-8" y="14" text-anchor="end">1</text>
       <text class="sm" x="-8" y="119" text-anchor="end">0</text>
       <text class="sm" x="360" y="134" text-anchor="end">time →</text>
     </g>
-    <circle cx="30" cy="182" r="5.5" fill="none" stroke="var(--ours)" stroke-width="2.4"/>
-    <text class="sans" x="44" y="186" fill="var(--ours)">the two ringed ends are everything</text>
-    <text class="sans" x="44" y="202" fill="var(--ours)">a full transition reads</text>
+    <text class="sans" x="30" y="186" fill="var(--ours)">the file fixes Ku(t) along this whole path —</text>
+    <text class="sans" x="30" y="202" fill="var(--ours)">what it cannot fix is how fast the gate travelled it</text>
     <circle cx="30" cy="230" r="5" fill="var(--fail)"/>
     <text class="sans" x="44" y="234" fill="var(--fail)">each truncation stops the clock at one of these —</text>
     <text class="sans" x="44" y="250" fill="var(--fail)">the pad afterwards reports where the chain had got to</text>
     <text class="sans" x="30" y="278">Five widths, five instants — the only way to see inside the command path from the pad.</text>
   </svg>
-  <figcaption><b>Access to the interior of the gate's path.</b> A complete transition starts at one end of the travel and finishes at the other, so any two models that agree about the endpoints agree about the entire waveform — which is precisely why the file cannot factor Ku(t). Cutting the input short stops the clock partway, and what the pad does next depends on where the command chain had got to at that instant. <br><br>Two things follow. The stress sweep is a <b>sampling grid</b>, not a robustness check: the depths decide which part of the travel we can see, which is what “depth 50–90 %“ in the limits table means. And five samples per buffer is a thin measurement, so the model has to arrive already constrained — the samples <b>select</b> among possibilities, they cannot invent a trajectory.</figcaption>
+  <figcaption><b>Where the gate was, not just how much was flowing.</b> The file's Ku(t) has shape at every instant; what it does not have is the <b>split</b> between the gate and the map. Pair any gate trajectory with the map that reproduces Ku(t) and the full swing comes out identical — so the file cannot choose. <br><br>A truncated pulse can, because the chain then produces a <b>different</b> gate trajectory: where it turns round depends on how fast the gate was really travelling, and the same static map reads different values off a gate at 0.53 and one at 0.93. The five stressed widths are five such tests, and “depth 50–90 %” in the limits table is which part of the travel they cover.</figcaption>
 </figure>
 </section>
 
@@ -916,7 +915,7 @@ different physical situations, so no single fixed correction can serve them.</p>
 </div>
 
 <p><strong>What it costs.</strong> The full transition is worse than the shipped model on 10 of
-12 buffers (ex2: 61 mV of pad rms against 16) — we buy interior accuracy with endpoint accuracy.
+12 buffers (ex2: 61 mV of pad rms against 16) — we buy stressed accuracy with full-swing accuracy.
 On a stressed train the shipped model still wins on ex2 and io_buf. And on io_buf it beats us
 outright, 4.0 % against 7.7 %.</p>
 </section>

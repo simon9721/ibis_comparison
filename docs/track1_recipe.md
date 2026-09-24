@@ -20,9 +20,11 @@ Waveforms: `results/track1_summary_2026-09-23/WAVEFORMS.md`.
 1. IBIS gives you Ku(t), and Ku(t) is a **product**: `map( gate(t) )`.
 2. A truncated pulse depends on the **factors**, not the product — the reversal asks where the
    gate was.
-3. A full transition visits only the **two ends** of the gate's travel, so nothing done to the
-   file alone can factor it. A truncated pulse stops the clock mid-travel: it is the only probe
-   that reaches the interior from outside the chip.
+3. A full transition gives Ku(t) with shape at **every** instant — but that fixes only the
+   **composition**. Pair any monotone gate trajectory with the map that reproduces Ku(t), and the
+   full-swing waveform comes out identical; the file cannot choose between them. A truncated
+   pulse can, because the chain then produces a *different* gate trajectory, and where it turns
+   round depends on the gate's real speed.
 4. But a handful of samples cannot pick a path out of infinitely many, so we need a **physics
    prior** on which gate paths this circuit produces.
 5. **Prior + samples = the factorisation.** The recipe is then just the three things that can
@@ -63,13 +65,18 @@ choice is most of the 35–76 % it misses by.
 
 ## 2. The probe: why a truncated pulse is the only instrument
 
-A complete transition starts at one end of the gate's travel and finishes at the other. **Any
-two models that agree about the endpoints agree about the entire full-swing waveform** — which
-is a restatement of section 1, and the reason no analysis of the file can factor Ku(t).
+The file's Ku(t) is a complete waveform, with shape at every instant. What it fixes is the
+**composition** `map(gate(t))` and nothing else: choose any monotone gate trajectory g(t), define
+`map = Ku ∘ g⁻¹`, and the pair reproduces the file's waveform exactly. **Infinitely many
+(gate, map) pairs are equally consistent with the file** — which is why no analysis of it can
+factor Ku(t). Section 5's K = 5 / 7 / 9 table is the measured form of the same thing.
 
-Cutting the input short stops the clock partway. What the pad does afterwards depends on the
-state of the command chain at that instant, so **a truncated pulse reads out the interior of the
-path**. Two consequences shape the whole method:
+Cutting the input short breaks the tie, for a specific reason: the chain then produces a
+**different** gate trajectory — one that turns round partway — and where it turns round
+depends on how fast the gate was really travelling. A fast gate is near the rail at the reversal,
+a slow one is only halfway, and the same static map reads different values off them. So the pad
+under truncation depends on the two factors **separately**, where the full swing depended only on
+their composition. Two consequences shape the whole method:
 
 * **The stress axis is a sampling grid, not a robustness sweep.** The five widths are five
   instants along the gate's travel; the depth targets decide *which part of the travel* is
