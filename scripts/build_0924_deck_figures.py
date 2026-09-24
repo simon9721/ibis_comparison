@@ -314,6 +314,14 @@ def main() -> int:
     model_blocks()
     k_choice()
     calib_select()
+    knobs()
+    fit_search()
+    bisection()
+    solve_ku()
+    prior_shape()
+    map_summary()
+    what_we_have()
+    coverage()
     for dev in DEV:
         works_levels(dev)
         gate_shape(dev)
@@ -563,6 +571,323 @@ def calib_select(dev: str = "ex2") -> None:
     print("    waveform rms at the calibration width (mV): "
           + ", ".join(f"K{k} {sh} {v:.0f}" for (k, sh), v in sorted(rows, key=lambda r: r[1])[:4]))
     print(f"    best = K{best[0][0]} {best[0][1]}; the recipe picks K{PICK[0]} {PICK[1]}")
+
+
+# --------------------------------------------------------------------------- #
+# from the 09-17 method film's exported arrays - see its README
+# --------------------------------------------------------------------------- #
+NPZ = ROOT / "results" / "method_animations_2026-09-17" / "method_data.npz"
+_FILM = None
+
+
+def film():
+    global _FILM
+    if _FILM is None:
+        _FILM = np.load(NPZ, allow_pickle=True)
+    return _FILM
+
+
+
+
+def knobs() -> None:
+    """What each of the four numbers does, swept one at a time, on a truncated pulse.
+
+    On a rising full-swing transition s_dn does nothing visible - it is the discharge rate - so
+    the sweep is drawn on the 810 ps pulse, where every one of the four acts. Simulated with
+    `current_limited_stage_model`, the module that owns the stage law, from the fitted values
+    the 09-17 film exported.
+    """
+    import current_limited_stage_model as cl
+    d = film()
+    base = {n: float(v) for n, v in zip(d["knob_names"], d["knob_base"])}
+    K, W = 3, 0.810
+    grid = np.arange(0.0, 4.2, cl.DT)
+    u = ((grid >= 0.30) & (grid < 0.30 + W)).astype(float)
+    cols = ["#C9D7E4", "#8FAEC8", "#5C87AD", "#2C5C88", "#123853"]
+    TEXT = {
+        "s_up": ("s_up", "how hard a stage charges",
+                 "a faster gate gets further before the pulse ends"),
+        "s_dn": ("s_dn", "how hard it discharges",
+                 "sets how quickly the gate lets go again"),
+        "vt": ("vt", "the input it needs before it reacts",
+               "a later hand-off, so less of the pulse survives"),
+        "x_lin": ("x_lin", "how near the rail it tapers",
+                  "changes the shape of the approach, not the timing"),
+    }
+    with plt.rc_context(BODY):
+        fig, axs = plt.subplots(2, 2, figsize=(13.4, 5.9), sharex=True, sharey=True)
+        for a, name in zip(axs.ravel(), ["s_up", "s_dn", "vt", "x_lin"]):
+            vals = d[f"knob_{name}_v"]
+            for v, c in zip(vals, cols):
+                prm = dict(base)
+                prm[name] = float(v)
+                g = cl.simulate_chain(u, [(prm["s_up"], prm["s_dn"], prm["vt"],
+                                           prm["x_lin"], 1.0)] * K)
+                a.plot(grid, g, color=c, lw=2.2)
+            g0 = cl.simulate_chain(u, [(base["s_up"], base["s_dn"], base["vt"],
+                                        base["x_lin"], 1.0)] * K)
+            a.plot(grid, g0, color=SIL, lw=3.6, zorder=5)
+            sym, what, effect = TEXT[name]
+            a.set_title(f"{sym}   \u2014   {what}", fontsize=13, fontweight="bold")
+            a.text(0.035, 0.94, f"swept {vals[0]:.2g} \u2192 {vals[-1]:.2g}",
+                   transform=a.transAxes, fontsize=11.5, color="#123853",
+                   fontweight="bold", va="top")
+            a.text(0.035, 0.82, effect, transform=a.transAxes, fontsize=11,
+                   color="#555555", va="top")
+            a.set_xlim(0.15, 3.1)
+            a.set_ylim(-0.04, 1.16)
+            a.grid(alpha=0.3)
+        for a in axs[1]:
+            a.set_xlabel("time from the input edge (ns)")
+        for a in axs[:, 0]:
+            a.set_ylabel("the gate, 0 to 1")
+        axs[0][0].plot([], [], color=SIL, lw=3.6, label="the value the fit chose")
+        axs[0][0].legend(loc="lower right", fontsize=10.5)
+        fig.suptitle("ex2  |  the four numbers, each swept on its own, on the 810 ps pulse",
+                     fontsize=14.5, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.94))
+        save(fig, "knobs")
+
+
+def fit_search() -> None:
+    """The four numbers searched until the chain reproduces the file's Ku(t)."""
+    d = film()
+    t, tgt, cur, rms = d["fit_t"], d["fit_target"], d["fit_curves"], d["fit_rms"]
+    keep = [0, 3, 7, 12, 20, len(rms) - 1]
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(12.2, 4.2),
+                              gridspec_kw={"width_ratios": [1.85, 1]})
+        a = ax[0]
+        a.plot(t, tgt, color=SIL, lw=4.6, label="the file's Ku(t) \u2014 the target", zorder=5)
+        for rank, i in enumerate(keep):
+            sh = 0.18 + 0.72 * rank / (len(keep) - 1)
+            a.plot(t, cur[i], color=(0.12, 0.31, 0.48, sh), lw=2.0,
+                   label="the chain, as the search improves it" if rank == 0 else None)
+        a.plot(t, cur[-1], color=REAL, lw=2.8, label="where it lands", zorder=4)
+        a.set_xlim(4.6, 8.2)
+        a.set_ylim(-0.08, 1.18)
+        a.set_xlabel("time (ns)")
+        a.set_ylabel("Ku")
+        a.grid(alpha=0.3)
+        a.legend(loc="lower right", fontsize=10.5)
+        a.set_title("the chain is moved until it lands on the file", fontsize=13, fontweight="bold")
+
+        b = ax[1]
+        b.plot(np.arange(1, len(rms) + 1), rms, "o-", color=SIL, lw=2.2, ms=5)
+        b.plot(len(rms), rms[-1], "o", color=REAL, ms=11, zorder=5)
+        b.set_yscale("log")
+        b.set_xlabel("trial")
+        b.set_ylabel("error against the file")
+        b.grid(alpha=0.3, which="both")
+        b.set_title(f"{rms[0]:.3f}  \u2192  {rms[-1]:.4f}", fontsize=13, fontweight="bold")
+        p0, p1 = d["fit_params"][0], d["fit_params"][-1]
+        b.text(0.06, 0.16, f"s_up {p1[0]:.2f}   s_dn {p1[1]:.2f}\nvt {p1[2]:.2f}   x_lin {p1[3]:.2f}",
+               transform=b.transAxes, fontsize=11, fontweight="bold", color=REAL, va="bottom")
+        fig.suptitle("ex2  |  step 2: the four numbers are fitted to the file, and cost no "
+                     "measurement", fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.9))
+        save(fig, "fit_search")
+
+
+def bisection() -> None:
+    """The one stressed pad run placing the threshold: every iteration the search wrote."""
+    d = film()
+    t, tgt, cur, vt = d["bis_t"], d["bis_target"], d["bis_curves"], d["bis_vt"]
+    w = float(d["bis_width_ps"][0]) / 1000.0
+    order = np.argsort(np.abs(vt - vt[-1]))[::-1]
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(12.2, 4.2),
+                              gridspec_kw={"width_ratios": [1.85, 1]})
+        a = ax[0]
+        a.plot(t, tgt, color=SIL, lw=4.6, label="the measured pad \u2014 the target", zorder=5)
+        for rank, i in enumerate(order):
+            sh = 0.16 + 0.70 * rank / (len(order) - 1)
+            a.plot(t, cur[i], color=(0.48, 0.17, 0.38, sh), lw=1.8,
+                   label="each bisection step" if rank == 0 else None)
+        a.plot(t, cur[-1], color=REAL, lw=2.8, label=f"where it stops (vt {vt[-1]:.3f})", zorder=4)
+        a.set_xlim(w + 4.55, w + 7.2)
+        a.set_xlabel("time (ns)")
+        a.set_ylabel("pad (V)")
+        a.grid(alpha=0.3)
+        a.legend(loc="upper right", fontsize=10.5)
+        a.set_title("one measured pulse moves one number", fontsize=13, fontweight="bold")
+
+        b = ax[1]
+        b.plot(np.arange(1, len(vt) + 1), vt, "o-", color=SIL, lw=2.2, ms=7)
+        b.plot(len(vt), vt[-1], "o", color=REAL, ms=12, zorder=5)
+        b.axhline(vt[-1], color=REAL, lw=1.4, ls="--")
+        b.annotate(f"vt = {vt[-1]:.3f}", (len(vt), vt[-1]), textcoords="offset points",
+                   xytext=(-92, 16), fontsize=12, fontweight="bold", color=REAL)
+        b.set_xlabel("bisection step")
+        b.set_ylabel("the threshold vt")
+        b.set_ylim(-0.05, 0.78)
+        b.grid(alpha=0.3)
+        b.set_title("bracket 0 \u2026 0.7, then halve", fontsize=13, fontweight="bold")
+        fig.suptitle("ex2  |  step 4: the stressed run sets the amplitude, by moving vt alone",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.9))
+        save(fig, "bisection")
+
+
+def solve_ku() -> None:
+    """Where Ku(t) comes from: two loads at one instant give two equations, two unknowns."""
+    d = film()
+    v, iv_v, iv_pu, iv_pd = d["slv_v"], d["slv_iv_v"], d["slv_iv_pu"], d["slv_iv_pd"]
+    ans, tns, vcc = d["slv_ans"], float(d["slv_t_ns"][0]), float(d["slv_vcc"][0])
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(12.2, 4.2))
+        a = ax[0]
+        a.plot(iv_v, iv_pu * 1e3, color="#B03060", lw=3.0, label="pull-up, fully on")
+        a.plot(iv_v, iv_pd * 1e3, color="#2E7D6E", lw=3.0, label="pull-down, fully on")
+        for x, lab in zip(v, ("load 1", "load 2")):
+            a.axvline(x, color="#888888", lw=1.4, ls="--")
+            off = 4 if lab.endswith("1") else -56
+            a.annotate(f"{lab}\n{x:.2f} V", (x, a.get_ylim()[0]), textcoords="offset points",
+                       xytext=(off, 30), fontsize=11, fontweight="bold", color="#555555")
+        a.set_xlabel("pad voltage (V)")
+        a.set_ylabel("current (mA)")
+        a.grid(alpha=0.3)
+        a.legend(loc="upper center", fontsize=10.5)
+        a.set_title(f"the file's I-V curves, read at one instant (t = {tns:.2f} ns)",
+                    fontsize=13, fontweight="bold")
+
+        b = ax[1]
+        b.axis("off")
+        b.text(0.0, 0.94, "the same instant, recorded into two different loads:", fontsize=12.5,
+               fontweight="bold")
+        b.text(0.02, 0.78, "load 1:   Ku\u00b7I_pu(V\u2081)  +  Kd\u00b7I_pd(V\u2081)  =  "
+                           "the current it took", fontsize=12, family="monospace")
+        b.text(0.02, 0.66, "load 2:   Ku\u00b7I_pu(V\u2082)  +  Kd\u00b7I_pd(V\u2082)  =  "
+                           "the current it took", fontsize=12, family="monospace")
+        b.text(0.0, 0.46, "Two equations, two unknowns \u2014 so one instant of two recordings\n"
+                          "gives Ku and Kd outright. No fitting.", fontsize=12.5)
+        b.text(0.0, 0.20, f"here:   Ku = {ans[0]:.3f}     Kd = {ans[1]:.3f}", fontsize=15,
+               fontweight="bold", color=REAL, family="monospace")
+        b.text(0.0, 0.05, "Repeat at every instant and the result is Ku(t) \u2014 what the "
+                          "file gives us.", fontsize=12)
+        fig.suptitle(f"where Ku(t) comes from  |  ex2, supply {vcc:.1f} V",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.9))
+        save(fig, "solve_ku")
+
+
+def prior_shape() -> None:
+    """The measured map against the analytic shape track 1 has to assume in its place."""
+    d = film()
+    g, meas, prior = d["cmp_g"], d["cmp_meas"], d["cmp_prior"]
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(8.6, 4.4))
+        a.plot(g, meas, color=REAL, lw=4.0, label="measured on the transistor (slide 3)")
+        a.plot(g, prior, color=OURS, lw=2.8, ls="--",
+               label="the analytic shape track 1 assumes")
+        a.set_xlabel("gate, 0 to 1")
+        a.set_ylabel("Ku")
+        a.set_xlim(-0.02, 1.02)
+        a.grid(alpha=0.3)
+        a.legend(loc="upper left", fontsize=11)
+        a.set_title("with no probe, the map's shape has to be assumed \u2014 so it is one of the "
+                    "things the\nstressed run chooses", fontsize=13, fontweight="bold")
+        fig.tight_layout()
+        save(fig, "prior_shape")
+
+
+def map_summary() -> None:
+    """Peak error against stress depth: native, our gate-state model, the measured map."""
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(11.4, 4.2), sharey=True)
+        for a, dev in zip(ax, ("ex2", "inv_chain")):
+            _f, node, _g, widths, _y, _s = DEV[dev]
+            xs = [DEPTH_PCT[w] for w in widths]
+            series = {"native IBIS": ([], NAT, ":"), "our gate-state model": ([], OURS, "--"),
+                      "real gate + measured map": ([], REAL, "-")}
+            for w_ps in widths:
+                w = w_ps / 1000.0
+                d = f17.read(f17.MATRIX / "delay_cmd" / "waveforms" / f"{dev}_short_high_w{w_ps}ps.csv")
+                t_si, si, _r = f17.transistor_pad(dev, w_ps)
+                t_si = t_si - 5.0
+                series["native IBIS"][0].append(
+                    _peak_err(d["time_ns"] - 5.0, d["hspice_pad"], t_si, si, w)[0])
+                for build, key in (("shipped", "our gate-state model"),
+                                   ("gate_replay_silicon_full", "real gate + measured map")):
+                    t, _g2, _k, pad = _run(dev, w_ps, build)
+                    series[key][0].append(_peak_err(t, pad, t_si, si, w)[0])
+            a.axhspan(-10, 10, color=REAL, alpha=0.10)
+            a.axhline(0, color="#999999", lw=1.2)
+            for lab, (ys, c, ls) in series.items():
+                a.plot(xs, ys, ls, color=c, lw=2.6, marker="o", ms=7, label=lab)
+            a.set_title(dev, fontsize=13, fontweight="bold")
+            a.set_xlabel("stress depth (% of the settled swing)")
+            a.set_xticks(xs)
+            a.grid(alpha=0.3)
+        ax[0].set_ylabel("peak error against the transistor (%)")
+        ax[0].legend(loc="upper right", fontsize=10.5)
+        ax[0].text(52, 4, "\u00b110 %", fontsize=11, color=REAL, fontweight="bold")
+        fig.suptitle("given the right gate, the measured map holds across the whole stress axis",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.9))
+        save(fig, "map_summary")
+
+
+def what_we_have() -> None:
+    """What a probe gives us, against what the published file gives a customer."""
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(11.0, 4.3))
+        a.set_xlim(0, 100)
+        a.set_ylim(0, 54)
+        a.axis("off")
+        rows = [("the output stage's I-V curves", True, True),
+                ("one full transition, Ku(t)", True, True),
+                ("the map from gate to Ku", True, False),
+                ("the gate's own trajectory", True, False)]
+        for col, (x, head, c) in enumerate(((6, "us, on our own test chips", REAL),
+                                            (54, "a customer, with the published file", OURS))):
+            a.add_patch(plt.Rectangle((x - 2, 4), 42, 44, facecolor="#F4F6F5",
+                                      edgecolor=c, lw=2.2))
+            a.text(x + 19, 43, head, ha="center", fontsize=13, fontweight="bold", color=c)
+            for i, (lab, mine, theirs) in enumerate(rows):
+                y = 35 - i * 7.2
+                ok = mine if col == 0 else theirs
+                a.text(x + 1, y, "\u2713" if ok else "\u2717", fontsize=15,
+                       fontweight="bold", color=c if ok else "#BBBBBB")
+                a.text(x + 6, y, lab, fontsize=12,
+                       color="#222222" if ok else "#AAAAAA", va="center_baseline")
+        a.annotate("", (52, 20), (48, 20),
+                   arrowprops=dict(arrowstyle="-|>", lw=2.0, color="#555555"))
+        a.text(50, 12, "the whole question", ha="center", fontsize=12, fontweight="bold",
+               color="#555555")
+        a.text(50, 6.5, "is this gap", ha="center", fontsize=12, fontweight="bold",
+               color="#555555")
+        fig.tight_layout()
+        save(fig, "what_we_have")
+
+
+def coverage() -> None:
+    """Which part of the stress axis this has actually been tested on."""
+    rows = [("how short the pulse is", ["90 %", "80 %", "70 %", "60 %", "50 %"], "below 50 %"),
+            ("direction", ["short HIGH"], "short LOW, on 11 of 12 buffers"),
+            ("how many pulses", ["one"], "trains"),
+            ("what the pin drives", ["50 \u03a9 \u2016 2 pF"], "any other load"),
+            ("conditions", ["Typical"], "Min / Max, supply, temperature")]
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(11.6, 4.2))
+        a.set_xlim(0, 100)
+        a.set_ylim(0, len(rows) * 10 + 8)
+        a.axis("off")
+        a.text(1, len(rows) * 10 + 2, "tested", fontsize=12.5, fontweight="bold", color=REAL)
+        a.text(56, len(rows) * 10 + 2, "not tested", fontsize=12.5, fontweight="bold", color="#B0563C")
+        for i, (name, done, gap) in enumerate(rows):
+            y = (len(rows) - 1 - i) * 10 + 2
+            a.text(1, y + 6.4, name, fontsize=12, fontweight="bold", color="#333333")
+            for j, lab in enumerate(done):
+                a.add_patch(plt.Rectangle((1 + j * 10.6, y), 9.6, 5.2, facecolor=REAL,
+                                          alpha=0.22, edgecolor=REAL, lw=1.5))
+                a.text(1 + j * 10.6 + 4.8, y + 2.6, lab, ha="center", va="center", fontsize=11)
+            a.add_patch(plt.Rectangle((56, y), 42, 5.2, facecolor="#B0563C", alpha=0.10,
+                                      edgecolor="#B0563C", lw=1.5, linestyle="--"))
+            a.text(57.5, y + 2.6, gap, va="center", fontsize=11, color="#8A3F2A")
+        fig.suptitle("what this has been tested on", fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.94))
+        save(fig, "coverage")
 
 
 if __name__ == "__main__":

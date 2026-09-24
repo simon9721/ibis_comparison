@@ -59,6 +59,9 @@ def bullets(slide, items, size=18):
     ph.left, ph.top, ph.width, ph.height = int(0.45 * E), int(1.08 * E), int(12.45 * E), h
     tf = ph.text_frame
     tf.clear()
+    # only the LAST emphasised line gets the accent colour: a slide where three bullets shout
+    # is a slide where none of them does. Earlier emphasis stays bold, in the body colour.
+    last_em = max((i for i, t in enumerate(items) if t.startswith("**")), default=-1)
     for k, t in enumerate(items):
         p = tf.paragraphs[0] if k == 0 else tf.add_paragraph()
         bold = t.startswith("**")
@@ -69,7 +72,8 @@ def bullets(slide, items, size=18):
         r.font.size = Pt(size)
         if bold:
             r.font.bold = True
-            r.font.color.rgb = GREEN
+            if k == last_em:
+                r.font.color.rgb = GREEN
         p.space_after = Pt(4)
     return ph.top + h
 
@@ -155,6 +159,7 @@ slide("3 · So the output stage is not the problem",
        "The map itself is a fixed curve — it has no memory, and it does not change with the "
        "pulse. Measured hysteresis between the rising and falling branches is 0.07–0.10.",
        "**Everything that is wrong with our model is therefore in the gate.**"],
+      F24 / "map_summary.png",
       notes="This is the pivot of the deck. It licenses spending the rest of the time on the "
             "gate's shape and nothing else.")
 
@@ -187,150 +192,162 @@ slide("5 · So the problem is now a precise one",
        "",
        "Two things have to come from somewhere: how fast the gate travels, and the map's shape. "
        "The next slides are about where each one can come from."],
+      F24 / "what_we_have.png",
       notes="This is the motivation slide, and it only works because slides 2-4 have already "
             "shown that the gate's shape is the entire error. Earlier versions of this deck "
             "asserted the motivation before showing that.")
 
 # --------------------------------------------------------------------------- 6  method, briefly
-slide("6 · What the file gives, and what is missing",
-      ["The file records Ku(t) on one full transition. That is a complete waveform — it has "
-       "shape at every instant, not just at its ends. Shape is not what is missing.",
+slide("6 · Where Ku(t) comes from, and what it is",
+      ["Before asking what the file cannot give, be clear about what it does. The file holds the "
+       "pull-up and pull-down I-V curves, and recordings of one transition into **two different "
+       "loads**.",
+       "At any instant the pad took some current, and it is the two branches together that "
+       "supplied it. Two loads give two equations in the same two unknowns.",
+       "**Solve them at every instant and you have Ku(t) and Kd(t)** — the fraction of each "
+       "branch that was conducting. No fitting anywhere."],
+      F24 / "solve_ku.png",
+      notes="Data from the 09-17 method film's export. This is the beat the film spends most "
+            "time on, and the deck previously skipped: Ku(t) is solved, not fitted.")
+
+slide("7 · What Ku(t) fixes, and what it leaves open",
+      ["Ku(t) has shape at every instant — shape is not what is missing.",
        "**What is missing is the split.** Ku(t) = map(gate(t)) fixes the composition and nothing "
-       "more: pick any gate trajectory you like, and the map is forced to be whatever reproduces "
-       "Ku(t). Every such pair matches the file exactly.",
-       "**A truncated pulse breaks the tie** — because the chain then produces a different gate "
-       "trajectory, and where it turns round depends on how fast the gate was really travelling. "
-       "A fast gate is near the rail at the reversal, a slow one is only halfway, and the same "
-       "static map reads different values off them.",
+       "more: pick any gate trajectory, and the map is forced to be whatever reproduces Ku(t). "
+       "Every such pair matches the file exactly.",
+       "**A truncated pulse breaks the tie** — the chain then makes a different gate "
+       "trajectory, and where it turns round depends on how fast the gate was really travelling.",
        "**That is why our GUP passes the full-swing check and fails under stress:** it is one "
        "legal split, and not the right one."],
-      size=17,
-      notes="Slide 13 is the measured form of this - at K = 7 and K = 9 the model fits the file "
-            "to the same four decimal places and predicts stressed gates running from "
-            "extinguished to almost intact. Same composition, different split.")
+      F24 / "prior_shape.png",
+      size=16,
+      notes="The figure is the same point in the other factor: with no probe the map's shape has "
+            "to be assumed, and the assumed shape and the measured one differ. Which shape you "
+            "assume forces which gate the fit produces.")
 
-slide("7 · One stressed pulse is the measurement that reaches the gate",
+slide("8 · One stressed pulse is the measurement that reaches the gate",
       ["Cutting the input short stops the clock partway through the gate's travel. What the pad "
        "does next depends on where the gate had got to.",
-       "**Each stressed width is one sample of the interior of the same path** — here the "
-       "five widths stop the gate at 0.76, 0.80, 0.84, 0.88 and 0.94.",
-       "So the stress sweep is a sampling grid, not a robustness check — and one pad "
-       "measurement per buffer, taken from outside the chip, is the extra input track 1 needs."],
+       "**Each stressed width is one sample of the same path** — here the five widths stop "
+       "the gate at 0.76, 0.80, 0.84, 0.88 and 0.94.",
+       "So the stress sweep is a sampling grid, and one pad measurement per buffer, taken from "
+       "outside the chip, is the extra input track 1 needs."],
       F24 / "sampling_grid_ex2.png",
-      notes="Grey is the full transition. The five coloured curves follow it and peel off at "
-            "different points. This is the justification for asking the user for one stressed "
-            "pad run, and for the 50-90 percent depth ladder.")
+      notes="Grey is the full transition; the coloured curves follow it and peel off at different "
+            "points.")
 
-slide("8 · What shape may the gate be?  Measure a stage",
+slide("9 · What shape may the gate be?  Measure a stage",
       ["A sample only helps if we know what gate shapes are possible — five samples cannot "
        "pick a curve out of all curves.",
-       "So probe every stage under a short pulse and compare with what a **linear** filter would "
-       "give (its own step response, superposed).",
-       "**Every stage under-reaches, and the gap compounds down the chain: at the pad the linear "
-       "prediction says 1.00 where the transistor does 0.50.**"],
+       "So probe every stage under a short pulse, and compare with what a **linear** filter would "
+       "give: its own step response, superposed.",
+       "**Every stage under-reaches, and the gap compounds down the chain — at the pad the "
+       "linear prediction says 1.00 where the transistor does 0.50.**"],
       F24 / "stage_nonlinear_ex2.png",
-      notes="This rules out RC cascades, delay-plus-RC and superposition - which is what the "
-            "shipped model is built from. Data: predriver_stages_2026-09-09, whose own module "
-            "computes the superposition.")
+      notes="This rules out RC cascades, delay-plus-RC and superposition, which is what the "
+            "shipped model is built from.")
 
-slide("9 \u00b7 The physics that explains it, and the four numbers it forces",
+slide("10 · The physics behind it — a stage is a current source with a threshold",
       ["A CMOS inverter driving a large load is a **current source** while its input sits at the "
-       "rail \u2014 its device is in saturation \u2014 and becomes a **resistor** only near the "
-       "destination rail, in triode. A constant current into a gate capacitance is a ramp.",
-       "**That picture forces exactly four numbers per stage, and no more** \u2014 named below. "
-       "s_dn is the same picture on the way back.",
-       "**All four are fitted to the file's own Ku(t), so they cost no measurement.** "
-       "(p, the drive's curvature under a partial input, is assumed: full swing cannot see it.)"],
+       "rail, because its conducting device is in saturation. Only near the destination rail does "
+       "it leave saturation and become a resistor.",
+       "A constant current into a gate capacitance is a **ramp**, tapering at the end.",
+       "**So a stage needs four numbers, and the picture says which four:** how hard it charges "
+       "and discharges, how much input it needs before it does anything, and how near the rail "
+       "the current gives way."],
       F24 / "stage_law.png",
-      notes="The four are not free knobs: each names something the circuit has. x_lin is pinned "
-            "at 0.45 on most buffers, inside the 0.37-0.63 the real probed stages fitted. This "
-            "slide answers 'what are the equations and where do the numbers come from'.")
+      notes="The left panel is the input and its threshold; the right is the output the constant "
+            "current produces. The next slide shows what each of the four actually does.")
 
-slide("The model we build",
+slide("11 · What each of the four numbers does",
+      ["Each swept on its own about the value the fit chose, on the 810 ps pulse. The thick black trace is the fitted value.",
+       "**Look at the vt panel: pushed high enough the gate never leaves the floor — a chain can extinguish a short pulse, not merely shrink it.**"],
+      F24 / "knobs.png",
+      size=16,
+      notes="Simulated with the project's own stage model from the fitted values the film "
+            "exported. Note the vt panel: at the top of its range the pulse dies completely.")
+
+slide("12 · What we build",
       ["Everything to the right of the gate is the file's own, untouched: the map turns the gate "
-       "into Ku, and Ku scales the file's I-V tables. That part we have already shown is right.",
-       "**What we are building is the left-hand box** — a chain of K identical current-limited "
-       "stages standing in for the predriver we cannot see."],
+       "into Ku, and Ku scales the file's I-V tables. That half we have already shown is right.",
+       "**What we build is the left-hand box** — K identical stages of the kind the last two "
+       "slides measured, standing in for the predriver we cannot see."],
       F24 / "model_blocks.png",
-      notes="Worth saying out loud that the right-hand half is not ours and is not in question. "
-            "The whole method is about producing a gate.")
+      notes="Worth saying out loud that the right-hand half is not ours and is not in question.")
 
-slide("Step 1 — C_comp, from the file's own arithmetic",
+slide("13 · Step 1 — C_comp, rejected by the file's own arithmetic",
       ["C_comp is not a model parameter. It is a number in the file that **the file's own Ku "
-       "tables were solved with**, so a wrong value inflates the curve everything downstream is "
-       "fitted to.",
+       "tables were solved with** — the solve on slide 6 subtracts it — so a wrong "
+       "value inflates the curve everything downstream is fitted to.",
        "Ku is a conducting fraction, so it cannot exceed 1. **ex2's declared 5.0 pF implies "
-       "Ku = 1.24** — impossible, so the file rejects its own declared value.",
-       "Rule: keep what the file declares unless it implies Ku > 1; then take the value at which "
-       "Ku just reaches 1. On ex2 that reads 2.64 pF, against 1.70 measured by the loop.",
-       "**55 % off the measured value, and it still works** — the stressed peak is not sharp "
-       "in C_comp once it is in the right range."],
-      size=17,
-      notes="The loop measurement is the hysteresis plot from slide 3, used as an instrument - "
-            "a wrong C_comp opens the loop because dV/dt flips sign between rise and fall. Track "
-            "1 cannot use it, because it needs the probed gate.")
+       "Ku = 1.24**: the file rejects its own declared value.",
+       "Rule: keep what the file declares unless it implies Ku > 1, then take the value at which "
+       "Ku just reaches 1 — 2.64 pF here, against 1.70 measured by the loop.",
+       "**55 % off, and it still works:** the stressed peak is not sharp in C_comp once it is in "
+       "the right range."],
+      ROOT / "results/track1_summary_2026-09-23/ccomp.png",
+      size=16,
+      notes="The loop measurement is slide 3's hysteresis plot used as an instrument - a wrong "
+            "C_comp opens the loop, because dV/dt flips sign between rise and fall. Track 1 "
+            "cannot use it, since it needs the probed gate.")
 
-slide("Step 2 — the four numbers, fitted to the file",
-      ["For a given number of stages, the four numbers are fitted so that the chain's output, "
-       "put through the map, reproduces **the file's own full-swing Ku(t)**.",
-       "Nelder–Mead, three restarts. No measurement is involved — the target is a curve "
-       "the file already contains.",
-       "**So the stage law costs nothing. What it does not give us is K, or the map's shape.**",
-       "",
-       "Why not? Because a stage count that fits the file worse by a few per cent can behave "
-       "completely differently under stress — which is the next slide."],
-      size=17,
-      notes="x_lin is pinned at 0.45 on most buffers rather than fitted, a value inside the "
-            "0.37-0.63 the real probed stages gave. p is assumed at 1.")
+slide("14 · Step 2 — the four numbers, fitted to the file",
+      ["The four are searched until the chain's output, put through the map, reproduces **the "
+       "file's own full-swing Ku(t)**. Nelder–Mead, three restarts.",
+       "**No measurement is involved.** The target is a curve the file already contains, so the "
+       "stage law costs nothing.",
+       "Here the search runs from an error of 0.28 down to 0.0098, landing on "
+       "s_up 2.59, s_dn 2.38, vt 0.51, x_lin 0.66."],
+      F24 / "fit_search.png",
+      notes="Every trial the optimiser actually took, exported live by the 09-17 film. What this "
+            "does NOT give us is K or the map's shape - the next slide.")
 
-slide("Step 3 — what the file cannot choose",
+slide("15 · Step 3 — what the file cannot choose",
       ["Left: the fit error against the file's Ku(t), for every stage count. Past K = 3 it is "
        "**flat** — the file has nothing left to say.",
-       "Right: the three candidates inside that band, on one 810 ps stressed pulse. Same file, "
-       "same fit quality, **three completely different buffers**.",
-       "**So the file gives a band of three, and the map's shape is under-determined in exactly "
-       "the same way.** Three stage counts × three map shapes = nine candidates."],
+       "Right: the three candidates inside that band, on one 810 ps pulse. Same file, same fit "
+       "quality, **three completely different buffers**.",
+       "**The map's shape is under-determined in the same way** (slide 7). Three stage counts "
+       "× three map shapes = nine candidates."],
       F24 / "k_choice.png",
       notes="The three shapes are (0.50, 0.70), (0.40, 0.60) and (0.40, 0.90). Note on the right "
-            "that all three already match the PEAK - that is the calibration of the next slide, "
-            "and it is why the peak cannot be the thing that chooses.")
+            "that all three already match the peak - that is the calibration, and it is why the "
+            "peak cannot be what chooses.")
 
-slide("Step 4 — the stressed run, first job: set the amplitude",
-      ["Now the one measured waveform enters. Its first job is to fix how hard the chain drives.",
-       "**The parameters fitted to the file alone are nowhere near right under stress.** On ex2 "
-       "at K = 3 the fitted threshold vt = 0.700 gives a pad **97 % too low** on the 810 ps pulse.",
-       "So bisect vt until the model's peak matches the measured one — seven ngspice runs, "
-       "0.700 → **0.632**.",
+slide("16 · Step 4 — the stressed run, first job: set the amplitude",
+      ["Now the measured waveform enters. **The parameters fitted to the file alone are nowhere "
+       "near right under stress:** on ex2 the fitted threshold leaves the 810 ps pad 97 % low.",
+       "So bisect vt against the measured peak — bracket 0 to 0.7, then halve. Ten runs, "
+       "landing on 0.487.",
        "**Why vt and not the drive rates?** The rates were fitted to reproduce the full swing, "
        "and moving them breaks it. vt changes *when* the chain hands off, not how fast it runs."],
-      size=17,
-      notes="The bracket the bisection starts from, printed in the build log: vt = 0 gives "
-            "+40.1 %, vt = 0.7 gives -97.1 %. Every one of the nine candidates gets this "
-            "treatment, which is what makes the peak useless for choosing between them.")
+      F24 / "bisection.png",
+      notes="Every iteration the calibration actually wrote, recovered from the netlists it "
+            "emitted. The vt here is the film's ex2 case; the deck's own K = 3 build lands on "
+            "0.632 from a different starting fit.")
 
-slide("Step 5 — the stressed run, second job: pick one",
-      ["All nine candidates have now been calibrated, so **all nine hit the measured peak** — "
+slide("17 · Step 5 — the stressed run, second job: pick one",
+      ["All nine candidates have been calibrated, so **all nine hit the measured peak** — "
        "the calibration put it there. The peak has no information left in it.",
-       "They differ everywhere else. Compare the **whole** measured waveform instead, over the "
-       "pulse and its return, and one candidate wins: K = 3 with the 0.50/0.70 shape, at 59 mV "
-       "rms against 84, 140 and worse for the rest.",
+       "They differ everywhere else. Compare the **whole** measured waveform and one wins: "
+       "K = 3 with the 0.50/0.70 shape, 59 mV rms against 84, 140 and worse.",
        "**Ranking on the peak instead picks a chain that arrives up to 300 ps late** with four "
        "times the waveform error."],
       F24 / "calib_select.png",
-      notes="The rms numbers are computed in build_0924_deck_figures.calib_select and printed "
-            "when it runs. On this buffer the rule picks the best of the nine outright.")
+      notes="On this buffer the rule picks the best of the nine outright.")
 
-slide("The recipe, on one slide",
-      ["**From the file alone:** C_comp, kept unless the file's own Ku > 1 test rejects it; then "
-       "s_up, s_dn, vt and x_lin fitted to the file's Ku(t), for each stage count in the band.",
-       "**From the file, but undetermined by it:** the stage count K (a band of three) and the "
-       "map's shape (three candidates) — nine models in all.",
-       "**From one stressed pad run, in order:** bisect vt until the peak matches; then pick the "
+slide("18 · The recipe, end to end",
+      ["**From the file alone:** C_comp, kept unless its own Ku > 1 test rejects it; then s_up, "
+       "s_dn, vt, x_lin fitted to the file's Ku(t) at each stage count in the band.",
+       "**Left undetermined by the file:** the stage count and the map's shape — nine "
+       "candidates in all.",
+       "**From one stressed pad run, in order:** bisect vt until the peak matches, then pick the "
        "candidate whose whole waveform matches.",
-       "**Nothing is probed.** The only measurement is a pad voltage, taken from outside the "
-       "chip with ordinary equipment."],
-      size=17,
-      notes="This is the slide to leave up during questions.")
+       "**Nothing is probed.** The only measurement is a pad voltage, from outside the chip."],
+      F24 / "model_blocks.png",
+      size=16,
+      notes="The same block diagram as slide 12, now with the recipe attached to it. This is the "
+            "slide to leave up during questions.")
 
 slide("Where the file-only recipe stands",
       ["**12 of 12 buffers within ±10 % on the worst stressed pulse; mean 6.9 %.**",
@@ -352,6 +369,7 @@ slide("What this does not cover yet",
        "**The recipe has seen the answer key.** Two of the three candidate map shapes were "
        "chosen by looking at results on these same twelve buffers. A thirteenth buffer may need "
        "a shape the grid does not contain."],
+      F24 / "coverage.png",
       notes="Better said than asked. The direction gap is the one that would most change the "
             "headline number.")
 
