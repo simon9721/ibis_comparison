@@ -3,12 +3,10 @@
 *2026-09-23*
 
 How a stress-surviving model is built from an IBIS file plus **one** stressed pad run, with no
-internal probing.
+internal probing — and why each step has to be where it is.
 
-The model is not a curve fit that happens to work. It is a physical picture of the buffer, and
-every part of it was measured on the real transistors before it was put in. Sections 1 and 2
-are those measurements; sections 3 to 5 are the recipe, and each step cites the measurement
-that forces it.
+This is the written version of the explainer page; the two are kept in step. The page carries
+the figures, this carries the numbers and the exact procedure.
 
 Studies: `results/gate_physics_2026-09-08`, `results/predriver_stages_2026-09-09`,
 `results/current_limited_stages_2026-09-10`, `results/stage_count_from_file_2026-09-21`,
@@ -17,51 +15,126 @@ Waveforms: `results/track1_summary_2026-09-23/WAVEFORMS.md`.
 
 ---
 
-## 1. The three measurements the model stands on
+## 0. The argument, and the order of everything below
 
-Everything below follows from these. They were made by probing the real transistors, once, so
-that the model built afterwards needs no probing.
+1. IBIS gives you Ku(t), and Ku(t) is a **product**: `map( gate(t) )`.
+2. A truncated pulse depends on the **factors**, not the product — the reversal asks where the
+   gate was.
+3. A full transition visits only the **two ends** of the gate's travel, so nothing done to the
+   file alone can factor it. A truncated pulse stops the clock mid-travel: it is the only probe
+   that reaches the interior from outside the chip.
+4. But a handful of samples cannot pick a path out of infinitely many, so we need a **physics
+   prior** on which gate paths this circuit produces.
+5. **Prior + samples = the factorisation.** The recipe is then just the three things that can
+   corrupt it: C_comp is the product, K is one factor, the map shape is the other.
 
-### M1 — Ku really is a static map of the gate
+Everything below follows that order. Section 3 is a check that the frame in line 1 is
+legitimate at all; sections 4 and 5 supply the prior; section 6 is the procedure.
 
-Probe the predriver's output node on the real transistor, then plot the solved Ku against that
-gate voltage. If Ku is a genuine function of the gate, the rising and falling branches lie on
-top of each other. Measured hysteresis, |Ku_rising − Ku_falling| at matched gate voltage:
+---
+
+## 1. The product
+
+The I-V tables and the V-T waveforms give **Ku(t)**: the conducting fraction at each instant of
+one complete transition. That is the whole of what IBIS carries about the dynamics, and it is a
+composition:
+
+```
+        Ku(t)   =   map( gate(t) )
+        ^^^^^       ^^^^^^^^^^^^^
+        the file    two factors the file
+        pins this   does NOT separate
+```
+
+A map that turns on late needs a **fast, square** gate to reach it; a map that turns on early
+needs a **slow** one. Both give the same Ku(t), the same full swing, and the same everything the
+file records — and completely different answers under truncation.
+
+That is exactly the direction inv_chain moved. The universal `(0.50, 0.70)` turns on later than
+the chosen `(0.40, 0.90)` — at a gate of 0.6 they give Ku 0.32 and 0.38, and below a gate of 0.5
+the universal gives nothing at all — so the universal shape demanded the squarer gate, and the
+earlier-turning shape admits the rolled-off one the real buffer has.
+
+**The shipped model makes the extreme version of the row-B choice**: a command delay followed by
+a fast RC gate, so its gate is fully on or fully off at any reversal and never partway. That one
+choice is most of the 35–76 % it misses by.
+
+---
+
+## 2. The probe: why a truncated pulse is the only instrument
+
+A complete transition starts at one end of the gate's travel and finishes at the other. **Any
+two models that agree about the endpoints agree about the entire full-swing waveform** — which
+is a restatement of section 1, and the reason no analysis of the file can factor Ku(t).
+
+Cutting the input short stops the clock partway. What the pad does afterwards depends on the
+state of the command chain at that instant, so **a truncated pulse reads out the interior of the
+path**. Two consequences shape the whole method:
+
+* **The stress axis is a sampling grid, not a robustness sweep.** The five widths are five
+  instants along the gate's travel; the depth targets decide *which part of the travel* is
+  visible. That is what "depth 50–90 %" in section 8 means, and why "below 50 %" is a real gap
+  rather than a formality.
+* **Five samples per buffer is thin**, so the model must arrive already constrained. The samples
+  **select** among possibilities; they cannot invent a trajectory. Hence sections 4 and 5.
+
+---
+
+## 3. The frame: Ku is single-valued in the gate
+
+Everything above writes Ku(t) as `map(gate(t))` — a fixed curve the gate is driven through. That
+is only legitimate if the output stage has no state of its own. Probe the real predriver node,
+solve Ku from the pad, and plot one against the other: if Ku is a genuine function of the gate,
+the branch traced while the gate rises sits on the branch traced while it falls.
 
 | buffer | gate node | hysteresis | reading |
 |---|---|---:|---|
-| io_buf | n2 | 0.07 - 0.11 | single-valued |
-| inv_chain | vout7 | 0.09 - 0.10 | single-valued |
-| ex2 | n4 | 0.47 - 0.75 → **0.09** once C_comp is corrected | single-valued |
+| io_buf | n2 | 0.07 – 0.11 | single-valued |
+| inv_chain | vout7 | 0.09 – 0.10 | single-valued |
+| ex2 | n4 | 0.47 – 0.75 → **0.09** once C_comp is corrected | single-valued |
 
-**Why this matters more than anything else here.** It says the output stage has no memory of
-its own: whatever the gate is doing, Ku follows it instantly through a fixed curve. So a model
-of a stressed buffer has exactly **two** jobs — get the gate trajectory right, and get the
-gate→Ku curve right. Nothing else. The whole recipe is those two jobs.
+**The output stage carries no memory**, so the modelling job really is just the factorisation.
+It also says where our older model was wrong: the map architecture was right all along, the
+**gate dynamics** were not.
 
-*(It also says where our model was wrong: the map architecture was fine all along, the gate
-dynamics were not.)*
+ex2's apparent exception is not an exception — it is a C_comp error, and the same plot is the
+instrument that measures it. That belongs with C_comp, in section 6.
 
-### M2 — A predriver stage is a current source with a threshold
+---
+
+## 4. The prior: what gate paths this circuit produces
 
 `predriver_stages_2026-09-09` measured that ex2's and inv_chain's stages **under-reach** what
-linear superposition predicts, and **return early**. The physical explanation is ordinary MOS
-behaviour: a CMOS inverter driving a large load is a **current source** while its input sits at
-the rail (its driving transistor is in saturation) and becomes a **resistor** only near the
-destination rail (the transistor enters triode). That picture is the stage law, term for term:
+linear superposition predicts and **return early**. The explanation is ordinary MOS behaviour: a
+CMOS inverter driving a large load is a **current source** while its input sits at the rail (its
+device is in saturation) and becomes a **resistor** only near the destination rail (triode).
+
+That picture is the stage law term for term, and it **forces exactly four numbers**:
 
 ```
    dv/dt =  s_up · h(u)   · min(1, (1−v)/x_lin)        charging
           − s_dn · h(1−u) · min(1, v/x_lin)            discharging
             ^^^^   ^^^^     ^^^^^^^^^^^^^^^^
-            |      |        └─ saturation gives way to triode near the rail
-            |      └─ drive follows the input, through the inverter's switching threshold
-            └─ constant current: the output is a RAMP
+            |      |        └─ x_lin: where saturation gives way to triode
+            |      └─ vt, p: drive follows the input through the switching threshold
+            └─ s_up, s_dn: the constant current — so the output is a RAMP
 ```
 
-**The test that put it in.** Fit each real stage **at full swing only**, then drive it with its
-*measured stressed input* and compare against the *measured stressed output*. No stressed data
-in the fit.
+| symbol | what it is | where its value comes from |
+|---|---|---|
+| `s_up` | the stage's charging current | fitted to the file's own full-swing Ku(t) |
+| `s_dn` | the stage's discharging current | the same fit |
+| `x_lin` | where saturation gives way to triode | the same fit, or pinned at 0.45 |
+| `vt` | the next inverter's switching threshold | the same fit, then recalibrated (S5) |
+| `p` | the drive's curvature in overdrive | **assumed = 1**; see below |
+
+**None of the four costs a measurement.** They are fitted to the curve the file already
+contains; the stressed run is spent elsewhere.
+
+### The test that put the family in
+
+Fit each real stage **at full swing only**, then drive it with its *measured stressed input* and
+compare against the *measured stressed output*. No stressed data in the fit.
 
 | | ex2's output gate n4, through 3 stages from the input pin |
 |---|---|
@@ -70,86 +143,59 @@ in the fit.
 | linear superposition | 0.926 at the deepest width — **off by 0.17** |
 | rms, deepest width | 0.012 current-limited · 0.069 linear |
 
-Each inv_chain stage is predicted to rms 0.003. And on **io_buf**, which is linear end to end,
-the linear structures are exact — so the non-linearity is a real, buffer-specific property, not
-a modelling preference.
+Each inv_chain stage is predicted to rms 0.003. On **io_buf**, which is linear end to end, the
+linear structures are exact — so the non-linearity is a real, buffer-specific property. RC
+cascades, delay + RC and superposition of step responses are ruled out, and the shipped model is
+built from exactly those.
 
-**What this rules out:** RC cascades, delay + RC, and superposition of step responses cannot
-represent ex2 or inv_chain. The shipped model is delay + fast RC, which is why it fails.
+**Section 2's argument recurs one level down.** A current-limited ramp and the RC that reaches
+the same point at the same time differ only *in between*. Endpoints agreeing while interiors
+differ is why the gate's **shape**, not just its timing, is what a truncation sees.
 
-### M3 — Full swing does not pin the internal structure, and stress depends on nothing else
+### Why the two pinned numbers are pinned
+
+* **`x_lin` = 0.45 is not a round number.** Fitting the real probed stages individually gave
+  0.37–0.47 on ex2's three and 0.52–0.63 on inv_chain's. 0.45 sits inside that measured range.
+  (inv_chain fits it rather than taking the pin, and lands high — consistent with its own
+  stages.)
+* **`p` cannot be fitted at full swing, ever.** The stage input is always at the rail there, so
+  every p from 1 to 2 fits to rms 0.002–0.007. It acts only under a *partial* input — which is
+  precisely the kind of thing section 2 says a truncation can see.
+
+### K is first-order, because a chain extinguishes rather than attenuates
+
+Each stage needs its input past `vt` before it delivers anything, so a short pulse loses a
+little at every hop; once it falls under the threshold, nothing at all continues. That is why
+the stage count is a first-order parameter rather than a refinement.
+
+It is also, exactly, why **io_buf's pull-down chain is inert on short pulses**: its stages each
+want 0.7 of the swing, so a 163–322 ps pulse dies in the first one and GDN never rises. Kd is
+consequently unidentifiable from the pad — 0.4 mV across Kd = 2…5 — and the depth on a short-LOW
+pulse is set by the *pull-up's turn-off* instead (`results/io_buf_pulldown_calib_2026-09-23`:
+scaling it by 1.2 takes the worst error from 21.3 to 8.9 points).
+
+---
+
+## 5. What the file cannot pick
+
+### A free fit is degenerate
 
 Fit K stages to ex2's full swing with all 4K parameters free:
 
 | K | full-swing rms | predicted stressed gate | measured |
 |---:|---:|---:|---:|
-| 2 | **0.005** (excellent) | **0.23** | 0.76 |
+| 2 | **0.005** (better) | **0.23** | 0.76 |
 | 3 | 0.004 | **0.81** | 0.76 |
 
 The K = 2 fit is *numerically better at the thing it was fitted to* and physically worthless: it
-split the buffer's delay into one very slow stage plus one fast one, and **a slow stage with a
-threshold swallows a short pulse**. inv_chain's K = 2 and 3 fits found the same corner (x_lin
-0.02 — a ramp-to-threshold delay dressed as a stage) and predict a stressed gate of exactly
-zero.
+split the delay into one very slow stage plus one fast one, and by the previous section a slow
+stage with a threshold swallows short pulses. inv_chain's K = 2 and 3 fits found the same corner
+(`x_lin` 0.02 — a ramp-to-threshold delay dressed as a stage) and predict exactly zero.
 
-**Why this is the central fact of track 1.** Full swing is blind to the structure, and the
-structure is the entire stressed answer. Two fixes follow, and they are the shape of the whole
-recipe:
+**Fix one: constrain the stages to be identical**, which is what a real tapered predriver
+approximately is. That removes the degenerate corner and leaves one structural number.
 
-1. **Constrain the structure with physics** — make the K stages *identical*, which is what a
-   real tapered predriver approximately is. That makes the fit well-posed.
-2. **Choose what remains with a stressed observation**, because nothing in the file can.
-
----
-
-## 2. What gets built
-
-```
-   input ──►[ stage 1 ]──►[ stage 2 ]──► … ──►[ stage K ]──► g ──►[ map ]──► Ku ──► I-V tables
-            └───────────── K identical stages ────────────┘
-                          (M2, M3)                                (M1)
-```
-
-The map, whose form is the output MOSFET's own transfer characteristic — nothing below
-threshold, then a power law in overdrive:
-
-```
-   Ku(g) = Ku_off + (Ku_on − Ku_off) · clip((g − vt_map)/(1 − vt_map), 0, 1)^α
-```
-
-`Ku_off` and `Ku_on` are read from the file; only the interior shape is assumed.
-
----
-
-## 3. Every parameter, and what breaks without it
-
-| symbol | what it **is**, physically | what goes wrong if it is wrong | how it is set |
-|---|---|---|---|
-| `s_up` | the stage's charging current | the gate is in the wrong place when the reversal arrives — the entry level | FITTED |
-| `s_dn` | the stage's discharging current | the gate comes back at the wrong rate — the trailing half of the stressed pulse, and the pad's falling leg | FITTED |
-| `x_lin` | where saturation gives way to triode | the stage's approach to its rail is the wrong shape; at `x_lin` = 1 the stage degenerates to an RC, at 0.02 to a pure delay that swallows pulses (M3) | FITTED / pinned 0.45 |
-| `vt` | the next inverter's switching threshold | how much of a short pulse survives each hop | FITTED → **recalibrated** |
-| `K` | **the number of real gates the pulse must survive** | too few, the pulse passes too easily; too many, it is swallowed entirely | SELECTED |
-| `vt_map`, `α` | the output MOSFET's threshold and overdrive law | the gate/map split is wrong, so full swing is right and stress is not (§0) | SELECTED |
-| `C_comp` | the pad capacitance the tables were solved with | the Ku tables themselves are inflated — a defect in the file, not the model | RULE |
-| `p` | the drive's curvature in overdrive | — **cannot be fitted**: at full swing the input is always at the rail, so every p from 1 to 2 fits to rms 0.002-0.007. It acts only under a partial input. | ASSUMED = 1 |
-
-Two entries deserve their evidence spelled out.
-
-**`x_lin` = 0.45 is not a round number.** Fitting the *real probed stages* individually gave
-x_lin 0.37-0.47 on ex2's three stages and 0.52-0.63 on inv_chain's. 0.45 sits inside that
-measured range. (inv_chain fits it instead of taking the pin, and lands high — consistent with
-its own stages being at 0.52-0.63.)
-
-**`p` = 1 is the velocity-saturated MOSFET.** Fitted freely it lands on 1 for ex2's inner
-stages and 1.5-2 for inv_chain's, and the latter under-predicts. It is the one number a
-partial-input observation would pin and full swing cannot.
-
----
-
-## 4. Why K must be *selected* and not *fitted* — the same table, read twice
-
-With the stages constrained identical (M3's fix 1), K becomes the one structural number left:
+### With identical stages, the file still cannot choose K
 
 | buffer | K | full-swing rms | stressed gate, deepest → shallowest | measured |
 |---|---:|---:|---|---|
@@ -161,60 +207,69 @@ With the stages constrained identical (M3's fix 1), K becomes the one structural
 | **inv_chain** | **7** | **0.0032** | **0.672 / 0.820 / 0.909 / 0.960 / 0.987** | 0.879 / 0.935 / 0.972 / 0.992 / 1.003 |
 | inv_chain | 9 | 0.0032 | 0.941 / 0.954 / 0.967 / 0.981 / 0.992 | — |
 
-Read the **full-swing rms** column: K = 7 and K = 9 are identical to four decimals, and K = 5
-is close. Read the **stressed** column: K = 5 swallows the deepest pulse and K = 9 passes it
-almost intact. The file cannot tell these apart; the stress can, completely.
+Read the **rms** column: K = 7 and K = 9 are identical to four decimals, K = 5 close behind.
+Read the **stressed** column: one swallows the deepest pulse, one passes it almost intact. The
+file supplies a band and cannot choose inside it.
 
-That is the motivation for S3 and S6 in one table: *the file gives a band, the stressed run
-picks inside it.*
+K = 1 cannot fit even full swing (rms 0.082 on ex2) — a 1.1 ns delay with a 660 ps edge needs
+stages to make the delay out of.
 
-Also: K = 1 cannot fit even full swing (rms 0.082 on ex2) — a 1.1 ns delay with a 660 ps edge
-needs stages to make the delay out of.
+**Fix two: let the stressed samples choose.** The same argument applies to the map shape — the
+other factor — so both are selected rather than fitted.
 
 ---
 
-## 5. The procedure
+## 6. The recipe: the three things that corrupt the factorisation
 
-### S1 — C_comp
+The model is K identical current-limited stages (section 4) driving a static map (section 3)
+into the file's own I-V tables. All K stages share one set of the four numbers.
 
-**What it is.** Not a model parameter. It is a number in the file that **the file's own Ku
-tables were solved with**, so a wrong value inflates every coefficient downstream. ex2's
-declared 5.0 pF inflates its solved Ku to 1.14-1.26 — above 1, which is impossible.
+| number | where it sits in the argument | what goes wrong if it is wrong | set by |
+|---|---|---|---|
+| `C_comp` | **the product** — the tables were solved with it | Ku(t) is inflated before any factoring starts | the Ku ≤ 1 bound |
+| `K` | **factor one** — how fast the gate travels | a short pulse passes too easily, or is extinguished | the samples |
+| `vt_map`, `α` | **factor two** — the gate-to-Ku curve | full swing right and stress wrong; inv_chain's 34 % | the samples |
+| `s_up`, `s_dn`, `x_lin` | the family's own parameters | the gate's rate and its approach to the rail | the file's Ku(t) |
+| `vt` | the stage handoff — and the amplitude knob | how much of a pulse survives each hop | fitted, then recalibrated |
+| `p` | drive curvature under a partial input | invisible at full swing | assumed = 1 |
 
-**How we know the true value** (track 2, needs the gate): the solve subtracts `C_comp·dV/dt`,
-and dV/dt flips sign between rise and fall, so a wrong C_comp opens a **loop** in Ku-vs-gate.
-The C_comp that closes the loop is the one the device has: ex2 **1.70 pF**, stable across five
-widths — against a declared 5.0. That is M1's hysteresis, used as an instrument.
+### S1 — C_comp: repair the product first
 
-**What track 1 does instead** (no gate available): Ku ≤ 1 identically, so keep the declared
-value unless it implies Ku > 1, then take the knee.
+C_comp is not a model parameter. It is a number in the file that **the file's own Ku tables were
+solved with**, so a wrong value inflates the curve everything downstream is fitted to.
+
+**How the true value is measured** (track 2, needs the gate): the solve subtracts `C_comp·dV/dt`,
+and dV/dt flips sign between rise and fall, so a wrong C_comp adds on one branch and subtracts
+on the other — it **opens a loop in exactly the plot of section 3**. The C_comp that closes the
+loop is the one the device has: ex2 **1.70 pF**, stable across five widths, against a declared
+5.0. That is section 3's measurement used as an instrument.
+
+**What track 1 does instead** (no gate): Ku ≤ 1 identically, so keep the declared value unless it
+implies Ku > 1 — ex2's declared 5.0 pF implies **1.24** — and then take the knee where Ku first
+reaches 1.
+
+| buffer | declared | implied Ku | knee | loop-measured |
+|---|---:|---:|---:|---:|
+| ex2 | 5.0 | **1.24** (rejected) | 2.64 | 1.70 |
+| ex2_slowpre | 5.0 | 1.03 | 4.65 | 1.70 |
+| inv_chain | 0.468 | 1.00 | 0.66 | 0.58 |
+| io_buf | 1.2 | 1.00 | 1.65 | (undecided) |
 
 **Why a rough answer is acceptable.** The stressed peak is not sharp in C_comp once it is in
 range: ex2 scores *better* at 2.31 pF than at the measured 1.7, and ex2_slowpre is estimated at
 4.65 against a measured 1.7 and still scores 5.4 %. The file's information about C_comp scales
-with dV/dt, so a slow buffer carries almost none — ex2_slowpre is the failure case, and it
-survives only because of that insensitivity.
+with dV/dt, so a slow buffer carries almost none — ex2_slowpre is the failure case and survives
+only because of that insensitivity.
 
 ### S2 — Fit `s_up`, `s_dn`, `vt`, `x_lin`
 
-**Target:** `map(chain output)` against the file's full-swing Ku(t). Nelder-Mead, 3 restarts,
-2 ps grid over 4-21 ns.
-
-**Why this target and no other:** track 1 has no probed gate. The Ku(t) the tables imply is the
-only curve that exists.
-
-**Why the stages are identical (one set of 4, not 4K):** M3. A free fit reaches a better
-full-swing rms and predicts stress wrong by a factor of three.
+Target: `map(chain output)` against the file's full-swing Ku(t). Nelder–Mead, 3 restarts
+(s0 = 2, 8, 30), maxiter 800, on a 2 ps grid over 4–21 ns. Stages held identical (section 5).
 
 ### S3 — The stage-count band
 
-**Rule:** the 3 smallest K whose fit rms is within 25 % of the best.
-
-**Why a band, not the best K.** The rms falls steeply, flattens at the true count, then keeps
-creeping down past it — so "best rms" lands 1-3 stages high and recovers the netlist count on
-**1 of 13 chains**. §4 shows why that residual creep is meaningless and the stress is not.
-
-**What the band delivers:** it contains the netlist count on all 12 buffers.
+The 3 smallest K whose fit rms is within 25 % of the best. Taking the single best fit instead
+recovers the netlist count on **1 of 13 chains**; the band contains it on **all 12 buffers**.
 
 | buffer | band | netlist K |
 |---|---|---:|
@@ -225,88 +280,91 @@ creeping down past it — so "best rms" lands 1-3 stages high and recovers the n
 
 ### S4 — The shape grid
 
-**Grid:** `(0.50, 0.70)` · `(0.40, 0.60)` · `(0.40, 0.90)`.
-
-**Why the shape cannot be fitted.** Ku(t) = map(gate(t)); the file pins the product only. Hand
-the S2 fit *any* map and it will find a chain reproducing the same Ku(t) — steeper map with a
-slower chain, gentler map with a faster chain, identical full swing either way. The fit is
-structurally incapable of choosing. This is M3 again, on the other factor.
-
-**What it cost to learn.** inv_chain sat at 34 %. With the universal shape the chain the fit
-found implied a **square** gate where the real one rolls off with pulse width. Choosing the
-shape from the stressed run: **5.1 %**, full swing improving with it (54 → 36 mV). The
-discharge rate and a faster final stage were both tried first; both were symptoms.
+`(0.50, 0.70)` · `(0.40, 0.60)` · `(0.40, 0.90)`, where the map is
+`clip((g − vt_map)/(1 − vt_map), 0, 1)^α` scaled between the file's own off and on levels.
 
 **S3 × S4 = 9 candidates per buffer**, each with its own S2 fit.
 
 ### S5 — Calibrate on the one stressed run
 
-**Method:** bisect `vt` over [0, 0.7], 7 ngspice runs, until the model's peak matches the
-measured one. Fallback if `vt` cannot bracket: scale `s_up` and `s_dn` together over [0.5, 2.0].
+Bisect `vt` over [0, 0.7], 7 ngspice runs, until the model's peak matches the measured one.
+Fallback if `vt` cannot bracket it: scale `s_up` and `s_dn` together over [0.5, 2.0], 7 runs.
 
 **Why `vt` and not the rates.** The rates were fitted to reproduce the full swing; moving them
-breaks it. `vt` changes **when** the chain hands off without changing how fast it runs — it is
-the one number that buys stressed amplitude at no full-swing cost.
-
-**Why a calibration is needed at all.** M2's own limit: the stage law is slightly too weak for
-an input at 0.85-0.9 of swing, where a real inverter delivers nearly full current, and full
-swing cannot see that. Over K stages the deficit compounds. `vt` absorbs it.
+breaks it. `vt` changes **when** the chain hands off without changing how fast it runs — the one
+number that buys stressed amplitude at no full-swing cost. It also absorbs M2's own limit: the
+stage law is slightly too weak for an input at 0.85–0.9 of swing, and over K stages that
+compounds.
 
 ### S6 — Select on the same run's whole waveform
 
-**Rule:** smallest rms between model and transistor pad over that pulse and 1.5 ns of its
-return.
+Smallest rms between model and transistor pad over that pulse and 1.5 ns of its return, at the
+calibration width only.
 
 **Why not the peak.** S5 has just forced the peak to match at that width for **every**
-candidate. Measured: adding a peak gate to the rule changes nothing.
+candidate; measured, adding a peak gate to the rule changes nothing. Ranking on peaks at the
+other widths is worse than useless:
 
-**Why not peaks at other widths.** A chain that turns on late still hits the right peak height
-with the wrong pulse under it:
+| ranked by | mean waveform error over all widths | lag of the picks |
+|---|---:|---|
+| whole waveform at the calibration width | **52.3 mV** | −27 … +17 ps |
+| best possible in the grid | 51.7 mV | — |
+| best stressed peak | **217.3 mV** | +155 … +300 ps |
 
-| ranked by | mean waveform error over all widths |
-|---|---:|
-| whole waveform at the calibration width | **52.3 mV** |
-| best possible in the grid | 51.7 mV |
-| best stressed peak | **217.3 mV** |
+The rms window (the pulse plus 1.5 ns of its return) was chosen once and never tuned — the
+rule's one untested free choice.
 
-**Why selection, rather than one universal correction.** "Stressed" hides three different
-mechanisms: io_buf's predriver is itself **truncated** (its gate reaches 0.42-0.63 of supply),
-inv_chain's swings **fully every time but arrives late**, ex2's is **speed-limited** and reaches
-~70 % whatever the width. Any single fixed correction fits one and misses two.
+### Why selection rather than one fixed correction
+
+"Stressed" hides three mechanisms, and any single correction fits one and misses two:
+
+| buffer | what is truncated | probed gate excursion |
+|---|---|---|
+| io_buf | the predriver itself | 0.42 – 0.63 of supply |
+| inv_chain | time — it completes but arrives late | 0.91 – 1.03 |
+| ex2 | neither; it is speed-limited | 0.67 – 0.72, whatever the width |
 
 ---
 
-## 6. The result
+## 7. The result
 
 | | |
 |---|---|
 | **12 of 12 within ±10 %** | range 3.2 % (inv_stage4) … 10.0 % (ex2_skewp, on the line), mean 6.9 % |
-| shipped model, same pulses | 35 - 76 % on 11 of 12 |
+| shipped model, same pulses | 35 – 76 % on 11 of 12 |
 | inv_chain, file-only | **5.1 %**, against 25.8 % for the build made from probed silicon |
 | selector quality | within **1 %** of the best build the grid contains |
 
-**What it costs:** full-swing pad rms worse than shipped on 10 of 12 (ex2 61 vs 16 mV) · pulse
-trains still lost on ex2 and io_buf · io_buf beaten outright (4.0 vs 7.7 %).
+**What it costs:** full-swing pad rms worse than shipped on 10 of 12 (ex2 61 vs 16 mV) — we buy
+interior accuracy with endpoint accuracy · on a stressed train the shipped model still wins on
+ex2 (−3.7 % against −9.5) and io_buf (−2.0 against +4.6) · io_buf beaten outright (4.0 vs 7.7 %).
 
 ---
 
-## 7. What it has been tested on
+## 8. Which part of the path has been sampled
 
-| axis | covered | not covered |
+Read against section 2, this is not a generic coverage table: it says which instants of the
+gate's travel we have looked at, and in which direction.
+
+| axis | sampled | not sampled |
 |---|---|---|
-| depth | 50, 60, 70, 80, 90 % of the settled swing | below 50 % |
-| direction | short HIGH | **short LOW on 11 of 12** |
+| where in the travel | 50, 60, 70, 80, 90 % of the settled swing | below 50 % — the early part of the path |
+| direction | short HIGH | **short LOW on 11 of 12 buffers** |
 | pulses | one | trains |
 | load | 50 Ω ∥ 2 pF | anything else |
+| input edge | 50 ps on the three probed buffers, 1 ps on the nine variants | a sweep at fixed width |
 | corner | Typical | Min / Max, supply, temperature |
 
 ---
 
-## 8. What is not yet honestly file-only
+## 9. What is not yet honestly file-only
 
 1. **The shape grid was chosen from results on these same 12 buffers.** `(0.40, 0.60)` and
-   `(0.40, 0.90)` are the two best of an earlier grid run on this set, so S4 has seen the
-   answer key. A 13th buffer may need a shape the grid does not contain.
-2. **`x_lin` is inconsistent** — pinned at 0.45 on 10 buffers, fitted on inv_chain and io_buf.
-3. **`p = 1` is assumed.** It is the one parameter a single partial-input observation would
-   pin, and the recipe already takes one stressed run — so this is a gap that could be closed.
+   `(0.40, 0.90)` are the two best of an earlier grid run on this set, so S4 has seen the answer
+   key. A thirteenth buffer may need a shape the grid does not contain.
+2. **`x_lin` is inconsistent** — pinned at 0.45 on ten buffers, fitted on inv_chain and io_buf.
+   The pinned value is inside the 0.37–0.63 the real stages fitted, so it is defensible, but it
+   should be one or the other.
+3. **`p` is assumed.** By section 2's own argument it is exactly the kind of parameter a
+   partial-input observation can see and a full swing cannot — and the recipe already takes one
+   such observation. An open gap rather than a closed one.
