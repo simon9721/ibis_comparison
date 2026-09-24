@@ -257,15 +257,152 @@ def ku_consequence(dev: str) -> None:
         save(fig, f"ku_consequence_{dev}")
 
 
+def stage_law() -> None:
+    """The four numbers as geometry: a threshold on the input, a slope, and a taper."""
+    XLIN, VT = 0.45, 0.45
+    t = np.linspace(0, 4.6, 500)
+    u = np.clip((t - 0.35) / 0.30, 0, 1)                    # the stage's input, rising
+    h = np.clip((u - VT) / (1 - VT), 0, 1)                  # drive: nothing until u passes vt
+    v = np.zeros_like(t)
+    for i in range(1, len(t)):
+        up = 0.72 * h[i] * min(1.0, (1 - v[i - 1]) / XLIN)
+        v[i] = min(1.0, v[i - 1] + up * (t[i] - t[i - 1]))
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(12.6, 3.8))
+        a = ax[0]
+        a.plot(t, u, color="#666666", lw=3.4)
+        a.axhline(VT, color=OURS, lw=1.8, ls="--")
+        a.annotate("vt  —  the stage does nothing\nuntil its input passes this",
+                   (2.30, VT), textcoords="offset points", xytext=(-30, -44), color=OURS,
+                   fontsize=12, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=OURS, lw=1.5))
+        a.set_title("its input", fontweight="bold", fontsize=13)
+        a.set_ylim(-0.06, 1.22)
+        a.set_xlabel("time")
+        a.set_ylabel("0 to 1")
+        a.grid(alpha=0.3)
+
+        b = ax[1]
+        i0, i1 = int(np.argmax(v > 0.02)), int(np.argmax(v > 1 - XLIN))
+        b.plot(t[i0:i1 + 1], v[i0:i1 + 1], color=REAL, lw=7.0, alpha=0.4, zorder=1)
+        b.plot(t, v, color=SIL, lw=3.4, zorder=2)
+        b.axhline(1 - XLIN, color="#999999", lw=1.5, ls=":")
+        b.annotate("s_up  —  constant current,\nso the gate travels on a\nstraight ramp",
+                   (t[(i0 + i1) // 2], v[(i0 + i1) // 2]), textcoords="offset points",
+                   xytext=(-66, 52), color=REAL, fontsize=12, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=REAL, lw=1.5))
+        b.annotate("x_lin  —  within this much of\nthe rail the current tapers off",
+                   (2.60, 0.90), textcoords="offset points", xytext=(-40, -80),
+                   color="#4A4A4A", fontsize=12, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color="#4A4A4A", lw=1.5))
+        b.set_title("the gate it produces", fontweight="bold", fontsize=13)
+        b.set_ylim(-0.06, 1.22)
+        b.set_xlabel("time")
+        b.grid(alpha=0.3)
+        fig.suptitle("one stage  —  s_dn is the same picture on the way back",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.88))
+        save(fig, "stage_law")
+
+
 def main() -> int:
     print("figures for the 09-24 deck:")
     map_from_probe("ex2")
+    sampling_grid("ex2")
+    stage_nonlinear("ex2")
+    stage_law()
     for dev in DEV:
         works_levels(dev)
         gate_shape(dev)
         ku_consequence(dev)
     print(f"wrote {OUT.relative_to(ROOT).as_posix()}")
     return 0
+
+
+
+
+# --------------------------------------------------------------------------- #
+# the method half: what the file gives, what one stressed run adds, and the law
+# --------------------------------------------------------------------------- #
+
+def sampling_grid(dev: str = "ex2") -> None:
+    """Every stressed width stops the gate at a different point of the same trajectory."""
+    folder, node, gname, widths, _ylim, _span = DEV[dev]
+    tf, gfull, _t, _g = f17._norm_pair(dev, widths[0], node)
+    cols = ["#8B1A3A", "#B03060", "#C2683B", "#D99A2B", "#4C8C3F"]
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(11.6, 4.6))
+        a.plot(tf, gfull, color="#B9B9B9", lw=5.0, label="the gate on a full transition", zorder=1)
+        for w_ps, c in zip(widths, cols):
+            ts, greal = f17._norm_pair(dev, w_ps, node)[2:]
+            a.plot(ts, greal, color=c, lw=2.3, zorder=2)
+            i = int(np.nanargmax(greal))
+            a.plot(ts[i], greal[i], "o", color=c, ms=10, zorder=5)
+            # the peaks crowd together; the falling branches are well separated, so label there
+            tail = np.asarray(greal)[i:]
+            j = i + int(np.argmax(tail <= 0.34)) if np.any(tail <= 0.34) else len(greal) - 1
+            a.annotate(f"{DEPTH_PCT[w_ps]} %", (ts[j], greal[j]), textcoords="offset points",
+                       xytext=(4, 4), color=c, fontsize=12, fontweight="bold")
+        a.set_xlim(0.3, 2.6)
+        a.set_ylim(-0.05, 1.18)
+        a.set_xlabel("time from the input edge (ns)")
+        a.set_ylabel(f"gate {gname}, 0 to 1")
+        a.grid(alpha=0.3)
+        a.legend(loc="upper left", fontsize=11)
+        a.set_title(f"{dev}  |  each stressed width stops the clock at a different point "
+                    "of the same path", fontsize=14, fontweight="bold")
+        fig.tight_layout()
+        save(fig, f"sampling_grid_{dev}")
+
+
+def stage_nonlinear(dev: str = "ex2", depth: int | None = None) -> None:
+    """Measured stage response against linear superposition, down the chain.
+
+    The superposition itself comes from predriver_stage_probe, which owns it - this only
+    re-plots one width across the chain so it fits a slide.
+    """
+    import predriver_stage_probe as psp
+    depth = depth or DEV[dev][3][0]
+    nodes = psp.NODES[dev][1:] if hasattr(psp, "NODES") else \
+        ["v(xdut.n2)", "v(xdut.n3)", "v(xdut.n4)", "v(pad_sp)"]
+    labels = ["stage 1  (n2)", "stage 2  (n3)", "output gate  (n4)", "the pad"]
+    full = psp.parse_tr0(psp.OUT / dev / "full" / "run.tr0")
+    sh = psp.parse_tr0(psp.OUT / dev / f"w{depth}" / "run.tr0")
+    tf = np.asarray(full["time"], float) * 1e9
+    ts = np.asarray(sh["time"], float) * 1e9
+    vf, vs = psp.signals(full, nodes), psp.signals(sh, nodes)
+    grid = np.arange(4.6, 9.4, 0.002)
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, len(nodes), figsize=(3.1 * len(nodes), 3.9), sharey=True)
+        for a, n, lab in zip(ax, nodes, labels):
+            g_full, _, _ = psp.normalise(tf, vf[n], tf, vf[n])
+            g_short, _, _ = psp.normalise(tf, vf[n], ts, vs[n])
+            tau, gr, gf = psp.step_responses(tf, g_full)
+            p1, _p2 = psp.lti_predictions(grid, tau, gr, gf, depth / 1000.0)
+            a.plot(grid - 5.0, p1, color="#C2683B", lw=2.2, ls=(0, (1.5, 1.6)),
+                   label="if the stage were linear")
+            a.plot(ts - 5.0, g_short, color=SIL, lw=3.0, label="measured")
+            m, pl = float(np.nanmax(g_short)), float(np.nanmax(p1))
+            a.annotate(f"{m:.2f}", (ts[np.nanargmax(g_short)] - 5.0, m), fontsize=11,
+                       fontweight="bold", color=SIL, textcoords="offset points", xytext=(-4, 7),
+                       ha="right")
+            a.annotate(f"{pl:.2f}", (grid[np.nanargmax(p1)] - 5.0, pl), fontsize=11,
+                       fontweight="bold", color="#C2683B", textcoords="offset points",
+                       xytext=(6, 4), ha="left")
+            a.set_title(lab, fontweight="bold", fontsize=12)
+            a.set_xlim(-0.3, 3.0)
+            a.set_ylim(-0.08, 1.25)
+            a.grid(alpha=0.3)
+            a.set_xlabel("time (ns)")
+            handles = a.get_legend_handles_labels()
+        ax[0].set_ylabel("0 = rest, 1 = full swing")
+        fig.legend(*handles, loc="lower center", ncol=2, fontsize=11, frameon=False,
+                   bbox_to_anchor=(0.5, -0.02))
+        fig.suptitle(f"{dev}  |  {depth} ps pulse: every stage under-reaches what a linear "
+                     "filter would do, and the gap compounds",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0.06, 1, 0.9))
+        save(fig, f"stage_nonlinear_{dev}")
 
 
 if __name__ == "__main__":

@@ -62,8 +62,10 @@ def bullets(slide, items, size=18):
     for k, t in enumerate(items):
         p = tf.paragraphs[0] if k == 0 else tf.add_paragraph()
         bold = t.startswith("**")
+        if t.startswith("  "):          # an indented line is a sub-item of the one above it
+            p.level = 1
         r = p.add_run()
-        r.text = t.replace("**", "")
+        r.text = t.replace("**", "").strip()
         r.font.size = Pt(size)
         if bold:
             r.font.bold = True
@@ -190,33 +192,110 @@ slide("5 · So the problem is now a precise one",
             "asserted the motivation before showing that.")
 
 # --------------------------------------------------------------------------- 6  method, briefly
-slide("6 · What the file can and cannot give",
-      ["The file records Ku(t) on one full transition. Ku(t) is the map applied to the gate — "
-       "a product of the two things we need separately.",
-       "**A full transition only ever visits the two ends of the gate's travel**, so any gate "
-       "and map that agree at the ends reproduce the whole full-swing waveform. The file cannot "
-       "separate them.",
-       "**A truncated pulse stops the clock partway** — it is the only measurement that reaches "
-       "the interior of the gate's path from outside the chip.",
-       "That is why track 1 needs exactly one stressed pad run, and why the five stress levels "
-       "are a sampling grid rather than a robustness sweep."],
-      notes="This is the piece the written doc calls the sampling argument. It is the bridge "
-            "from the motivation to the method, and it explains why one extra measurement is "
-            "both necessary and sufficient in principle.")
+slide("6 · What the file gives, and what is missing",
+      ["The file records Ku(t) on one full transition — and Ku(t) is the map applied to the "
+       "gate. One curve, two unknowns.",
+       "We now know the map is a real, fixed, measurable curve. So the missing factor is the "
+       "gate's trajectory.",
+       "**A full transition only ever visits the two ends of the gate's travel** — it starts "
+       "at rest and finishes at the rail. Any gate that agrees at the ends reproduces the whole "
+       "full-swing waveform, so the file cannot pick one.",
+       "**That is exactly why our GUP passes the full-swing check and fails under stress.**"],
+      notes="The file is not wrong; it is blind in a specific way. Our GUP reproduces the "
+            "vendor's own full-swing waveform - that is how it was built - and the endpoints "
+            "are all the full swing constrains.")
 
-slide("6 · Status of the file-only recipe",
-      ["Built from the IBIS file plus one stressed pad run: C_comp from the file's own Ku ≤ 1 "
-       "bound, a chain of current-limited stages fitted to the file's Ku(t), and two choices — "
-       "the stage count and the map's shape — made by the one stressed run.",
-       "**12 of 12 buffers within ±10 % on the worst stressed pulse; mean 6.9 %.**",
-       "Cost: the full transition is worse than the shipped model on 10 of 12, and a stressed "
-       "pulse train is still lost on ex2 and io_buf.",
+slide("7 · One stressed pulse is the measurement that reaches the gate",
+      ["Cutting the input short stops the clock partway through the gate's travel. What the pad "
+       "does next depends on where the gate had got to.",
+       "**Each stressed width is one sample of the interior of the same path** — here the "
+       "five widths stop the gate at 0.76, 0.80, 0.84, 0.88 and 0.94.",
+       "So the stress sweep is a sampling grid, not a robustness check — and one pad "
+       "measurement per buffer, taken from outside the chip, is the extra input track 1 needs."],
+      F24 / "sampling_grid_ex2.png",
+      notes="Grey is the full transition. The five coloured curves follow it and peel off at "
+            "different points. This is the justification for asking the user for one stressed "
+            "pad run, and for the 50-90 percent depth ladder.")
+
+slide("8 · What shape may the gate be?  Measure a stage",
+      ["A sample only helps if we know what gate shapes are possible — five samples cannot "
+       "pick a curve out of all curves.",
+       "So probe every stage under a short pulse and compare with what a **linear** filter would "
+       "give (its own step response, superposed).",
+       "**Every stage under-reaches, and the gap compounds down the chain: at the pad the linear "
+       "prediction says 1.00 where the transistor does 0.50.**"],
+      F24 / "stage_nonlinear_ex2.png",
+      notes="This rules out RC cascades, delay-plus-RC and superposition - which is what the "
+            "shipped model is built from. Data: predriver_stages_2026-09-09, whose own module "
+            "computes the superposition.")
+
+slide("9 \u00b7 The physics that explains it, and the four numbers it forces",
+      ["A CMOS inverter driving a large load is a **current source** while its input sits at the "
+       "rail \u2014 its device is in saturation \u2014 and becomes a **resistor** only near the "
+       "destination rail, in triode. A constant current into a gate capacitance is a ramp.",
+       "**That picture forces exactly four numbers per stage, and no more** \u2014 named below. "
+       "s_dn is the same picture on the way back.",
+       "**All four are fitted to the file's own Ku(t), so they cost no measurement.** "
+       "(p, the drive's curvature under a partial input, is assumed: full swing cannot see it.)"],
+      F24 / "stage_law.png",
+      notes="The four are not free knobs: each names something the circuit has. x_lin is pinned "
+            "at 0.45 on most buffers, inside the 0.37-0.63 the real probed stages fitted. This "
+            "slide answers 'what are the equations and where do the numbers come from'.")
+
+slide("10 · What we build",
+      ["**input  →  K identical current-limited stages  →  gate g  →  the map  "
+       "→  Ku  →  the file's own I-V tables  →  the pad**",
        "",
-       "**The method half of this deck needs its own pass — the equations, where each parameter "
-       "comes from, and why that stage law. Flagged, not hidden.**"],
-      notes="Deliberately short. The user's own feedback was that the method needs a proper "
-            "walkthrough rather than a circuit diagram and a ramp; that is the next piece of "
-            "work, and docs/track1_recipe.md carries the full procedure meanwhile.")
+       "Each stage:   dv/dt = s_up·h(u)·min(1, (1−v)/x_lin)  −  "
+       "s_dn·h(1−u)·min(1, v/x_lin),   with h(u) = clip((u − vt)/(1 − vt), 0, 1)",
+       "",
+       "All K stages share one set of the four numbers — a real tapered predriver is "
+       "approximately that, and letting them differ makes the fit degenerate.",
+       "**Two things are still unknown: how many stages, and the shape of the map.** Neither can "
+       "be fitted to the file — that is what the stressed run is spent on."],
+      size=17,
+      notes="The map here is the two-parameter MOSFET-shaped curve, not the measured one: track "
+            "1 has no probe. Its shape is one of the two things the stressed run selects.")
+
+slide("11 · Where every number comes from",
+      ["**From the file alone:** C_comp — kept unless the file's own arithmetic rejects it, "
+       "since Ku cannot exceed 1 and ex2's declared 5.0 pF implies 1.24 — and s_up, s_dn, "
+       "vt, x_lin, fitted to the file's Ku(t).",
+       "**From the one stressed pad run:** the stage count K and the map's shape. The file "
+       "narrows K to a band of about three and cannot choose inside it: at K = 7 and K = 9 it "
+       "fits to the same four decimal places, while the gate they predict runs from extinguished "
+       "to almost intact.",
+       "**The run is spent twice, in order:** first it sets the amplitude by moving vt, then it "
+       "picks among the nine candidates (3 stage counts × 3 shapes) on the whole pad waveform.",
+       "**Not on the peak** — the first step has just matched the peak for every candidate, "
+       "so the peak has no information left to rank them with."],
+      size=17,
+      notes="The peak point is the one that cost a night's work: ranking on the peak selects "
+            "chains that turn on 155-300 ps late and hit the right height with the wrong pulse "
+            "under it.")
+
+slide("12 · Where the file-only recipe stands",
+      ["**12 of 12 buffers within ±10 % on the worst stressed pulse; mean 6.9 %.**",
+       "On inv_chain the file-only build reaches 5.1 %, against 25.8 % for a build that uses the "
+       "probed silicon — the shape choice matters more than the measurement.",
+       "**What it costs:** the full transition is worse than the shipped model on 10 of 12 "
+       "buffers, and a stressed pulse train is still lost on ex2 and io_buf. We buy accuracy in "
+       "the interior with accuracy at the endpoints."],
+      ROOT / "results/track1_summary_2026-09-23/endtoend.png",
+      notes="Grey is the shipped model, blue the build using probed silicon, red the file-only "
+            "one. Full numbers in docs/track1_recipe.md.")
+
+slide("13 · What this does not cover yet",
+      ["**Direction.** Everything here is a short HIGH pulse. Only io_buf has been run pulling "
+       "down, where the model is 16–21 points too shallow — its pull-down chain never "
+       "turns on at all on a short pulse.",
+       "**Depth.** The ladder samples 50–90 % of the travel. Below 50 % is unsampled.",
+       "**Trains.** One pulse at a time; a stressed train is still lost on two of three buffers.",
+       "**The recipe has seen the answer key.** Two of the three candidate map shapes were "
+       "chosen by looking at results on these same twelve buffers. A thirteenth buffer may need "
+       "a shape the grid does not contain."],
+      notes="Better said than asked. The direction gap is the one that would most change the "
+            "headline number.")
 
 # --------------------------------------------------------------------------- backup
 slide("Backup · inv_chain's input threshold",

@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 12 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 18 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout are taken from Simon's 09-18 deck; none of
 his slides are carried over.
@@ -17,8 +17,15 @@ one runs in the order the work actually went, which is the order Simon asked for
 | 4–6 | **show it works**: that map, driven by the real gate, tracks the transistor at every stress level, where native IBIS and our gate-state model do not |
 | 7–8 | **show why ours fails**: the real gate changes shape as the pulse shortens, GUP keeps one shape, and that difference is the whole error |
 | 9 | **only now the motivation**: reproduce the gate's shape from what is in the file |
-| 10–11 | the method, and what it does not yet cover |
-| 12 | backup: inv_chain's input threshold |
+| 10 | what the file gives, and the specific way it is blind: a full transition visits only the two ends of the gate's travel |
+| 11 | one stressed pulse reaches the interior – the five widths stop the gate at 0.76 / 0.80 / 0.84 / 0.88 / 0.94, so the stress sweep is a sampling grid |
+| 12 | what shape the gate may be: every stage under-reaches a linear filter, and the gap compounds to 0.50 against 1.00 at the pad |
+| 13 | the physics, and the four numbers it forces – drawn, not listed |
+| 14 | what we build, with the stage law written out |
+| 15 | where every number comes from, and why the peak cannot be used to choose |
+| 16 | where the recipe stands: 12 of 12 within ±10 %, and what it costs |
+| 17 | what it does not cover yet |
+| 18 | backup: inv_chain's input threshold |
 
 ## The correction that changed slides 4–6
 
@@ -43,13 +50,25 @@ matrix (`delay_cmd/waveforms`).
 **inv_chain caveat, carried from the 09-18 deck.** Its IBIS file declares Vinh 2.0 V on a 1.8 V
 part, so our input comparator fires late and trims ~29 ps off every pulse. That flatters the
 gate-state model on slide 5 (−2 % at 70 % stress against native's +32 %). It is a defect, not a
-result; slide 12 says so.
+result; slide 18 says so.
 
-## What still needs a pass
+## The method half
 
-Slides 10–11 are deliberately thin. Simon's feedback on the earlier web version was that the
-method needs a proper walkthrough — the stage law written out, where each parameter's value
-comes from, and why that law rather than an RC — and that a circuit diagram plus a ramp figure
-does not do it. That is the next piece of work. `docs/track1_recipe.md` carries the full
-procedure and the numbers meanwhile, and `docs/track1_explainer.template.html` is the visual
-version of the same argument.
+Written to the same rule as the first half: one question per slide, and nothing before the thing
+that motivates it. Three figures are new.
+
+`sampling_grid` puts the five probed gates on one axis with the full transition behind them, so
+"each width stops the clock at a different point of the same path" is something you can see
+rather than a claim. `stage_nonlinear` is the evidence for the stage law: every probed stage
+against what a linear filter would give at the deepest pulse, with the gap compounding down the
+chain — 1.03 against 1.04 at the first stage, 0.50 against 1.00 at the pad. The superposition
+itself comes from `predriver_stage_probe`, which owns it. `stage_law` draws the four numbers as
+geometry rather than listing them, because a threshold, a slope and a taper are easier seen.
+
+## Known gaps, stated on the slides
+
+Slide 17 gives them to the audience rather than leaving them to be asked: short HIGH pulses
+only, 50–90 % of the travel, single pulses rather than trains, and a shape grid that was
+chosen by looking at results on these same twelve buffers. `docs/track1_recipe.md` carries the
+full procedure and the numbers; `docs/track1_explainer.template.html` is the same argument as a
+web page, kept in step by `scripts/check_recipe_agreement.py`.
