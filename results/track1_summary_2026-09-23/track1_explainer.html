@@ -1,0 +1,982 @@
+<title>The Track-1 Recipe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Serif:wght@400;600&display=swap">
+<style>
+:root{
+  --paper:#F4F6F5; --ink:#14191D; --muted:#5C6B72; --rule:#D6DCD9;
+  --panel:#E9EDEA; --panel2:#DFE5E1; --ours:#0E7C6B; --fail:#AE523A; --warn:#8A6A1F;
+  --serif:"IBM Plex Serif",Georgia,"Times New Roman",serif;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --measure:66ch;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --paper:#14181B; --ink:#E7ECEE; --muted:#95A5AC; --rule:#2A3339;
+  --panel:#1A2024; --panel2:#212930; --ours:#46BCA6; --fail:#DE8365; --warn:#D2AC52;
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --paper:#14181B; --ink:#E7ECEE; --muted:#95A5AC; --rule:#2A3339;
+  --panel:#1A2024; --panel2:#212930; --ours:#46BCA6; --fail:#DE8365; --warn:#D2AC52;
+}
+
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.62;-webkit-font-smoothing:antialiased;}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:20px;padding-block:0 96px;}
+
+/* ---- top bar ---- */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:color-mix(in srgb,var(--paper) 92%,transparent);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--rule);}
+.bar-in{max-width:1000px;margin:0 auto;padding:9px 20px;display:flex;gap:6px;align-items:baseline;
+  flex-wrap:wrap;font-family:var(--mono);font-size:12px;}
+.bar-in b{font-weight:600;letter-spacing:.02em;margin-right:10px;}
+.bar a{color:var(--muted);text-decoration:none;padding:2px 7px;border-radius:3px;}
+.bar a:hover{color:var(--ink);background:var(--panel);}
+.bar a:focus-visible{outline:2px solid var(--ours);outline-offset:1px;}
+
+/* ---- type ---- */
+h1{font-family:var(--serif);font-weight:600;font-size:clamp(2rem,5.5vw,3rem);line-height:1.1;
+  letter-spacing:-.015em;margin:56px 0 0;text-wrap:balance;max-width:16ch;}
+.dek{font-size:clamp(1.05rem,2.4vw,1.25rem);color:var(--muted);max-width:56ch;margin:20px 0 0;}
+h2{font-family:var(--serif);font-weight:600;font-size:1.7rem;line-height:1.2;margin:0 0 6px;
+  letter-spacing:-.01em;text-wrap:balance;}
+h3{font-family:var(--sans);font-weight:600;font-size:1.06rem;margin:34px 0 4px;letter-spacing:-.005em;}
+p{margin:14px 0;max-width:var(--measure);}
+a{color:var(--ours);}
+strong{font-weight:600;}
+em{font-style:normal;font-family:var(--mono);font-size:.92em;}
+code,.m{font-family:var(--mono);font-size:.9em;}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--muted);margin:0 0 10px;}
+section{margin-top:72px;scroll-margin-top:64px;}
+.lede{font-size:1.06rem;}
+
+/* ---- figure plates ---- */
+figure{margin:30px 0;background:var(--panel);border:1px solid var(--rule);border-radius:2px;
+  padding:20px 20px 16px;}
+figure svg{display:block;width:100%;max-width:100%;height:auto;margin:0 auto;}
+figcaption{font-size:13.5px;line-height:1.55;color:var(--muted);margin-top:14px;
+  padding-top:12px;border-top:1px solid var(--rule);max-width:76ch;}
+figcaption b{color:var(--ink);font-weight:600;}
+.plate{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--muted);margin-bottom:14px;}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:18px;}
+.grid2 svg{width:100%;}
+
+/* ---- svg shared ---- */
+svg text{font-family:var(--mono);fill:var(--muted);font-size:12.5px;}
+svg text.hd{fill:var(--ink);font-size:13.5px;font-weight:500;}
+svg text.num{fill:var(--ink);font-size:14px;font-weight:600;}
+svg text.sm{font-size:11px;}
+svg text.sans{font-family:var(--sans);font-size:11.5px;}
+svg .ax{stroke:var(--rule);stroke-width:1.3;fill:none;}
+svg .cv{fill:none;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round;}
+svg .truth{stroke:var(--ink);stroke-width:3.2;}
+svg .ours{stroke:var(--ours);stroke-width:2.4;stroke-dasharray:7 4;}
+svg .ship{stroke:var(--fail);stroke-width:2;stroke-dasharray:2.5 3.5;}
+svg .box{fill:var(--panel2);stroke:var(--rule);stroke-width:1.2;}
+svg .dash{stroke:var(--muted);stroke-dasharray:4 4;stroke-width:1.1;fill:none;opacity:.75;}
+svg .lead{stroke:var(--muted);stroke-width:1.1;fill:none;}
+svg .faint{stroke:var(--muted);stroke-width:1.3;fill:none;opacity:.45;}
+
+/* ---- key / tables ---- */
+.key{display:flex;flex-wrap:wrap;gap:16px;font-family:var(--mono);font-size:12px;
+  color:var(--muted);margin-bottom:16px;}
+.key i{display:inline-block;width:24px;height:0;border-top-width:3px;border-top-style:solid;
+  vertical-align:middle;margin-right:7px;}
+.k-t i{border-color:var(--ink);}
+.k-o i{border-color:var(--ours);border-top-style:dashed;}
+.k-s i{border-color:var(--fail);border-top-style:dotted;border-top-width:3px;}
+
+.tbl{width:100%;border-collapse:collapse;font-size:14px;margin:22px 0;}
+.tbl th{text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);font-weight:500;padding:0 12px 7px 0;
+  border-bottom:1px solid var(--rule);vertical-align:bottom;}
+.tbl td{padding:9px 12px 9px 0;border-bottom:1px solid var(--rule);vertical-align:top;
+  line-height:1.45;}
+.tbl td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap;}
+.tbl tr.hi td{background:color-mix(in srgb,var(--ours) 9%,transparent);}
+.scroll{overflow-x:auto;}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  padding:2px 6px;border-radius:2px;white-space:nowrap;border:1px solid var(--rule);color:var(--muted);}
+.tag.fit{color:var(--ours);border-color:color-mix(in srgb,var(--ours) 45%,var(--rule));}
+.tag.sel{color:var(--fail);border-color:color-mix(in srgb,var(--fail) 45%,var(--rule));}
+.tag.asm{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,var(--rule));}
+
+/* ---- step blocks ---- */
+.step{border-left:2px solid var(--rule);padding-left:20px;margin:30px 0;}
+.step h3{margin-top:0;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;}
+.step h3 span{font-family:var(--mono);font-size:12px;color:var(--ours);letter-spacing:.08em;}
+.step p{max-width:62ch;}
+.step.key-step{border-left-color:var(--ours);}
+
+.callout{background:var(--panel);border:1px solid var(--rule);border-left:2px solid var(--fail);
+  padding:16px 18px;margin:26px 0;font-size:14.5px;}
+.callout p{margin:6px 0;max-width:64ch;}
+.callout .eyebrow{color:var(--fail);}
+
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;
+  background:var(--rule);border:1px solid var(--rule);margin:28px 0;}
+.stat div{background:var(--paper);padding:16px 18px;}
+.stat b{display:block;font-family:var(--mono);font-size:1.6rem;font-weight:600;letter-spacing:-.02em;
+  line-height:1.1;margin-bottom:5px;}
+.stat span{font-size:12.5px;color:var(--muted);line-height:1.4;display:block;}
+.stat .good b{color:var(--ours);}
+.stat .bad b{color:var(--fail);}
+
+.foot{margin-top:80px;padding-top:22px;border-top:1px solid var(--rule);
+  font-family:var(--mono);font-size:12px;color:var(--muted);line-height:1.8;}
+.foot a{color:var(--muted);}
+@media (max-width:560px){
+  figure{padding:14px 12px 12px;}
+  .step{padding-left:14px;}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;}}
+</style>
+
+<svg width="0" height="0" aria-hidden="true" style="position:absolute">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6"
+            orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+    <marker id="arm" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5"
+            orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--muted)"/></marker>
+  </defs>
+</svg>
+
+
+
+<div class="bar"><div class="bar-in">
+  <b>TRACK 1</b>
+  <a href="#product">the product</a><a href="#probe">the probe</a>
+  <a href="#frame">the frame</a><a href="#prior">the prior</a>
+  <a href="#recipe">the recipe</a><a href="#result">the result</a><a href="#limits">limits</a>
+</div></div>
+
+<div class="wrap">
+
+<h1>One product, two factors, one probe</h1>
+<p class="dek">An IBIS file records Ku(t). A truncated pulse depends on the two things Ku(t) is
+made of. This is how you recover them from the file plus one pad measurement — and why each step
+of the recipe has to be where it is.</p>
+
+<div class="stat">
+  <div class="good"><b>12 / 12</b><span>buffers within ±10 % of the transistor on the worst stressed pulse</span></div>
+  <div class="bad"><b>35–76 %</b><span>where the shipped model lands on the same pulses, on 11 of 12</span></div>
+  <div><b>1</b><span>stressed pad run per buffer — spent on two different jobs</span></div>
+</div>
+
+<div class="callout" style="border-left-color:var(--ours)">
+  <p class="eyebrow" style="color:var(--ours)">The argument, and the order of the page</p>
+  <p><strong>1.</strong> IBIS gives you Ku(t), and Ku(t) is a product: <em>map( gate(t) )</em>.<br>
+  <strong>2.</strong> A truncated pulse depends on the factors, not the product — the reversal
+  asks where the gate was.<br>
+  <strong>3.</strong> A full transition visits only the two ends of the gate's travel, so nothing
+  done to the file alone can factor it. A truncated pulse stops the clock mid-travel: it is the
+  only probe that reaches the interior from outside the chip.<br>
+  <strong>4.</strong> But a few samples cannot pick a path out of infinitely many, so we need a
+  physics prior on which gate paths this kind of circuit produces.<br>
+  <strong>5.</strong> <strong>Prior + samples = the factorisation.</strong> The recipe is then
+  just the three things that can corrupt it.</p>
+</div>
+
+<section id="product">
+<p class="eyebrow">1 · the product</p>
+<h2>Ku(t) is a product, and the file pins only the product</h2>
+
+<p class="lede">The I-V tables and the V-T waveforms give Ku(t): the conducting fraction at every
+instant of one complete transition. That is the whole of what IBIS carries about the dynamics,
+and it is a composition of two things the file never separates — the gate's trajectory, and the
+curve that turns gate voltage into conducting fraction.</p>
+
+<p><strong>What the figure shows.</strong> Two models. Each row reads left to right as
+<em>gate → map → Ku</em>: the gate's path in time, the curve it is pushed through, and the Ku(t)
+that results. Row A has a slow gate and a map that turns on early; row B a fast, square gate and
+a map that turns on late. <strong>Follow the dashed line down each row</strong> — it marks one
+instant, the moment a truncated pulse would reverse.</p>
+
+<figure>
+  <div class="plate">Can the file tell these two models apart?</div>
+  <svg viewBox="0 0 560 512" role="img"
+       aria-label="Two models. Model A has a slow gate and a map that turns on early; model B a
+       fast square gate and a map that turns on late. Following the moment of reversal along each
+       row - from the gate panel, through the map, to Ku - both land on the same Ku of 0.25,
+       although A's gate is at 0.50 and B's at 0.79.">
+    <text class="hd" x="109" y="26" text-anchor="middle">the gate g(t)</text>
+    <text class="hd" x="281" y="26" text-anchor="middle">the map Ku(g)</text>
+    <text class="hd" x="453" y="26" text-anchor="middle">Ku(t) — all the file sees</text>
+    <text class="sm" x="109" y="40" text-anchor="middle">time → , gate ↑</text>
+    <text class="sm" x="281" y="40" text-anchor="middle">gate → , Ku ↑</text>
+    <text class="sm" x="453" y="40" text-anchor="middle">time → , Ku ↑</text>
+
+    <!-- row A : ink -->
+    <g transform="translate(34,52)">
+      <path class="ax" d="M0,0 v92 h150"/><polyline id="d1_gateA" class="cv truth"/>
+      <path class="dash" d="M75,92 V48.2 H0"/>
+      <circle cx="75" cy="48.2" r="4" fill="var(--ink)"/>
+      <text class="sm" x="-4" y="51.7" text-anchor="end">0.50</text>
+    </g>
+    <text x="195" y="104" text-anchor="middle" font-size="17" fill="var(--muted)">→</text>
+    <g transform="translate(206,52)">
+      <path class="ax" d="M0,0 v92 h150"/><polyline id="d1_mapA" class="cv truth"/>
+      <path class="dash" d="M75,92 V70.1 H0"/>
+      <circle cx="75" cy="70.1" r="4" fill="var(--ink)"/>
+    </g>
+    <text x="367" y="104" text-anchor="middle" font-size="17" fill="var(--muted)">=</text>
+    <g transform="translate(378,52)">
+      <path class="ax" d="M0,0 v92 h150"/><polyline id="d1_ku" class="cv truth"/>
+      <path class="dash" d="M0,70.1 h150 M75,92 V70.1"/>
+      <circle cx="75" cy="70.1" r="4" fill="var(--ink)"/>
+      <text class="sm" x="-4" y="73.6" text-anchor="end">0.25</text>
+    </g>
+    <text class="hd" x="34" y="176">A</text>
+    <text class="sans" x="50" y="176">a slow gate, through a map that turns on early</text>
+
+    <!-- row B : rust -->
+    <g transform="translate(34,196)">
+      <path class="ax" d="M0,0 v92 h150"/>
+      <polyline id="d1_gateB" class="cv" stroke="var(--fail)" stroke-width="3.2"/>
+      <path class="dash" d="M75,92 V22.5 H0"/>
+      <circle cx="75" cy="22.5" r="4" fill="var(--fail)"/>
+      <text class="sm" x="-4" y="26.0" text-anchor="end">0.79</text>
+    </g>
+    <text x="195" y="248" text-anchor="middle" font-size="17" fill="var(--muted)">→</text>
+    <g transform="translate(206,196)">
+      <path class="ax" d="M0,0 v92 h150"/>
+      <polyline id="d1_mapB" class="cv" stroke="var(--fail)" stroke-width="3.2"/>
+      <path class="dash" d="M119.1,92 V70.1 H0"/>
+      <circle cx="119.1" cy="70.1" r="4" fill="var(--fail)"/>
+    </g>
+    <text x="367" y="248" text-anchor="middle" font-size="17" fill="var(--muted)">=</text>
+    <g transform="translate(378,196)">
+      <path class="ax" d="M0,0 v92 h150"/>
+      <polyline id="d1_ku2" class="cv" stroke="var(--fail)" stroke-width="3.2"/>
+      <path class="dash" d="M0,70.1 h150 M75,92 V70.1"/>
+      <circle cx="75" cy="70.1" r="4" fill="var(--fail)"/>
+      <text class="sm" x="-4" y="73.6" text-anchor="end">0.25</text>
+    </g>
+    <text class="hd" x="34" y="320">B</text>
+    <text class="sans" x="50" y="320">a fast, square gate, through a map that turns on late</text>
+
+    <path class="ax" d="M20,342 h520"/>
+
+    <!-- the two gates on one pair of axes -->
+    <text class="sm" x="109" y="358" text-anchor="middle">the input reverses here</text>
+    <g transform="translate(34,374)">
+      <path class="ax" d="M0,0 v92 h150"/>
+      <polyline id="d1_gateA2" class="cv truth"/>
+      <polyline id="d1_gateB2" class="cv" stroke="var(--fail)" stroke-width="3.2"/>
+      <path class="dash" d="M75,-8 v100"/>
+      <circle cx="75" cy="48.2" r="4" fill="var(--ink)"/>
+      <circle cx="75" cy="22.5" r="4" fill="var(--fail)"/>
+      <text class="sm" x="-4" y="51.7" text-anchor="end">0.50</text>
+      <text class="sm" x="-4" y="26.0" text-anchor="end">0.79</text>
+      <text class="sm" x="-4" y="95" text-anchor="end">0</text>
+      <text class="sm" x="150" y="106" text-anchor="end">time →</text>
+    </g>
+    <text class="sans" x="206" y="392">The same two gates, on one pair</text>
+    <text class="sans" x="206" y="410">of axes — this is the left column.</text>
+    <text class="num" x="206" y="438">Ku = 0.25 for both</text>
+    <text class="sans" x="206" y="458">yet one gate is half-way up and</text>
+    <text class="sans" x="206" y="476">the other is nearly at the rail.</text>
+  </svg>
+  <figcaption><b>No.</b> At the marked instant model A's gate is at 0.50 and model B's at 0.79 — they are in completely different internal states — yet both produce Ku = 0.25, and the two right-hand panels are the identical curve. Since that curve is all the file records, <b>both rows are legal readings of the same IBIS file.</b> Reverse the input at that instant, though, and one buffer is half-way through its transition while the other is essentially finished: they behave completely differently from there on. <b>Choosing between rows like these is the whole of what follows.</b></figcaption>
+</figure>
+
+<p>This is not a hypothetical failure. The shipped model makes the row-B choice in its most
+extreme form — a command delay followed by a near-instant gate — so its gate is fully on or fully
+off at any reversal and never partway. That single choice is most of the 35–76 % it misses by.</p>
+</section>
+
+<section id="probe">
+<p class="eyebrow">2 · the probe</p>
+<h2>Why a truncated pulse is the only instrument that reaches the factors</h2>
+
+<p class="lede">If the file cannot separate the two, what can? The answer is a property of the
+measurement, not of the analysis, and the rest of the page is organised around it.</p>
+
+<p><strong>What the figure shows.</strong> One gate trajectory, rising through a transition.
+The two ringed points are its endpoints. The filled dots are the instants at which each of our
+five stressed pulse widths reverses the input.</p>
+
+<figure>
+  <div class="plate">What does cutting the pulse short actually buy?</div>
+  <svg viewBox="0 0 560 296" role="img"
+       aria-label="The command gate's trajectory. A full transition only ever visits its two
+       ends, so it cannot separate the gate from the map. Each truncated pulse stops the clock
+       at a different instant of the travel, reading out the interior of the path.">
+    <text class="hd" x="20" y="24">the command gate, during one transition</text>
+    <g transform="translate(100,44)">
+      <path class="ax" d="M0,0 v116 h360"/>
+      <polyline id="d12_gate" class="cv truth"/>
+      <path class="dash" d="M79,116 V60"/><circle cx="79" cy="60" r="4.5" fill="var(--fail)"/>
+      <path class="dash" d="M108,116 V49"/><circle cx="108" cy="49" r="4.5" fill="var(--fail)"/>
+      <path class="dash" d="M144,116 V38"/><circle cx="144" cy="38" r="4.5" fill="var(--fail)"/>
+      <path class="dash" d="M194,116 V27"/><circle cx="194" cy="27" r="4.5" fill="var(--fail)"/>
+      <path class="dash" d="M281,116 V18"/><circle cx="281" cy="18" r="4.5" fill="var(--fail)"/>
+      <circle cx="0" cy="116" r="5" fill="none" stroke="var(--ours)" stroke-width="2.4"/>
+      <circle cx="355" cy="10" r="5" fill="none" stroke="var(--ours)" stroke-width="2.4"/>
+      <text class="sm" x="-8" y="14" text-anchor="end">1</text>
+      <text class="sm" x="-8" y="119" text-anchor="end">0</text>
+      <text class="sm" x="360" y="134" text-anchor="end">time →</text>
+    </g>
+    <circle cx="30" cy="182" r="5.5" fill="none" stroke="var(--ours)" stroke-width="2.4"/>
+    <text class="sans" x="44" y="186" fill="var(--ours)">the two ringed ends are everything</text>
+    <text class="sans" x="44" y="202" fill="var(--ours)">a full transition reads</text>
+    <circle cx="30" cy="230" r="5" fill="var(--fail)"/>
+    <text class="sans" x="44" y="234" fill="var(--fail)">each truncation stops the clock at one of these —</text>
+    <text class="sans" x="44" y="250" fill="var(--fail)">the pad afterwards reports where the chain had got to</text>
+    <text class="sans" x="30" y="278">Five widths, five instants — the only way to see inside the command path from the pad.</text>
+  </svg>
+  <figcaption><b>Access to the interior of the gate's path.</b> A complete transition starts at one end of the travel and finishes at the other, so any two models that agree about the endpoints agree about the entire waveform — which is precisely why the file cannot factor Ku(t). Cutting the input short stops the clock partway, and what the pad does next depends on where the command chain had got to at that instant. <br><br>Two things follow. The stress sweep is a <b>sampling grid</b>, not a robustness check: the depths decide which part of the travel we can see, which is what “depth 50–90 %“ in the limits table means. And five samples per buffer is a thin measurement, so the model has to arrive already constrained — the samples <b>select</b> among possibilities, they cannot invent a trajectory.</figcaption>
+</figure>
+</section>
+
+<section id="frame">
+<p class="eyebrow">3 · the frame</p>
+<h2>One thing to check before building on it</h2>
+
+<p class="lede">Everything above assumes Ku(t) can be written as <em>map(gate(t))</em> — a fixed
+curve the gate is driven through. Worth confirming before the whole recipe rests on it, and it
+is a question a direct measurement can settle.</p>
+
+
+<figure>
+  <div class="plate">Does the output stage have any memory of its own?</div>
+  
+  <svg viewBox="0 0 560 220" role="img" aria-label="Ku plotted against the probed gate. The rising and falling branches lie on top of one another, a gap of 0.07 to 0.10, so Ku is a function of the gate alone.">
+    <text class="hd" x="70" y="28">Ku, plotted against the gate that produced it</text>
+    <g transform="translate(70,44)">
+      <path class="ax" d="M0,0 v92 h150"/>
+      <path class="dash" d="M0,24.2 h150"/>
+      <text class="sm" x="-6" y="27" text-anchor="end">1.0</text>
+      <text class="sm" x="-6" y="95" text-anchor="end">0</text>
+      <polyline id="d2_tight_up" class="cv" stroke="var(--ink)" stroke-width="2.8"/>
+      <polyline id="d2_tight_dn" class="cv" stroke="var(--ink)" stroke-width="2.8"/>
+      <text class="sm" x="150" y="108" text-anchor="end">gate →</text>
+      <text class="sm" x="-40" y="50">Ku</text>
+      
+    </g>
+    <text class="sans" x="266" y="88">One trace, not two: the branch traced</text>
+    <text class="sans" x="266" y="108">on the way <tspan fill="var(--ink)" font-weight="600">up</tspan> and the branch traced</text>
+    <text class="sans" x="266" y="128">on the way <tspan fill="var(--ink)" font-weight="600">down</tspan> lie on each other.</text>
+    <text class="sans" x="266" y="148"></text>
+    <text class="sans" x="266" y="168">Gap 0.07 – 0.10 on io_buf and inv_chain.</text>
+  </svg>
+  <figcaption><b>The question.</b> The whole page treats Ku(t) as <em>map(gate(t))</em> — a fixed
+  curve the gate is pushed through. That is only legitimate if the output stage has no state of
+  its own; if it did, Ku would depend on where the gate is <i>and</i> on how it got there.
+  <br><br><b>The test.</b> Probe the real predriver node, solve Ku from the pad, and plot one
+  against the other. If Ku is a genuine function of the gate, the curve traced while the gate is
+  rising sits on top of the curve traced while it falls. It does, to 0.07–0.10 of a conducting
+  fraction. <b>So the frame is sound, and the modelling job really is just the factorisation.</b>
+  (ex2 looks like an exception until its C_comp is corrected — which is the next section's
+  business, not this one's.)</figcaption>
+</figure>
+</section>
+
+<section id="prior">
+<p class="eyebrow">4 · the prior</p>
+<h2>What gate paths is this circuit able to produce?</h2>
+
+<p class="lede">Five samples cannot pick a trajectory out of the space of all trajectories. They
+can pick one out of a small family — if the family is right. So: what does the predriver
+actually do?</p>
+
+<p><strong>The physical picture.</strong> A CMOS inverter driving a large load is a
+<strong>current source</strong> while its input sits at the rail, because its conducting device
+is in saturation. Only near the destination rail does the device leave saturation and become a
+resistor. A constant current into a gate capacitance gives a <strong>ramp</strong>, which then
+tapers off at the end.</p>
+
+<p><strong>What the figure shows.</strong> That picture drawn as a circuit — a threshold element
+feeding a current source into a capacitance — with the four numbers it requires named underneath,
+and the output it produces plotted below, against the exponential an RC would give.</p>
+
+<figure>
+  <div class="plate">What shape is the gate's path — and what describes it?</div>
+  <svg viewBox="0 0 560 396" role="img"
+       aria-label="A stage drawn as a threshold element feeding a current source into a
+       capacitance, with the four numbers named underneath, and the resulting ramp-then-taper
+       output compared with an RC exponential reaching the same point at the same time.">
+    <text class="hd" x="14" y="58">u</text>
+    <text class="sm" x="14" y="76">from k−1</text>
+    <path class="lead" d="M46,63 h34" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="90" y="44" width="74" height="38" rx="2"/>
+    <text class="hd" x="127" y="68" text-anchor="middle">h(u)</text>
+    <path class="lead" d="M164,63 h26" marker-end="url(#arm)" color="var(--muted)"/>
+    <circle class="box" cx="216" cy="63" r="19"/>
+    <path d="M216,75 v-22 M210,59 l6,-7 l6,7" fill="none" stroke="var(--ink)" stroke-width="1.6"/>
+    <path class="lead" d="M235,63 h51"/>
+    <circle cx="286" cy="63" r="3.2" fill="var(--ink)"/>
+    <text class="hd" x="286" y="36" text-anchor="middle">x</text>
+    <path class="lead" d="M286,66 v22"/>
+    <path d="M270,88 h32 M270,96 h32" stroke="var(--ink)" stroke-width="1.8" fill="none"/>
+    <path class="lead" d="M286,96 v14 M276,110 h20 M280,115 h12 M283,119 h6"/>
+    <path class="lead" d="M289,63 h55" marker-end="url(#arm)" color="var(--muted)"/>
+    <text x="350" y="67">to stage k+1</text>
+
+    <path class="ax" d="M20,142 h520"/>
+    <text class="sans" x="20" y="166"><tspan fill="var(--ink)">vt , p</tspan>  —  the threshold. Nothing happens until the input passes vt.</text>
+    <text class="sans" x="20" y="186"><tspan fill="var(--ink)">s_up , s_dn</tspan>  —  the constant current. The output is a ramp.</text>
+    <text class="sans" x="20" y="206"><tspan fill="var(--ink)">x_lin</tspan>  —  how close to the rail before the source throttles back.</text>
+
+    <g transform="translate(90,236)">
+      <path class="ax" d="M0,0 v110 h300"/>
+      <path class="dash" d="M0,0 h300"/>
+      <path class="dash" d="M0,49.5 h300 M94,49.5 v60.5"/>
+      <polyline id="d3_cv_rc" class="cv faint" stroke-dasharray="4 4"/>
+      <polyline id="d3_cv_cl" class="cv truth"/>
+      <text class="sm" x="-6" y="4" text-anchor="end">rail</text>
+      <text class="sm" x="-6" y="53" text-anchor="end">0.55</text>
+      <text class="sm" x="300" y="128" text-anchor="end">time →</text>
+    </g>
+    <text class="num" x="402" y="274">a ramp</text>
+    <text class="sans" x="402" y="292">the gate is somewhere</text>
+    <text class="sans" x="402" y="308">definite at every instant</text>
+    <text class="sans" x="90" y="382">dashed: an RC reaching the same point at the same time</text>
+  </svg>
+  <figcaption><b>A ramp that tapers, and four numbers.</b> The picture forces exactly four: how much input a stage needs before it responds at all (<em>vt</em>), how fast it charges and discharges once it does (<em>s_up</em>, <em>s_dn</em>), and how near the rail the constant current gives way to a taper (<em>x_lin</em>). They are not free knobs — each names something the circuit has. <b>Their values are fitted to the file's own full-swing Ku(t)</b>, so they cost no measurement. <br><br>Note the shape of the argument repeating one level down: the ramp and the RC <b>reach the same point at the same time</b> and differ only in between. Endpoints again agreeing while interiors differ — which is why the gate's shape, not just its timing, is what a truncated pulse sees. <br><br>The test that settled the family: fit each real stage at full swing <i>only</i>, then drive it with its measured stressed input. ex2's output gate comes out within 0.05 at every width, through three stages from the input pin, where linear superposition is off by 0.17.</figcaption>
+</figure>
+
+<p>With the family fixed, the model is a chain of these stages driving the map. That is the whole
+architecture — nothing else is in it.</p>
+
+<figure>
+  <div class="plate">What, in the end, are we building?</div>
+  <svg viewBox="0 0 560 206" role="img"
+       aria-label="The digital input drives K identical current-limited stages, whose output g
+       passes through the map to give Ku, which scales the IBIS I-V tables to drive the pad.">
+    <text class="hd" x="12" y="62">input</text>
+    <path class="lead" d="M58,57 h14" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="76" y="40" width="34" height="34" rx="2"/><text class="sm" x="93" y="62" text-anchor="middle">1</text>
+    <rect class="box" x="116" y="40" width="34" height="34" rx="2"/><text class="sm" x="133" y="62" text-anchor="middle">2</text>
+    <text x="164" y="62" text-anchor="middle">…</text>
+    <rect class="box" x="178" y="40" width="34" height="34" rx="2"/><text class="sm" x="195" y="62" text-anchor="middle">K</text>
+    <path class="lead" d="M216,57 h22" marker-end="url(#arm)" color="var(--muted)"/>
+    <text class="hd" x="246" y="62">g</text>
+    <path class="lead" d="M260,57 h18" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="282" y="40" width="72" height="34" rx="2"/><text class="sm" x="318" y="62" text-anchor="middle">the map</text>
+    <path class="lead" d="M358,57 h18" marker-end="url(#arm)" color="var(--muted)"/>
+    <text class="hd" x="384" y="62">Ku</text>
+    <path class="lead" d="M406,57 h18" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="428" y="40" width="76" height="34" rx="2"/><text class="sm" x="466" y="62" text-anchor="middle">I-V tables</text>
+    <path class="lead" d="M508,57 h16" marker-end="url(#arm)" color="var(--muted)"/>
+    <text class="hd" x="528" y="62">pad</text>
+
+    <path class="lead" d="M76,84 v8 h136 v-8"/>
+    <text class="sans" x="144" y="114" text-anchor="middle">K identical stages</text>
+    <text class="sm" x="144" y="130" text-anchor="middle" fill="var(--ink)">M2 · M3</text>
+    <path class="lead" d="M318,84 v8"/>
+    <text class="sans" x="318" y="114" text-anchor="middle">single-valued</text>
+    <text class="sm" x="318" y="130" text-anchor="middle" fill="var(--ink)">M1</text>
+    <path class="lead" d="M466,84 v8"/>
+    <text class="sans" x="466" y="114" text-anchor="middle">from the file</text>
+    <text x="20" y="168" class="sm" font-size="10.5">dx/dt = s_up·h(u)·min(1, (1−x)/x_lin) − s_dn·h(1−u)·min(1, x/x_lin)</text>
+    <text x="20" y="190" class="sm" font-size="10.5">h(u) = clip((u − vt)/(1 − vt))^p</text>
+  </svg>
+  <figcaption>K identical current-limited stages (the family, from the physics above) driving a static map (legitimate, from the hysteresis measurement) into the file's own I-V tables. All K stages share <b>one</b> set of the four numbers — a real tapered predriver is approximately that, and the next figures show why the constraint is not optional.</figcaption>
+</figure>
+
+<p>Of all the numbers in that architecture, one behaves quite differently from the rest: the
+number of stages. It is not a refinement, because a chain does not merely attenuate a short
+pulse.</p>
+
+<figure>
+  <div class="plate">Why does the number of stages matter so much?</div>
+  <svg viewBox="0 0 560 250" role="img"
+       aria-label="A long push travels through five predriver stages at nearly full height. A
+       short push shrinks at each stage and dies by the third, because every stage needs its
+       input past a threshold before it responds at all.">
+    <text class="hd" x="20" y="26">a long push</text>
+    <path class="dash" d="M40,86 h404"/>
+    <text class="sm" x="450" y="89">each stage needs</text>
+    <text class="sm" x="450" y="104">its input past vt</text>
+    <path class="ax" d="M40,114 h404"/>
+    <g fill="none" stroke="var(--ink)" stroke-width="2.6">
+      <path d="M44,114 C52,114 54,44 64,44 C74,44 76,114 84,114"/>
+      <path d="M124,114 C132,114 134,46 144,46 C154,46 156,114 164,114"/>
+      <path d="M204,114 C212,114 214,48 224,48 C234,48 236,114 244,114"/>
+      <path d="M284,114 C292,114 294,50 304,50 C314,50 316,114 324,114"/>
+      <path d="M364,114 C372,114 374,52 384,52 C394,52 396,114 404,114"/>
+    </g>
+    <rect class="box" x="88" y="92" width="32" height="22" rx="2"/>
+    <rect class="box" x="168" y="92" width="32" height="22" rx="2"/>
+    <rect class="box" x="248" y="92" width="32" height="22" rx="2"/>
+    <rect class="box" x="328" y="92" width="32" height="22" rx="2"/>
+    <text class="sans" x="20" y="140">it arrives</text>
+
+    <path class="ax" d="M20,166 h520"/>
+    <text class="hd" x="20" y="192">a short push</text>
+    <path class="dash" d="M40,232 h404"/>
+    <path class="ax" d="M40,246 h404"/>
+    <g fill="none" stroke-width="2.6">
+      <path d="M50,246 C55,246 56,206 64,206 C72,206 73,246 78,246" stroke="var(--ink)"/>
+      <path d="M132,246 C137,246 138,220 144,220 C150,220 151,246 156,246" stroke="var(--fail)"/>
+      <path d="M212,246 C217,246 218,236 224,236 C230,236 231,246 236,246" stroke="var(--fail)"/>
+      <path d="M292,246 C298,246 300,243 304,243 C308,243 310,246 316,246" stroke="var(--fail)"/>
+    </g>
+    <rect class="box" x="88" y="224" width="32" height="22" rx="2"/>
+    <rect class="box" x="168" y="224" width="32" height="22" rx="2"/>
+    <rect class="box" x="248" y="224" width="32" height="22" rx="2"/>
+    <rect class="box" x="328" y="224" width="32" height="22" rx="2"/>
+    <text class="sans" x="372" y="240" fill="var(--fail)">it never reaches the gate</text>
+  </svg>
+  <figcaption><b>Because a chain can extinguish a pulse rather than shrink it.</b> Each stage needs its input past <em>vt</em> before it delivers anything, so a short pulse loses a little at every hop; once it falls under the threshold, nothing at all continues. That makes K a first-order parameter. It is also, exactly, why io_buf's pull-down chain is inert on short pulses: its stages each want 0.7 of the swing, so a 163–322 ps pulse dies in the first one and GDN never rises.</figcaption>
+</figure>
+
+<h3>And the file cannot pick it</h3>
+<p><strong>What is being fitted here.</strong> A chain of stages, to the buffer's own full-swing
+Ku(t) — the curve from §1, the only thing the file contains. The question is whether that fit
+determines the chain.</p>
+
+<figure>
+  <div class="plate">Can the file's own curve pick the stage count?</div>
+  <svg viewBox="0 0 560 320" role="img"
+       aria-label="A free two-stage fit splits the delay into one very slow and one fast stage;
+       the slow stage's threshold leaves the pulse under the threshold, predicting a stressed
+       gate of 0.23 against a measured 0.76. Three identical stages pass it, predicting 0.81.">
+    <text class="hd" x="20" y="26">free fit, K = 2 — every parameter free</text>
+    <text class="sans" x="20" y="44">full-swing rms 0.005 — the better fit</text>
+    <path class="ax" d="M40,140 h400"/>
+    <path d="M44,140 C50,140 52,92 60,92 C68,92 70,140 76,140" fill="none" stroke="var(--ink)" stroke-width="2.6"/>
+    <rect class="box" x="84" y="106" width="128" height="34" rx="2"/>
+    <text class="sm" x="148" y="127" text-anchor="middle">one very slow stage</text>
+    <path class="dash" d="M218,118 h84"/>
+    <text class="sm" x="260" y="112" text-anchor="middle">vt</text>
+    <path d="M222,140 C230,140 234,128 237,128 C240,128 244,140 252,140" fill="none" stroke="var(--fail)" stroke-width="2.6"/>
+    <rect class="box" x="316" y="106" width="68" height="34" rx="2"/>
+    <text class="sm" x="350" y="127" text-anchor="middle">fast</text>
+    <path d="M394,140 C400,140 403,135 409,135 C415,135 418,140 424,140" fill="none" stroke="var(--fail)" stroke-width="2.6"/>
+    <text class="num" x="452" y="126" fill="var(--fail)">0.23</text>
+    <text class="sm" x="452" y="142">deepest pulse</text>
+    <text class="sans" x="237" y="162" text-anchor="middle">the pulse never clears the threshold</text>
+
+    <path class="ax" d="M20,188 h520"/>
+    <text class="hd" x="20" y="212">identical stages, K = 3</text>
+    <text class="sans" x="20" y="230">full-swing rms 0.004 — indistinguishable</text>
+    <path class="ax" d="M40,298 h400"/>
+    <path d="M44,298 C50,298 52,250 60,250 C68,250 70,298 76,298" fill="none" stroke="var(--ink)" stroke-width="2.6"/>
+    <rect class="box" x="84" y="264" width="68" height="34" rx="2"/><text class="sm" x="118" y="285" text-anchor="middle">stage</text>
+    <path d="M162,298 C168,298 170,256 178,256 C186,256 188,298 194,298" fill="none" stroke="var(--ours)" stroke-width="2.6"/>
+    <rect class="box" x="202" y="264" width="68" height="34" rx="2"/><text class="sm" x="236" y="285" text-anchor="middle">stage</text>
+    <path d="M280,298 C286,298 288,261 296,261 C304,261 306,298 312,298" fill="none" stroke="var(--ours)" stroke-width="2.6"/>
+    <rect class="box" x="320" y="264" width="68" height="34" rx="2"/><text class="sm" x="354" y="285" text-anchor="middle">stage</text>
+    <path d="M398,298 C404,298 406,265 414,265 C422,265 424,298 430,298" fill="none" stroke="var(--ours)" stroke-width="2.6"/>
+    <text class="num" x="452" y="284" fill="var(--ours)">0.81</text>
+    <text class="sm" x="452" y="300">measured 0.76</text>
+  </svg>
+  <figcaption><b>No — and left free it picks a nonsense answer.</b> Fit ex2's full swing with every stage's parameters free and the two-stage arrangement reproduces it <i>slightly better</i> than the correct three-stage one, by splitting the delay into one sluggish stage plus one quick one. On a short pulse that arrangement predicts a gate of 0.23 where the measurement says 0.76, because — by the previous figure — a sluggish stage with a threshold extinguishes short pulses. inv_chain's free fits find the same corner and predict exactly zero. <br><br>Hence the constraint: <b>make the stages identical.</b> That removes the degenerate corner and leaves one structural number, K, for the samples to choose.</figcaption>
+</figure>
+
+<p><strong>How blind is the file once the stages are identical?</strong> Completely, over a
+range of a few stages. Three builds below, all fitted to the same file; the middle column is how
+well each reproduces it.</p>
+
+<figure>
+  <div class="plate">How much does the file narrow the stage count?</div>
+  <svg viewBox="0 0 560 306" role="img"
+       aria-label="Fits at K equals 5, 7 and 9 have essentially identical full-swing error but produce stressed gates of 0, 0.672 and 0.941 against a measured 0.879.">
+    <text class="hd" x="20" y="26">the chain</text>
+    <text class="hd" x="250" y="26">fit error</text>
+    <text class="hd" x="368" y="26">the gate it predicts</text>
+
+    <g transform="translate(0,44)">
+      <text class="hd" x="20" y="34">K = 5</text>
+      <g fill="none"><rect class="box" x="62" y="18" width="16" height="22" rx="2"/><rect class="box" x="82" y="18" width="16" height="22" rx="2"/><rect class="box" x="102" y="18" width="16" height="22" rx="2"/><rect class="box" x="122" y="18" width="16" height="22" rx="2"/><rect class="box" x="142" y="18" width="16" height="22" rx="2"/></g>
+      <text class="sm" x="250" y="34">0.0037</text>
+      <g transform="translate(368,0)">
+        <path class="ax" d="M0,0 v56 h120"/>
+        <path class="dash" d="M0,6.8 h120"/>
+        <path d="M6,56 h108" stroke="var(--fail)" stroke-width="2.6" fill="none"/>
+        <text class="num" x="128" y="42" fill="var(--fail)">0</text>
+        <text class="sm" x="128" y="56" fill="var(--fail)">swallowed</text>
+      </g>
+    </g>
+
+    <g transform="translate(0,132)">
+      <text class="hd" x="20" y="34">K = 7</text>
+      <g fill="none"><rect class="box" x="62" y="18" width="16" height="22" rx="2"/><rect class="box" x="82" y="18" width="16" height="22" rx="2"/><rect class="box" x="102" y="18" width="16" height="22" rx="2"/><rect class="box" x="122" y="18" width="16" height="22" rx="2"/><rect class="box" x="142" y="18" width="16" height="22" rx="2"/><rect class="box" x="162" y="18" width="16" height="22" rx="2"/><rect class="box" x="182" y="18" width="16" height="22" rx="2"/></g>
+      <text class="sm" x="250" y="34">0.0032</text>
+      <g transform="translate(368,0)">
+        <path class="ax" d="M0,0 v56 h120"/>
+        <path class="dash" d="M0,6.8 h120"/>
+        <path d="M18,56 C32,56 36,18.4 48,18.4 C60,18.4 64,56 78,56" fill="none" stroke="var(--ours)" stroke-width="2.6"/>
+        <text class="num" x="128" y="42" fill="var(--ours)">0.672</text>
+      </g>
+    </g>
+
+    <g transform="translate(0,220)">
+      <text class="hd" x="20" y="34">K = 9</text>
+      <g fill="none"><rect class="box" x="62" y="18" width="16" height="22" rx="2"/><rect class="box" x="82" y="18" width="16" height="22" rx="2"/><rect class="box" x="102" y="18" width="16" height="22" rx="2"/><rect class="box" x="122" y="18" width="16" height="22" rx="2"/><rect class="box" x="142" y="18" width="16" height="22" rx="2"/><rect class="box" x="162" y="18" width="16" height="22" rx="2"/><rect class="box" x="182" y="18" width="16" height="22" rx="2"/><rect class="box" x="202" y="18" width="16" height="22" rx="2"/><rect class="box" x="222" y="18" width="16" height="22" rx="2"/></g>
+      <text class="sm" x="250" y="34">0.0032</text>
+      <g transform="translate(368,0)">
+        <path class="ax" d="M0,0 v56 h120"/>
+        <path class="dash" d="M0,6.8 h120"/>
+        <path d="M18,56 C32,56 36,3.3 48,3.3 C60,3.3 64,56 78,56" fill="none" stroke="var(--fail)" stroke-width="2.6"/>
+        <text class="num" x="128" y="42" fill="var(--fail)">0.941</text>
+        <text class="sm" x="0" y="74">dashed = the measured 0.879</text>
+      </g>
+    </g>
+  </svg>
+  <figcaption><b>To a band of about three, and no further.</b> K = 7 and K = 9 agree to four decimal places on the only curve the file contains, with K = 5 just behind — while the gate they predict at the deepest width runs from extinguished, through the truth, to almost intact. The file supplies candidates; it cannot choose among them. <br><br>The same argument applies to the map — the other factor — which is why both K and the map's shape are <b>selected by the stressed samples</b> rather than fitted to the file.</figcaption>
+</figure>
+<p><strong>The rule that turns the band into candidates:</strong> the three smallest stage
+counts whose fit error is within <strong>25 %</strong> of the best. That band contains the real
+netlist count on all 12 buffers, where taking the single best fit recovers it on
+<strong>1 of 13 chains</strong>.</p>
+</section>
+
+<section id="recipe">
+<p class="eyebrow">5 · the recipe</p>
+<h2>Three things can corrupt the factorisation, and the recipe is those three</h2>
+
+<p class="lede">C_comp corrupts the product before any factoring starts. K is one factor. The map
+shape is the other. Everything else is fitted to the file for free, and the one stressed run is
+spent choosing among the candidates those three produce.</p>
+
+<h3>First, repair the product</h3>
+<p>C_comp is not a model parameter. It is a number in the file that <strong>the file's own Ku
+tables were solved with</strong>, so a wrong value inflates the curve everything downstream is
+fitted to. It also happens to be the one thing the hysteresis plot from §3 can measure — which
+is worth seeing, because it explains both how the error was found and why track 1 has to settle
+for something weaker.</p>
+
+
+<figure>
+  <div class="plate">How do we know the declared C_comp is wrong?</div>
+  
+  <svg viewBox="0 0 560 220" role="img" aria-label="The same plot for ex2 solved at its declared C_comp of 5 pF: the two branches separate into a wide loop and Ku rises to 1.24, which is impossible.">
+    <text class="hd" x="70" y="28">Ku, plotted against the gate that produced it</text>
+    <g transform="translate(70,44)">
+      <path class="ax" d="M0,0 v92 h150"/>
+      <path class="dash" d="M0,24.2 h150"/>
+      <text class="sm" x="-6" y="27" text-anchor="end">1.0</text>
+      <text class="sm" x="-6" y="95" text-anchor="end">0</text>
+      <polyline id="d2_open_up" class="cv" stroke="var(--fail)" stroke-width="2.8"/>
+      <polyline id="d2_open_dn" class="cv" stroke="var(--fail)" stroke-width="2.8"/>
+      <text class="sm" x="150" y="108" text-anchor="end">gate →</text>
+      <text class="sm" x="-40" y="50">Ku</text>
+      
+    </g>
+    <text class="sans" x="266" y="88">Solved at the <tspan fill="var(--ink)" font-weight="600">declared</tspan> 5.0 pF the same</text>
+    <text class="sans" x="266" y="108">two branches separate — and Ku climbs to</text>
+    <text class="sans" x="266" y="128"><tspan fill="var(--ink)" font-weight="600">1.24</tspan>, which no conducting fraction can do.</text>
+    <text class="sans" x="266" y="148"></text>
+    <text class="sans" x="266" y="168">The loop closes at 1.70 pF, the same value</text>
+    <text class="sans" x="266" y="188">at all five pulse widths.</text>
+  </svg>
+  <figcaption><b>Why the loop appears.</b> The solver subtracts C_comp·dV/dt before dividing by
+  the pull-up's I-V curve. dV/dt flips sign between the rise and the fall, so a wrong C_comp adds
+  on one branch and subtracts on the other — it <b>opens a loop</b> in exactly the plot that was
+  a single line a moment ago. The C_comp that closes the loop is the one the device has: 1.70 pF
+  on ex2, stable across all five widths, against a declared 5.0.
+  <br><br><b>Why track 1 cannot use this.</b> It needs the probed gate. So the file-only rule
+  keeps the declared value unless the file's own arithmetic rejects it — Ku cannot exceed 1, and
+  5.0 pF implies 1.24 — and then takes the value at which Ku just reaches 1. That reads 2.64 pF
+  here. Which is 55 % off the measured 1.70 and still works, because the stressed peak is not
+  sharp in C_comp once it is in range.</figcaption>
+</figure>
+
+<h3>Then choose the two factors</h3>
+<div class="scroll"><table class="tbl">
+  <tr><th>number</th><th>where it sits in the argument</th><th>what goes wrong if it is wrong</th><th>set by</th></tr>
+  <tr><td class="n">C_comp</td><td><strong>the product</strong> — the tables were solved with it</td><td>Ku(t) is inflated before any factoring starts</td><td>the Ku ≤ 1 bound</td></tr>
+  <tr class="hi"><td class="n">K</td><td><strong>factor one</strong> — how fast the gate travels</td><td>a short pulse passes too easily, or is extinguished</td><td><span class="tag sel">the samples</span></td></tr>
+  <tr class="hi"><td class="n">vt_map, α</td><td><strong>factor two</strong> — the gate-to-Ku curve</td><td>full swing right and stress wrong; this was inv_chain's 34 %</td><td><span class="tag sel">the samples</span></td></tr>
+  <tr><td class="n">s_up, s_dn, x_lin</td><td>the family's own parameters (§4)</td><td>the gate's rate, and its approach to the rail</td><td><span class="tag fit">the file's Ku(t)</span></td></tr>
+  <tr><td class="n">vt</td><td>the stage handoff — and the amplitude knob</td><td>how much of the pulse survives each hop</td><td><span class="tag fit">fitted</span> <span class="tag sel">then recalibrated</span></td></tr>
+  <tr><td class="n">p</td><td>drive curvature under a <i>partial</i> input</td><td>invisible at full swing: every p from 1 to 2 fits to rms 0.002–0.007</td><td><span class="tag asm">assumed = 1</span></td></tr>
+</table></div>
+
+<p>Three candidate stage counts times three candidate map shapes is nine models. The shapes are
+<em>(vt_map, α)</em> = <strong>(0.50, 0.70)</strong>, <strong>(0.40, 0.60)</strong> and
+<strong>(0.40, 0.90)</strong>, where the map is <em>clip((g − vt_map)/(1 − vt_map), 0, 1)^α</em>
+scaled between the file's own off and on levels. The single stressed run then does two jobs, and
+the order matters: it sets the amplitude first, then chooses.</p>
+
+<figure>
+  <div class="plate">How is one measurement made to do two jobs?</div>
+  <svg viewBox="0 0 560 420" role="img"
+       aria-label="The IBIS file feeds steps S1 through S4, producing nine candidate models; the single stressed pad run then feeds S5, which pins the peak, and S6, which picks the build.">
+    <rect class="box" x="24" y="18" width="210" height="36" rx="2"/>
+    <text class="hd" x="129" y="41" text-anchor="middle">THE IBIS FILE</text>
+    <rect x="330" y="18" width="206" height="36" rx="2" fill="none" stroke="var(--ours)" stroke-width="1.8"/>
+    <text class="hd" x="433" y="41" text-anchor="middle" fill="var(--ours)">ONE STRESSED PAD RUN</text>
+
+    <path class="lead" d="M129,56 v20" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="24" y="78" width="210" height="34" rx="2"/>
+    <text x="34" y="100" class="sm"><tspan fill="var(--ours)">S1</tspan>  C_comp from the file</text>
+    <path class="lead" d="M129,112 v18" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="24" y="132" width="210" height="34" rx="2"/>
+    <text x="34" y="154" class="sm"><tspan fill="var(--ours)">S2</tspan>  fit s_up, s_dn, vt, x_lin</text>
+    <path class="lead" d="M129,166 v18" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="24" y="186" width="100" height="34" rx="2"/>
+    <text class="sm" x="34" y="207"><tspan fill="var(--ours)">S3</tspan>  K band ×3</text>
+    <rect class="box" x="134" y="186" width="100" height="34" rx="2"/>
+    <text class="sm" x="144" y="207"><tspan fill="var(--ours)">S4</tspan>  shape ×3</text>
+    <path class="lead" d="M129,220 v18" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect x="24" y="240" width="210" height="32" rx="16" fill="none" stroke="var(--rule)" stroke-width="1.4"/>
+    <text class="hd" x="129" y="261" text-anchor="middle">9 candidate models</text>
+
+    <path class="lead" d="M129,272 v20" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="24" y="294" width="210" height="34" rx="2"/>
+    <text x="34" y="316" class="sm"><tspan fill="var(--ours)">S5</tspan>  calibrate: bisect vt</text>
+    <path class="lead" d="M129,328 v18" marker-end="url(#arm)" color="var(--muted)"/>
+    <rect class="box" x="24" y="348" width="210" height="34" rx="2"/>
+    <text x="34" y="370" class="sm"><tspan fill="var(--ours)">S6</tspan>  select on the waveform</text>
+
+    <!-- the one run, used twice -->
+    <path d="M433,56 v255" fill="none" stroke="var(--ours)" stroke-width="1.6"/>
+    <path d="M433,311 H240" fill="none" stroke="var(--ours)" stroke-width="1.6" marker-end="url(#ar)" color="var(--ours)"/>
+    <path d="M433,311 v54 H240" fill="none" stroke="var(--ours)" stroke-width="1.6" marker-end="url(#ar)" color="var(--ours)"/>
+    <text class="sm" x="258" y="302" fill="var(--ours)">pins the peak</text>
+    <text class="sm" x="258" y="390" fill="var(--ours)">picks the build</text>
+
+    <path class="lead" d="M129,382 v18" marker-end="url(#arm)" color="var(--muted)"/>
+    <text class="hd" x="129" y="414" text-anchor="middle">ONE MODEL</text>
+  </svg>
+  <figcaption>Everything in the left column comes from the file alone. The stressed run enters twice: first to set the amplitude, by moving <em>vt</em> — the one number that buys stressed amplitude at no full-swing cost, because it changes <i>when</i> the chain hands off rather than how fast it runs — and then to choose among the nine candidates.</figcaption>
+</figure>
+
+<p><strong>Why the second job cannot use the obvious feature.</strong> The peak is the natural
+thing to compare, and it is precisely the thing the first job has just destroyed as evidence.</p>
+
+<figure>
+  <div class="plate">Why not just match the peak?</div>
+  <svg viewBox="0 0 520 226" role="img"
+       aria-label="Nine calibrated candidates all pass through the same peak by construction and fan out along the falling edge; the peak cannot rank them, the rest of the waveform can.">
+    <g transform="translate(76,44)">
+      <path class="ax" d="M0,0 v110 h300"/>
+      <polyline id="d8_c0" class="cv faint"/><polyline id="d8_c1" class="cv faint"/>
+      <polyline id="d8_c3" class="cv faint"/><polyline id="d8_c4" class="cv faint"/>
+      <polyline id="d8_c5" class="cv faint"/>
+      <polyline id="d8_pick" class="cv" stroke="var(--ours)" stroke-width="2.6"/>
+      <circle cx="96.4" cy="13.6" r="5" fill="none" stroke="var(--ink)" stroke-width="2"/>
+      <text class="sm" x="300" y="128" text-anchor="end">time →</text>
+      <text class="sm" x="-8" y="60" text-anchor="end" transform="rotate(-90,-8,60)">pad</text>
+    </g>
+    <path class="lead" d="M150,30 L176,52" marker-end="url(#arm)" color="var(--muted)"/>
+    <text x="40" y="26" class="sm">S5 pinned every candidate</text>
+    <text x="40" y="40" class="sm">to this one point</text>
+    <path class="lead" d="M330,96 L300,116" marker-end="url(#arm)" color="var(--muted)"/>
+    <text x="334" y="92" class="sm" fill="var(--ours)">everything else still</text>
+    <text x="334" y="106" class="sm" fill="var(--ours)">tells them apart</text>
+    <text x="76" y="196" class="sm">Ranked by the peak, the winners arrive <tspan fill="var(--fail)">155–300 ps late</tspan>:</text>
+    <text x="76" y="214" class="sm">waveform <tspan class="num" font-size="12.5" fill="var(--ours)">52.3 mV</tspan>  ·  best in grid <tspan class="num" font-size="12.5">51.7</tspan>  ·  by peak <tspan class="num" font-size="12.5" fill="var(--fail)">217.3 mV</tspan></text>
+  </svg>
+  <figcaption><b>Because the calibration has already matched it, for every candidate.</b> All nine pass through the same pinned point by construction, so the peak carries no information left to rank them with — measured, adding a peak test changes nothing. Ranking on peaks at the <i>other</i> widths is worse than useless: it selects chains that turn on 155–300 ps late and hit the right height with the wrong pulse underneath. Comparing the whole measured waveform instead took the recipe from 11 of 12 to 12 of 12 with no new simulation, and lands within 1 % of the best build the grid contains.</figcaption>
+</figure>
+
+<p><strong>And why the samples must select rather than correct.</strong> One word covers three
+different physical situations, so no single fixed correction can serve them.</p>
+
+<figure>
+  <div class="plate">Why choose per buffer instead of applying one correction?</div>
+  <svg viewBox="0 0 520 210" role="img"
+       aria-label="io_buf's own predriver gate is truncated at 0.42 to 0.63 of supply; inv_chain's completes every time but arrives late; ex2's is speed-limited and reaches about 70 percent whatever the pulse width.">
+    <g transform="translate(30,40)">
+      <path class="ax" d="M0,0 v84 h140"/><polyline id="d10_io" class="cv truth"/>
+      <path class="dash" d="M0,42 h140"/>
+    </g>
+    <text class="hd" x="30" y="28">io_buf</text>
+    <text class="sans" x="30" y="150">the predriver itself</text>
+    <text class="sans" x="30" y="166" fill="var(--fail)">is truncated</text>
+    <text class="sm" x="30" y="186">gate: 0.42 – 0.63</text>
+
+    <g transform="translate(190,40)">
+      <path class="ax" d="M0,0 v84 h140"/><polyline id="d10_inv" class="cv truth"/>
+      <path class="dash" d="M0,7 h140"/>
+    </g>
+    <text class="hd" x="190" y="28">inv_chain</text>
+    <text class="sans" x="190" y="150">swings fully, but</text>
+    <text class="sans" x="190" y="166" fill="var(--fail)">arrives late</text>
+    <text class="sm" x="190" y="186">gate: 0.91 – 1.03</text>
+
+    <g transform="translate(350,40)">
+      <path class="ax" d="M0,0 v84 h140"/><polyline id="d10_ex2" class="cv truth"/>
+      <path class="dash" d="M0,31.5 h140"/>
+    </g>
+    <text class="hd" x="350" y="28">ex2</text>
+    <text class="sans" x="350" y="150">neither — it is</text>
+    <text class="sans" x="350" y="166" fill="var(--fail)">speed-limited</text>
+    <text class="sm" x="350" y="186">~70 %, any width</text>
+  </svg>
+  <figcaption>Each panel is that buffer's own probed gate at its deepest width. io_buf's predriver is itself truncated, reaching 0.42–0.63 of supply; inv_chain's completes every time but arrives late; ex2's is speed-limited and stops near 70 % whatever the width. <b>The factorisation that fits one is not the factorisation that fits the others</b> — same word, three different situations.</figcaption>
+</figure>
+</section>
+
+<section id="result">
+<p class="eyebrow">6 · the result</p>
+<h2>The same pulses, simulated</h2>
+<p class="lede">Real runs. <strong>Black</strong> is the transistor netlist in HSPICE — the truth.
+<strong>Green</strong> is the model this recipe builds, from the file plus one measurement.
+<strong>Rust</strong> is the shipped model on an identical deck.</p>
+
+<div class="key">
+  <span class="k-t"><i></i>transistor (truth)</span>
+  <span class="k-o"><i></i>our model</span>
+  <span class="k-s"><i></i>shipped model</span>
+</div>
+
+<figure>
+  <div class="plate">Does the factorisation hold up at the pad?</div>
+  <div class="grid2">
+    <svg viewBox="0 0 400 214" role="img" aria-label="ex2 at an 810 picosecond pulse: transistor 0.770 volts, ours 0.757, shipped 1.309.">
+      <text class="hd" x="10" y="15">ex2 · 810 ps — the deepest stress</text>
+      <g transform="translate(52,26)">
+        <path class="ax" d="M0,0 v150 h330"/>
+        <path class="dash" d="M43,-4 v156"/>
+        <polyline id="p_ex2_810_shipped" class="cv ship"/>
+        <polyline id="p_ex2_810_ours" class="cv ours"/>
+        <polyline id="p_ex2_810_transistor" class="cv truth"/>
+        <text class="sm" x="-6" y="4" text-anchor="end">1.6 V</text>
+        <text class="sm" x="-6" y="152" text-anchor="end">0</text>
+        <text class="sm" x="330" y="170" text-anchor="end">2.3 ns →</text>
+      </g>
+      <text class="sm" x="10" y="206">shipped <tspan class="num" font-size="12.5" fill="var(--fail)">+70 %</tspan></text>
+      <text class="sm" x="132" y="206">1.309 V · ours 0.757 · truth 0.770</text>
+    </svg>
+    <svg viewBox="0 0 400 214" role="img" aria-label="ex2 at a 975 picosecond pulse: transistor 1.403 volts, ours 1.312, shipped 1.441.">
+      <text class="hd" x="10" y="15">ex2 · 975 ps — the mildest</text>
+      <g transform="translate(52,26)">
+        <path class="ax" d="M0,0 v150 h330"/>
+        <path class="dash" d="M43,-4 v156"/>
+        <polyline id="p_ex2_975_shipped" class="cv ship"/>
+        <polyline id="p_ex2_975_ours" class="cv ours"/>
+        <polyline id="p_ex2_975_transistor" class="cv truth"/>
+        <text class="sm" x="-6" y="4" text-anchor="end">1.6 V</text>
+        <text class="sm" x="-6" y="152" text-anchor="end">0</text>
+        <text class="sm" x="330" y="170" text-anchor="end">2.3 ns →</text>
+      </g>
+      <text class="sm" x="10" y="206">shipped <tspan class="num" font-size="12.5" fill="var(--ink)">+3 %</tspan></text>
+      <text class="sm" x="132" y="206">1.441 V · ours 1.312 · truth 1.403</text>
+    </svg>
+    <svg viewBox="0 0 400 214" role="img" aria-label="inv_chain at a 104 picosecond pulse: transistor 0.665 volts, ours 0.664, shipped 1.128.">
+      <text class="hd" x="10" y="15">inv_chain · 104 ps — the deepest</text>
+      <g transform="translate(52,26)">
+        <path class="ax" d="M0,0 v150 h330"/>
+        <path class="dash" d="M43,-4 v156"/>
+        <polyline id="p_inv_chain_104_shipped" class="cv ship"/>
+        <polyline id="p_inv_chain_104_ours" class="cv ours"/>
+        <polyline id="p_inv_chain_104_transistor" class="cv truth"/>
+        <text class="sm" x="-6" y="4" text-anchor="end">1.4 V</text>
+        <text class="sm" x="-6" y="152" text-anchor="end">0</text>
+        <text class="sm" x="330" y="170" text-anchor="end">2.3 ns →</text>
+      </g>
+      <text class="sm" x="10" y="206">shipped <tspan class="num" font-size="12.5" fill="var(--fail)">+65 %</tspan></text>
+      <text class="sm" x="132" y="206">1.128 V · ours 0.664 · truth 0.665</text>
+    </svg>
+    <svg viewBox="0 0 400 214" role="img" aria-label="inv_chain at a 135 picosecond pulse: transistor 1.278 volts, ours 1.276, shipped 1.300.">
+      <text class="hd" x="10" y="15">inv_chain · 135 ps — the mildest</text>
+      <g transform="translate(52,26)">
+        <path class="ax" d="M0,0 v150 h330"/>
+        <path class="dash" d="M43,-4 v156"/>
+        <polyline id="p_inv_chain_135_shipped" class="cv ship"/>
+        <polyline id="p_inv_chain_135_ours" class="cv ours"/>
+        <polyline id="p_inv_chain_135_transistor" class="cv truth"/>
+        <text class="sm" x="-6" y="4" text-anchor="end">1.4 V</text>
+        <text class="sm" x="-6" y="152" text-anchor="end">0</text>
+        <text class="sm" x="330" y="170" text-anchor="end">2.3 ns →</text>
+      </g>
+      <text class="sm" x="10" y="206">shipped <tspan class="num" font-size="12.5" fill="var(--ink)">+2 %</tspan></text>
+      <text class="sm" x="132" y="206">1.300 V · ours 1.276 · truth 1.278</text>
+    </svg>
+  </div>
+  <figcaption>Each panel is one stressed pulse; the dashed line is where the input reverses. The shipped model is nearly right where the transition completes and 65–70 % high where it does not — the signature of a gate that is never partway. Ours sits on the transistor in both.</figcaption>
+</figure>
+
+<figure>
+  <div class="plate">And underneath, is the gate itself right?</div>
+  <svg viewBox="0 0 560 218" role="img"
+       aria-label="inv_chain's probed gate at 104 picoseconds, against our chain's gate and the
+       shipped model's, which stands up further and comes back more slowly.">
+    <text class="hd" x="14" y="18">inv_chain · 104 ps · the command gate</text>
+    <g transform="translate(120,34)">
+      <path class="ax" d="M0,0 v120 h330"/>
+      <path class="dash" d="M43,-4 v126"/>
+      <polyline id="g_inv_104_gate_shipped" class="cv ship"/>
+      <polyline id="g_inv_104_gate_ours" class="cv ours"/>
+      <polyline id="g_inv_104_gate_transistor" class="cv truth"/>
+      <text class="sm" x="-6" y="4" text-anchor="end">1.0</text>
+      <text class="sm" x="-6" y="122" text-anchor="end">0</text>
+      <text class="sm" x="48" y="16">reversal</text>
+      <text class="sm" x="330" y="140" text-anchor="end">2.3 ns →</text>
+    </g>
+    <text class="sans" x="14" y="196">Ours sits on the probed gate; the shipped model stands up further and returns later.</text>
+  </svg>
+  <figcaption>The same instant one level down, at the command gate. Ours follows the probed trajectory; the shipped model's stands further up and returns later — and the overshoot in the panel above is that difference, put through the map. <b>This is the factorisation being right or wrong, made visible.</b></figcaption>
+</figure>
+
+<div class="stat">
+  <div class="good"><b>3.2 – 10.0 %</b><span>worst stressed peak, every buffer · mean 6.9 %</span></div>
+  <div class="good"><b>5.1 %</b><span>inv_chain from the file alone — against 25.8 % from probed silicon</span></div>
+  <div><b>within 1 %</b><span>of the best model the candidate grid contains</span></div>
+</div>
+
+<p><strong>What it costs.</strong> The full transition is worse than the shipped model on 10 of
+12 buffers (ex2: 61 mV of pad rms against 16) — we buy interior accuracy with endpoint accuracy.
+On a stressed train the shipped model still wins on ex2 and io_buf. And on io_buf it beats us
+outright, 4.0 % against 7.7 %.</p>
+</section>
+
+<section id="limits">
+<p class="eyebrow">7 · limits</p>
+<h2>Which part of the path we have actually sampled</h2>
+
+<p class="lede">Read against §2, the coverage table says something specific: these are the
+instants of the gate's travel we have looked at, and the directions we looked in.</p>
+
+<div class="scroll"><table class="tbl">
+  <tr><th>axis</th><th>sampled</th><th>not sampled</th></tr>
+  <tr><td>where in the travel</td><td>50, 60, 70, 80, 90 % of the settled swing</td><td>below 50 % — the early part of the path</td></tr>
+  <tr><td>direction</td><td>short HIGH</td><td><strong>short LOW on 11 of 12 buffers</strong></td></tr>
+  <tr><td>pulses</td><td>one</td><td>trains</td></tr>
+  <tr><td>load</td><td>50 Ω ∥ 2 pF</td><td>anything else</td></tr>
+  <tr><td>corner</td><td>Typical</td><td>Min / Max, supply, temperature</td></tr>
+</table></div>
+
+<div class="callout">
+  <p class="eyebrow">Three places this is not yet honest</p>
+  <p><strong>1 · The shape grid was drawn from results on these same 12 buffers.</strong> Two of
+  its three entries are the best of an earlier grid run on this set, so the selection has seen the
+  answer key. A thirteenth buffer may need a shape the grid does not contain.</p>
+  <p><strong>2 · x_lin is pinned at 0.45 on ten buffers and fitted on two.</strong> The pinned
+  value is inside the 0.37–0.63 the real probed stages fitted, so it is defensible — but it should
+  be one or the other.</p>
+  <p><strong>3 · p is assumed.</strong> By the argument of §2 it is exactly the kind of parameter
+  a partial-input observation can see and a full swing cannot, and the recipe already takes one
+  such observation. An open gap rather than a closed one.</p>
+</div>
+</section>
+
+<p class="foot">
+  Every number is from a simulation stored in the project; the waveform figures are drawn from
+  those stored runs.<br>
+  Sources · <span class="m">results/gate_physics_2026-09-08</span> ·
+  <span class="m">results/current_limited_stages_2026-09-10</span> ·
+  <span class="m">results/stage_count_from_file_2026-09-21</span> ·
+  <span class="m">results/ccomp_from_file_2026-09-22</span> ·
+  <span class="m">results/selector_from_one_run_2026-09-23</span><br>
+  The written version: <span class="m">docs/track1_recipe.md</span>.
+</p>
+
+</div>
+
+<script>
+const CURVES = {"d1_gateA":"0.0,92.0 1.7,91.0 3.4,90.0 5.1,89.0 6.7,88.1 8.4,87.1 10.1,86.1 11.8,85.1 13.5,84.1 15.2,83.1 16.9,82.2 18.5,81.2 20.2,80.2 21.9,79.2 23.6,78.2 25.3,77.2 27.0,76.2 28.7,75.3 30.3,74.3 32.0,73.3 33.7,72.3 35.4,71.3 37.1,70.3 38.8,69.4 40.4,68.4 42.1,67.4 43.8,66.4 45.5,65.4 47.2,64.4 48.9,63.4 50.6,62.5 52.2,61.5 53.9,60.5 55.6,59.5 57.3,58.5 59.0,57.5 60.7,56.6 62.4,55.6 64.0,54.6 65.7,53.6 67.4,52.6 69.1,51.6 70.8,50.7 72.5,49.7 74.2,48.7 75.8,47.7 77.5,46.7 79.2,45.7 80.9,44.7 82.6,43.8 84.3,42.8 86.0,41.8 87.6,40.8 89.3,39.8 91.0,38.8 92.7,37.9 94.4,36.9 96.1,35.9 97.8,34.9 99.4,33.9 101.1,32.9 102.8,31.9 104.5,31.0 106.2,30.0 107.9,29.0 109.6,28.0 111.2,27.0 112.9,26.0 114.6,25.1 116.3,24.1 118.0,23.1 119.7,22.1 121.3,21.1 123.0,20.1 124.7,19.1 126.4,18.2 128.1,17.2 129.8,16.2 131.5,15.2 133.1,14.2 134.8,13.2 136.5,12.3 138.2,11.3 139.9,10.3 141.6,9.3 143.3,8.3 144.9,7.3 146.6,6.3 148.3,5.4 150.0,4.4","d1_gateB":"0.0,92.0 1.7,72.4 3.4,67.3 5.1,63.7 6.7,60.8 8.4,58.4 10.1,56.3 11.8,54.5 13.5,52.8 15.2,51.2 16.9,49.7 18.5,48.4 20.2,47.1 21.9,45.9 23.6,44.7 25.3,43.6 27.0,42.5 28.7,41.5 30.3,40.6 32.0,39.6 33.7,38.7 35.4,37.9 37.1,37.0 38.8,36.2 40.4,35.4 42.1,34.6 43.8,33.9 45.5,33.1 47.2,32.4 48.9,31.7 50.6,31.0 52.2,30.4 53.9,29.7 55.6,29.1 57.3,28.4 59.0,27.8 60.7,27.2 62.4,26.6 64.0,26.0 65.7,25.4 67.4,24.9 69.1,24.3 70.8,23.8 72.5,23.2 74.2,22.7 75.8,22.2 77.5,21.7 79.2,21.2 80.9,20.7 82.6,20.2 84.3,19.7 86.0,19.2 87.6,18.8 89.3,18.3 91.0,17.8 92.7,17.4 94.4,16.9 96.1,16.5 97.8,16.0 99.4,15.6 101.1,15.2 102.8,14.7 104.5,14.3 106.2,13.9 107.9,13.5 109.6,13.1 111.2,12.7 112.9,12.3 114.6,11.9 116.3,11.5 118.0,11.1 119.7,10.7 121.3,10.4 123.0,10.0 124.7,9.6 126.4,9.2 128.1,8.9 129.8,8.5 131.5,8.2 133.1,7.8 134.8,7.4 136.5,7.1 138.2,6.7 139.9,6.4 141.6,6.1 143.3,5.7 144.9,5.4 146.6,5.0 148.3,4.7 150.0,4.4","d1_mapA":"0.0,92.0 1.7,92.0 3.4,92.0 5.1,91.9 6.7,91.8 8.4,91.7 10.1,91.6 11.8,91.5 13.5,91.3 15.2,91.1 16.9,90.9 18.5,90.7 20.2,90.4 21.9,90.1 23.6,89.8 25.3,89.5 27.0,89.2 28.7,88.8 30.3,88.4 32.0,88.0 33.7,87.6 35.4,87.1 37.1,86.6 38.8,86.1 40.4,85.6 42.1,85.1 43.8,84.5 45.5,83.9 47.2,83.3 48.9,82.7 50.6,82.0 52.2,81.4 53.9,80.7 55.6,80.0 57.3,79.2 59.0,78.4 60.7,77.7 62.4,76.9 64.0,76.0 65.7,75.2 67.4,74.3 69.1,73.4 70.8,72.5 72.5,71.5 74.2,70.6 75.8,69.6 77.5,68.6 79.2,67.6 80.9,66.5 82.6,65.4 84.3,64.3 86.0,63.2 87.6,62.1 89.3,60.9 91.0,59.7 92.7,58.5 94.4,57.3 96.1,56.1 97.8,54.8 99.4,53.5 101.1,52.2 102.8,50.8 104.5,49.5 106.2,48.1 107.9,46.7 109.6,45.3 111.2,43.8 112.9,42.3 114.6,40.9 116.3,39.3 118.0,37.8 119.7,36.2 121.3,34.7 123.0,33.1 124.7,31.4 126.4,29.8 128.1,28.1 129.8,26.4 131.5,24.7 133.1,23.0 134.8,21.2 136.5,19.4 138.2,17.6 139.9,15.8 141.6,13.9 143.3,12.1 144.9,10.2 146.6,8.3 148.3,6.3 150.0,4.4","d1_mapB":"0.0,92.0 1.7,92.0 3.4,92.0 5.1,92.0 6.7,92.0 8.4,92.0 10.1,92.0 11.8,92.0 13.5,92.0 15.2,92.0 16.9,92.0 18.5,92.0 20.2,92.0 21.9,92.0 23.6,92.0 25.3,92.0 27.0,92.0 28.7,92.0 30.3,92.0 32.0,92.0 33.7,92.0 35.4,92.0 37.1,92.0 38.8,92.0 40.4,92.0 42.1,92.0 43.8,91.9 45.5,91.9 47.2,91.9 48.9,91.9 50.6,91.9 52.2,91.8 53.9,91.8 55.6,91.8 57.3,91.7 59.0,91.7 60.7,91.6 62.4,91.5 64.0,91.5 65.7,91.4 67.4,91.3 69.1,91.2 70.8,91.0 72.5,90.9 74.2,90.7 75.8,90.5 77.5,90.3 79.2,90.1 80.9,89.8 82.6,89.6 84.3,89.2 86.0,88.9 87.6,88.5 89.3,88.1 91.0,87.6 92.7,87.1 94.4,86.6 96.1,86.0 97.8,85.3 99.4,84.6 101.1,83.8 102.8,82.9 104.5,82.0 106.2,81.0 107.9,79.9 109.6,78.7 111.2,77.4 112.9,76.1 114.6,74.6 116.3,73.0 118.0,71.3 119.7,69.4 121.3,67.4 123.0,65.3 124.7,63.0 126.4,60.6 128.1,58.0 129.8,55.3 131.5,52.3 133.1,49.1 134.8,45.8 136.5,42.2 138.2,38.4 139.9,34.4 141.6,30.1 143.3,25.5 144.9,20.7 146.6,15.6 148.3,10.1 150.0,4.4","d1_ku":"0.0,92.0 1.7,92.0 3.4,92.0 5.1,91.9 6.7,91.8 8.4,91.7 10.1,91.6 11.8,91.5 13.5,91.3 15.2,91.1 16.9,90.9 18.5,90.7 20.2,90.4 21.9,90.1 23.6,89.8 25.3,89.5 27.0,89.2 28.7,88.8 30.3,88.4 32.0,88.0 33.7,87.6 35.4,87.1 37.1,86.6 38.8,86.1 40.4,85.6 42.1,85.1 43.8,84.5 45.5,83.9 47.2,83.3 48.9,82.7 50.6,82.0 52.2,81.4 53.9,80.7 55.6,80.0 57.3,79.2 59.0,78.4 60.7,77.7 62.4,76.9 64.0,76.0 65.7,75.2 67.4,74.3 69.1,73.4 70.8,72.5 72.5,71.5 74.2,70.6 75.8,69.6 77.5,68.6 79.2,67.6 80.9,66.5 82.6,65.4 84.3,64.3 86.0,63.2 87.6,62.1 89.3,60.9 91.0,59.7 92.7,58.5 94.4,57.3 96.1,56.1 97.8,54.8 99.4,53.5 101.1,52.2 102.8,50.8 104.5,49.5 106.2,48.1 107.9,46.7 109.6,45.3 111.2,43.8 112.9,42.3 114.6,40.9 116.3,39.3 118.0,37.8 119.7,36.2 121.3,34.7 123.0,33.1 124.7,31.4 126.4,29.8 128.1,28.1 129.8,26.4 131.5,24.7 133.1,23.0 134.8,21.2 136.5,19.4 138.2,17.6 139.9,15.8 141.6,13.9 143.3,12.1 144.9,10.2 146.6,8.3 148.3,6.3 150.0,4.4","d2_tight_up":"0.0,92.0 1.7,92.0 3.4,92.0 5.1,92.0 6.7,92.0 8.4,92.0 10.1,92.0 11.8,92.0 13.5,92.0 15.2,92.0 16.9,92.0 18.5,92.0 20.2,92.0 21.9,92.0 23.6,92.0 25.3,92.0 27.0,92.0 28.7,92.0 30.3,92.0 32.0,92.0 33.7,92.0 35.4,92.0 37.1,92.0 38.8,92.0 40.4,92.0 42.1,92.0 43.8,92.0 45.5,92.0 47.2,92.0 48.9,92.0 50.6,92.0 52.2,92.0 53.9,89.8 55.6,88.0 57.3,86.3 59.0,84.8 60.7,83.4 62.4,82.1 64.0,80.8 65.7,79.5 67.4,78.2 69.1,77.0 70.8,75.8 72.5,74.7 74.2,73.5 75.8,72.4 77.5,71.3 79.2,70.1 80.9,69.0 82.6,67.9 84.3,66.8 86.0,65.7 87.6,64.7 89.3,63.6 91.0,62.5 92.7,61.4 94.4,60.3 96.1,59.2 97.8,58.2 99.4,57.1 101.1,56.0 102.8,54.9 104.5,53.8 106.2,52.8 107.9,51.7 109.6,50.6 111.2,49.5 112.9,48.4 114.6,47.3 116.3,46.2 118.0,45.1 119.7,44.0 121.3,42.9 123.0,41.7 124.7,40.6 126.4,39.5 128.1,38.4 129.8,37.3 131.5,36.2 133.1,35.0 134.8,33.9 136.5,32.8 138.2,31.7 139.9,30.5 141.6,29.4 143.3,28.3 144.9,27.2 146.6,26.1 148.3,25.0 150.0,23.9","d2_tight_dn":"0.0,92.0 1.7,92.0 3.4,92.0 5.1,92.0 6.7,92.0 8.4,92.0 10.1,92.0 11.8,92.0 13.5,92.0 15.2,92.0 16.9,92.0 18.5,92.0 20.2,92.0 21.9,92.0 23.6,92.0 25.3,92.0 27.0,92.0 28.7,92.0 30.3,92.0 32.0,92.0 33.7,92.0 35.4,92.0 37.1,92.0 38.8,92.0 40.4,92.0 42.1,92.0 43.8,92.0 45.5,92.0 47.2,92.0 48.9,92.0 50.6,92.0 52.2,92.0 53.9,89.5 55.6,87.4 57.3,85.4 59.0,83.6 60.7,81.8 62.4,80.1 64.0,78.5 65.7,76.9 67.4,75.4 69.1,73.9 70.8,72.4 72.5,71.0 74.2,69.6 75.8,68.2 77.5,66.8 79.2,65.5 80.9,64.2 82.6,62.9 84.3,61.6 86.0,60.3 87.6,59.1 89.3,57.9 91.0,56.7 92.7,55.5 94.4,54.3 96.1,53.2 97.8,52.1 99.4,51.0 101.1,49.9 102.8,48.8 104.5,47.7 106.2,46.7 107.9,45.7 109.6,44.7 111.2,43.7 112.9,42.7 114.6,41.7 116.3,40.8 118.0,39.8 119.7,38.9 121.3,38.0 123.0,37.1 124.7,36.2 126.4,35.3 128.1,34.4 129.8,33.6 131.5,32.7 133.1,31.9 134.8,31.0 136.5,30.2 138.2,29.4 139.9,28.6 141.6,27.8 143.3,27.0 144.9,26.2 146.6,25.4 148.3,24.6 150.0,23.9","d2_open_up":"0.0,92.0 1.7,92.0 3.4,92.0 5.1,92.0 6.7,92.0 8.4,92.0 10.1,92.0 11.8,92.0 13.5,92.0 15.2,92.0 16.9,92.0 18.5,92.0 20.2,92.0 21.9,92.0 23.6,92.0 25.3,92.0 27.0,92.0 28.7,92.0 30.3,92.0 32.0,92.0 33.7,92.0 35.4,92.0 37.1,92.0 38.8,92.0 40.4,92.0 42.1,92.0 43.8,92.0 45.5,92.0 47.2,92.0 48.9,92.0 50.6,92.0 52.2,92.0 53.9,90.1 55.6,88.7 57.3,87.5 59.0,86.6 60.7,85.7 62.4,84.9 64.0,84.1 65.7,83.4 67.4,82.6 69.1,81.9 70.8,81.2 72.5,80.5 74.2,79.8 75.8,79.0 77.5,78.3 79.2,77.5 80.9,76.7 82.6,75.9 84.3,75.0 86.0,74.1 87.6,73.2 89.3,72.2 91.0,71.1 92.7,70.1 94.4,69.0 96.1,67.8 97.8,66.6 99.4,65.3 101.1,64.0 102.8,62.6 104.5,61.2 106.2,59.8 107.9,58.2 109.6,56.7 111.2,55.1 112.9,53.4 114.6,51.7 116.3,49.9 118.0,48.1 119.7,46.2 121.3,44.3 123.0,42.4 124.7,40.4 126.4,38.4 128.1,36.3 129.8,34.2 131.5,32.1 133.1,30.0 134.8,27.8 136.5,25.6 138.2,23.4 139.9,21.1 141.6,18.9 143.3,16.6 144.9,14.3 146.6,12.1 148.3,9.8 150.0,7.5","d2_open_dn":"0.0,92.0 1.7,92.0 3.4,92.0 5.1,92.0 6.7,92.0 8.4,92.0 10.1,92.0 11.8,92.0 13.5,92.0 15.2,92.0 16.9,92.0 18.5,92.0 20.2,92.0 21.9,92.0 23.6,92.0 25.3,92.0 27.0,92.0 28.7,92.0 30.3,92.0 32.0,92.0 33.7,92.0 35.4,92.0 37.1,92.0 38.8,92.0 40.4,92.0 42.1,92.0 43.8,92.0 45.5,92.0 47.2,92.0 48.9,92.0 50.6,92.0 52.2,92.0 53.9,88.2 55.6,84.6 57.3,81.2 59.0,78.1 60.7,75.0 62.4,72.1 64.0,69.2 65.7,66.4 67.4,63.7 69.1,61.1 70.8,58.5 72.5,56.0 74.2,53.5 75.8,51.1 77.5,48.8 79.2,46.5 80.9,44.3 82.6,42.2 84.3,40.1 86.0,38.1 87.6,36.1 89.3,34.3 91.0,32.5 92.7,30.7 94.4,29.1 96.1,27.5 97.8,26.0 99.4,24.5 101.1,23.1 102.8,21.8 104.5,20.6 106.2,19.4 107.9,18.3 109.6,17.2 111.2,16.3 112.9,15.4 114.6,14.5 116.3,13.7 118.0,13.0 119.7,12.3 121.3,11.7 123.0,11.2 124.7,10.7 126.4,10.2 128.1,9.8 129.8,9.4 131.5,9.1 133.1,8.8 134.8,8.6 136.5,8.4 138.2,8.2 139.9,8.0 141.6,7.9 143.3,7.8 144.9,7.7 146.6,7.6 148.3,7.6 150.0,7.5","d3_cl":"0.0,110.0 1.9,108.9 3.8,107.7 5.7,106.6 7.5,105.5 9.4,104.4 11.3,103.2 13.2,102.1 15.1,101.0 17.0,99.9 18.9,98.7 20.8,97.6 22.6,96.5 24.5,95.3 26.4,94.2 28.3,93.1 30.2,92.0 32.1,90.8 34.0,89.7 35.8,88.6 37.7,87.5 39.6,86.3 41.5,85.2 43.4,84.1 45.3,82.9 47.2,81.8 49.1,80.7 50.9,79.6 52.8,78.4 54.7,77.3 56.6,76.2 58.5,75.1 60.4,73.9 62.3,72.8 64.2,71.7 66.0,70.5 67.9,69.4 69.8,68.3 71.7,67.2 73.6,66.0 75.5,64.9 77.4,63.8 79.2,62.6 81.1,61.5 83.0,60.4 84.9,59.3 86.8,58.1 88.7,57.0 90.6,55.9 92.5,54.8 94.3,53.6 96.2,52.5 98.1,51.4 100.0,50.4 101.9,49.4 103.8,48.4 105.7,47.4 107.5,46.4 109.4,45.5 111.3,44.6 113.2,43.7 115.1,42.8 117.0,42.0 118.9,41.2 120.8,40.4 122.6,39.6 124.5,38.8 126.4,38.1 128.3,37.4 130.2,36.6 132.1,36.0 134.0,35.3 135.8,34.6 137.7,34.0 139.6,33.4 141.5,32.7 143.4,32.1 145.3,31.6 147.2,31.0 149.1,30.4 150.9,29.9 152.8,29.4 154.7,28.8 156.6,28.3 158.5,27.9 160.4,27.4 162.3,26.9 164.2,26.5 166.0,26.0 167.9,25.6 169.8,25.2 171.7,24.7 173.6,24.3 175.5,23.9 177.4,23.6 179.2,23.2 181.1,22.8 183.0,22.5 184.9,22.1 186.8,21.8 188.7,21.4 190.6,21.1 192.5,20.8 194.3,20.5 196.2,20.2 198.1,19.9 200.0,19.6 201.9,19.3 203.8,19.1 205.7,18.8 207.5,18.5 209.4,18.3 211.3,18.0 213.2,17.8 215.1,17.6 217.0,17.3 218.9,17.1 220.8,16.9 222.6,16.7 224.5,16.5 226.4,16.3 228.3,16.1 230.2,15.9 232.1,15.7 234.0,15.5 235.8,15.3 237.7,15.2 239.6,15.0 241.5,14.8 243.4,14.7 245.3,14.5 247.2,14.4 249.1,14.2 250.9,14.1 252.8,13.9 254.7,13.8 256.6,13.6 258.5,13.5 260.4,13.4 262.3,13.2 264.2,13.1 266.0,13.0 267.9,12.9 269.8,12.8 271.7,12.7 273.6,12.5 275.5,12.4 277.4,12.3 279.2,12.2 281.1,12.1 283.0,12.0 284.9,11.9 286.8,11.8 288.7,11.8 290.6,11.7 292.5,11.6 294.3,11.5 296.2,11.4 298.1,11.3 300.0,11.3","d3_rc":"0.0,110.0 1.9,108.4 3.8,106.8 5.7,105.2 7.5,103.7 9.4,102.1 11.3,100.6 13.2,99.2 15.1,97.7 17.0,96.3 18.9,94.9 20.8,93.5 22.6,92.1 24.5,90.8 26.4,89.5 28.3,88.2 30.2,86.9 32.1,85.7 34.0,84.4 35.8,83.2 37.7,82.0 39.6,80.8 41.5,79.7 43.4,78.5 45.3,77.4 47.2,76.3 49.1,75.2 50.9,74.1 52.8,73.1 54.7,72.1 56.6,71.0 58.5,70.0 60.4,69.0 62.3,68.1 64.2,67.1 66.0,66.2 67.9,65.3 69.8,64.3 71.7,63.5 73.6,62.6 75.5,61.7 77.4,60.8 79.2,60.0 81.1,59.2 83.0,58.4 84.9,57.6 86.8,56.8 88.7,56.0 90.6,55.2 92.5,54.5 94.3,53.8 96.2,53.0 98.1,52.3 100.0,51.6 101.9,50.9 103.8,50.2 105.7,49.6 107.5,48.9 109.4,48.3 111.3,47.6 113.2,47.0 115.1,46.4 117.0,45.8 118.9,45.2 120.8,44.6 122.6,44.0 124.5,43.4 126.4,42.8 128.3,42.3 130.2,41.8 132.1,41.2 134.0,40.7 135.8,40.2 137.7,39.7 139.6,39.2 141.5,38.7 143.4,38.2 145.3,37.7 147.2,37.2 149.1,36.8 150.9,36.3 152.8,35.9 154.7,35.4 156.6,35.0 158.5,34.6 160.4,34.1 162.3,33.7 164.2,33.3 166.0,32.9 167.9,32.5 169.8,32.1 171.7,31.7 173.6,31.4 175.5,31.0 177.4,30.6 179.2,30.3 181.1,29.9 183.0,29.6 184.9,29.2 186.8,28.9 188.7,28.6 190.6,28.2 192.5,27.9 194.3,27.6 196.2,27.3 198.1,27.0 200.0,26.7 201.9,26.4 203.8,26.1 205.7,25.8 207.5,25.5 209.4,25.3 211.3,25.0 213.2,24.7 215.1,24.5 217.0,24.2 218.9,23.9 220.8,23.7 222.6,23.4 224.5,23.2 226.4,23.0 228.3,22.7 230.2,22.5 232.1,22.3 234.0,22.0 235.8,21.8 237.7,21.6 239.6,21.4 241.5,21.2 243.4,21.0 245.3,20.8 247.2,20.6 249.1,20.4 250.9,20.2 252.8,20.0 254.7,19.8 256.6,19.6 258.5,19.4 260.4,19.2 262.3,19.1 264.2,18.9 266.0,18.7 267.9,18.5 269.8,18.4 271.7,18.2 273.6,18.1 275.5,17.9 277.4,17.7 279.2,17.6 281.1,17.4 283.0,17.3 284.9,17.1 286.8,17.0 288.7,16.9 290.6,16.7 292.5,16.6 294.3,16.5 296.2,16.3 298.1,16.2 300.0,16.1","d8_c0":"0.0,110.0 2.0,110.0 4.0,110.0 6.0,110.0 8.1,110.0 10.1,110.0 12.1,110.0 14.1,110.0 16.1,110.0 18.1,110.0 20.1,110.0 22.1,110.0 24.2,110.0 26.2,110.0 28.2,110.0 30.2,109.9 32.2,109.9 34.2,109.9 36.2,109.8 38.3,109.7 40.3,109.5 42.3,109.3 44.3,109.0 46.3,108.6 48.3,108.1 50.3,107.4 52.3,106.4 54.4,105.2 56.4,103.7 58.4,101.7 60.4,99.3 62.4,96.4 64.4,93.0 66.4,89.0 68.5,84.4 70.5,79.3 72.5,73.5 74.5,67.4 76.5,60.8 78.5,54.0 80.5,47.2 82.6,40.5 84.6,34.1 86.6,28.2 88.6,23.2 90.6,19.0 92.6,16.0 94.6,14.1 96.6,13.6 98.7,13.9 100.7,14.6 102.7,15.8 104.7,17.4 106.7,19.4 108.7,21.8 110.7,24.5 112.8,27.6 114.8,30.9 116.8,34.4 118.8,38.1 120.8,42.0 122.8,45.9 124.8,50.0 126.8,54.0 128.9,58.0 130.9,61.9 132.9,65.8 134.9,69.6 136.9,73.2 138.9,76.6 140.9,79.9 143.0,82.9 145.0,85.8 147.0,88.5 149.0,90.9 151.0,93.2 153.0,95.3 155.0,97.2 157.0,98.8 159.1,100.4 161.1,101.7 163.1,102.9 165.1,103.9 167.1,104.9 169.1,105.7 171.1,106.4 173.2,107.0 175.2,107.5 177.2,107.9 179.2,108.3 181.2,108.6 183.2,108.8 185.2,109.1 187.2,109.2 189.3,109.4 191.3,109.5 193.3,109.6 195.3,109.7 197.3,109.8 199.3,109.8 201.3,109.8 203.4,109.9 205.4,109.9 207.4,109.9 209.4,109.9 211.4,110.0 213.4,110.0 215.4,110.0 217.4,110.0 219.5,110.0 221.5,110.0 223.5,110.0 225.5,110.0 227.5,110.0 229.5,110.0 231.5,110.0 233.6,110.0 235.6,110.0 237.6,110.0 239.6,110.0 241.6,110.0 243.6,110.0 245.6,110.0 247.7,110.0 249.7,110.0 251.7,110.0 253.7,110.0 255.7,110.0 257.7,110.0 259.7,110.0 261.7,110.0 263.8,110.0 265.8,110.0 267.8,110.0 269.8,110.0 271.8,110.0 273.8,110.0 275.8,110.0 277.9,110.0 279.9,110.0 281.9,110.0 283.9,110.0 285.9,110.0 287.9,110.0 289.9,110.0 291.9,110.0 294.0,110.0 296.0,110.0 298.0,110.0 300.0,110.0","d8_c1":"0.0,110.0 2.0,110.0 4.0,110.0 6.0,110.0 8.1,110.0 10.1,110.0 12.1,110.0 14.1,109.9 16.1,109.9 18.1,109.9 20.1,109.9 22.1,109.8 24.2,109.7 26.2,109.6 28.2,109.5 30.2,109.3 32.2,109.0 34.2,108.7 36.2,108.3 38.3,107.8 40.3,107.1 42.3,106.3 44.3,105.3 46.3,104.1 48.3,102.6 50.3,100.9 52.3,98.9 54.4,96.5 56.4,93.8 58.4,90.7 60.4,87.2 62.4,83.3 64.4,79.1 66.4,74.5 68.5,69.6 70.5,64.4 72.5,59.0 74.5,53.5 76.5,48.0 78.5,42.5 80.5,37.2 82.6,32.2 84.6,27.6 86.6,23.5 88.6,20.0 90.6,17.2 92.6,15.2 94.6,14.0 96.6,13.6 98.7,13.8 100.7,14.3 102.7,15.1 104.7,16.1 106.7,17.5 108.7,19.1 110.7,20.9 112.8,23.0 114.8,25.3 116.8,27.8 118.8,30.5 120.8,33.3 122.8,36.3 124.8,39.3 126.8,42.5 128.9,45.7 130.9,48.9 132.9,52.2 134.9,55.4 136.9,58.7 138.9,61.9 140.9,65.0 143.0,68.1 145.0,71.0 147.0,73.9 149.0,76.7 151.0,79.3 153.0,81.9 155.0,84.3 157.0,86.5 159.1,88.7 161.1,90.7 163.1,92.5 165.1,94.3 167.1,95.9 169.1,97.4 171.1,98.7 173.2,100.0 175.2,101.1 177.2,102.1 179.2,103.1 181.2,103.9 183.2,104.7 185.2,105.4 187.2,106.0 189.3,106.5 191.3,107.0 193.3,107.4 195.3,107.8 197.3,108.1 199.3,108.4 201.3,108.6 203.4,108.8 205.4,109.0 207.4,109.2 209.4,109.3 211.4,109.4 213.4,109.5 215.4,109.6 217.4,109.7 219.5,109.7 221.5,109.8 223.5,109.8 225.5,109.8 227.5,109.9 229.5,109.9 231.5,109.9 233.6,109.9 235.6,109.9 237.6,110.0 239.6,110.0 241.6,110.0 243.6,110.0 245.6,110.0 247.7,110.0 249.7,110.0 251.7,110.0 253.7,110.0 255.7,110.0 257.7,110.0 259.7,110.0 261.7,110.0 263.8,110.0 265.8,110.0 267.8,110.0 269.8,110.0 271.8,110.0 273.8,110.0 275.8,110.0 277.9,110.0 279.9,110.0 281.9,110.0 283.9,110.0 285.9,110.0 287.9,110.0 289.9,110.0 291.9,110.0 294.0,110.0 296.0,110.0 298.0,110.0 300.0,110.0","d8_c2":"0.0,109.9 2.0,109.9 4.0,109.9 6.0,109.8 8.1,109.8 10.1,109.7 12.1,109.6 14.1,109.5 16.1,109.4 18.1,109.2 20.1,109.0 22.1,108.7 24.2,108.4 26.2,108.0 28.2,107.5 30.2,106.9 32.2,106.2 34.2,105.4 36.2,104.4 38.3,103.2 40.3,101.9 42.3,100.3 44.3,98.6 46.3,96.6 48.3,94.3 50.3,91.8 52.3,89.0 54.4,85.9 56.4,82.6 58.4,79.0 60.4,75.2 62.4,71.1 64.4,66.8 66.4,62.4 68.5,57.8 70.5,53.2 72.5,48.5 74.5,43.9 76.5,39.4 78.5,35.0 80.5,30.9 82.6,27.1 84.6,23.7 86.6,20.7 88.6,18.2 90.6,16.1 92.6,14.7 94.6,13.9 96.6,13.6 98.7,13.7 100.7,14.1 102.7,14.6 104.7,15.4 106.7,16.3 108.7,17.5 110.7,18.8 112.8,20.3 114.8,22.0 116.8,23.9 118.8,25.8 120.8,28.0 122.8,30.2 124.8,32.6 126.8,35.0 128.9,37.5 130.9,40.1 132.9,42.8 134.9,45.5 136.9,48.2 138.9,51.0 140.9,53.7 143.0,56.4 145.0,59.1 147.0,61.8 149.0,64.5 151.0,67.0 153.0,69.6 155.0,72.0 157.0,74.4 159.1,76.7 161.1,79.0 163.1,81.1 165.1,83.2 167.1,85.1 169.1,87.0 171.1,88.8 173.2,90.5 175.2,92.1 177.2,93.6 179.2,95.0 181.2,96.3 183.2,97.5 185.2,98.7 187.2,99.7 189.3,100.7 191.3,101.6 193.3,102.4 195.3,103.2 197.3,103.9 199.3,104.5 201.3,105.1 203.4,105.7 205.4,106.1 207.4,106.6 209.4,107.0 211.4,107.3 213.4,107.6 215.4,107.9 217.4,108.2 219.5,108.4 221.5,108.6 223.5,108.8 225.5,109.0 227.5,109.1 229.5,109.2 231.5,109.3 233.6,109.4 235.6,109.5 237.6,109.6 239.6,109.6 241.6,109.7 243.6,109.7 245.6,109.8 247.7,109.8 249.7,109.8 251.7,109.9 253.7,109.9 255.7,109.9 257.7,109.9 259.7,109.9 261.7,109.9 263.8,110.0 265.8,110.0 267.8,110.0 269.8,110.0 271.8,110.0 273.8,110.0 275.8,110.0 277.9,110.0 279.9,110.0 281.9,110.0 283.9,110.0 285.9,110.0 287.9,110.0 289.9,110.0 291.9,110.0 294.0,110.0 296.0,110.0 298.0,110.0 300.0,110.0","d8_c3":"0.0,109.6 2.0,109.5 4.0,109.3 6.0,109.2 8.1,109.0 10.1,108.8 12.1,108.5 14.1,108.1 16.1,107.8 18.1,107.3 20.1,106.8 22.1,106.1 24.2,105.4 26.2,104.6 28.2,103.6 30.2,102.5 32.2,101.3 34.2,99.9 36.2,98.3 38.3,96.6 40.3,94.7 42.3,92.5 44.3,90.2 46.3,87.7 48.3,85.0 50.3,82.0 52.3,78.9 54.4,75.6 56.4,72.2 58.4,68.5 60.4,64.8 62.4,60.9 64.4,56.9 66.4,52.9 68.5,48.9 70.5,44.9 72.5,41.0 74.5,37.2 76.5,33.5 78.5,30.0 80.5,26.8 82.6,23.9 84.6,21.2 86.6,18.9 88.6,17.0 90.6,15.5 92.6,14.4 94.6,13.8 96.6,13.6 98.7,13.7 100.7,14.0 102.7,14.4 104.7,14.9 106.7,15.7 108.7,16.5 110.7,17.5 112.8,18.7 114.8,19.9 116.8,21.3 118.8,22.9 120.8,24.5 122.8,26.2 124.8,28.1 126.8,30.0 128.9,32.0 130.9,34.1 132.9,36.3 134.9,38.5 136.9,40.7 138.9,43.0 140.9,45.4 143.0,47.7 145.0,50.1 147.0,52.4 149.0,54.8 151.0,57.1 153.0,59.5 155.0,61.8 157.0,64.1 159.1,66.3 161.1,68.5 163.1,70.6 165.1,72.8 167.1,74.8 169.1,76.8 171.1,78.7 173.2,80.6 175.2,82.4 177.2,84.1 179.2,85.8 181.2,87.4 183.2,88.9 185.2,90.3 187.2,91.7 189.3,93.0 191.3,94.3 193.3,95.5 195.3,96.6 197.3,97.6 199.3,98.6 201.3,99.5 203.4,100.4 205.4,101.2 207.4,101.9 209.4,102.6 211.4,103.3 213.4,103.9 215.4,104.5 217.4,105.0 219.5,105.4 221.5,105.9 223.5,106.3 225.5,106.6 227.5,107.0 229.5,107.3 231.5,107.6 233.6,107.8 235.6,108.1 237.6,108.3 239.6,108.5 241.6,108.6 243.6,108.8 245.6,108.9 247.7,109.0 249.7,109.2 251.7,109.3 253.7,109.3 255.7,109.4 257.7,109.5 259.7,109.6 261.7,109.6 263.8,109.7 265.8,109.7 267.8,109.7 269.8,109.8 271.8,109.8 273.8,109.8 275.8,109.9 277.9,109.9 279.9,109.9 281.9,109.9 283.9,109.9 285.9,109.9 287.9,109.9 289.9,109.9 291.9,110.0 294.0,110.0 296.0,110.0 298.0,110.0 300.0,110.0","d8_c4":"0.0,108.5 2.0,108.3 4.0,107.9 6.0,107.6 8.1,107.1 10.1,106.6 12.1,106.1 14.1,105.4 16.1,104.7 18.1,103.9 20.1,103.0 22.1,102.0 24.2,100.8 26.2,99.5 28.2,98.1 30.2,96.6 32.2,94.9 34.2,93.1 36.2,91.1 38.3,89.0 40.3,86.7 42.3,84.2 44.3,81.6 46.3,78.9 48.3,76.0 50.3,72.9 52.3,69.8 54.4,66.5 56.4,63.2 58.4,59.7 60.4,56.3 62.4,52.7 64.4,49.2 66.4,45.7 68.5,42.2 70.5,38.8 72.5,35.5 74.5,32.4 76.5,29.4 78.5,26.6 80.5,24.0 82.6,21.6 84.6,19.5 86.6,17.7 88.6,16.2 90.6,15.1 92.6,14.2 94.6,13.8 96.6,13.6 98.7,13.7 100.7,13.9 102.7,14.2 104.7,14.6 106.7,15.2 108.7,15.9 110.7,16.6 112.8,17.5 114.8,18.5 116.8,19.6 118.8,20.8 120.8,22.1 122.8,23.5 124.8,25.0 126.8,26.5 128.9,28.2 130.9,29.9 132.9,31.6 134.9,33.5 136.9,35.3 138.9,37.2 140.9,39.2 143.0,41.2 145.0,43.2 147.0,45.3 149.0,47.3 151.0,49.4 153.0,51.5 155.0,53.5 157.0,55.6 159.1,57.7 161.1,59.7 163.1,61.7 165.1,63.7 167.1,65.7 169.1,67.7 171.1,69.6 173.2,71.5 175.2,73.3 177.2,75.1 179.2,76.8 181.2,78.5 183.2,80.2 185.2,81.8 187.2,83.3 189.3,84.8 191.3,86.2 193.3,87.6 195.3,89.0 197.3,90.2 199.3,91.5 201.3,92.6 203.4,93.7 205.4,94.8 207.4,95.8 209.4,96.8 211.4,97.7 213.4,98.6 215.4,99.4 217.4,100.1 219.5,100.9 221.5,101.6 223.5,102.2 225.5,102.8 227.5,103.4 229.5,103.9 231.5,104.4 233.6,104.8 235.6,105.3 237.6,105.7 239.6,106.0 241.6,106.4 243.6,106.7 245.6,107.0 247.7,107.3 249.7,107.5 251.7,107.7 253.7,108.0 255.7,108.1 257.7,108.3 259.7,108.5 261.7,108.6 263.8,108.8 265.8,108.9 267.8,109.0 269.8,109.1 271.8,109.2 273.8,109.3 275.8,109.4 277.9,109.4 279.9,109.5 281.9,109.5 283.9,109.6 285.9,109.6 287.9,109.7 289.9,109.7 291.9,109.7 294.0,109.8 296.0,109.8 298.0,109.8 300.0,109.8","d8_c5":"0.0,105.2 2.0,104.5 4.0,103.8 6.0,103.1 8.1,102.2 10.1,101.3 12.1,100.3 14.1,99.1 16.1,97.9 18.1,96.6 20.1,95.2 22.1,93.7 24.2,92.1 26.2,90.3 28.2,88.5 30.2,86.5 32.2,84.5 34.2,82.3 36.2,80.0 38.3,77.6 40.3,75.1 42.3,72.5 44.3,69.8 46.3,67.1 48.3,64.3 50.3,61.4 52.3,58.5 54.4,55.5 56.4,52.5 58.4,49.5 60.4,46.6 62.4,43.6 64.4,40.7 66.4,37.9 68.5,35.1 70.5,32.4 72.5,29.9 74.5,27.5 76.5,25.2 78.5,23.1 80.5,21.1 82.6,19.4 84.6,17.9 86.6,16.6 88.6,15.5 90.6,14.7 92.6,14.1 94.6,13.7 96.6,13.6 98.7,13.7 100.7,13.8 102.7,14.0 104.7,14.4 106.7,14.7 108.7,15.2 110.7,15.8 112.8,16.4 114.8,17.2 116.8,18.0 118.8,18.8 120.8,19.8 122.8,20.8 124.8,21.9 126.8,23.1 128.9,24.3 130.9,25.6 132.9,26.9 134.9,28.3 136.9,29.7 138.9,31.2 140.9,32.7 143.0,34.3 145.0,35.9 147.0,37.5 149.0,39.2 151.0,40.9 153.0,42.6 155.0,44.3 157.0,46.0 159.1,47.8 161.1,49.5 163.1,51.3 165.1,53.0 167.1,54.8 169.1,56.5 171.1,58.3 173.2,60.0 175.2,61.7 177.2,63.4 179.2,65.1 181.2,66.7 183.2,68.4 185.2,70.0 187.2,71.6 189.3,73.1 191.3,74.6 193.3,76.1 195.3,77.6 197.3,79.0 199.3,80.4 201.3,81.7 203.4,83.1 205.4,84.3 207.4,85.6 209.4,86.8 211.4,87.9 213.4,89.0 215.4,90.1 217.4,91.2 219.5,92.2 221.5,93.1 223.5,94.1 225.5,95.0 227.5,95.8 229.5,96.6 231.5,97.4 233.6,98.2 235.6,98.9 237.6,99.5 239.6,100.2 241.6,100.8 243.6,101.4 245.6,101.9 247.7,102.5 249.7,103.0 251.7,103.4 253.7,103.9 255.7,104.3 257.7,104.7 259.7,105.1 261.7,105.4 263.8,105.7 265.8,106.1 267.8,106.3 269.8,106.6 271.8,106.9 273.8,107.1 275.8,107.3 277.9,107.5 279.9,107.7 281.9,107.9 283.9,108.1 285.9,108.2 287.9,108.4 289.9,108.5 291.9,108.6 294.0,108.8 296.0,108.9 298.0,109.0 300.0,109.0","d8_pick":"0.0,109.9 2.0,109.9 4.0,109.9 6.0,109.8 8.1,109.8 10.1,109.7 12.1,109.6 14.1,109.5 16.1,109.4 18.1,109.2 20.1,109.0 22.1,108.7 24.2,108.4 26.2,108.0 28.2,107.5 30.2,106.9 32.2,106.2 34.2,105.4 36.2,104.4 38.3,103.2 40.3,101.9 42.3,100.3 44.3,98.6 46.3,96.6 48.3,94.3 50.3,91.8 52.3,89.0 54.4,85.9 56.4,82.6 58.4,79.0 60.4,75.2 62.4,71.1 64.4,66.8 66.4,62.4 68.5,57.8 70.5,53.2 72.5,48.5 74.5,43.9 76.5,39.4 78.5,35.0 80.5,30.9 82.6,27.1 84.6,23.7 86.6,20.7 88.6,18.2 90.6,16.1 92.6,14.7 94.6,13.9 96.6,13.6 98.7,13.7 100.7,14.1 102.7,14.6 104.7,15.4 106.7,16.3 108.7,17.5 110.7,18.8 112.8,20.3 114.8,22.0 116.8,23.9 118.8,25.8 120.8,28.0 122.8,30.2 124.8,32.6 126.8,35.0 128.9,37.5 130.9,40.1 132.9,42.8 134.9,45.5 136.9,48.2 138.9,51.0 140.9,53.7 143.0,56.4 145.0,59.1 147.0,61.8 149.0,64.5 151.0,67.0 153.0,69.6 155.0,72.0 157.0,74.4 159.1,76.7 161.1,79.0 163.1,81.1 165.1,83.2 167.1,85.1 169.1,87.0 171.1,88.8 173.2,90.5 175.2,92.1 177.2,93.6 179.2,95.0 181.2,96.3 183.2,97.5 185.2,98.7 187.2,99.7 189.3,100.7 191.3,101.6 193.3,102.4 195.3,103.2 197.3,103.9 199.3,104.5 201.3,105.1 203.4,105.7 205.4,106.1 207.4,106.6 209.4,107.0 211.4,107.3 213.4,107.6 215.4,107.9 217.4,108.2 219.5,108.4 221.5,108.6 223.5,108.8 225.5,109.0 227.5,109.1 229.5,109.2 231.5,109.3 233.6,109.4 235.6,109.5 237.6,109.6 239.6,109.6 241.6,109.7 243.6,109.7 245.6,109.8 247.7,109.8 249.7,109.8 251.7,109.9 253.7,109.9 255.7,109.9 257.7,109.9 259.7,109.9 261.7,109.9 263.8,110.0 265.8,110.0 267.8,110.0 269.8,110.0 271.8,110.0 273.8,110.0 275.8,110.0 277.9,110.0 279.9,110.0 281.9,110.0 283.9,110.0 285.9,110.0 287.9,110.0 289.9,110.0 291.9,110.0 294.0,110.0 296.0,110.0 298.0,110.0 300.0,110.0","d10_io":"0.0,84.0 1.1,83.0 2.2,82.1 3.3,81.1 4.3,80.2 5.4,79.2 6.5,78.2 7.6,77.3 8.7,76.3 9.8,75.4 10.9,74.4 11.9,73.4 13.0,72.5 14.1,71.5 15.2,70.6 16.3,69.6 17.4,68.7 18.4,67.7 19.5,66.7 20.6,65.8 21.7,64.8 22.8,63.9 23.9,62.9 25.0,61.9 26.0,61.0 27.1,60.0 28.2,59.1 29.3,58.1 30.4,57.1 31.5,56.2 32.6,55.2 33.6,54.3 34.7,53.3 35.8,52.3 36.9,51.4 38.0,50.4 39.1,49.5 40.2,48.5 41.2,47.5 42.3,46.6 43.4,45.6 44.5,44.7 45.6,43.7 46.7,42.8 47.8,44.5 48.8,46.1 49.9,47.7 51.0,49.2 52.1,50.6 53.2,52.0 54.3,53.3 55.3,54.6 56.4,55.8 57.5,57.0 58.6,58.1 59.7,59.2 60.8,60.2 61.9,61.2 62.9,62.1 64.0,63.0 65.1,63.9 66.2,64.7 67.3,65.5 68.4,66.3 69.5,67.0 70.5,67.7 71.6,68.4 72.7,69.0 73.8,69.7 74.9,70.3 76.0,70.8 77.1,71.4 78.1,71.9 79.2,72.4 80.3,72.9 81.4,73.3 82.5,73.8 83.6,74.2 84.7,74.6 85.7,75.0 86.8,75.4 87.9,75.7 89.0,76.1 90.1,76.4 91.2,76.7 92.2,77.0 93.3,77.3 94.4,77.6 95.5,77.8 96.6,78.1 97.7,78.3 98.8,78.6 99.8,78.8 100.9,79.0 102.0,79.2 103.1,79.4 104.2,79.6 105.3,79.8 106.4,80.0 107.4,80.1 108.5,80.3 109.6,80.4 110.7,80.6 111.8,80.7 112.9,80.9 114.0,81.0 115.0,81.1 116.1,81.2 117.2,81.4 118.3,81.5 119.4,81.6 120.5,81.7 121.6,81.8 122.6,81.9 123.7,82.0 124.8,82.0 125.9,82.1 127.0,82.2 128.1,82.3 129.1,82.3 130.2,82.4 131.3,82.5 132.4,82.5 133.5,82.6 134.6,82.7 135.7,82.7 136.7,82.8 137.8,82.8 138.9,82.9 140.0,82.9","d10_inv":"0.0,84.0 1.1,84.0 2.2,84.0 3.3,84.0 4.3,84.0 5.4,84.0 6.5,84.0 7.6,84.0 8.7,84.0 9.8,84.0 10.9,84.0 11.9,84.0 13.0,84.0 14.1,84.0 15.2,84.0 16.3,84.0 17.4,80.3 18.4,76.4 19.5,72.6 20.6,68.7 21.7,64.8 22.8,60.9 23.9,57.1 25.0,53.2 26.0,49.3 27.1,45.4 28.2,41.6 29.3,37.7 30.4,33.8 31.5,29.9 32.6,26.1 33.6,22.2 34.7,18.3 35.8,14.4 36.9,10.6 38.0,11.5 39.1,15.4 40.2,19.1 41.2,22.6 42.3,25.9 43.4,29.0 44.5,32.0 45.6,34.8 46.7,37.4 47.8,39.9 48.8,42.3 49.9,44.5 51.0,46.7 52.1,48.7 53.2,50.6 54.3,52.4 55.3,54.1 56.4,55.7 57.5,57.2 58.6,58.7 59.7,60.0 60.8,61.3 61.9,62.5 62.9,63.7 64.0,64.8 65.1,65.8 66.2,66.8 67.3,67.7 68.4,68.6 69.5,69.4 70.5,70.2 71.6,71.0 72.7,71.7 73.8,72.3 74.9,73.0 76.0,73.6 77.1,74.1 78.1,74.6 79.2,75.2 80.3,75.6 81.4,76.1 82.5,76.5 83.6,76.9 84.7,77.3 85.7,77.7 86.8,78.0 87.9,78.3 89.0,78.6 90.1,78.9 91.2,79.2 92.2,79.4 93.3,79.7 94.4,79.9 95.5,80.1 96.6,80.4 97.7,80.5 98.8,80.7 99.8,80.9 100.9,81.1 102.0,81.2 103.1,81.4 104.2,81.5 105.3,81.7 106.4,81.8 107.4,81.9 108.5,82.0 109.6,82.1 110.7,82.2 111.8,82.3 112.9,82.4 114.0,82.5 115.0,82.6 116.1,82.7 117.2,82.7 118.3,82.8 119.4,82.9 120.5,82.9 121.6,83.0 122.6,83.0 123.7,83.1 124.8,83.1 125.9,83.2 127.0,83.2 128.1,83.3 129.1,83.3 130.2,83.3 131.3,83.4 132.4,83.4 133.5,83.4 134.6,83.5 135.7,83.5 136.7,83.5 137.8,83.6 138.9,83.6 140.0,83.6","d10_ex2":"0.0,84.0 1.1,82.2 2.2,80.8 3.3,79.5 4.3,78.2 5.4,77.0 6.5,75.9 7.6,74.7 8.7,73.6 9.8,72.5 10.9,71.4 11.9,70.4 13.0,69.3 14.1,68.3 15.2,67.3 16.3,66.3 17.4,65.3 18.4,64.3 19.5,63.3 20.6,62.3 21.7,61.3 22.8,60.4 23.9,59.4 25.0,58.5 26.0,57.5 27.1,56.6 28.2,55.7 29.3,54.8 30.4,53.8 31.5,52.9 32.6,52.0 33.6,51.1 34.7,50.2 35.8,49.3 36.9,48.4 38.0,47.5 39.1,46.7 40.2,45.8 41.2,44.9 42.3,44.0 43.4,43.2 44.5,42.3 45.6,41.4 46.7,40.6 47.8,39.7 48.8,38.9 49.9,38.0 51.0,37.2 52.1,36.3 53.2,35.5 54.3,34.6 55.3,33.8 56.4,33.0 57.5,32.1 58.6,31.8 59.7,33.1 60.8,34.3 61.9,35.5 62.9,36.7 64.0,37.8 65.1,38.9 66.2,40.0 67.3,41.1 68.4,42.1 69.5,43.2 70.5,44.1 71.6,45.1 72.7,46.0 73.8,47.0 74.9,47.9 76.0,48.7 77.1,49.6 78.1,50.4 79.2,51.2 80.3,52.0 81.4,52.8 82.5,53.5 83.6,54.3 84.7,55.0 85.7,55.7 86.8,56.4 87.9,57.1 89.0,57.7 90.1,58.3 91.2,59.0 92.2,59.6 93.3,60.2 94.4,60.7 95.5,61.3 96.6,61.8 97.7,62.4 98.8,62.9 99.8,63.4 100.9,63.9 102.0,64.4 103.1,64.9 104.2,65.3 105.3,65.8 106.4,66.2 107.4,66.7 108.5,67.1 109.6,67.5 110.7,67.9 111.8,68.3 112.9,68.7 114.0,69.0 115.0,69.4 116.1,69.7 117.2,70.1 118.3,70.4 119.4,70.8 120.5,71.1 121.6,71.4 122.6,71.7 123.7,72.0 124.8,72.3 125.9,72.6 127.0,72.8 128.1,73.1 129.1,73.4 130.2,73.6 131.3,73.9 132.4,74.1 133.5,74.4 134.6,74.6 135.7,74.8 136.7,75.0 137.8,75.3 138.9,75.5 140.0,75.7","d12_gate":"0.0,116.0 2.6,113.5 5.2,111.0 7.8,108.5 10.4,106.2 12.9,103.9 15.5,101.6 18.1,99.4 20.7,97.3 23.3,95.2 25.9,93.1 28.5,91.1 31.1,89.2 33.7,87.3 36.3,85.4 38.8,83.6 41.4,81.8 44.0,80.1 46.6,78.4 49.2,76.8 51.8,75.2 54.4,73.6 57.0,72.1 59.6,70.6 62.2,69.2 64.7,67.8 67.3,66.4 69.9,65.0 72.5,63.7 75.1,62.4 77.7,61.2 80.3,59.9 82.9,58.8 85.5,57.6 88.1,56.5 90.6,55.3 93.2,54.3 95.8,53.2 98.4,52.2 101.0,51.2 103.6,50.2 106.2,49.2 108.8,48.3 111.4,47.4 114.0,46.5 116.5,45.6 119.1,44.8 121.7,43.9 124.3,43.1 126.9,42.4 129.5,41.6 132.1,40.8 134.7,40.1 137.3,39.4 139.9,38.7 142.4,38.0 145.0,37.3 147.6,36.7 150.2,36.1 152.8,35.5 155.4,34.8 158.0,34.3 160.6,33.7 163.2,33.1 165.8,32.6 168.3,32.1 170.9,31.5 173.5,31.0 176.1,30.5 178.7,30.0 181.3,29.6 183.9,29.1 186.5,28.7 189.1,28.2 191.7,27.8 194.2,27.4 196.8,27.0 199.4,26.6 202.0,26.2 204.6,25.8 207.2,25.4 209.8,25.1 212.4,24.7 215.0,24.4 217.6,24.1 220.1,23.7 222.7,23.4 225.3,23.1 227.9,22.8 230.5,22.5 233.1,22.2 235.7,21.9 238.3,21.7 240.9,21.4 243.5,21.1 246.0,20.9 248.6,20.6 251.2,20.4 253.8,20.1 256.4,19.9 259.0,19.7 261.6,19.5 264.2,19.2 266.8,19.0 269.4,18.8 271.9,18.6 274.5,18.4 277.1,18.2 279.7,18.1 282.3,17.9 284.9,17.7 287.5,17.5 290.1,17.4 292.7,17.2 295.3,17.0 297.8,16.9 300.4,16.7 303.0,16.6 305.6,16.4 308.2,16.3 310.8,16.1 313.4,16.0 316.0,15.9 318.6,15.8 321.2,15.6 323.7,15.5 326.3,15.4 328.9,15.3 331.5,15.2 334.1,15.0 336.7,14.9 339.3,14.8 341.9,14.7 344.5,14.6 347.1,14.5 349.6,14.4 352.2,14.3 354.8,14.2 357.4,14.2 360.0,14.1","p_ex2_810_transistor":"0.0,142.9 2.6,143.0 5.1,143.1 7.7,143.2 10.2,143.3 12.8,143.5 15.4,143.6 17.9,143.8 20.5,143.9 23.0,144.1 25.6,144.3 28.1,144.5 30.7,144.7 33.3,144.8 35.8,145.0 38.4,145.3 40.9,145.6 43.5,145.8 46.0,146.3 48.6,146.7 51.2,147.0 53.7,147.4 56.3,147.6 58.8,147.9 61.4,147.9 63.9,147.9 66.5,147.8 69.1,147.5 71.6,147.1 74.2,146.3 76.7,145.6 79.3,144.8 81.9,143.6 84.4,142.5 87.0,141.0 89.5,139.4 92.1,137.8 94.7,135.7 97.2,133.5 99.8,130.9 102.3,128.1 104.9,125.1 107.4,121.5 110.0,117.8 112.6,113.7 115.1,109.4 117.7,105.0 120.2,100.6 122.8,96.2 125.3,92.0 127.9,88.2 130.5,84.8 133.0,82.0 135.6,79.3 138.1,77.6 140.7,76.5 143.2,76.3 145.8,76.4 148.4,77.7 150.9,79.6 153.5,82.3 156.0,85.8 158.6,89.3 161.2,93.7 163.7,98.0 166.3,102.3 168.8,106.4 171.4,110.3 174.0,113.9 176.5,117.1 179.1,119.8 181.6,122.5 184.2,124.8 186.8,126.5 189.3,128.2 191.9,129.9 194.4,131.2 197.0,132.4 199.5,133.5 202.1,134.4 204.7,135.2 207.2,136.1 209.8,136.7 212.3,137.3 214.9,137.8 217.4,138.2 220.0,138.7 222.6,139.1 225.1,139.5 227.7,139.8 230.2,140.0 232.8,140.3 235.3,140.6 237.9,140.9 240.5,141.1 243.0,141.3 245.6,141.5 248.1,141.6 250.7,141.7 253.3,141.9 255.8,142.0 258.4,142.1 260.9,142.2 263.5,142.2 266.1,142.3 268.6,142.4 271.2,142.5 273.7,142.5 276.3,142.6 278.8,142.6 281.4,142.6 284.0,142.7 286.5,142.7 289.1,142.8 291.6,142.8 294.2,142.8 296.7,142.8 299.3,142.8 301.9,142.9 304.4,142.9 307.0,142.9 309.5,142.9 312.1,142.9 314.6,142.9 317.2,143.0 319.8,143.0 322.3,143.0 324.9,143.0 327.4,143.0 330.0,143.0","p_ex2_810_ours":"0.0,143.0 2.6,143.0 5.1,143.1 7.7,143.2 10.2,143.3 12.8,143.4 15.4,143.6 17.9,143.7 20.5,143.9 23.0,144.0 25.6,144.2 28.1,144.3 30.7,144.5 33.3,144.7 35.8,144.9 38.4,145.1 40.9,145.4 43.5,145.8 46.0,146.1 48.6,146.1 51.2,145.5 53.7,145.0 56.3,144.6 58.8,144.3 61.4,144.0 63.9,143.8 66.5,143.5 69.1,143.4 71.6,143.4 74.2,143.3 76.7,143.1 79.3,143.0 81.9,142.4 84.4,140.5 87.0,137.9 89.5,134.6 92.1,130.9 94.7,127.0 97.2,123.0 99.8,118.9 102.3,114.8 104.9,110.9 107.4,107.1 110.0,103.4 112.6,100.0 115.1,96.9 117.7,94.0 120.2,91.3 122.8,88.8 125.3,86.5 127.9,84.4 130.5,82.5 133.0,80.8 135.6,79.4 138.1,78.3 140.7,77.7 143.2,77.4 145.8,77.8 148.4,78.8 150.9,80.1 153.5,81.8 156.0,84.3 158.6,88.0 161.2,92.6 163.7,97.4 166.3,102.2 168.8,106.8 171.4,111.2 174.0,115.2 176.5,118.9 179.1,122.3 181.6,125.4 184.2,128.1 186.8,130.4 189.3,132.4 191.9,134.3 194.4,135.8 197.0,137.1 199.5,138.2 202.1,139.0 204.7,139.7 207.2,140.3 209.8,140.9 212.3,141.3 214.9,141.5 217.4,141.8 220.0,142.0 222.6,142.2 225.1,142.3 227.7,142.4 230.2,142.4 232.8,142.5 235.3,142.6 237.9,142.7 240.5,142.7 243.0,142.7 245.6,142.7 248.1,142.7 250.7,142.7 253.3,142.7 255.8,142.8 258.4,142.8 260.9,142.8 263.5,142.8 266.1,142.8 268.6,142.7 271.2,142.8 273.7,142.8 276.3,142.8 278.8,142.8 281.4,142.8 284.0,142.8 286.5,142.8 289.1,142.9 291.6,142.9 294.2,142.9 296.7,142.9 299.3,142.9 301.9,142.8 304.4,142.8 307.0,142.8 309.5,142.8 312.1,142.8 314.6,142.8 317.2,142.8 319.8,142.9 322.3,142.8 324.9,142.8 327.4,142.8 330.0,142.8","p_ex2_810_shipped":"0.0,143.0 2.6,143.0 5.1,143.1 7.7,143.2 10.2,143.3 12.8,143.4 15.4,143.6 17.9,143.7 20.5,143.9 23.0,144.0 25.6,144.2 28.1,144.3 30.7,144.5 33.3,144.7 35.8,144.9 38.4,145.2 40.9,145.5 43.5,145.8 46.0,146.1 48.6,146.1 51.2,145.5 53.7,144.9 56.3,144.5 58.8,144.2 61.4,143.9 63.9,143.7 66.5,143.5 69.1,143.4 71.6,143.3 74.2,143.2 76.7,143.1 79.3,143.0 81.9,142.4 84.4,141.5 87.0,140.5 89.5,138.8 92.1,137.0 94.7,135.1 97.2,133.0 99.8,130.4 102.3,126.1 104.9,121.6 107.4,116.8 110.0,111.5 112.6,105.4 115.1,99.1 117.7,92.8 120.2,87.0 122.8,81.2 125.3,75.5 127.9,69.9 130.5,64.8 133.0,60.0 135.6,55.7 138.1,51.9 140.7,48.1 143.2,44.3 145.8,41.0 148.4,38.3 150.9,36.1 153.5,34.2 156.0,32.7 158.6,31.5 161.2,30.4 163.7,29.7 166.3,29.5 168.8,29.5 171.4,29.7 174.0,30.7 176.5,32.4 179.1,34.5 181.6,37.1 184.2,40.1 186.8,44.2 189.3,48.8 191.9,54.1 194.4,59.4 197.0,64.7 199.5,70.6 202.1,76.7 204.7,82.7 207.2,87.6 209.8,92.0 212.3,96.2 214.9,99.8 217.4,103.4 220.0,106.7 222.6,109.6 225.1,112.3 227.7,115.1 230.2,117.9 232.8,120.4 235.3,122.8 237.9,125.0 240.5,126.9 243.0,128.7 245.6,130.3 248.1,131.7 250.7,133.0 253.3,134.2 255.8,135.2 258.4,136.1 260.9,136.9 263.5,137.6 266.1,138.2 268.6,138.7 271.2,139.2 273.7,139.6 276.3,140.0 278.8,140.3 281.4,140.6 284.0,140.9 286.5,141.1 289.1,141.4 291.6,141.6 294.2,141.8 296.7,141.9 299.3,142.0 301.9,142.1 304.4,142.2 307.0,142.2 309.5,142.3 312.1,142.4 314.6,142.5 317.2,142.6 319.8,142.6 322.3,142.7 324.9,142.7 327.4,142.7 330.0,142.7","rev_ex2_810":43.0,"p_ex2_975_transistor":"0.0,144.1 2.6,144.3 5.1,144.5 7.7,144.7 10.2,144.9 12.8,145.1 15.4,145.4 17.9,145.6 20.5,145.9 23.0,146.3 25.6,146.8 28.1,147.1 30.7,147.5 33.3,147.7 35.8,147.8 38.4,147.9 40.9,147.7 43.5,147.6 46.0,147.3 48.6,146.8 51.2,146.2 53.7,145.5 56.3,144.6 58.8,143.6 61.4,142.5 63.9,141.2 66.5,139.7 69.1,137.9 71.6,135.7 74.2,133.1 76.7,130.4 79.3,127.0 81.9,123.3 84.4,119.0 87.0,113.8 89.5,108.4 92.1,102.6 94.7,96.6 97.2,90.6 99.8,84.6 102.3,78.7 104.9,72.9 107.4,67.4 110.0,61.9 112.6,56.8 115.1,52.0 117.7,47.3 120.2,43.4 122.8,39.6 125.3,36.3 127.9,33.4 130.5,30.6 133.0,28.5 135.6,26.6 138.1,24.8 140.7,23.7 143.2,22.6 145.8,22.0 148.4,21.6 150.9,21.4 153.5,21.8 156.0,22.2 158.6,23.6 161.2,25.3 163.7,27.3 166.3,30.2 168.8,33.8 171.4,38.1 174.0,42.9 176.5,48.4 179.1,54.6 181.6,61.2 184.2,68.3 186.8,75.9 189.3,83.4 191.9,90.6 194.4,97.4 197.0,104.0 199.5,109.2 202.1,113.9 204.7,117.7 207.2,121.3 209.8,124.2 212.3,126.4 214.9,128.3 217.4,130.0 220.0,131.5 222.6,132.7 225.1,133.8 227.7,134.8 230.2,135.6 232.8,136.4 235.3,137.0 237.9,137.5 240.5,138.1 243.0,138.5 245.6,138.9 248.1,139.3 250.7,139.6 253.3,139.9 255.8,140.2 258.4,140.5 260.9,140.8 263.5,141.0 266.1,141.2 268.6,141.4 271.2,141.6 273.7,141.7 276.3,141.8 278.8,141.9 281.4,142.0 284.0,142.2 286.5,142.2 289.1,142.3 291.6,142.4 294.2,142.4 296.7,142.5 299.3,142.5 301.9,142.6 304.4,142.6 307.0,142.7 309.5,142.7 312.1,142.8 314.6,142.8 317.2,142.8 319.8,142.8 322.3,142.8 324.9,142.9 327.4,142.9 330.0,142.9","p_ex2_975_ours":"0.0,144.0 2.6,144.2 5.1,144.4 7.7,144.6 10.2,144.8 12.8,145.0 15.4,145.2 17.9,145.5 20.5,145.9 23.0,146.2 25.6,146.6 28.1,146.9 30.7,147.1 33.3,147.3 35.8,147.6 38.4,147.8 40.9,147.6 43.5,147.4 46.0,147.1 48.6,146.7 51.2,146.2 53.7,145.8 56.3,144.1 58.8,141.3 61.4,137.6 63.9,133.4 66.5,128.7 69.1,123.9 71.6,118.8 74.2,113.7 76.7,108.4 79.3,103.2 81.9,98.0 84.4,92.9 87.0,87.9 89.5,83.1 92.1,78.5 94.7,74.0 97.2,69.7 99.8,65.7 102.3,61.9 104.9,58.3 107.4,54.9 110.0,51.8 112.6,48.9 115.1,46.2 117.7,43.8 120.2,41.5 122.8,39.5 125.3,37.6 127.9,35.9 130.5,34.4 133.0,33.1 135.6,31.9 138.1,30.8 140.7,30.0 143.2,29.5 145.8,29.3 148.4,29.5 150.9,29.7 153.5,30.1 156.0,30.8 158.6,31.8 161.2,33.2 163.7,35.0 166.3,37.2 168.8,40.0 171.4,43.2 174.0,47.2 176.5,52.1 179.1,58.8 181.6,66.6 184.2,74.5 186.8,82.4 189.3,89.9 191.9,97.3 194.4,104.0 197.0,110.0 199.5,115.2 202.1,119.7 204.7,123.6 207.2,126.9 209.8,129.9 212.3,132.2 214.9,134.0 217.4,135.7 220.0,137.0 222.6,138.1 225.1,139.0 227.7,139.7 230.2,140.3 232.8,140.8 235.3,141.3 237.9,141.6 240.5,141.8 243.0,142.0 245.6,142.1 248.1,142.2 250.7,142.3 253.3,142.4 255.8,142.5 258.4,142.6 260.9,142.7 263.5,142.7 266.1,142.7 268.6,142.7 271.2,142.7 273.7,142.7 276.3,142.7 278.8,142.7 281.4,142.7 284.0,142.8 286.5,142.8 289.1,142.9 291.6,142.9 294.2,142.9 296.7,142.9 299.3,142.8 301.9,142.8 304.4,142.8 307.0,142.8 309.5,142.8 312.1,142.8 314.6,142.8 317.2,142.8 319.8,142.9 322.3,142.8 324.9,142.8 327.4,142.8 330.0,142.8","p_ex2_975_shipped":"0.0,144.1 2.6,144.2 5.1,144.4 7.7,144.6 10.2,144.8 12.8,145.0 15.4,145.2 17.9,145.5 20.5,145.9 23.0,146.2 25.6,146.5 28.1,146.8 30.7,147.0 33.3,147.2 35.8,147.4 38.4,147.6 40.9,147.4 43.5,147.2 46.0,146.9 48.6,146.5 51.2,146.0 53.7,145.6 56.3,145.2 58.8,144.3 61.4,143.4 63.9,142.1 66.5,140.2 69.1,138.3 71.6,136.4 74.2,134.3 76.7,131.2 79.3,126.8 81.9,122.1 84.4,117.2 87.0,111.7 89.5,105.5 92.1,99.1 94.7,92.9 97.2,87.1 99.8,81.3 102.3,75.5 104.9,70.0 107.4,64.9 110.0,60.0 112.6,55.8 115.1,51.8 117.7,47.9 120.2,44.1 122.8,40.5 125.3,37.4 127.9,34.8 130.5,32.3 133.0,30.0 135.6,27.9 138.1,26.0 140.7,24.3 143.2,22.7 145.8,21.4 148.4,20.5 150.9,19.8 153.5,19.0 156.0,18.5 158.6,18.3 161.2,18.2 163.7,18.2 166.3,18.5 168.8,19.2 171.4,20.0 174.0,20.9 176.5,22.5 179.1,25.2 181.6,28.2 184.2,31.3 186.8,34.9 189.3,39.7 191.9,45.3 194.4,51.0 197.0,56.7 199.5,62.6 202.1,68.7 204.7,75.1 207.2,81.3 209.8,86.6 212.3,91.2 214.9,95.6 217.4,99.6 220.0,103.2 222.6,106.6 225.1,109.7 227.7,112.7 230.2,115.7 232.8,118.5 235.3,121.2 237.9,123.5 240.5,125.6 243.0,127.6 245.6,129.3 248.1,130.8 250.7,132.2 253.3,133.5 255.8,134.6 258.4,135.6 260.9,136.4 263.5,137.1 266.1,137.8 268.6,138.3 271.2,138.9 273.7,139.3 276.3,139.7 278.8,140.1 281.4,140.4 284.0,140.7 286.5,141.0 289.1,141.3 291.6,141.5 294.2,141.6 296.7,141.8 299.3,141.9 301.9,142.0 304.4,142.1 307.0,142.2 309.5,142.3 312.1,142.3 314.6,142.4 317.2,142.5 319.8,142.6 322.3,142.6 324.9,142.7 327.4,142.7 330.0,142.7","rev_ex2_975":43.0,"p_inv_chain_104_transistor":"0.0,142.2 2.6,142.2 5.1,142.2 7.7,142.2 10.2,142.2 12.8,142.2 15.4,142.2 17.9,142.2 20.5,142.2 23.0,142.2 25.6,142.2 28.1,142.2 30.7,142.2 33.3,142.2 35.8,142.2 38.4,142.2 40.9,142.2 43.5,142.2 46.0,142.2 48.6,142.2 51.2,142.2 53.7,142.2 56.3,142.2 58.8,142.2 61.4,142.1 63.9,142.0 66.5,142.5 69.1,144.1 71.6,142.1 74.2,125.2 76.7,97.9 79.3,77.3 81.9,76.9 84.4,99.4 87.0,124.0 89.5,136.1 92.1,140.4 94.7,141.6 97.2,142.0 99.8,142.1 102.3,142.1 104.9,142.1 107.4,142.2 110.0,142.2 112.6,142.2 115.1,142.2 117.7,142.2 120.2,142.2 122.8,142.2 125.3,142.2 127.9,142.2 130.5,142.2 133.0,142.2 135.6,142.2 138.1,142.2 140.7,142.2 143.2,142.2 145.8,142.2 148.4,142.2 150.9,142.2 153.5,142.2 156.0,142.2 158.6,142.2 161.2,142.2 163.7,142.2 166.3,142.2 168.8,142.2 171.4,142.2 174.0,142.2 176.5,142.2 179.1,142.2 181.6,142.2 184.2,142.2 186.8,142.2 189.3,142.2 191.9,142.2 194.4,142.2 197.0,142.2 199.5,142.2 202.1,142.2 204.7,142.2 207.2,142.2 209.8,142.2 212.3,142.2 214.9,142.2 217.4,142.2 220.0,142.2 222.6,142.2 225.1,142.2 227.7,142.2 230.2,142.2 232.8,142.2 235.3,142.2 237.9,142.2 240.5,142.2 243.0,142.2 245.6,142.2 248.1,142.2 250.7,142.2 253.3,142.2 255.8,142.2 258.4,142.2 260.9,142.2 263.5,142.2 266.1,142.2 268.6,142.2 271.2,142.2 273.7,142.2 276.3,142.2 278.8,142.2 281.4,142.2 284.0,142.2 286.5,142.2 289.1,142.2 291.6,142.2 294.2,142.2 296.7,142.2 299.3,142.2 301.9,142.2 304.4,142.2 307.0,142.2 309.5,142.2 312.1,142.2 314.6,142.2 317.2,142.2 319.8,142.2 322.3,142.2 324.9,142.2 327.4,142.2 330.0,142.2","p_inv_chain_104_ours":"0.0,142.2 2.6,142.2 5.1,142.2 7.7,142.2 10.2,142.2 12.8,142.2 15.4,142.2 17.9,142.2 20.5,142.2 23.0,142.2 25.6,142.2 28.1,142.2 30.7,142.2 33.3,142.2 35.8,142.2 38.4,142.2 40.9,142.1 43.5,142.1 46.0,142.1 48.6,142.1 51.2,142.2 53.7,142.2 56.3,142.2 58.8,142.2 61.4,142.2 63.9,142.2 66.5,142.2 69.1,142.0 71.6,133.3 74.2,112.5 76.7,91.1 79.3,77.1 81.9,86.1 84.4,113.3 87.0,131.9 89.5,139.4 92.1,141.4 94.7,142.0 97.2,142.1 99.8,142.1 102.3,142.2 104.9,142.2 107.4,142.2 110.0,142.2 112.6,142.2 115.1,142.2 117.7,142.2 120.2,142.2 122.8,142.2 125.3,142.2 127.9,142.2 130.5,142.2 133.0,142.2 135.6,142.2 138.1,142.2 140.7,142.2 143.2,142.2 145.8,142.2 148.4,142.2 150.9,142.2 153.5,142.2 156.0,142.2 158.6,142.2 161.2,142.2 163.7,142.2 166.3,142.2 168.8,142.2 171.4,142.2 174.0,142.2 176.5,142.2 179.1,142.2 181.6,142.2 184.2,142.2 186.8,142.2 189.3,142.2 191.9,142.2 194.4,142.2 197.0,142.2 199.5,142.2 202.1,142.2 204.7,142.2 207.2,142.2 209.8,142.2 212.3,142.2 214.9,142.2 217.4,142.2 220.0,142.2 222.6,142.2 225.1,142.2 227.7,142.2 230.2,142.2 232.8,142.2 235.3,142.2 237.9,142.2 240.5,142.2 243.0,142.2 245.6,142.2 248.1,142.2 250.7,142.2 253.3,142.2 255.8,142.2 258.4,142.2 260.9,142.2 263.5,142.2 266.1,142.2 268.6,142.2 271.2,142.2 273.7,142.2 276.3,142.2 278.8,142.2 281.4,142.2 284.0,142.2 286.5,142.2 289.1,142.2 291.6,142.2 294.2,142.2 296.7,142.2 299.3,142.2 301.9,142.2 304.4,142.2 307.0,142.2 309.5,142.2 312.1,142.2 314.6,142.2 317.2,142.2 319.8,142.2 322.3,142.2 324.9,142.2 327.4,142.2 330.0,142.2","p_inv_chain_104_shipped":"0.0,142.2 2.6,142.2 5.1,142.2 7.7,142.2 10.2,142.2 12.8,142.2 15.4,142.2 17.9,142.2 20.5,142.2 23.0,142.2 25.6,142.2 28.1,142.2 30.7,142.2 33.3,142.2 35.8,142.2 38.4,142.2 40.9,142.1 43.5,142.1 46.0,142.1 48.6,142.1 51.2,142.2 53.7,142.2 56.3,142.2 58.8,142.2 61.4,142.2 63.9,142.2 66.5,142.2 69.1,142.2 71.6,140.8 74.2,124.1 76.7,95.3 79.3,68.3 81.9,45.9 84.4,31.6 87.0,31.7 89.5,52.4 92.1,85.4 94.7,115.5 97.2,133.0 99.8,139.4 102.3,141.4 104.9,141.9 107.4,142.1 110.0,142.1 112.6,142.2 115.1,142.2 117.7,142.2 120.2,142.2 122.8,142.2 125.3,142.2 127.9,142.2 130.5,142.2 133.0,142.2 135.6,142.2 138.1,142.2 140.7,142.2 143.2,142.2 145.8,142.2 148.4,142.2 150.9,142.2 153.5,142.2 156.0,142.2 158.6,142.2 161.2,142.2 163.7,142.2 166.3,142.2 168.8,142.2 171.4,142.2 174.0,142.2 176.5,142.2 179.1,142.2 181.6,142.2 184.2,142.2 186.8,142.2 189.3,142.2 191.9,142.2 194.4,142.2 197.0,142.2 199.5,142.2 202.1,142.2 204.7,142.2 207.2,142.2 209.8,142.2 212.3,142.2 214.9,142.2 217.4,142.2 220.0,142.2 222.6,142.2 225.1,142.2 227.7,142.2 230.2,142.2 232.8,142.2 235.3,142.2 237.9,142.2 240.5,142.2 243.0,142.2 245.6,142.2 248.1,142.2 250.7,142.2 253.3,142.2 255.8,142.2 258.4,142.2 260.9,142.2 263.5,142.2 266.1,142.2 268.6,142.2 271.2,142.2 273.7,142.2 276.3,142.2 278.8,142.2 281.4,142.2 284.0,142.2 286.5,142.2 289.1,142.2 291.6,142.2 294.2,142.2 296.7,142.2 299.3,142.2 301.9,142.2 304.4,142.2 307.0,142.2 309.5,142.2 312.1,142.2 314.6,142.2 317.2,142.2 319.8,142.2 322.3,142.2 324.9,142.2 327.4,142.2 330.0,142.2","rev_inv_chain_104":43.0,"p_inv_chain_135_transistor":"0.0,142.2 2.6,142.2 5.1,142.2 7.7,142.2 10.2,142.2 12.8,142.2 15.4,142.2 17.9,142.2 20.5,142.2 23.0,142.2 25.6,142.2 28.1,142.2 30.7,142.2 33.3,142.2 35.8,142.2 38.4,142.2 40.9,142.2 43.5,142.2 46.0,142.2 48.6,142.2 51.2,142.2 53.7,142.2 56.3,142.1 58.8,142.0 61.4,142.3 63.9,143.6 66.5,143.8 69.1,132.2 71.6,103.8 74.2,73.6 76.7,49.0 79.3,31.0 81.9,19.6 84.4,16.8 87.0,33.5 89.5,69.4 92.1,107.5 94.7,130.2 97.2,138.7 99.8,141.1 102.3,141.9 104.9,142.1 107.4,142.1 110.0,142.1 112.6,142.2 115.1,142.2 117.7,142.2 120.2,142.2 122.8,142.2 125.3,142.2 127.9,142.2 130.5,142.2 133.0,142.2 135.6,142.2 138.1,142.2 140.7,142.2 143.2,142.2 145.8,142.2 148.4,142.2 150.9,142.2 153.5,142.2 156.0,142.2 158.6,142.2 161.2,142.2 163.7,142.2 166.3,142.2 168.8,142.2 171.4,142.2 174.0,142.2 176.5,142.2 179.1,142.2 181.6,142.2 184.2,142.2 186.8,142.2 189.3,142.2 191.9,142.2 194.4,142.2 197.0,142.2 199.5,142.2 202.1,142.2 204.7,142.2 207.2,142.2 209.8,142.2 212.3,142.2 214.9,142.2 217.4,142.2 220.0,142.2 222.6,142.2 225.1,142.2 227.7,142.2 230.2,142.2 232.8,142.2 235.3,142.2 237.9,142.2 240.5,142.2 243.0,142.2 245.6,142.2 248.1,142.2 250.7,142.2 253.3,142.2 255.8,142.2 258.4,142.2 260.9,142.2 263.5,142.2 266.1,142.2 268.6,142.2 271.2,142.2 273.7,142.2 276.3,142.2 278.8,142.2 281.4,142.2 284.0,142.2 286.5,142.2 289.1,142.2 291.6,142.2 294.2,142.2 296.7,142.2 299.3,142.2 301.9,142.2 304.4,142.2 307.0,142.2 309.5,142.2 312.1,142.2 314.6,142.2 317.2,142.2 319.8,142.2 322.3,142.2 324.9,142.2 327.4,142.2 330.0,142.2","p_inv_chain_135_ours":"0.0,142.2 2.6,142.2 5.1,142.2 7.7,142.2 10.2,142.2 12.8,142.2 15.4,142.2 17.9,142.2 20.5,142.2 23.0,142.2 25.6,142.2 28.1,142.2 30.7,142.2 33.3,142.2 35.8,142.1 38.4,142.1 40.9,142.1 43.5,142.1 46.0,142.1 48.6,142.1 51.2,142.2 53.7,142.2 56.3,142.2 58.8,142.2 61.4,142.2 63.9,141.3 66.5,126.6 69.1,99.3 71.6,71.6 74.2,48.7 76.7,32.0 79.3,20.9 81.9,17.1 84.4,25.1 87.0,58.4 89.5,101.0 92.1,128.1 94.7,138.3 97.2,141.1 99.8,141.9 102.3,142.1 104.9,142.2 107.4,142.2 110.0,142.2 112.6,142.2 115.1,142.2 117.7,142.2 120.2,142.2 122.8,142.2 125.3,142.2 127.9,142.2 130.5,142.2 133.0,142.2 135.6,142.2 138.1,142.2 140.7,142.2 143.2,142.2 145.8,142.2 148.4,142.2 150.9,142.2 153.5,142.2 156.0,142.2 158.6,142.2 161.2,142.2 163.7,142.2 166.3,142.2 168.8,142.2 171.4,142.2 174.0,142.2 176.5,142.2 179.1,142.2 181.6,142.2 184.2,142.2 186.8,142.2 189.3,142.2 191.9,142.2 194.4,142.2 197.0,142.2 199.5,142.2 202.1,142.2 204.7,142.2 207.2,142.2 209.8,142.2 212.3,142.2 214.9,142.2 217.4,142.2 220.0,142.2 222.6,142.2 225.1,142.2 227.7,142.2 230.2,142.2 232.8,142.2 235.3,142.2 237.9,142.2 240.5,142.2 243.0,142.2 245.6,142.2 248.1,142.2 250.7,142.2 253.3,142.2 255.8,142.2 258.4,142.2 260.9,142.2 263.5,142.2 266.1,142.2 268.6,142.2 271.2,142.2 273.7,142.2 276.3,142.2 278.8,142.2 281.4,142.2 284.0,142.2 286.5,142.2 289.1,142.2 291.6,142.2 294.2,142.2 296.7,142.2 299.3,142.2 301.9,142.2 304.4,142.2 307.0,142.2 309.5,142.2 312.1,142.2 314.6,142.2 317.2,142.2 319.8,142.2 322.3,142.2 324.9,142.2 327.4,142.2 330.0,142.2","p_inv_chain_135_shipped":"0.0,142.2 2.6,142.2 5.1,142.2 7.7,142.2 10.2,142.2 12.8,142.2 15.4,142.2 17.9,142.2 20.5,142.2 23.0,142.2 25.6,142.2 28.1,142.2 30.7,142.2 33.3,142.2 35.8,142.1 38.4,142.1 40.9,142.1 43.5,142.1 46.0,142.1 48.6,142.1 51.2,142.2 53.7,142.2 56.3,142.2 58.8,142.2 61.4,142.2 63.9,142.2 66.5,141.8 69.1,129.7 71.6,101.9 74.2,74.4 76.7,51.0 79.3,33.5 81.9,21.4 84.4,14.7 87.0,18.1 89.5,40.5 92.1,75.5 94.7,109.3 97.2,130.4 99.8,138.7 102.3,141.2 104.9,141.9 107.4,142.1 110.0,142.1 112.6,142.2 115.1,142.2 117.7,142.2 120.2,142.2 122.8,142.2 125.3,142.2 127.9,142.2 130.5,142.2 133.0,142.2 135.6,142.2 138.1,142.2 140.7,142.2 143.2,142.2 145.8,142.2 148.4,142.2 150.9,142.2 153.5,142.2 156.0,142.2 158.6,142.2 161.2,142.2 163.7,142.2 166.3,142.2 168.8,142.2 171.4,142.2 174.0,142.2 176.5,142.2 179.1,142.2 181.6,142.2 184.2,142.2 186.8,142.2 189.3,142.2 191.9,142.2 194.4,142.2 197.0,142.2 199.5,142.2 202.1,142.2 204.7,142.2 207.2,142.2 209.8,142.2 212.3,142.2 214.9,142.2 217.4,142.2 220.0,142.2 222.6,142.2 225.1,142.2 227.7,142.2 230.2,142.2 232.8,142.2 235.3,142.2 237.9,142.2 240.5,142.2 243.0,142.2 245.6,142.2 248.1,142.2 250.7,142.2 253.3,142.2 255.8,142.2 258.4,142.2 260.9,142.2 263.5,142.2 266.1,142.2 268.6,142.2 271.2,142.2 273.7,142.2 276.3,142.2 278.8,142.2 281.4,142.2 284.0,142.2 286.5,142.2 289.1,142.2 291.6,142.2 294.2,142.2 296.7,142.2 299.3,142.2 301.9,142.2 304.4,142.2 307.0,142.2 309.5,142.2 312.1,142.2 314.6,142.2 317.2,142.2 319.8,142.2 322.3,142.2 324.9,142.2 327.4,142.2 330.0,142.2","rev_inv_chain_135":43.0,"g_inv_104_gate_transistor":"0.0,112.2 2.6,112.2 5.1,112.2 7.7,112.2 10.2,112.2 12.8,112.2 15.4,112.2 17.9,112.2 20.5,112.2 23.0,112.2 25.6,112.2 28.1,112.2 30.7,112.2 33.3,112.2 35.8,112.2 38.4,112.2 40.9,112.2 43.5,112.2 46.0,112.2 48.6,112.2 51.2,112.2 53.7,112.2 56.3,112.1 58.8,112.1 61.4,113.1 63.9,115.2 66.5,110.3 69.1,87.5 71.6,58.3 74.2,32.9 76.7,27.2 79.3,43.4 81.9,69.1 84.4,89.3 87.0,100.8 89.5,106.4 92.1,109.5 94.7,110.9 97.2,111.6 99.8,112.0 102.3,112.1 104.9,112.2 107.4,112.2 110.0,112.2 112.6,112.2 115.1,112.2 117.7,112.2 120.2,112.2 122.8,112.2 125.3,112.2 127.9,112.2 130.5,112.2 133.0,112.2 135.6,112.2 138.1,112.2 140.7,112.2 143.2,112.2 145.8,112.2 148.4,112.2 150.9,112.2 153.5,112.2 156.0,112.2 158.6,112.2 161.2,112.2 163.7,112.2 166.3,112.2 168.8,112.2 171.4,112.2 174.0,112.2 176.5,112.2 179.1,112.2 181.6,112.2 184.2,112.2 186.8,112.2 189.3,112.2 191.9,112.2 194.4,112.2 197.0,112.2 199.5,112.2 202.1,112.2 204.7,112.2 207.2,112.2 209.8,112.2 212.3,112.2 214.9,112.2 217.4,112.2 220.0,112.2 222.6,112.2 225.1,112.2 227.7,112.2 230.2,112.2 232.8,112.2 235.3,112.2 237.9,112.2 240.5,112.2 243.0,112.2 245.6,112.2 248.1,112.2 250.7,112.2 253.3,112.2 255.8,112.2 258.4,112.2 260.9,112.2 263.5,112.2 266.1,112.2 268.6,112.2 271.2,112.2 273.7,112.2 276.3,112.2 278.8,112.2 281.4,112.2 284.0,112.2 286.5,112.2 289.1,112.2 291.6,112.2 294.2,112.2 296.7,112.2 299.3,112.2 301.9,112.2 304.4,112.2 307.0,112.2 309.5,112.2 312.1,112.2 314.6,112.2 317.2,112.2 319.8,112.2 322.3,112.2 324.9,112.2 327.4,112.2 330.0,112.2","g_inv_104_gate_ours":"0.0,112.2 2.6,112.2 5.1,112.2 7.7,112.2 10.2,112.2 12.8,112.2 15.4,112.2 17.9,112.2 20.5,112.2 23.0,112.2 25.6,112.2 28.1,112.2 30.7,112.2 33.3,112.2 35.8,112.2 38.4,112.2 40.9,112.2 43.5,112.2 46.0,112.2 48.6,112.2 51.2,112.2 53.7,112.2 56.3,112.2 58.8,112.2 61.4,112.2 63.9,110.3 66.5,92.5 69.1,67.7 71.6,43.7 74.2,34.2 76.7,36.6 79.3,56.5 81.9,85.5 84.4,103.7 87.0,109.6 89.5,111.4 92.1,112.0 94.7,112.1 97.2,112.2 99.8,112.2 102.3,112.2 104.9,112.2 107.4,112.2 110.0,112.2 112.6,112.2 115.1,112.2 117.7,112.2 120.2,112.2 122.8,112.2 125.3,112.2 127.9,112.2 130.5,112.2 133.0,112.2 135.6,112.2 138.1,112.2 140.7,112.2 143.2,112.2 145.8,112.2 148.4,112.2 150.9,112.2 153.5,112.2 156.0,112.2 158.6,112.2 161.2,112.2 163.7,112.2 166.3,112.2 168.8,112.2 171.4,112.2 174.0,112.2 176.5,112.2 179.1,112.2 181.6,112.2 184.2,112.2 186.8,112.2 189.3,112.2 191.9,112.2 194.4,112.2 197.0,112.2 199.5,112.2 202.1,112.2 204.7,112.2 207.2,112.2 209.8,112.2 212.3,112.2 214.9,112.2 217.4,112.2 220.0,112.2 222.6,112.2 225.1,112.2 227.7,112.2 230.2,112.2 232.8,112.2 235.3,112.2 237.9,112.2 240.5,112.2 243.0,112.2 245.6,112.2 248.1,112.2 250.7,112.2 253.3,112.2 255.8,112.2 258.4,112.2 260.9,112.2 263.5,112.2 266.1,112.2 268.6,112.2 271.2,112.2 273.7,112.2 276.3,112.2 278.8,112.2 281.4,112.2 284.0,112.2 286.5,112.2 289.1,112.2 291.6,112.2 294.2,112.2 296.7,112.2 299.3,112.2 301.9,112.2 304.4,112.2 307.0,112.2 309.5,112.2 312.1,112.2 314.6,112.2 317.2,112.2 319.8,112.2 322.3,112.2 324.9,112.2 327.4,112.2 330.0,112.2","g_inv_104_gate_shipped":"0.0,112.2 2.6,112.2 5.1,112.2 7.7,112.2 10.2,112.2 12.8,112.2 15.4,112.2 17.9,112.2 20.5,112.2 23.0,112.2 25.6,112.2 28.1,112.2 30.7,112.2 33.3,112.2 35.8,112.2 38.4,112.2 40.9,112.2 43.5,112.2 46.0,112.2 48.6,112.2 51.2,112.2 53.7,112.2 56.3,112.2 58.8,112.2 61.4,112.2 63.9,112.2 66.5,112.2 69.1,112.2 71.6,74.6 74.2,39.2 76.7,24.7 79.3,18.8 81.9,16.3 84.4,63.3 87.0,88.6 89.5,100.8 92.1,106.7 94.7,109.5 97.2,110.9 99.8,111.6 102.3,111.9 104.9,112.0 107.4,112.1 110.0,112.2 112.6,112.2 115.1,112.2 117.7,112.2 120.2,112.2 122.8,112.2 125.3,112.2 127.9,112.2 130.5,112.2 133.0,112.2 135.6,112.2 138.1,112.2 140.7,112.2 143.2,112.2 145.8,112.2 148.4,112.2 150.9,112.2 153.5,112.2 156.0,112.2 158.6,112.2 161.2,112.2 163.7,112.2 166.3,112.2 168.8,112.2 171.4,112.2 174.0,112.2 176.5,112.2 179.1,112.2 181.6,112.2 184.2,112.2 186.8,112.2 189.3,112.2 191.9,112.2 194.4,112.2 197.0,112.2 199.5,112.2 202.1,112.2 204.7,112.2 207.2,112.2 209.8,112.2 212.3,112.2 214.9,112.2 217.4,112.2 220.0,112.2 222.6,112.2 225.1,112.2 227.7,112.2 230.2,112.2 232.8,112.2 235.3,112.2 237.9,112.2 240.5,112.2 243.0,112.2 245.6,112.2 248.1,112.2 250.7,112.2 253.3,112.2 255.8,112.2 258.4,112.2 260.9,112.2 263.5,112.2 266.1,112.2 268.6,112.2 271.2,112.2 273.7,112.2 276.3,112.2 278.8,112.2 281.4,112.2 284.0,112.2 286.5,112.2 289.1,112.2 291.6,112.2 294.2,112.2 296.7,112.2 299.3,112.2 301.9,112.2 304.4,112.2 307.0,112.2 309.5,112.2 312.1,112.2 314.6,112.2 317.2,112.2 319.8,112.2 322.3,112.2 324.9,112.2 327.4,112.2 330.0,112.2"};
+(function(){
+  for (var k in CURVES){
+    var el = document.getElementById(k);
+    if (el && typeof CURVES[k] === "string") el.setAttribute("points", CURVES[k]);
+  }
+  // figure 1 repeats the two gate curves in the comparison panel, and the Ku panel twice
+  var dup = {d1_gateA2:"d1_gateA", d1_gateB2:"d1_gateB", d1_ku2:"d1_ku",
+             d3_cv_cl:"d3_cl", d3_cv_rc:"d3_rc"};
+  for (var d in dup){
+    var e = document.getElementById(d);
+    if (e) e.setAttribute("points", CURVES[dup[d]]);
+  }
+})();
+</script>

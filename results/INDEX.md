@@ -16,7 +16,7 @@ The current work. The chain is fitted to the IBIS file's Ku(t) (track 1) or to a
 | folder | what it is | write-up | written by |
 |---|---|---|---|
 | `train_check_today_2026-09-23` | Today's models on a stressed pulse train | FINDINGS.md | `scripts/train_check_today.py` |
-| `track1_summary_2026-09-23` | Overnight, 2026-09-22 into 09-23 | SUMMARY.md WAVEFORMS.md | `scripts/build_0923_figures.py`, `scripts/track1_waveform_index.py` |
+| `track1_summary_2026-09-23` | Overnight, 2026-09-22 into 09-23 | SUMMARY.md WAVEFORMS.md | `scripts/build_0923_figures.py`, `scripts/build_track1_explainer.py` |
 | `selector_from_one_run_2026-09-23` | A better selector from the same one stressed run | FINDINGS.md | `scripts/selector_from_one_run.py` |
 | `io_buf_pulldown_calib_2026-09-23` | Would a short-LOW characterisation point fix io_buf's pull-down? | FINDINGS.md | `scripts/io_buf_pulldown_calib.py` |
 | `shape_from_stressed_run_2026-09-22` | Can the one stressed run choose the Ku-vs-gate shape? | FINDINGS.md | `scripts/shape_from_stressed_run.py` |
