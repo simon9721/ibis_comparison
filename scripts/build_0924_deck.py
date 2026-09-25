@@ -258,8 +258,11 @@ slide("9 · What the stage law is a model of",
        "backbone of the law. The next three slides are where it, and the two things that "
        "modulate it, come from."],
       F24 / "stage_law.png",
-      notes="Left: the input and the threshold it must pass. Right: the output the constant "
-            "current produces. The next slide turns this picture into the four numbers.")
+      notes="A is ex2's own predriver from slide 2, with the third inverter picked out. B "
+            "is that inverter as transistors, driving the next stage's gate capacitance. C is "
+            "what it reduces to while the output rises: the NMOS off, the PMOS saturated, "
+            "so a fixed current into a fixed capacitance. The next slide says which of "
+            "the device's voltages u and v actually are.")
 
 slide("10 · The device's two voltages, in our two variables",
       ["The law is written in **u** and **v**; the physics is written in **V_GS** and "
