@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 34 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 35 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout come from Simon's 09-18 deck; none of his
 slides are carried over.
@@ -32,27 +32,28 @@ asserted rather than shown.
 | 11 | 7 · One more measurement, and a stressed pulse is the one |
 | 12 | 8 · But a few samples need a family of shapes to choose from |
 | 13 | 9 · What the stage law is a model of |
-| 14 | 10 · What one MOSFET actually does |
-| 15 | 11 · What we keep of that, and what we replace |
-| 16 | 12 · The law, with where each piece came from |
-| 17 | 13 · The four numbers that leaves |
-| 18 | 14 · What each of the four actually does |
-| 19 | 15 · Why a chain, and not one stage |
-| 20 | 15 · So: K identical stages, then the file's own map |
-| 21 | 16 · Before the recipe: C_comp is an input, and this file's is wrong |
-| 22 | 17 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
-| 23 | 18 · Recipe step 2 of 4 — enumerate what the file cannot choose |
-| 24 | 19 · Recipe step 3 of 4 — the stressed run sets the amplitude |
-| 25 | 20 · Recipe step 4 of 4 — the same run picks one of the nine |
-| 26 | 21 · The recipe, end to end |
-| 27 | Result · ex2 |
-| 28 | Result · inv_chain |
-| 29 | Result · io_buf |
-| 30 | Result · every buffer, worst of its stressed widths |
-| 31 | Result · what this does not cover yet |
-| 32 | Backup · where Ku(t) comes from |
-| 33 | Backup · the nine candidates as waveforms |
-| 34 | Backup · inv_chain's input threshold |
+| 14 | 10 · The device's two voltages, in our two variables |
+| 15 | 11 · What one MOSFET actually does |
+| 16 | 12 · What we keep of that, and what we replace |
+| 17 | 13 · The law, with where each piece came from |
+| 18 | 14 · The four numbers that leaves |
+| 19 | 15 · What each of the four actually does |
+| 20 | 16 · Why a chain, and not one stage |
+| 21 | 16 · So: K identical stages, then the file's own map |
+| 22 | 17 · Before the recipe: C_comp is an input, and this file's is wrong |
+| 23 | 18 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
+| 24 | 19 · Recipe step 2 of 4 — enumerate what the file cannot choose |
+| 25 | 20 · Recipe step 3 of 4 — the stressed run sets the amplitude |
+| 26 | 21 · Recipe step 4 of 4 — the same run picks one of the nine |
+| 27 | 22 · The recipe, end to end |
+| 28 | Result · ex2 |
+| 29 | Result · inv_chain |
+| 30 | Result · io_buf |
+| 31 | Result · every buffer, worst of its stressed widths |
+| 32 | Result · what this does not cover yet |
+| 33 | Backup · where Ku(t) comes from |
+| 34 | Backup · the nine candidates as waveforms |
+| 35 | Backup · inv_chain's input threshold |
 
 ## Built on the 09-17 method film
 
@@ -243,6 +244,26 @@ its face whether it has a source.
   separately as the other thing with no source behind it.
 * `docs/track1_recipe.md` carries the same factor-by-factor table, so the written recipe and
   the deck say the same thing about provenance.
+
+### The sixth pass: the missing link
+
+Reading 13 to 16 as a cold viewer, the chain broke in one place. Slide 13 introduces **u** and
+**v**. Slide 15 talks entirely in **V_GS** and **V_DS**. Slide 16 then plots "share of full
+current" against u and against v — and nothing had ever said those were the same two
+quantities. A new slide 14 makes the bridge: for the device that is conducting, measured down
+from its own rail, **u = |V_GS| / swing** and **1 − v = |V_DS| / swing**.
+
+It also closes a trap the deck had been walking past. The drawing is an inverter, so its input
+*falls* to turn the pull-up on — but the law has v rise as u rises. Normalising each stage in
+the direction that turns it on is what makes a chain of inverters read as non-inverting, and
+that was never stated.
+
+Writing it turned up a fourth deviation from the book, now declared on slide 16 and in the
+recipe: the book puts the saturation/triode boundary at `|V_DS| = |V_GS| − |V_th|`, which in
+our variables is `1 − v = u − vt` and therefore **moves as the input moves**. Ours is the
+constant `x_lin`. On a full transition the input sits at its rail for most of the travel and
+the two agree; on a truncated pulse, which is the case the method exists for, it never gets
+there.
 
 ## Bench and sources
 

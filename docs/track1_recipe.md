@@ -255,6 +255,7 @@ equations 3-23 to 3-25:
 | `h(u) = 0` below `vt` | eq. 3-23, `I_D = 0` for `V_GS - V_th < 0` | **has a source**, same form |
 | `h(u)` above `vt` | eq. 3-24, `I_D ∝ (V_GS - V_th)²` | **the source's form, one thing changed.** The book's exponent is 2; we use `p = 1` |
 | `min(1, (1-v)/x_lin)` | eq. 3-25 is `V_DS(2(V_GS-V_th) - V_DS)`, a **parabola** in V_DS | **ours.** A straight line in place of that parabola |
+| the saturation/triode boundary | eq. 3-24/3-25 put it at `|V_DS| = |V_GS| - |V_th|`, i.e. `1-v = u-vt`, which moves with the input | **ours.** A constant `x_lin` instead |
 | K identical stages | nothing | **ours** — a modelling choice, evidenced only by the fit (section 5) |
 
 Two of those deserve their reason stated rather than buried:
@@ -268,9 +269,11 @@ Two of those deserve their reason stated rather than buried:
   keeps it usable is that `x_lin` is fitted rather than derived, and that a stressed pulse
   turns round before the gate is far into this region on most buffers.
 
-The boundary itself is also not free in the book: saturation ends at `V_DS = V_GS - V_th`, so
-the width of the resistive region is set by the device's overdrive. We make that width the free
-parameter `x_lin` and fit it.
+The boundary is the deviation that is easiest to miss. In the book saturation ends at
+`V_DS = V_GS - V_th`, so the width of the resistive region is the device's overdrive and it
+*shrinks as the input backs off*. In our law that width is the constant `x_lin`, fitted once.
+On a full transition the input is at its rail for most of the travel and the two agree; on a
+truncated pulse, which is the case the whole method exists for, the input never gets there.
 
 `s_up` and `s_dn` are **slopes, not currents**: `v` is normalised, so `dv/dt` is swings per
 nanosecond. The physics behind `s_up` is `I_sat/(C·V_swing)`, but no current is ever computed —

@@ -1052,6 +1052,89 @@ def law_badged() -> None:
         save(fig, "law_badged")
 
 
+def uv_bridge() -> None:
+    """The device's V_GS and V_DS against the model's u and v."""
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 3, figsize=(13.4, 3.9),
+                               gridspec_kw={"width_ratios": [1.0, 1.15, 1.15]})
+
+        # --- A. the conducting device, with its two voltages marked ---------------
+        a = ax[0]
+        a.axis("off"); a.set_xlim(-3.0, 20); a.set_ylim(-3.6, 21)
+        a.plot([4.0, 16.0], [18.6, 18.6], color="#555555", lw=2.4)
+        a.text(4.0, 19.3, "VDD", fontsize=11, color="#555555", fontweight="bold")
+        _fet(a, 4.2, 14.4, "p", color=REAL, lw=2.6)
+        _fet(a, 4.2, 6.2, "n", color="#BBBBBB", lw=2.0)
+        a.plot([5.65, 5.65], [15.65, 18.6], color=REAL, lw=2.4)
+        a.plot([5.65, 5.65], [4.95, 2.6], color="#BBBBBB", lw=2.0)
+        for i, half in enumerate((0.9, 0.58, 0.28)):
+            a.plot([5.65 - half, 5.65 + half], [2.6 - i * 0.42] * 2, color="#BBBBBB", lw=2.0)
+        a.plot([5.65, 5.65], [13.15, 7.45], color=REAL, lw=2.4)
+        a.plot([4.2, 1.2], [14.4, 14.4], color=OURS, lw=2.4)
+        a.plot([4.2, 1.2], [6.2, 6.2], color="#BBBBBB", lw=2.0)
+        a.plot([1.2, 1.2], [6.2, 14.4], color=OURS, lw=2.4)
+        a.plot([1.2, -1.6], [10.3, 10.3], color=OURS, lw=2.4)
+        a.plot([5.65, 12.6], [10.3, 10.3], color=REAL, lw=2.6)
+        # the two voltages, as brackets on the device itself
+        a.annotate("", (2.6, 14.9), (2.6, 18.6),
+                   arrowprops=dict(arrowstyle="<|-|>", color=OURS, lw=1.8))
+        a.text(2.2, 16.8, "V_GS", ha="right", va="center", fontsize=12, color=OURS,
+               fontweight="bold", family="monospace")
+        a.annotate("", (9.0, 10.8), (9.0, 18.6),
+                   arrowprops=dict(arrowstyle="<|-|>", color=REAL, lw=1.8))
+        a.text(9.4, 14.7, "V_DS", ha="left", va="center", fontsize=12, color=REAL,
+               fontweight="bold", family="monospace")
+        a.text(-1.8, 10.3, "in", fontsize=11.5, color=OURS, fontweight="bold", ha="right",
+               va="center")
+        a.text(12.9, 10.3, "out", fontsize=11.5, color=REAL, fontweight="bold", ha="left",
+               va="center")
+        a.text(-3.0, -3.4, "pulling up, so the PMOS conducts\nand the NMOS is off (grey)",
+               fontsize=10.5, color="#777777", va="bottom")
+        a.set_title("A.  the device's own two voltages", fontsize=12, fontweight="bold")
+
+        # --- B. what those voltages actually do during a transition ---------------
+        b = ax[1]
+        t = np.linspace(0, 4.6, 600)
+        vin = 1.0 - np.clip((t - 0.30) / 1.50, 0, 1)          # the input FALLS
+        vout = np.clip((t - 0.75) / 1.90, 0, 1) ** 0.85       # the output rises
+        b.plot(t, vin, color=OURS, lw=3.0)
+        b.plot(t, vout, color=REAL, lw=3.0)
+        b.axhline(1.0, color="#999999", lw=1.4, ls=":")
+        b.text(0.06, 1.03, "VDD", fontsize=10, color="#777777", fontweight="bold")
+        # each voltage marked once, at an instant where its gap is wide open
+        b.annotate("", (1.15, 1.0), (1.15, float(np.interp(1.15, t, vin))),
+                   arrowprops=dict(arrowstyle="<|-|>", color=OURS, lw=1.8))
+        b.text(1.05, 0.74, "|V_GS|", ha="right", va="center", fontsize=12, color=OURS,
+               fontweight="bold", family="monospace")
+        b.annotate("", (1.95, 1.0), (1.95, float(np.interp(1.95, t, vout))),
+                   arrowprops=dict(arrowstyle="<|-|>", color=REAL, lw=1.8))
+        b.text(2.05, 0.80, "|V_DS|", ha="left", va="center", fontsize=12, color=REAL,
+               fontweight="bold", family="monospace")
+        b.text(4.5, 0.03, "the input", ha="right", va="bottom", fontsize=10.5, color=OURS,
+               fontweight="bold")
+        b.text(4.5, 0.96, "the output", ha="right", va="top", fontsize=10.5, color=REAL,
+               fontweight="bold")
+        b.set_ylim(-0.06, 1.22); b.set_xlim(0, 4.6)
+        b.set_xlabel("time"); b.set_ylabel("volts at the node")
+        b.grid(alpha=0.3)
+        b.set_title("B.  what they do during one transition", fontsize=12, fontweight="bold")
+
+        # --- C. the same two things, as u and v -----------------------------------
+        c = ax[2]
+        c.plot(t, 1.0 - vin, color=OURS, lw=3.2, label="u  =  |V_GS| / swing")
+        c.plot(t, vout, color=REAL, lw=3.2, label="v  =  the output, 0 to 1")
+        c.plot(t, 1.0 - vout, color=REAL, lw=2.0, ls="--",
+               label="1 \u2212 v  =  |V_DS| / swing")
+        c.set_ylim(-0.06, 1.34); c.set_xlim(0, 4.6)
+        c.set_xlabel("time"); c.set_ylabel("0 to 1")
+        c.grid(alpha=0.3)
+        c.legend(loc="lower right", fontsize=9.5, ncol=1, framealpha=0.95)
+        c.set_title("C.  the same two, normalised", fontsize=12, fontweight="bold")
+
+        fig.tight_layout()
+        save(fig, "uv_bridge")
+
+
 def main() -> int:
     print("figures for the 09-24 deck:")
     map_from_probe("ex2")
@@ -1070,6 +1153,7 @@ def main() -> int:
     what_we_have()
     coverage()
     law_symbols()
+    uv_bridge()
     mos_regions()
     ours_vs_book()
     law_badged()
