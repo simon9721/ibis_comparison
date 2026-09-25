@@ -283,8 +283,9 @@ slide("11 · What one MOSFET actually does",
        "threshold** it passes nothing. **Saturated** — which here means a large voltage "
        "across it — the current stops depending on that voltage. **In triode**, close to the "
        "rail, it is a resistor again.",
-       "**Those three regimes are the whole of the stage law. Everything after this slide is "
-       "either taken from them or is an admitted substitute for them.**"],
+       "**These three regimes are what the stage law is built from — but the law is a "
+       "compact stand-in for them, not a derivation of them. The next slide is where it "
+       "departs, and by how much.**"],
       F24 / "mos_regions.png",
       size=17,
       notes="Leventhal & Green, Semiconductor Modeling, section 3.8 printed page 89 (pdf 105): "
@@ -295,11 +296,13 @@ slide("11 · What one MOSFET actually does",
 slide("12 · What we keep of that, and what we replace",
       ["Same three regimes, our version of each, drawn on top of the book's.",
        "Below threshold we copy the book. Saturated we keep its form but flatten the "
-       "exponent from 2 to 1. Into triode we replace its parabola with a straight line.",
-       "**And one more, which the drawing cannot show: the book's boundary between the two "
-       "sits at |V_DS| = |V_GS| − |V_th|, which in our variables is 1 − v = u − vt — it "
-       "moves as the input moves. Ours is the constant x_lin. That, and the straight line, "
-       "are the two real liberties in the model.**"],
+       "exponent from 2 to 1. Into triode we replace its parabola with a straight line of "
+       "**fixed** width — the book's width is the device's overdrive, so it moves as the "
+       "input moves.",
+       "**x_lin is not the book's boundary.** At full drive the book gives its constant "
+       "current up at v = 0.12; we hold ours to 0.55, and over the travel we pass about 10 % "
+       "**more** charge, not less. Our 0.45 is where the book's boundary sits at roughly "
+       "**57 % gate drive** — a partly-driven stage, which is the stressed case."],
       F24 / "ours_vs_book.png",
       notes="Why p = 1: it is not a claim about the device, it is an admission that the file "
             "cannot see p - every value from 1 to 2 fits the full-swing Ku(t) to rms "
@@ -309,20 +312,28 @@ slide("12 · What we keep of that, and what we replace",
 
 slide("13 · The law, with where each piece came from",
       ["Read the colours: green has a source, amber is the source's own form with one thing "
-       "changed, red has no source at all.",
-       "**One more thing carries no source: putting K of these in series. That is a modelling "
-       "choice, and the next slide is the evidence for it.**"],
+       "changed, red has no source at all. K stages in series is a fourth choice with nothing "
+       "behind it but the fit on the next slide.",
+       "**So this is a physically motivated reduced-order model, not a model derived from "
+       "device physics.** The physics tells us to expect a current-limited phase followed by "
+       "a resistive approach to the rail. It does not hand us the min(), the straight taper, "
+       "the fixed x_lin, or p = 1. Those are architecture choices, and the results stand on "
+       "the measurements rather than on the derivation."],
       F24 / "law_badged.png",
+      size=16,
       notes="The honest summary: the backbone and the threshold come from the book, the "
-            "exponent is ours by necessity, the taper and the chain are ours by choice.")
+            "exponent is ours by necessity, the taper and the chain are ours by choice. This "
+            "is the slide to stand behind if someone says the model is derived from physics - "
+            "it is not, and the results do not depend on it being.")
 
 slide("14 · The four numbers that leaves",
-      ["Four free numbers and no more. **s_up and s_dn are slopes** — ex2 fits 2.59/ns, "
-       "0.39 ns to cross a stage's swing flat out. **x_lin** is named for the MOSFET's linear "
-       "(triode) region.",
+      ["**s_up and s_dn are slopes** — ex2 fits 2.59/ns, 0.39 ns to cross a stage's swing "
+       "flat out. **vt and x_lin are effective parameters**, not device quantities: they "
+       "absorb the real I-V into a two-region approximation.",
        "**Does the file not give vt?** Its Vinh/Vinl are the input **pin's** thresholds, and "
-       "the converter does use those, for our input comparator. vt is an **internal** stage's "
-       "threshold — the file never describes that node."],
+       "the converter does use those, for our input comparator. But vt is not a threshold "
+       "voltage at all — it is where one modelled stage hands over to the next, and nothing "
+       "in the file describes that."],
       F24 / "four_table.png",
       size=17,
       notes="On inv_chain the file's Vinh is 2.0 V on a 1.8 V part, which is why the converter "
@@ -332,8 +343,10 @@ slide("14 · The four numbers that leaves",
 slide("15 · What each of the four actually does",
       ["Each swept on its own about the value the fit chose, on the 810 ps pulse. The thick black "
        "trace is the fitted value.",
-       "**Look at the vt panel: pushed high enough the gate never leaves the floor — a chain "
-       "can extinguish a short pulse, not merely shrink it.**"],
+       "**Look at the vt panel: pushed high enough the gate never leaves the floor.** In the "
+       "model that is abrupt; in silicon the current falls off continuously and a short pulse "
+       "degrades stage by stage until it is gone. The hard threshold is our approximation of "
+       "that, not the device's behaviour."],
       F24 / "knobs.png",
       notes="Simulated with the project's own stage model from the fitted values the 09-17 film "
             "exported.")
@@ -350,9 +363,11 @@ slide("16 · Why a chain, and not one stage",
             "inverters - but this is the file saying so on its own.")
 
 slide("16 · So: K identical stages, then the file's own map",
-      ["We cannot see how many stages a vendor's part has, so the count K is a parameter. The "
-       "stages are held **identical**: a real tapered predriver approximately is, and letting "
-       "them differ makes the fit degenerate.",
+      ["We cannot see how many stages a vendor's part has, so the count K is a parameter. "
+       "The stages are held **identical in their normalised dynamics** — not in their "
+       "dimensions, which a real tapered predriver deliberately varies. That is defensible "
+       "when the taper ratio is roughly constant, and letting them differ makes the fit "
+       "degenerate.",
        "**Everything to the right of the gate is the file's own, untouched — the map and the "
        "I-V tables. We are only building the left-hand box.**"],
       F24 / "model_blocks.png",
@@ -364,9 +379,11 @@ slide("17 · Before the recipe: C_comp is an input, and this file's is wrong",
       ["C_comp is not something the method derives — it is an input the solve needs, and we "
        "assume it arrives with the file. **When s2ibispy extracts it properly, it drops into "
        "this same slot and nothing downstream changes.**",
-       "It still needs a validity check, because this file's declared value fails one. Ku is a "
-       "fraction of the device's own current, so it cannot exceed 1; ex2's declared 5.0 pF makes "
-       "the file imply **Ku = 1.24**, which is impossible.",
+       "It still needs a validity check, because this file's declared value fails one. Ku is "
+       "defined as a multiplier on the fully-on I-V table, so a solved Ku above 1 means the "
+       "arithmetic is asking the device for more than it has: ex2's declared 5.0 pF implies "
+       "**Ku = 1.24**. Treat that as a diagnostic rather than a law — extraction noise and "
+       "fixture error can push it over 1 too.",
        "Today's numbers therefore use the value at which Ku just reaches 1 — 2.64 pF here, "
        "against 1.70 measured with a probe. 55 % off, and it still works, because the stressed "
        "peak is not sharp in C_comp."],

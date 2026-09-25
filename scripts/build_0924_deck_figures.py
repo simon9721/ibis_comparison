@@ -520,24 +520,28 @@ def four_table() -> None:
              "where the gate gets to\nbefore the pulse ends", "fitted to the file's Ku(t)"),
             ("s_dn", C["s"], "the same on the way back",
              "how quickly the gate\nlets go again", "fitted to the file's Ku(t)"),
-            ("vt", C["h"], "the fraction of its input's\nswing it needs to conduct",
+            ("vt", C["h"], "an effective hand-over point,\nNOT the device's V_th",
              "how much of a short pulse\nsurvives each hop",
              "fitted, then re-set by\nthe stressed run"),
-            ("x_lin", C["x"], "how close to the rail it leaves\nsaturation (its linear region)",
-             "the shape of the approach\nto the rail", "fitted (pinned 0.45 on 10 of 12)"),
+            ("x_lin", C["x"], "an effective taper width,\nNOT the book's boundary",
+             "the shape of the approach\nto the rail", "held at 0.45. Not fitted"),
         ]
         for i, (sym, col, is_, dec, src) in enumerate(rows):
-            y = 88 - i * 22
+            y = 95 - i * 22
             b.plot([0.0, 0.8], [y - 1.5, y - 1.5], color=col, lw=6, solid_capstyle="butt")
             for cx, txt, fs, mono in ((cols[0], sym, 14, True), (cols[1], is_, 12, False),
                                       (cols[2], dec, 12, False), (cols[3], src, 12, False)):
                 b.text(cx, y, txt, fontsize=fs, color=col if mono else "#222222", va="top",
                        family="monospace" if mono else None,
                        fontweight="bold" if mono else None)
-        b.text(0, 1, "p, the curvature of h(u), is a fifth number \u2014 but it is invisible at "
-                     "full swing (every p from 1 to 2 fits to rms 0.002\u20130.007), so it is "
-                     "assumed to be 1 rather than fitted.",
-               fontsize=11.5, color="#B0563C", fontweight="bold", va="bottom")
+        b.text(0, 6, "vt fits anywhere from 0.015 to 0.524 across the twelve, against a "
+                     "physical V_th/V_DD of 0.11\u20130.20. x_lin is held at 0.45 everywhere; the "
+                     "book's boundary for these parts is 0.77\u20130.89.",
+               fontsize=11, color="#B0563C", fontweight="bold", va="bottom")
+        b.text(0, -1, "Both are effective parameters that absorb the real I-V into a "
+                      "two-region approximation. p, a fifth number, is invisible at full swing "
+                      "(every p from 1 to 2 fits to rms 0.002\u20130.007) and is assumed to be 1.",
+               fontsize=11, color="#777777", va="bottom")
         fig.tight_layout()
         save(fig, "four_table")
 
@@ -967,27 +971,41 @@ def ours_vs_book() -> None:
         b.legend(loc="upper left", fontsize=10)
         b.set_title("2.  saturated", fontsize=12.5, fontweight="bold")
 
-        # --- 3. triode: ours is a straight line where the book has a parabola ----
+        # --- 3. triode: the honest comparison is at full gate drive ----------------
         c = ax[2]
-        v = np.linspace(0, 1, 500)
-        r = np.clip((1 - v) / XLIN, 0, 1)
-        c.plot(v, r * (2 - r), color=BOOK, lw=3.0, ls="--",
-               label="the book: a parabola")
-        c.plot(v, r, color=OURS_, lw=3.4, label="ours: a straight line")
-        c.axvspan(1 - XLIN, 1, color=OURS_, alpha=0.10)
-        c.annotate("at half way into the region\nthe book passes 0.75 of the\ncurrent and we pass 0.50",
-                   (1 - XLIN / 2, 0.62), xytext=(0.02, 0.30), textcoords="data", ha="left",
-                   va="center", fontsize=10.5, color=OURS_, fontweight="bold",
-                   arrowprops=dict(arrowstyle="->", color=OURS_, lw=1.5))
-        c.set_xlim(0, 1.02); c.set_ylim(-0.04, 1.25)
+        VTHP = 0.4064886 / 3.3       # buffers/models/hspice.mod, PMOS VTH0, over V_DD
+        v = np.linspace(0, 1, 800)
+
+        def book_taper(drive):
+            """Level 1 drain factor at a given normalised gate drive."""
+            ov = max(drive - VTHP, 1e-6)
+            r = np.minimum((1 - v) / ov, 1.0)
+            return np.where((1 - v) >= ov, 1.0, r * (2 - r))
+
+        c.plot(v, book_taper(1.0), color=BOOK, lw=3.0, ls="--",
+               label="the book, input at its rail")
+        c.plot(v, book_taper(0.573), color=BOOK, lw=2.0, ls=":", alpha=0.75,
+               label="the book, input only 57 % on")
+        c.plot(v, np.minimum(1.0, (1 - v) / XLIN), color=OURS_, lw=3.4,
+               label="ours (x_lin = 0.45, fixed)")
+        for x, col, lab in ((VTHP, BOOK, "book\nleaves at\n0.12"),
+                            (1 - XLIN, OURS_, "we leave\nat 0.55")):
+            c.plot([x, x], [0, 1.0], color=col, lw=1.3, ls="-", alpha=0.45)
+            c.text(x + 0.02, 0.05, lab, fontsize=9, color=col, fontweight="bold",
+                   va="bottom")
+        c.annotate("we hold full current\nfar longer, and pass\n~10 % more charge",
+                   (0.52, 0.99), xytext=(0.04, 0.50), textcoords="data", ha="left",
+                   va="center", fontsize=9.5, color=OURS_, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=OURS_, lw=1.4))
+        c.set_xlim(0, 1.02); c.set_ylim(0, 1.62)
         c.set_xlabel("v  \u2014  how far the output has got")
         c.grid(alpha=0.3)
-        c.legend(loc="upper left", fontsize=10)
+        c.legend(loc="upper left", fontsize=8.5, framealpha=0.95)
         c.set_title("3.  into the triode region", fontsize=12.5, fontweight="bold")
 
         for a_, txt, col in ((ax[0], "SAME as the book", BOOK),
                              (ax[1], "SAME FORM, our exponent", BENT),
-                             (ax[2], "OURS \u2014 no source", OURS_)):
+                             (ax[2], "OURS \u2014 a stand-in, not the book's boundary", OURS_)):
             a_.text(0.5, -0.30, txt, transform=a_.transAxes, ha="center", fontsize=12,
                     fontweight="bold", color=col)
         fig.tight_layout(rect=(0, 0.055, 1, 1))
@@ -1043,7 +1061,7 @@ def law_badged() -> None:
                 (36, BENT, "book*  \u2014  its form, one thing changed",
                  "p = 1 rather than the book's 2, because the file cannot see p"),
                 (75, OURS_, "ours  \u2014  no source",
-                 "the linear taper, and K identical stages in series")):
+                 "the linear taper of fixed width, and K stages in series")):
             b.add_patch(mpatches.Rectangle((x0, 6.6), 2.2, 1.6, color=col))
             b.text(x0 + 3.2, 7.4, head, fontsize=11.5, fontweight="bold", color=col,
                    va="center")

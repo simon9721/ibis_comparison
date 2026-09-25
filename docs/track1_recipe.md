@@ -255,8 +255,9 @@ equations 3-23 to 3-25:
 | `h(u) = 0` below `vt` | eq. 3-23, `I_D = 0` for `V_GS - V_th < 0` | **has a source**, same form |
 | `h(u)` above `vt` | eq. 3-24, `I_D ∝ (V_GS - V_th)²` | **the source's form, one thing changed.** The book's exponent is 2; we use `p = 1` |
 | `min(1, (1-v)/x_lin)` | eq. 3-25 is `V_DS(2(V_GS-V_th) - V_DS)`, a **parabola** in V_DS | **ours.** A straight line in place of that parabola |
+| `x_lin` itself | the book's width is the overdrive: 0.77-0.80 on the 1.8 V parts, 0.88-0.89 on the 3.3 V parts | **ours.** Held at 0.45 everywhere, and not fitted at all in the passes that produce the shipped numbers |
 | the saturation/triode boundary | eq. 3-24/3-25 put it at `|V_DS| = |V_GS| - |V_th|`, i.e. `1-v = u-vt`, which moves with the input | **ours.** A constant `x_lin` instead |
-| K identical stages | nothing | **ours** — a modelling choice, evidenced only by the fit (section 5) |
+| K identical stages | nothing | **ours** — a modelling choice, evidenced only by the fit (section 5). "Identical" means identical *normalised dynamics*, not identical transistor dimensions, which a real tapered predriver deliberately varies |
 
 Two of those deserve their reason stated rather than buried:
 
@@ -269,11 +270,66 @@ Two of those deserve their reason stated rather than buried:
   keeps it usable is that `x_lin` is fitted rather than derived, and that a stressed pulse
   turns round before the gate is far into this region on most buffers.
 
-The boundary is the deviation that is easiest to miss. In the book saturation ends at
-`V_DS = V_GS - V_th`, so the width of the resistive region is the device's overdrive and it
-*shrinks as the input backs off*. In our law that width is the constant `x_lin`, fitted once.
-On a full transition the input is at its rail for most of the travel and the two agree; on a
-truncated pulse, which is the case the whole method exists for, the input never gets there.
+### `vt` and `x_lin` are effective parameters, not device quantities
+
+This is the correction that matters most, because the names invite the wrong reading.
+
+**`x_lin` is not the textbook saturation/triode boundary.** The book's boundary is at
+`V_DS = V_GS - V_th`, so at full gate drive the resistive region occupies `1 - V_th/V_DD` of
+the swing: **0.77-0.80** on the 1.8 V parts and **0.88-0.89** on the 3.3 V parts, using `VTH0`
+from `buffers/models/hspice.mod`. We use **0.45**, and in every pass that produces a shipped
+number it is *held* at 0.45 rather than fitted (360 of ~390 fit rows). Where it is left free it
+lands anywhere between 0.02 and 1.50 - the full-swing data barely constrains it.
+
+**`vt` is not the device threshold.** Fitted values run from 0.015 (ex2_base) to 0.524
+(inv_weak) across the twelve, against a physical `V_th/V_DD` of 0.11-0.20. It is an effective
+hand-over point for a modelled stage, and the stressed-run calibration overwrites it anyway.
+
+**And the taper comparison runs the other way from what you would guess.** Comparing the two
+drain factors at matched `r` is invalid, because the book normalises `r` by the overdrive and we
+normalise it by a constant. Done properly, at full gate drive on a 3.3 V part:
+
+| v | the book | ours |
+|---|---|---|
+| 0.30 | 0.959 | 1.000 |
+| 0.50 | 0.815 | 1.000 |
+| 0.70 | 0.567 | 0.667 |
+| 0.90 | 0.215 | 0.222 |
+| 0.99 | 0.023 | 0.022 |
+
+The book gives up its constant current at `v = 0.12`; we hold ours to `v = 0.55`. Integrated
+over the travel we deliver **1.095x** the charge - we are *more* current-source-like than
+long-channel theory, not less.
+
+There is a reading of `x_lin = 0.45` that is favourable and worth knowing: the book's boundary
+sits at `1 - v = u - vt`, so 0.45 is where it lands at about **57 % gate drive**. The constant
+is right for a partly-driven stage and too generous for a fully-driven one - and the stressed
+pulse is the partly-driven case. Nobody chose it for that reason, but it is a defensible
+post-hoc reading. Note also that these are ~0.6 um devices, and velocity saturation in real
+short-channel silicon extends the constant-current region, moving the device toward our model
+and away from long-channel Level 1. That is a hypothesis, not a measurement.
+
+### What kind of model this is
+
+**Physically motivated reduced-order model, not a model derived from device physics.** The
+physics tells us to expect a current-limited phase followed by a resistive approach to the rail,
+and that is a real and useful prior. It does not hand us the `min()`, the straight taper, the
+fixed `x_lin`, `p = 1`, the hard threshold in `h(u)`, or K identical stages. Those are
+architecture choices, and the case for them is the measured result, not the derivation.
+
+Three further wording points in the same spirit:
+
+* **A truncated pulse is not the *only* instrument** that could break the factorisation.
+  Multiple loads, varying slew rate, paired pulses, multi-level stimuli and supply perturbation
+  would all add identifiability. It is the only one available to somebody holding a vendor's
+  IBIS file and a board, which is the setting track 1 is defined for.
+* **`Ku <= 1` is a diagnostic, not an identity.** `Ku` is defined as a multiplier on the
+  fully-on I-V table, so a solved value above 1 is asking the device for more than it has - but
+  extraction noise, fixture error and imperfect pull-up/pull-down separation can push it over 1
+  without any physics being violated.
+* **"A chain extinguishes a short pulse"** describes our model, where the threshold is hard. In
+  silicon the current falls off continuously and a short pulse degrades stage by stage until it
+  is gone. The extinction is real; the abruptness is ours.
 
 `s_up` and `s_dn` are **slopes, not currents**: `v` is normalised, so `dv/dt` is swings per
 nanosecond. The physics behind `s_up` is `I_sat/(C·V_swing)`, but no current is ever computed —
