@@ -82,7 +82,7 @@ def fig_endtoend():
     x = np.arange(len(devs))
     with plt.rc_context(BODY):
         fig, ax = plt.subplots(figsize=(12.5, 4.8))
-        ax.bar(x - 0.27, ship, 0.26, color=SHIPPED, label="shipped IBIS model")
+        ax.bar(x - 0.27, ship, 0.26, color=SHIPPED, label="shipped model")
         ax.bar(x, tr1, 0.26, color=TRACK1, label="track 1 (measured C_comp, family shape, netlist K)")
         ax.bar(x + 0.27, fo, 0.26, color=FILEONLY, label="file only (C_comp from the file; K and shape from one pad run)")
         ax.axhline(10, color="#555555", ls="--", lw=1.1)
@@ -92,7 +92,9 @@ def fig_endtoend():
         ax.set_ylim(0, np.nanmax(ship) * 1.28)          # room for the legend above the tallest bar
         ax.set_title("A model built from the IBIS file alone, against one built from probed silicon",
                      fontweight="bold")
-        ax.legend(loc="upper center", ncol=3, frameon=False)
+        # three long labels on one row: at the default size they ran past the axes
+        ax.legend(loc="upper center", ncol=3, frameon=False, fontsize=10,
+                  columnspacing=1.3, handletextpad=0.5)
         ax.grid(axis="y", alpha=0.3)
         save(fig, "endtoend.png")
 

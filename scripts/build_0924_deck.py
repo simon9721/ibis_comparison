@@ -59,21 +59,24 @@ def bullets(slide, items, size=18):
     ph.left, ph.top, ph.width, ph.height = int(0.45 * E), int(1.08 * E), int(12.45 * E), h
     tf = ph.text_frame
     tf.clear()
-    # only the LAST emphasised line gets the accent colour: a slide where three bullets shout
-    # is a slide where none of them does. Earlier emphasis stays bold, in the body colour.
+    # **spans** are emphasised in place, so a line can put its weight on the clause that
+    # carries the claim instead of going bold end to end. Only the LAST line that opens with
+    # emphasis takes the accent colour: a slide where every bullet shouts has none that does.
     last_em = max((i for i, t in enumerate(items) if t.startswith("**")), default=-1)
     for k, t in enumerate(items):
         p = tf.paragraphs[0] if k == 0 else tf.add_paragraph()
-        bold = t.startswith("**")
         if t.startswith("  "):          # an indented line is a sub-item of the one above it
             p.level = 1
-        r = p.add_run()
-        r.text = t.replace("**", "").strip()
-        r.font.size = Pt(size)
-        if bold:
-            r.font.bold = True
-            if k == last_em:
-                r.font.color.rgb = GREEN
+        for j, seg in enumerate(t.strip().split("**")):
+            if not seg:
+                continue
+            r = p.add_run()
+            r.text = seg
+            r.font.size = Pt(size)
+            if j % 2:                   # odd segments are the ones between the markers
+                r.font.bold = True
+                if k == last_em:
+                    r.font.color.rgb = GREEN
         p.space_after = Pt(4)
     return ph.top + h
 
@@ -104,14 +107,14 @@ def slide(title, items=(), png=None, notes="", size=18):
 
 # --------------------------------------------------------------------------- 0
 slide("Reproducing the real gate from the IBIS file",
-      ["Simon Huang  ·  24 September 2026",
+      ["Simon Huang    ·    24 September 2026",
        "",
-       "The story in one line: the output stage is a static map of its own gate, so a stressed "
-       "pad is right when the gate's shape is right — and the gate is the thing IBIS does not "
+       "The output stage is a static map of its own gate, so a stressed pad is right when "
+       "the gate's shape is right — and the gate is the one thing an IBIS file does not "
        "record.",
        "",
-       "**1  measure the map   2  show it works   3  show why our gate fails   "
-       "4  reproduce the gate from the file**"],
+       "**1  measure the map      2  show it works      3  show why our gate fails**",
+       "**4  the motivation      5  the method, step by step      6  where it stands**"],
       notes="Order matters here: every earlier version started from the method. This one starts "
             "from the measurement, because that is how the work went and it makes the method's "
             "motivation earned rather than asserted.")
@@ -139,14 +142,14 @@ slide("2 · Measuring the map: pair Ku(t) with the gate, instant by instant",
             "map, and it is what the next slides drive.")
 
 # --------------------------------------------------------------------------- 3  does it work
-for dev, extra in (("ex2", "Within ±5 % at every level, where native IBIS runs +71 % at the "
-                           "deepest and our own gate-state model +74 %."),
-                   ("inv_chain", "Within +2…+9 %, where native IBIS runs +87 % at the deepest. "
-                                 "Our gate-state model looks good at 70–90 % for the wrong "
-                                 "reason — see the backup slide on Vinh.")):
+for dev, extra in (("ex2", "Within ±5 % at every level. Native IBIS runs +71 % at the "
+                           "deepest, our own gate-state model +74 %."),
+                   ("inv_chain", "Within +2…+9 %, where native IBIS runs +87 %. Our gate-state "
+                                 "model looks good at 70–90 % for the wrong reason — "
+                                 "see the backup slide on Vinh.")):
     slide(f"3 · Does the measured map work?  {dev}",
-          ["Drive that measured map with the transistor's own gate, and compare the pad against "
-           "the transistor at all five stress levels.",
+          ["Drive that measured map with the transistor's own gate; compare against the "
+           "transistor at all five stress levels.",
            f"**{extra}**"],
           F24 / f"works_levels_{dev}.png",
           notes="Build: gate_replay_silicon_full in gate_cascade_prototype_2026-09-09 — the real "
@@ -174,9 +177,10 @@ slide("4 · Why our gate fails: the real gate changes shape, GUP does not",
             "until 1.1 ns, and that GUP's peak arrives after the real gate's.")
 
 slide("4 · What that shape difference does downstream",
-      ["Same map, two gates. The top row is Ku, the bottom row the pad.",
-       "**GUP holds Ku high long after the real gate has let go — and the pad overshoot is "
-       "exactly that extra area.** +74 % at 50 % stress, +4 % at 90 %."],
+      ["Same map, two gates: Ku on top, the pad below. Our peak error: +74 % at 50 % stress, "
+       "+4 % at 90 %.",
+       "**GUP holds Ku high after the real gate has let go, and the pad overshoot is exactly "
+       "that extra area.**"],
       F24 / "ku_consequence_ex2.png",
       notes="This is the causal chain end to end: gate shape -> Ku -> pad. At 90 % stress the "
             "two gates nearly coincide and the error nearly vanishes, which is why the failure "
@@ -193,7 +197,7 @@ slide("5 · So the problem is now a precise one",
        "Two things have to come from somewhere: how fast the gate travels, and the map's shape. "
        "The next slides are about where each one can come from."],
       F24 / "what_we_have.png",
-      notes="This is the motivation slide, and it only works because slides 2-4 have already "
+      notes="This is the motivation slide, and it only works because the evidence half has "
             "shown that the gate's shape is the entire error. Earlier versions of this deck "
             "asserted the motivation before showing that.")
 
@@ -202,25 +206,25 @@ slide("6 · What the file fixes, and what it leaves open",
       ["The file gives Ku(t) — a complete waveform, with shape at every instant. Shape is not "
        "what is missing.",
        "**What is missing is the split.** Ku(t) = map(gate(t)) fixes the composition and nothing "
-       "more: pick any gate trajectory, and the map is forced to be whatever reproduces Ku(t). "
+       "more: pick any gate trajectory and the map is forced to whatever reproduces Ku(t). "
        "Every such pair matches the file exactly.",
-       "With no probe we cannot measure the map, so its shape has to be assumed — and the "
-       "assumed shape and the measured one are not the same curve.",
+       "With no probe the map cannot be measured, so its shape has to be assumed — and the "
+       "assumed shape is not the measured curve.",
        "**Assume a different map and the fit hands you a different gate. That is the whole "
        "difficulty.**"],
       F24 / "prior_shape.png",
       size=16,
-      notes="Slide 10 in the earlier cut explained where Ku(t) itself comes from - the "
+      notes="An earlier cut explained where Ku(t) itself comes from - the "
             "two-fixture solve. It is now a backup slide: this audience knows it.")
 
-slide("7 · So we need one more measurement — and a stressed pulse is the one",
+slide("7 · One more measurement, and a stressed pulse is the one",
       ["A full transition cannot separate them. A truncated one can: the chain then produces a "
        "**different** gate trajectory, and where it turns round depends on how fast the gate was "
        "really travelling.",
        "Each stressed width stops the gate at a different height on the same path — here at "
        "0.76, 0.80, 0.84, 0.88 and 0.94.",
-       "**So the five stress levels are five independent tests of the split, and one pad "
-       "measurement is what track 1 asks the user for.**"],
+       "**Five stress levels are five independent tests of the split, and they cost one "
+       "measurement at the pad.**"],
       F24 / "sampling_grid_ex2.png",
       notes="Grey is the full transition; the coloured curves follow it and peel off at "
             "different points. This is why the recipe needs exactly one extra measurement.")
@@ -228,8 +232,8 @@ slide("7 · So we need one more measurement — and a stressed pulse is the one"
 slide("8 · But a few samples need a family of shapes to choose from",
       ["Five samples cannot pick a curve out of all possible curves. They can pick one out of a "
        "small family — so what family does this circuit actually produce?",
-       "Probe every stage under a short pulse and compare against what a **linear** filter would "
-       "give: its own step response, superposed.",
+       "Probe every stage under a short pulse against what a **linear** filter would give: "
+       "its own step response, superposed.",
        "**Every stage under-reaches, and the gap compounds down the chain — at the pad the "
        "linear prediction says 1.00 where the transistor does 0.50. So the family is not "
        "linear.**"],
@@ -307,8 +311,8 @@ slide("15 · Step 3 — what the file cannot choose",
        "**flat** — the file has nothing left to say.",
        "Right: the three candidates inside that band, on one 810 ps pulse. Same file, same fit "
        "quality, **three completely different buffers**.",
-       "**The map's shape is under-determined in the same way** (slide 7). Three stage counts "
-       "× three map shapes = nine candidates."],
+       "**The map's shape is under-determined in the same way** — the degeneracy slide. "
+       "Three stage counts × three map shapes = nine candidates."],
       F24 / "k_choice.png",
       notes="The three shapes are (0.50, 0.70), (0.40, 0.60) and (0.40, 0.90). Note on the right "
             "that all three already match the peak - that is the calibration, and it is why the "
@@ -346,21 +350,21 @@ slide("18 · The recipe, end to end",
        "**Nothing is probed.** The only measurement is a pad voltage, from outside the chip."],
       F24 / "model_blocks.png",
       size=16,
-      notes="The same block diagram as slide 12, now with the recipe attached to it. This is the "
+      notes="The same block diagram as the chain slide, with the recipe attached. This is the "
             "slide to leave up during questions.")
 
-slide("Where the file-only recipe stands",
+slide("Result · where the file-only recipe stands",
       ["**12 of 12 buffers within ±10 % on the worst stressed pulse; mean 6.9 %.**",
        "On inv_chain the file-only build reaches 5.1 %, against 25.8 % for a build that uses the "
        "probed silicon — the shape choice matters more than the measurement.",
        "**What it costs:** the full transition is worse than the shipped model on 10 of 12 "
-       "buffers, and a stressed pulse train is still lost on ex2 and io_buf. We buy accuracy in "
+       "buffers, and a stressed pulse train is still lost on ex2 and io_buf. We are buying "
        "stressed accuracy with full-swing accuracy."],
       ROOT / "results/track1_summary_2026-09-23/endtoend.png",
       notes="Grey is the shipped model, blue the build using probed silicon, red the file-only "
             "one. Full numbers in docs/track1_recipe.md.")
 
-slide("What this does not cover yet",
+slide("Result · what this does not cover yet",
       ["**Direction.** Everything here is a short HIGH pulse. Only io_buf has been run pulling "
        "down, where the model is 16–21 points too shallow — its pull-down chain never "
        "turns on at all on a short pulse.",
@@ -378,13 +382,14 @@ slide("Backup · where Ku(t) comes from",
       ["The file holds the I-V curves and recordings of one transition into **two different "
        "loads**. At any instant the pad took some current, and both branches supplied it.",
        "Two loads give two equations in the same two unknowns, so one instant gives Ku and Kd "
-       "outright — no fitting. Repeat at every instant and the result is Ku(t)."],
+       "outright — no fitting. Every instant gives Ku(t)."],
       F24 / "solve_ku.png",
       notes="Moved out of the main line: this audience knows where Ku comes from.")
 
 slide("Backup · the nine candidates as waveforms",
-      ["The same nine as step 5, drawn rather than ranked: all sharing the measured peak because "
-       "the calibration put it there, and separating in the tail.",
+      ["The same nine as step 5, drawn rather than ranked. Every one reaches the measured "
+       "peak height — the calibration put it there — and they separate in when that "
+       "peak arrives, and in the tail.",
        "**The one the recipe picks sits on the transistor.**"],
       F24 / "calib_select.png",
       notes="This was the main slide before; the ranking says the same thing more directly.")
@@ -397,7 +402,7 @@ slide("Backup · inv_chain's input threshold",
        "**It is a defect that flatters us, not a result.** With the threshold at mid-supply the "
        "shipped error roughly doubles."],
       F18 / "vinh_inv.png",
-      notes="Carried from the 09-18 deck so the inv_chain numbers on slide 3 are not read as a "
+      notes="Carried from the 09-18 deck so the inv_chain numbers earlier are not read as a "
             "win. review_2026-09-09 item 12B has the measurement.")
 
 OUTDIR.mkdir(parents=True, exist_ok=True)

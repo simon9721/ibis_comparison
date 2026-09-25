@@ -47,7 +47,7 @@ BODY = f18.BODY
 # (cascade folder, probed node, its name, the five widths deepest-last, pad y-limit)
 DEV = {
     "ex2": ("ex2_c1.7", "v(xdut.n4)", "n4", [810, 830, 858, 895, 975], 1.75, 2.2),
-    "inv_chain": ("inv_chain_c0.6", "v(xdut.vout7)", "vout7", [104, 106, 111, 119, 135], 1.45, 0.85),
+    "inv_chain": ("inv_chain_c0.6", "v(xdut.vout7)", "vout7", [104, 106, 111, 119, 135], 1.45, 0.45),
 }
 DEPTH_PCT = {810: 50, 830: 60, 858: 70, 895: 80, 975: 90,
              104: 50, 106: 60, 111: 70, 119: 80, 135: 90}
@@ -151,20 +151,23 @@ def works_levels(dev: str) -> None:
             a.plot(t_si, si, color=SIL, lw=3.4, label="transistor (truth)", zorder=4)
             e_nat, _ = _peak_err(x, d["hspice_pad"], t_si, si, w)
             a.plot(x, d["hspice_pad"], color=NAT, lw=2.0, ls=(0, (1, 1.6)), label="native IBIS")
-            errs = [(NAT, f"native IBIS {e_nat:+.0f} %")]
-            for build, col, lab in (("shipped", OURS, "our gate-state model"),
-                                    ("gate_replay_silicon_full", REAL, "real gate + measured map")):
+            errs = [(NAT, f"native IBIS  {e_nat:+.0f} %")]
+            # short names in the panel, full names in the one legend below: the panel is
+            # 3 inches wide and the full names ran off its right-hand edge
+            for build, col, lab, short in (
+                    ("shipped", OURS, "our gate-state model", "gate-state"),
+                    ("gate_replay_silicon_full", REAL, "real gate + measured map", "real gate + map")):
                 t, _g, _k, pad = _run(dev, w_ps, build)
                 e, _ = _peak_err(t, pad, t_si, si, w)
                 a.plot(t, pad, color=col, lw=2.4, ls="--" if build == "shipped" else "-", label=lab)
-                errs.append((col, f"{lab} {e:+.0f} %"))
+                errs.append((col, f"{short}  {e:+.0f} %"))
             # the error labels sit under the curves: the overshoot is the point of the panel
             # and a legend box over it hides exactly what the slide is for
             for i, (col, txt) in enumerate(errs):
                 a.text(0.04, 0.97 - 0.085 * i, txt, transform=a.transAxes, color=col,
-                       fontsize=9.5, fontweight="bold", va="top")
+                       fontsize=9, fontweight="bold", va="top")
             a.set_title(f"{DEPTH_PCT[w_ps]} % stress   ({w_ps} ps)", fontweight="bold", fontsize=12)
-            a.set_xlim(w - 0.35, w + span)
+            a.set_xlim(w - (0.35 if span > 1 else 0.20), w + span)
             a.set_ylim(-0.12, ylim * 1.30)   # headroom so the error labels clear the curves
             a.grid(alpha=0.3)
             a.set_xlabel("time (ns)")
@@ -232,28 +235,36 @@ def ku_consequence(dev: str) -> None:
             t_si, si, _r = f17.transistor_pad(dev, w_ps)
             t_si = t_si - 5.0
             a, b = ax[0][j], ax[1][j]
-            a.plot(xk, kk, color=SIL, lw=3.0, label="transistor Ku")
-            b.plot(t_si, si, color=SIL, lw=3.4, label="transistor pad")
+            a.plot(xk, kk, color=SIL, lw=3.0, label="transistor (truth)")
+            b.plot(t_si, si, color=SIL, lw=3.4, label="transistor (truth)")
+            errs = []
             for build, col, lab in (("shipped", OURS, "our GUP + IBIS map"),
                                     ("gate_replay_silicon_full", REAL, "real gate + measured map")):
                 t, _g, ku, pad = _run(dev, w_ps, build)
                 a.plot(t, ku, color=col, lw=2.2, ls="--" if build == "shipped" else "-", label=lab)
                 e, _ = _peak_err(t, pad, t_si, si, w)
-                b.plot(t, pad, color=col, lw=2.4, ls="--" if build == "shipped" else "-",
-                       label=f"{lab}  {e:+.0f} %")
+                b.plot(t, pad, color=col, lw=2.4, ls="--" if build == "shipped" else "-", label=lab)
+                errs.append((col, f"{e:+.0f} %"))
+            # the whole point of the bottom row is the purple overshoot, and a legend box in
+            # the upper right of the panel is drawn directly over it
+            for i, (col, txt) in enumerate(errs):
+                b.text(0.03, 0.96 - 0.10 * i, txt, transform=b.transAxes, color=col,
+                       fontsize=12, fontweight="bold", va="top")
             a.set_title(f"{DEPTH_PCT[w_ps]} % stress", fontweight="bold")
             for c in (a, b):
                 c.set_xlim(w - 0.35, w + span)
                 c.grid(alpha=0.3)
-                c.legend(loc="upper right", fontsize=9, framealpha=0.95)
-            a.set_ylim(-0.35, 1.45)
-            b.set_ylim(-0.12, ylim)
+            a.set_ylim(-0.45, 1.35)
+            b.set_ylim(-0.12, ylim * 1.15)
             b.set_xlabel("time (ns)")
+            handles = a.get_legend_handles_labels()
         ax[0][0].set_ylabel("Ku")
         ax[1][0].set_ylabel("pad (V)")
+        fig.legend(*handles, loc="lower center", ncol=3, fontsize=11.5, frameon=False,
+                   bbox_to_anchor=(0.5, -0.015))
         fig.suptitle(f"{dev}  |  the same map, two gates: the error is the gate's shape",
                      fontsize=15, fontweight="bold")
-        fig.tight_layout(rect=(0, 0, 1, 0.93))
+        fig.tight_layout(rect=(0, 0.045, 1, 0.93))
         save(fig, f"ku_consequence_{dev}")
 
 
@@ -347,16 +358,18 @@ def sampling_grid(dev: str = "ex2") -> None:
     with plt.rc_context(BODY):
         fig, a = plt.subplots(figsize=(11.6, 4.6))
         a.plot(tf, gfull, color="#B9B9B9", lw=5.0, label="the gate on a full transition", zorder=1)
-        for w_ps, c in zip(widths, cols):
+        for k, (w_ps, c) in enumerate(zip(widths, cols)):
             ts, greal = f17._norm_pair(dev, w_ps, node)[2:]
             a.plot(ts, greal, color=c, lw=2.3, zorder=2)
             i = int(np.nanargmax(greal))
             a.plot(ts[i], greal[i], "o", color=c, ms=10, zorder=5)
-            # the peaks crowd together; the falling branches are well separated, so label there
+            # the peaks crowd together, so label on the falling branch - but each curve has
+            # to be cut at a different height or the five labels land on the same spot
             tail = np.asarray(greal)[i:]
-            j = i + int(np.argmax(tail <= 0.34)) if np.any(tail <= 0.34) else len(greal) - 1
+            lvl = 0.62 - 0.11 * k
+            j = i + int(np.argmax(tail <= lvl)) if np.any(tail <= lvl) else len(greal) - 1
             a.annotate(f"{DEPTH_PCT[w_ps]} %", (ts[j], greal[j]), textcoords="offset points",
-                       xytext=(4, 4), color=c, fontsize=12, fontweight="bold")
+                       xytext=(7, 1), color=c, fontsize=12.5, fontweight="bold")
         a.set_xlim(0.3, 2.6)
         a.set_ylim(-0.05, 1.18)
         a.set_xlabel("time from the input edge (ns)")
@@ -550,7 +563,8 @@ def calib_select(dev: str = "ex2") -> None:
                    label="the one it picks  (K3, 0.5/0.7)" if is_pick else None)
         a.plot([], [], color="#9AA5A8", lw=1.5, label="the other eight candidates")
         pk = float(si[(t_si >= w - 0.3) & (t_si <= w + 2.6)].max())
-        a.annotate("every candidate matches the measured peak:\nthe calibration put it there",
+        a.annotate("every candidate reaches the measured peak height:\nthe calibration put it "
+                   "there",
                    (1.45, pk), textcoords="offset points", xytext=(-238, 44), fontsize=11.5,
                    fontweight="bold", color="#444444",
                    arrowprops=dict(arrowstyle="->", color="#444444", lw=1.4))
@@ -681,8 +695,10 @@ def fit_search() -> None:
         b.grid(alpha=0.3, which="both")
         b.set_title(f"{rms[0]:.3f}  \u2192  {rms[-1]:.4f}", fontsize=13, fontweight="bold")
         p0, p1 = d["fit_params"][0], d["fit_params"][-1]
-        b.text(0.06, 0.16, f"s_up {p1[0]:.2f}   s_dn {p1[1]:.2f}\nvt {p1[2]:.2f}   x_lin {p1[3]:.2f}",
-               transform=b.transAxes, fontsize=11, fontweight="bold", color=REAL, va="bottom")
+        # the trail is flat and low across most of the panel; the clear space is top right
+        b.text(0.97, 0.72, f"s_up {p1[0]:.2f}   s_dn {p1[1]:.2f}\nvt {p1[2]:.2f}   x_lin {p1[3]:.2f}",
+               transform=b.transAxes, fontsize=11, fontweight="bold", color=REAL,
+               ha="right", va="top")
         fig.suptitle("ex2  |  step 2: the four numbers are fitted to the file, and cost no "
                      "measurement", fontsize=14, fontweight="bold")
         fig.tight_layout(rect=(0, 0, 1, 0.9))
@@ -743,15 +759,23 @@ def solve_ku() -> None:
         a = ax[0]
         a.plot(iv_v, iv_pu * 1e3, color="#B03060", lw=3.0, label="pull-up, fully on")
         a.plot(iv_v, iv_pd * 1e3, color="#2E7D6E", lw=3.0, label="pull-down, fully on")
+        # name the curves on the curves: a legend box in this panel sits over the
+        # pull-down branch for most of its travel
+        for arr, col, lab, xl, dy in ((iv_pd, "#2E7D6E", "pull-down, fully on", 1.75, 9),
+                                      (iv_pu, "#B03060", "pull-up, fully on", 1.05, -20)):
+            a.annotate(lab, (xl, float(np.interp(xl, iv_v, arr * 1e3))),
+                       textcoords="offset points", xytext=(0, dy), ha="center",
+                       fontsize=11.5, fontweight="bold", color=col)
         for x, lab in zip(v, ("load 1", "load 2")):
             a.axvline(x, color="#888888", lw=1.4, ls="--")
-            off = 4 if lab.endswith("1") else -56
-            a.annotate(f"{lab}\n{x:.2f} V", (x, a.get_ylim()[0]), textcoords="offset points",
-                       xytext=(off, 30), fontsize=11, fontweight="bold", color="#555555")
+            ha, off = ("left", 7) if lab.endswith("1") else ("right", -7)
+            a.annotate(f"{lab}\n{x:.2f} V", (x, -18.0), textcoords="offset points",
+                       xytext=(off, 0), ha=ha, va="top", fontsize=11, fontweight="bold",
+                       color="#555555")
         a.set_xlabel("pad voltage (V)")
         a.set_ylabel("current (mA)")
         a.grid(alpha=0.3)
-        a.legend(loc="upper center", fontsize=10.5)
+        a.margins(y=0.14)
         a.set_title(f"the file's I-V curves, read at one instant (t = {tns:.2f} ns)",
                     fontsize=13, fontweight="bold")
 
@@ -781,7 +805,7 @@ def prior_shape() -> None:
     g, meas, prior = d["cmp_g"], d["cmp_meas"], d["cmp_prior"]
     with plt.rc_context(BODY):
         fig, a = plt.subplots(figsize=(8.6, 4.4))
-        a.plot(g, meas, color=REAL, lw=4.0, label="measured on the transistor (slide 3)")
+        a.plot(g, meas, color=REAL, lw=4.0, label="measured on the transistor")
         a.plot(g, prior, color=OURS, lw=2.8, ls="--",
                label="the analytic shape track 1 assumes")
         a.set_xlabel("gate, 0 to 1")
@@ -837,7 +861,7 @@ def what_we_have() -> None:
     with plt.rc_context(BODY):
         fig, a = plt.subplots(figsize=(11.0, 4.3))
         a.set_xlim(0, 100)
-        a.set_ylim(0, 54)
+        a.set_ylim(-7, 54)
         a.axis("off")
         rows = [("the output stage's I-V curves", True, True),
                 ("one full transition, Ku(t)", True, True),
@@ -855,12 +879,10 @@ def what_we_have() -> None:
                        fontweight="bold", color=c if ok else "#BBBBBB")
                 a.text(x + 6, y, lab, fontsize=12,
                        color="#222222" if ok else "#AAAAAA", va="center_baseline")
-        a.annotate("", (52, 20), (48, 20),
+        a.annotate("", (52, 26), (48, 26),
                    arrowprops=dict(arrowstyle="-|>", lw=2.0, color="#555555"))
-        a.text(50, 12, "the whole question", ha="center", fontsize=12, fontweight="bold",
-               color="#555555")
-        a.text(50, 6.5, "is this gap", ha="center", fontsize=12, fontweight="bold",
-               color="#555555")
+        a.text(50, -2, "the whole question is this gap", ha="center", fontsize=12.5,
+               fontweight="bold", color="#555555")
         fig.tight_layout()
         save(fig, "what_we_have")
 
@@ -964,31 +986,28 @@ def ccomp_reject() -> None:
     cc, ku = np.array(cc), np.array(ku)
     knee, decl, loop = 2.64, 5.0, 1.70
     with plt.rc_context(BODY):
-        fig, a = plt.subplots(figsize=(10.4, 4.6))
-        a.axhspan(1.0, max(ku) * 1.04, color="#B0563C", alpha=0.10)
-        a.plot(cc, ku, color=SIL, lw=3.4, zorder=3)
-        a.axhline(1.0, color="#B0563C", lw=2.0, ls="--")
-        a.text(0.12, 1.008, "Ku cannot exceed 1 \u2014 a fraction of the device's own current",
+        fig, a = plt.subplots(figsize=(10.8, 4.6))
+        a.plot(cc, ku, color=SIL, lw=3.6, zorder=3)
+        a.axhline(1.0, color="#B0563C", lw=2.2, ls="--", zorder=2)
+        a.text(3.25, 1.004, "Ku = 1: the device conducting everything it has",
                fontsize=11.5, color="#B0563C", fontweight="bold", va="bottom")
-        a.text(0.12, max(ku) * 1.0, "everything above this line is impossible",
-               fontsize=11.5, color="#B0563C", va="top")
-        for x, lab, col in ((loop, f"loop-measured\n{loop} pF", REAL),
-                            (knee, f"the knee\n{knee} pF", "#1F6F8B"),
-                            (decl, f"declared in the file\n{decl} pF", "#B0563C")):
+        # annotations above their own points, staggered so none overlaps another or the curve
+        for x, lab, col, off, ha in (
+                (loop, f"loop-measured {loop} pF", REAL, (-14, 112), "right"),
+                (knee, f"the knee {knee} pF", "#1F6F8B", (14, 44), "left"),
+                (decl, f"declared in the file {decl} pF", "#B0563C", (-12, 26), "right")):
             y = float(np.interp(x, cc, ku))
-            a.plot([x, x], [0.97, y], color=col, lw=1.6, ls=":")
             a.plot(x, y, "o", color=col, ms=11, zorder=5)
-            a.annotate(f"{lab}\nKu = {y:.2f}", (x, y), textcoords="offset points",
-                       xytext=(-16 if x == decl else 10, 18 if x != knee else -58),
-                       fontsize=11.5, fontweight="bold", color=col,
-                       ha="right" if x == decl else "left")
-        a.set_xlim(0, 5.6)
-        a.set_ylim(0.97, max(ku) * 1.04)
+            a.annotate(f"{lab}\nsolve returns Ku = {y:.2f}", (x, y), textcoords="offset points",
+                       xytext=off, ha=ha, fontsize=11.5, fontweight="bold", color=col,
+                       arrowprops=dict(arrowstyle="->", color=col, lw=1.4))
+        a.set_xlim(0, 5.7)
+        a.set_ylim(0.985, 1.42)
         a.set_xlabel("C_comp assumed when solving the file (pF)")
         a.set_ylabel("peak Ku the solve returns")
         a.grid(alpha=0.3)
-        a.set_title("ex2  |  the file rejects its own declared C_comp",
-                    fontsize=14, fontweight="bold")
+        a.set_title("ex2  |  the bigger the C_comp you assume, the more current the solve "
+                    "credits to the device", fontsize=13.5, fontweight="bold")
         fig.tight_layout()
         save(fig, "ccomp_reject")
 

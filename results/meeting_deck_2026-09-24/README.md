@@ -29,7 +29,7 @@ asserted rather than shown.
 | 8 | 4 · What that shape difference does downstream |
 | 9 | 5 · So the problem is now a precise one |
 | 10 | 6 · What the file fixes, and what it leaves open |
-| 11 | 7 · So we need one more measurement — and a stressed pulse is the one |
+| 11 | 7 · One more measurement, and a stressed pulse is the one |
 | 12 | 8 · But a few samples need a family of shapes to choose from |
 | 13 | 9 · The family: a stage is a current source with a threshold |
 | 14 | 10 · The four numbers that picture requires |
@@ -41,8 +41,8 @@ asserted rather than shown.
 | 20 | 16 · Step 4 — the stressed run, first job: set the amplitude |
 | 21 | 17 · Step 5 — the stressed run, second job: pick one |
 | 22 | 18 · The recipe, end to end |
-| 23 | Where the file-only recipe stands |
-| 24 | What this does not cover yet |
+| 23 | Result · where the file-only recipe stands |
+| 24 | Result · what this does not cover yet |
 | 25 | Backup · where Ku(t) comes from |
 | 26 | Backup · the nine candidates as waveforms |
 | 27 | Backup · inv_chain's input threshold |
@@ -113,6 +113,32 @@ Two numbers were wrong and are corrected. The calibration slide quoted “97 % l
 different build than its own figure showed: in the film's data the fit lands on vt 0.528, which
 leaves the pad **27.6 %** low, and −98.7 % is the far end of the *bracket*, not the starting
 point. And the selection slide said the peak spread was “within 2 %” when it is 2.5 %.
+
+### The second pass, slide by slide
+
+Reading all twenty-seven rendered slides again found defects that only show up in the render.
+
+* **Every bullet was bold.** `bullets()` took `**` as a flag on the whole line rather than as a
+  span, so a line that opened with emphasis went bold end to end and emphasis in the middle of
+  a line was silently dropped. It now splits on `**` and bolds the segments between the
+  markers, so a bullet can put its weight on the clause that carries the claim. Only the last
+  line that *opens* with emphasis takes the accent colour.
+* **Legends sat on the evidence.** `ku_consequence` put a legend box in the upper right of each
+  pad panel, which is exactly where the purple overshoot the slide exists to show goes; and
+  `solve_ku`'s legend covered the pull-down branch for most of its travel. Both now label their
+  curves directly, with one shared legend under the figure.
+* **Labels ran off, or onto each other.** `works_levels`' in-panel names were wider than a
+  3-inch panel; `sampling_grid` cut all five curves at the same height, so the five depth
+  labels landed on one spot; `fit_search` wrote the fitted values across the marker trail; and
+  `solve_ku`'s load markers sat where the pull-up curve runs. All placed clear.
+* **inv_chain's panels were mostly empty.** The window was 1.2 ns wide for a 130 ps pulse.
+* **One sentence was garbled** on the results slide — "We buy accuracy in stressed accuracy
+  with full-swing accuracy" — and the backup slide claimed the nine candidates share *the
+  measured peak* while the figure plainly shows them peaking at different times. They share the
+  peak **height**; the calibration put it there. Both fixed, on the slide and in the figure.
+* **Numeric cross-references were removed.** The numbers in the titles are section numbers, not
+  slide numbers, so "(slide 7)" pointed at nothing; one was wrong outright. The two result
+  slides also had no section marker while every other slide does — they now read `Result · …`.
 
 ## Bench and sources
 
