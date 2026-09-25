@@ -1155,6 +1155,110 @@ def uv_bridge() -> None:
         save(fig, "uv_bridge")
 
 
+def term_map() -> None:
+    """Every symbol of the stage law against the transistor equation it came from."""
+    C = {"s": REAL, "h": OURS, "x": "#1F6F8B", "v": "#333333", "g": "#888888"}
+
+    def run(ax, fig, x0, y, parts, fs, mono=True):
+        r = fig.canvas.get_renderer()
+        x, spans = x0, []
+        for txt, col in parts:
+            t_ = ax.text(x, y, txt, fontsize=fs, color=col, va="center",
+                         family="monospace" if mono else None, fontweight="bold")
+            bb = t_.get_window_extent(renderer=r).transformed(ax.transData.inverted())
+            spans.append((bb.x0, bb.x1))
+            x = bb.x1
+        return spans
+
+    with plt.rc_context(BODY):
+        fig = plt.figure(figsize=(13.3, 5.3))
+
+        # ---------- A. the transistor's two regions, and how they collapse ----------
+        a = fig.add_axes([0, 0.63, 1, 0.35])
+        a.axis("off"); a.set_xlim(0, 100); a.set_ylim(0, 40)
+        a.text(1, 37, "the transistor, in the two regions where it conducts",
+               fontsize=14.1, fontweight="bold", color=DEVICE, va="top")
+        a.text(1, 30, "saturated", fontsize=12.6, color=DEVICE, fontweight="bold", va="center")
+        run(a, fig, 13, 30, [("I_D = (KP/2)(W/L) \u00b7 (V_GS \u2212 V_th)\u00b2", C["v"])], 13.6)
+        a.text(59, 30, "when  V_DS \u2265 V_GS \u2212 V_th", fontsize=12.1, color=C["g"],
+               family="monospace", va="center")
+        a.text(1, 24, "triode", fontsize=12.6, color=DEVICE, fontweight="bold", va="center")
+        run(a, fig, 13, 24, [("I_D = (KP/2)(W/L) \u00b7 V_DS(2(V_GS \u2212 V_th) \u2212 V_DS)",
+                              C["v"])], 13.6)
+        a.text(59, 24, "when  V_DS < V_GS \u2212 V_th", fontsize=12.1, color=C["g"],
+               family="monospace", va="center")
+
+        a.annotate("", (24, 16.5), (24, 21),
+                   arrowprops=dict(arrowstyle="-|>", color=C["g"], lw=1.8))
+        a.text(26, 18.5, "divide both by the saturated value \u2014 they become one expression",
+               fontsize=12.1, color=C["g"], va="center")
+
+        sp = run(a, fig, 13, 10, [
+            ("I_D = ", C["v"]),
+            ("(KP/2)(W/L)(V_GS\u2212V_th)\u00b2", C["s"]),
+            ("  \u00d7  ", C["v"]),
+            ("min(1, r(2\u2212r))", C["x"]),
+            ("      r = V_DS/(V_GS\u2212V_th)", C["g"])], 13.6)
+        for i, lab in ((1, "how hard it is on"), (3, "how much room it has left")):
+            mid = (sp[i][0] + sp[i][1]) / 2
+            a.plot([sp[i][0], sp[i][1]], [6.5, 6.5],
+                   color=C["s"] if i == 1 else C["x"], lw=2.4, solid_capstyle="butt")
+            a.text(mid, 3.4, lab, fontsize=11.6, ha="center", va="top",
+                   color=C["s"] if i == 1 else C["x"], fontweight="bold")
+
+        # ---------- B. the substitutions ----------------------------------------
+        b = fig.add_axes([0, 0.54, 1, 0.09])
+        b.axis("off"); b.set_xlim(0, 100); b.set_ylim(0, 10)
+        b.text(1, 6, "now put it in our variables:", fontsize=12.6, color="#555555",
+               fontweight="bold", va="center")
+        run(b, fig, 25, 6, [
+            ("V_GS = u\u00b7swing", OURS), ("      ", C["v"]),
+            ("V_DS = (1\u2212v)\u00b7swing", REAL), ("      ", C["v"]),
+            ("and divide by C\u00b7swing, so every term is a slope", C["g"])], 12.6)
+
+        # ---------- C. the map, term by term -------------------------------------
+        c = fig.add_axes([0, 0.02, 1, 0.50])
+        c.axis("off"); c.set_xlim(0, 100); c.set_ylim(0, 100)
+        for x0, hd in ((1, ""), (14, "the transistor"), (46, "ours"), (76, "what we changed")):
+            if hd:
+                c.text(x0, 95, hd, fontsize=13.1, fontweight="bold", color="#777777", va="top")
+        rows = [
+            ("the\nstrength", DEVICE,
+             [("(KP/2)(W/L)(V_GS\u2212V_th)\u00b2", C["s"])],
+             [("s_up", C["s"]), (" = I_max/(C\u00b7swing)", C["v"])],
+             "nothing. The current and the\ncapacitance are never separated,\nso this is a "
+             "slope, not a current."),
+            ("the gate\nfactor", SIMPLE,
+             [("((u\u2212vt)/(1\u2212vt))", C["h"]), ("^2", DEVICE)],
+             [("h(u) = ((u\u2212vt)/(1\u2212vt))", C["h"]), ("^1", SIMPLE)],
+             "the exponent, 2 \u2192 1. With p = 2\nthis is the transistor's own term,\n"
+             "exactly."),
+            ("the drain\nfactor", ASSUMED,
+             [("min(1, ", C["x"]), ("r(2\u2212r)", DEVICE), ("),  r = (1\u2212v)/", C["x"]),
+              ("(u\u2212vt)", DEVICE)],
+             [("min(1, ", C["x"]), ("(1\u2212v)", C["x"]), ("/", C["x"]),
+              ("x_lin", ASSUMED), (")", C["x"])],
+             "the curve straightened, and the\ndenominator frozen to a constant\n"
+             "where the device's moves with u."),
+        ]
+        for i, (name, col, left, right, note) in enumerate(rows):
+            y = 80 - i * 30
+            c.plot([0.2, 1.2], [y + 6, y - 9], color=col, lw=0)          # spacing only
+            c.add_patch(mpatches.Rectangle((0.2, y - 8), 1.0, 15, color=col))
+            c.text(2.6, y + 3, name, fontsize=12.6, fontweight="bold", color=col, va="top")
+            run(c, fig, 14, y, left, 11.5)
+            c.text(43.5, y, "\u2192", fontsize=16.6, color="#AAAAAA", va="center",
+                   fontweight="bold")
+            run(c, fig, 46, y, right, 11.5)
+            c.text(76, y + 4, note, fontsize=11.6, color="#333333", va="top")
+
+        c.text(1, -6, "vt maps onto V_th by role, not by value: the fitted vt runs 0.015\u2013"
+                      "0.524 across the twelve, where a real threshold is 0.11\u20130.20 of the "
+                      "swing.",
+               fontsize=11.6, color="#B0563C", fontweight="bold", va="top")
+        save(fig, "term_map")
+
+
 def main() -> int:
     print("figures for the 09-24 deck:")
     map_from_probe("ex2")
@@ -1176,6 +1280,7 @@ def main() -> int:
     uv_bridge()
     mos_regions()
     ours_vs_device()
+    term_map()
     law_badged()
     four_table()
     why_chain()

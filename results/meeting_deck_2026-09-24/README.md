@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 35 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 36 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout come from Simon's 09-18 deck; none of his
 slides are carried over.
@@ -35,25 +35,26 @@ asserted rather than shown.
 | 14 | 10 · The device's two voltages, in our two variables |
 | 15 | 11 · What one MOSFET actually does |
 | 16 | 12 · What we keep of that, and what we replace |
-| 17 | 13 · The law, with where each piece came from |
-| 18 | 14 · The four numbers that leaves |
-| 19 | 15 · What each of the four actually does |
-| 20 | 16 · Why a chain, and not one stage |
-| 21 | 16 · So: K identical stages, then the file's own map |
-| 22 | 17 · Before the recipe: C_comp is an input, and this file's is wrong |
-| 23 | 18 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
-| 24 | 19 · Recipe step 2 of 4 — enumerate what the file cannot choose |
-| 25 | 20 · Recipe step 3 of 4 — the stressed run sets the amplitude |
-| 26 | 21 · Recipe step 4 of 4 — the same run picks one of the nine |
-| 27 | 22 · The recipe, end to end |
-| 28 | Result · ex2 |
-| 29 | Result · inv_chain |
-| 30 | Result · io_buf |
-| 31 | Result · every buffer, worst of its stressed widths |
-| 32 | Result · what this does not cover yet |
-| 33 | Backup · where Ku(t) comes from |
-| 34 | Backup · the nine candidates as waveforms |
-| 35 | Backup · inv_chain's input threshold |
+| 17 | 13 · Term by term: the transistor's equation and ours |
+| 18 | 14 · The law, with where each piece came from |
+| 19 | 15 · The four numbers that leaves |
+| 20 | 16 · What each of the four actually does |
+| 21 | 17 · Why a chain, and not one stage |
+| 22 | 17 · So: K identical stages, then the file's own map |
+| 23 | 18 · Before the recipe: C_comp is an input, and this file's is wrong |
+| 24 | 19 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
+| 25 | 20 · Recipe step 2 of 4 — enumerate what the file cannot choose |
+| 26 | 21 · Recipe step 3 of 4 — the stressed run sets the amplitude |
+| 27 | 22 · Recipe step 4 of 4 — the same run picks one of the nine |
+| 28 | 23 · The recipe, end to end |
+| 29 | Result · ex2 |
+| 30 | Result · inv_chain |
+| 31 | Result · io_buf |
+| 32 | Result · every buffer, worst of its stressed widths |
+| 33 | Result · what this does not cover yet |
+| 34 | Backup · where Ku(t) comes from |
+| 35 | Backup · the nine candidates as waveforms |
+| 36 | Backup · inv_chain's input threshold |
 
 ## Built on the 09-17 method film
 
