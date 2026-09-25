@@ -245,17 +245,18 @@ The law is
     dv/dt = s_up*h(u)*min(1,(1-v)/x_lin)  -  s_dn*h(1-u)*min(1,v/x_lin)
     h(u)  = clip((u-vt)/(1-vt), 0, 1)**p
 
-and the four factors have four different provenances. The textbook side is Leventhal & Green,
+and the four factors have four different provenances. Where a factor below is called standard
+device behaviour, the standard long-channel form is written down in Leventhal & Green,
 *Semiconductor Modeling*, §3.8 printed page 89 (pdf 105), the SPICE Level 1 (Shichman-Hodges)
 equations 3-23 to 3-25:
 
 | factor | where it comes from | verdict |
 |---|---|---|
-| `s_up`, `s_dn` | the capacitor law `C dV/dt = I`, with the book's saturation result that the current does not depend on V_DS | **has a source.** Channel-length modulation (the book's `LAMBDA` term) is dropped |
-| `h(u) = 0` below `vt` | eq. 3-23, `I_D = 0` for `V_GS - V_th < 0` | **has a source**, same form |
-| `h(u)` above `vt` | eq. 3-24, `I_D ∝ (V_GS - V_th)²` | **the source's form, one thing changed.** The book's exponent is 2; we use `p = 1` |
-| `min(1, (1-v)/x_lin)` | eq. 3-25 is `V_DS(2(V_GS-V_th) - V_DS)`, a **parabola** in V_DS | **ours.** A straight line in place of that parabola |
-| `x_lin` itself | the book's width is the overdrive: 0.77-0.80 on the 1.8 V parts, 0.88-0.89 on the 3.3 V parts | **ours.** Held at 0.45 everywhere, and not fitted at all in the passes that produce the shipped numbers |
+| `s_up`, `s_dn` | the capacitor law `C dV/dt = I`, with the standard result that a saturated device's current does not depend on V_DS | **standard device behaviour.** Channel-length modulation is dropped |
+| `h(u) = 0` below `vt` | eq. 3-23, `I_D = 0` for `V_GS - V_th < 0` | **standard device behaviour**, same form |
+| `h(u)` above `vt` | eq. 3-24, `I_D ∝ (V_GS - V_th)²` | **same shape, one thing changed.** A real device squares it; we use `p = 1` |
+| `min(1, (1-v)/x_lin)` | eq. 3-25 is `V_DS(2(V_GS-V_th) - V_DS)`, a **parabola** in V_DS | **assumed.** A straight line in place of that curve |
+| `x_lin` itself | a real device's width is its overdrive: 0.77-0.80 on the 1.8 V parts, 0.88-0.89 on the 3.3 V parts | **assumed.** Held at 0.45 everywhere, and not fitted at all in the passes that produce the shipped numbers |
 | the saturation/triode boundary | eq. 3-24/3-25 put it at `|V_DS| = |V_GS| - |V_th|`, i.e. `1-v = u-vt`, which moves with the input | **ours.** A constant `x_lin` instead |
 | K identical stages | nothing | **ours** — a modelling choice, evidenced only by the fit (section 5). "Identical" means identical *normalised dynamics*, not identical transistor dimensions, which a real tapered predriver deliberately varies |
 
@@ -263,9 +264,9 @@ Two of those deserve their reason stated rather than buried:
 
 * **`p = 1` is not a claim about the device.** It is an admission that the file cannot see `p`:
   every value from 1 to 2 fits the full-swing Ku(t) to rms 0.002-0.007, so the fit cannot
-  choose, and 1 is taken. The book's own value is 2.
+  choose, and 1 is taken. A real device squares it.
 * **The linear taper is the model's biggest liberty.** Normalising both to the width of the
-  region, the book passes `r(2-r)` of full current at a fraction `r` into it and we pass `r`:
+  region, a real device passes `r(2-r)` of full current at a fraction `r` into it and we pass `r`:
   half way in, 0.75 against our 0.50. We give the current up faster than the device does. What
   keeps it usable is that `x_lin` is fitted rather than derived, and that a stressed pulse
   turns round before the gate is far into this region on most buffers.
@@ -274,7 +275,8 @@ Two of those deserve their reason stated rather than buried:
 
 This is the correction that matters most, because the names invite the wrong reading.
 
-**`x_lin` is not the textbook saturation/triode boundary.** The book's boundary is at
+**`x_lin` is where our stage stops pushing at full current, and it is not where a real device
+stops.** A device leaves saturation at
 `V_DS = V_GS - V_th`, so at full gate drive the resistive region occupies `1 - V_th/V_DD` of
 the swing: **0.77-0.80** on the 1.8 V parts and **0.88-0.89** on the 3.3 V parts, using `VTH0`
 from `buffers/models/hspice.mod`. We use **0.45**, and in every pass that produces a shipped
@@ -285,11 +287,11 @@ lands anywhere between 0.02 and 1.50 - the full-swing data barely constrains it.
 (inv_weak) across the twelve, against a physical `V_th/V_DD` of 0.11-0.20. It is an effective
 hand-over point for a modelled stage, and the stressed-run calibration overwrites it anyway.
 
-**And the taper comparison runs the other way from what you would guess.** Comparing the two
-drain factors at matched `r` is invalid, because the book normalises `r` by the overdrive and we
+**And the comparison runs the other way from what you would guess.** Comparing the two
+drain factors at matched `r` is invalid, because a device normalises `r` by its overdrive and we
 normalise it by a constant. Done properly, at full gate drive on a 3.3 V part:
 
-| v | the book | ours |
+| v | a real device | our model |
 |---|---|---|
 | 0.30 | 0.959 | 1.000 |
 | 0.50 | 0.815 | 1.000 |
@@ -297,17 +299,17 @@ normalise it by a constant. Done properly, at full gate drive on a 3.3 V part:
 | 0.90 | 0.215 | 0.222 |
 | 0.99 | 0.023 | 0.022 |
 
-The book gives up its constant current at `v = 0.12`; we hold ours to `v = 0.55`. Integrated
-over the travel we deliver **1.095x** the charge - we are *more* current-source-like than
-long-channel theory, not less.
+A device gives up its constant current at `v = 0.12`; we hold ours to `v = 0.55`. Integrated
+over the travel we deliver **1.095x** the charge - we are *more* current-source-like than a real
+device, not less.
 
-There is a reading of `x_lin = 0.45` that is favourable and worth knowing: the book's boundary
+There is a reading of `x_lin = 0.45` that is favourable and worth knowing: a device's boundary
 sits at `1 - v = u - vt`, so 0.45 is where it lands at about **57 % gate drive**. The constant
 is right for a partly-driven stage and too generous for a fully-driven one - and the stressed
 pulse is the partly-driven case. Nobody chose it for that reason, but it is a defensible
 post-hoc reading. Note also that these are ~0.6 um devices, and velocity saturation in real
-short-channel silicon extends the constant-current region, moving the device toward our model
-and away from long-channel Level 1. That is a hypothesis, not a measurement.
+short-channel silicon extends the constant-current region, moving real silicon toward our model
+and away from the long-channel form. That is a hypothesis, not a measurement.
 
 ### What kind of model this is
 

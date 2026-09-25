@@ -279,10 +279,10 @@ slide("10 · The device's two voltages, in our two variables",
             "- v_in and |V_DS| = VDD - v_out.")
 
 slide("11 · What one MOSFET actually does",
-      ["A transistor has three regimes, and the book writes an equation for each. **Below "
-       "threshold** it passes nothing. **Saturated** — which here means a large voltage "
-       "across it — the current stops depending on that voltage. **In triode**, close to the "
-       "rail, it is a resistor again.",
+      ["A transistor has three regimes. **Below threshold** it passes nothing. **Saturated** "
+       "— which here means a large voltage across it — its current stops depending on that "
+       "voltage, so it behaves like a current source. **In triode** it is a resistor again, and "
+       "on these parts that is most of the travel, not a sliver near the rail.",
        "**These three regimes are what the stage law is built from — but the law is a "
        "compact stand-in for them, not a derivation of them. The next slide is where it "
        "departs, and by how much.**"],
@@ -291,19 +291,22 @@ slide("11 · What one MOSFET actually does",
       notes="Leventhal & Green, Semiconductor Modeling, section 3.8 printed page 89 (pdf 105): "
             "the SPICE Level 1 / Shichman-Hodges equations 3-23 to 3-25. Note the naming trap: "
             "a MOSFET's SATURATION region is its constant-current one, the opposite sense to a "
-            "BJT (the book makes the same point on p.63).")
+            "BJT. The equations beneath are the standard long-channel ones; for 0.6 um devices "
+            "they are themselves an approximation, and velocity saturation extends the "
+            "real constant-current region.")
 
 slide("12 · What we keep of that, and what we replace",
-      ["Same three regimes, our version of each, drawn on top of the book's.",
-       "Below threshold we copy the book. Saturated we keep its form but flatten the "
-       "exponent from 2 to 1. Into triode we replace its parabola with a straight line of "
-       "**fixed** width — the book's width is the device's overdrive, so it moves as the "
-       "input moves.",
-       "**x_lin is not the book's boundary.** At full drive the book gives its constant "
-       "current up at v = 0.12; we hold ours to 0.55, and over the travel we pass about 10 % "
-       "**more** charge, not less. Our 0.45 is where the book's boundary sits at roughly "
-       "**57 % gate drive** — a partly-driven stage, which is the stressed case."],
-      F24 / "ours_vs_book.png",
+      ["Our version of each regime, drawn on top of a real device's. Below threshold we copy "
+       "it. Saturated we keep the shape and flatten the exponent from 2 to 1. Into triode we "
+       "put a straight line of **fixed** width where the device's width changes with its "
+       "input.",
+       "**What x_lin really says is: our stage keeps pushing at full current for the first "
+       "55 % of its travel, where a real device gives up at 12 %.** Over the travel we deliver "
+       "about **10 % more charge** than the device would. That is the largest approximation in "
+       "the model and the first thing to distrust.",
+       "In its favour: 0.45 is where a real device's boundary sits when its input is only "
+       "**57 % on** — a partly-driven stage, which is exactly the stressed case."],
+      F24 / "ours_vs_device.png",
       notes="Why p = 1: it is not a claim about the device, it is an admission that the file "
             "cannot see p - every value from 1 to 2 fits the full-swing Ku(t) to rms "
             "0.002-0.007. Why the straight line: it keeps the stage law solvable in one "
@@ -311,20 +314,20 @@ slide("12 · What we keep of that, and what we replace",
             "this region on most buffers.")
 
 slide("13 · The law, with where each piece came from",
-      ["Read the colours: green has a source, amber is the source's own form with one thing "
-       "changed, red has no source at all. K stages in series is a fourth choice with nothing "
-       "behind it but the fit on the next slide.",
-       "**So this is a physically motivated reduced-order model, not a model derived from "
-       "device physics.** The physics tells us to expect a current-limited phase followed by "
-       "a resistive approach to the rail. It does not hand us the min(), the straight taper, "
-       "the fixed x_lin, or p = 1. Those are architecture choices, and the results stand on "
-       "the measurements rather than on the derivation."],
+      ["Read the colours: green is standard transistor behaviour taken as it is, amber is "
+       "that behaviour with one thing simplified for a reason we can state, red has no "
+       "physical basis at all. K stages in series is a fourth thing in the red category.",
+       "**So this is a physically motivated reduced-order model, not one derived from device "
+       "physics.** A transistor gives us the shape to expect — a current-limited phase, then a "
+       "resistive approach to the rail. It does not hand us the min(), the straight taper, the "
+       "fixed x_lin or p = 1. Those are ours, and the case for them is the measured result on "
+       "the next fifteen slides, not the derivation."],
       F24 / "law_badged.png",
       size=16,
-      notes="The honest summary: the backbone and the threshold come from the book, the "
-            "exponent is ours by necessity, the taper and the chain are ours by choice. This "
-            "is the slide to stand behind if someone says the model is derived from physics - "
-            "it is not, and the results do not depend on it being.")
+      notes="The honest summary: the backbone and the threshold are standard device "
+            "behaviour, the exponent is ours by necessity, the taper and the chain are ours by "
+            "choice. This is the slide to stand behind if someone says the model is derived "
+            "from physics - it is not, and the results do not depend on it being.")
 
 slide("14 · The four numbers that leaves",
       ["**s_up and s_dn are slopes** — ex2 fits 2.59/ns, 0.39 ns to cross a stage's swing "

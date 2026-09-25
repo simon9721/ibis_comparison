@@ -523,7 +523,7 @@ def four_table() -> None:
             ("vt", C["h"], "an effective hand-over point,\nNOT the device's V_th",
              "how much of a short pulse\nsurvives each hop",
              "fitted, then re-set by\nthe stressed run"),
-            ("x_lin", C["x"], "an effective taper width,\nNOT the book's boundary",
+            ("x_lin", C["x"], "an effective taper width, not\nwhere a real device gives up",
              "the shape of the approach\nto the rail", "held at 0.45. Not fitted"),
         ]
         for i, (sym, col, is_, dec, src) in enumerate(rows):
@@ -534,9 +534,9 @@ def four_table() -> None:
                 b.text(cx, y, txt, fontsize=fs, color=col if mono else "#222222", va="top",
                        family="monospace" if mono else None,
                        fontweight="bold" if mono else None)
-        b.text(0, 6, "vt fits anywhere from 0.015 to 0.524 across the twelve, against a "
-                     "physical V_th/V_DD of 0.11\u20130.20. x_lin is held at 0.45 everywhere; the "
-                     "book's boundary for these parts is 0.77\u20130.89.",
+        b.text(0, 6, "vt fits anywhere from 0.015 to 0.524 across the twelve, against a real "
+                     "threshold of 0.11\u20130.20 of the swing. x_lin is held at 0.45 everywhere; a "
+                     "real device stops pushing at 0.77\u20130.89.",
                fontsize=11, color="#B0563C", fontweight="bold", va="bottom")
         b.text(0, -1, "Both are effective parameters that absorb the real I-V into a "
                       "two-region approximation. p, a fifth number, is invisible at full swing "
@@ -871,14 +871,16 @@ def endtoend_3() -> None:
         save(fig, "endtoend_3")
 
 
-BOOK = "#2F6B3C"        # has a source
-BENT = "#C07A21"        # same form as the source, one thing changed
-OURS_ = "#B0563C"       # no source: ours
-CITE = "Leventhal & Green, Semiconductor Modeling, \u00a73.8 p.89 \u2014 SPICE Level 1, eq. 3-23\u201325"
+DEVICE = "#2F6B3C"      # standard transistor behaviour, taken as it is
+SIMPLE = "#C07A21"      # same shape, one thing changed for a stated reason
+ASSUMED = "#B0563C"     # no physical basis: our choice
+CITE = ("standard long-channel equations (SPICE Level 1); Leventhal & Green, "
+        "Semiconductor Modeling \u00a73.8 p.89. These are ~0.6 \u00b5m devices, so "
+        "long-channel is itself an approximation.")
 
 
 def mos_regions() -> None:
-    """The device characteristic the stage law is built on, straight out of the book."""
+    """The device characteristic the stage law is built on."""
     vth, k = 0.7, 1.0
     with plt.rc_context(BODY):
         fig, ax = plt.subplots(1, 2, figsize=(13.0, 4.5),
@@ -921,21 +923,21 @@ def mos_regions() -> None:
                  "I_D  =  (KP/2)(W/L) \u00b7 V_DS(2(V_GS \u2212 V_th) \u2212 V_DS)")]
         for i, (name, cond, eq) in enumerate(rows):
             y = 92 - i * 28
-            b.add_patch(mpatches.Rectangle((0, y - 3.4), 1.8, 3.0, color=BOOK))
-            b.text(3.0, y - 2.0, name, fontsize=12.5, fontweight="bold", color=BOOK,
+            b.add_patch(mpatches.Rectangle((0, y - 3.4), 1.8, 3.0, color=DEVICE))
+            b.text(3.0, y - 2.0, name, fontsize=12.5, fontweight="bold", color=DEVICE,
                    va="center")
             b.text(3.0, y - 11, "when   " + cond, fontsize=11, color="#777777", va="top",
                    family="monospace")
             b.text(3.0, y - 19, eq, fontsize=11.5, color="#222222", va="top",
                    family="monospace", fontweight="bold")
-        b.text(0, 0, CITE, fontsize=10.5, color=BOOK, fontweight="bold", va="bottom")
-        b.set_title("and what the book says each one is", fontsize=13, fontweight="bold")
+        b.text(0, -2, CITE, fontsize=9.5, color="#888888", va="bottom", wrap=True)
+        b.set_title("and the standard equation for each", fontsize=13, fontweight="bold")
         fig.tight_layout()
         save(fig, "mos_regions")
 
 
-def ours_vs_book() -> None:
-    """Region by region: what our law keeps from the book and what it replaces."""
+def ours_vs_device() -> None:
+    """Region by region: where our law follows a real device and where it departs."""
     VT, XLIN = 0.45, 0.45
     with plt.rc_context(BODY):
         fig, ax = plt.subplots(1, 3, figsize=(13.2, 4.6))
@@ -957,14 +959,14 @@ def ours_vs_book() -> None:
         # --- 2. saturation: same form, our exponent -----------------------------
         b = ax[1]
         x = np.clip((u - VT) / (1 - VT), 0, 1)
-        b.plot(u, x ** 2, color=BOOK, lw=3.0, ls="--", label="the book: squared  (p = 2)")
-        b.plot(u, x, color=BENT, lw=3.4, label="ours: p = 1")
+        b.plot(u, x ** 2, color=DEVICE, lw=3.0, ls="--", label="a real device: squared")
+        b.plot(u, x, color=SIMPLE, lw=3.4, label="ours: p = 1")
         b.axvspan(0, VT, color="#BBBBBB", alpha=0.22)
         # the dead zone is the only part of this panel with no curve in it
         b.annotate("the file cannot\ntell these apart:\nevery p from 1 to 2\nfits it to rms\n"
                    "0.002\u20130.007", (0.72, 0.47), xytext=(0.02, 0.74), textcoords="data",
-                   ha="left", va="top", fontsize=9.5, color=BENT, fontweight="bold",
-                   arrowprops=dict(arrowstyle="->", color=BENT, lw=1.4))
+                   ha="left", va="top", fontsize=9.5, color=SIMPLE, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=SIMPLE, lw=1.4))
         b.set_xlim(0, 1.02); b.set_ylim(-0.04, 1.25)
         b.set_xlabel("u  \u2014  the stage's input")
         b.grid(alpha=0.3)
@@ -976,40 +978,40 @@ def ours_vs_book() -> None:
         VTHP = 0.4064886 / 3.3       # buffers/models/hspice.mod, PMOS VTH0, over V_DD
         v = np.linspace(0, 1, 800)
 
-        def book_taper(drive):
+        def device_taper(drive):
             """Level 1 drain factor at a given normalised gate drive."""
             ov = max(drive - VTHP, 1e-6)
             r = np.minimum((1 - v) / ov, 1.0)
             return np.where((1 - v) >= ov, 1.0, r * (2 - r))
 
-        c.plot(v, book_taper(1.0), color=BOOK, lw=3.0, ls="--",
-               label="the book, input at its rail")
-        c.plot(v, book_taper(0.573), color=BOOK, lw=2.0, ls=":", alpha=0.75,
-               label="the book, input only 57 % on")
-        c.plot(v, np.minimum(1.0, (1 - v) / XLIN), color=OURS_, lw=3.4,
-               label="ours (x_lin = 0.45, fixed)")
-        for x, col, lab in ((VTHP, BOOK, "book\nleaves at\n0.12"),
-                            (1 - XLIN, OURS_, "we leave\nat 0.55")):
+        c.plot(v, device_taper(1.0), color=DEVICE, lw=3.0, ls="--",
+               label="a real device, input at its rail")
+        c.plot(v, device_taper(0.573), color=DEVICE, lw=2.0, ls=":", alpha=0.75,
+               label="a real device, its input only 57 % on")
+        c.plot(v, np.minimum(1.0, (1 - v) / XLIN), color=ASSUMED, lw=3.4,
+               label="our model (x_lin = 0.45, fixed)")
+        for x, col, lab in ((VTHP, DEVICE, "a real device\nstops pushing\nat 0.12"),
+                            (1 - XLIN, ASSUMED, "we stop\nat 0.55")):
             c.plot([x, x], [0, 1.0], color=col, lw=1.3, ls="-", alpha=0.45)
             c.text(x + 0.02, 0.05, lab, fontsize=9, color=col, fontweight="bold",
                    va="bottom")
-        c.annotate("we hold full current\nfar longer, and pass\n~10 % more charge",
+        c.annotate("we push at full current\nfar longer, and deliver\n~10 % more charge",
                    (0.52, 0.99), xytext=(0.04, 0.50), textcoords="data", ha="left",
-                   va="center", fontsize=9.5, color=OURS_, fontweight="bold",
-                   arrowprops=dict(arrowstyle="->", color=OURS_, lw=1.4))
+                   va="center", fontsize=9.5, color=ASSUMED, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=ASSUMED, lw=1.4))
         c.set_xlim(0, 1.02); c.set_ylim(0, 1.62)
         c.set_xlabel("v  \u2014  how far the output has got")
         c.grid(alpha=0.3)
         c.legend(loc="upper left", fontsize=8.5, framealpha=0.95)
         c.set_title("3.  into the triode region", fontsize=12.5, fontweight="bold")
 
-        for a_, txt, col in ((ax[0], "SAME as the book", BOOK),
-                             (ax[1], "SAME FORM, our exponent", BENT),
-                             (ax[2], "OURS \u2014 a stand-in, not the book's boundary", OURS_)):
+        for a_, txt, col in ((ax[0], "we copy the device", DEVICE),
+                             (ax[1], "same shape, simpler exponent", SIMPLE),
+                             (ax[2], "our own \u2014 no physical basis", ASSUMED)):
             a_.text(0.5, -0.30, txt, transform=a_.transAxes, ha="center", fontsize=12,
                     fontweight="bold", color=col)
         fig.tight_layout(rect=(0, 0.055, 1, 1))
-        save(fig, "ours_vs_book")
+        save(fig, "ours_vs_device")
 
 
 def law_badged() -> None:
@@ -1039,11 +1041,10 @@ def law_badged() -> None:
             ("     \u2212     ", "#888888"),
             ("s_dn", C["s"]), ("\u00b7", "#888888"), ("h(1\u2212u)", C["h"]),
             ("\u00b7", "#888888"), ("min(1, v/x_lin)", C["x"])], 15.5)
-        for i, col, tag in ((2, BOOK, "book"), (4, BENT, "book*"), (6, OURS_, "ours")):
-            mid = (sp[i][0] + sp[i][1]) / 2
-            a.plot([sp[i][0], sp[i][1]], [27, 27], color=col, lw=3.4, solid_capstyle="butt")
-            a.text(mid, 23.5, tag, ha="center", va="top", fontsize=11, color=col,
-                   fontweight="bold")
+        # the words below are wider than these terms, so the colour carries it and the
+        # legend at the foot of the figure says what each colour means
+        for i, col in ((2, DEVICE), (4, SIMPLE), (6, ASSUMED)):
+            a.plot([sp[i][0], sp[i][1]], [26, 26], color=col, lw=4.0, solid_capstyle="butt")
         a.text(sp[7][1], 14.5, "the second term is the same three factors,\nmirrored for the "
                                "discharge", fontsize=10.5, color="#888888", va="center",
                ha="left")
@@ -1056,17 +1057,18 @@ def law_badged() -> None:
         b = fig.add_axes([0.03, 0.02, 0.94, 0.30])
         b.axis("off"); b.set_xlim(0, 100); b.set_ylim(0, 10)
         for x0, col, head, body in (
-                (0, BOOK, "book  \u2014  has a source",
-                 "the capacitor law; the book's cutoff and saturation forms"),
-                (36, BENT, "book*  \u2014  its form, one thing changed",
-                 "p = 1 rather than the book's 2, because the file cannot see p"),
-                (75, OURS_, "ours  \u2014  no source",
-                 "the linear taper of fixed width, and K stages in series")):
+                (0, DEVICE, "device", "standard behaviour, taken as it is:\n"
+                                      "charge into a capacitance, and the cutoff"),
+                (34, SIMPLE, "simplified", "the same shape, one thing changed:\n"
+                                           "a square law flattened to linear"),
+                (68, ASSUMED, "assumed", "no physical basis at all:\n"
+                                         "the straight taper, and K stages")):
             b.add_patch(mpatches.Rectangle((x0, 6.6), 2.2, 1.6, color=col))
-            b.text(x0 + 3.2, 7.4, head, fontsize=11.5, fontweight="bold", color=col,
+            b.text(x0 + 3.2, 7.4, head, fontsize=12, fontweight="bold", color=col,
                    va="center")
-            b.text(x0, 3.8, body, fontsize=10.5, color="#444444", va="top")
-        b.text(0, 0.2, CITE, fontsize=10, color="#888888", va="bottom")
+            b.text(x0, 4.6, body, fontsize=10.5, color="#444444", va="top")
+        b.text(0, 0.2, "standard long-channel equations (SPICE Level 1)", fontsize=10,
+               color="#AAAAAA", va="bottom")
         save(fig, "law_badged")
 
 
@@ -1173,7 +1175,7 @@ def main() -> int:
     law_symbols()
     uv_bridge()
     mos_regions()
-    ours_vs_book()
+    ours_vs_device()
     law_badged()
     four_table()
     why_chain()
