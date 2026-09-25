@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 29 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 32 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout come from Simon's 09-18 deck; none of his
 slides are carried over.
@@ -31,23 +31,26 @@ asserted rather than shown.
 | 10 | 6 · What the file fixes, and what it leaves open |
 | 11 | 7 · One more measurement, and a stressed pulse is the one |
 | 12 | 8 · But a few samples need a family of shapes to choose from |
-| 13 | 9 · Where the stage law comes from |
-| 14 | 10 · The four numbers, and what each one is |
-| 15 | 11 · What each of the four actually does |
-| 16 | 12 · Why a chain, and not one stage |
-| 17 | 12 · So: K identical stages, then the file's own map |
-| 18 | 13 · Before the recipe: C_comp is an input, and this file's is wrong |
-| 19 | 14 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
-| 20 | 15 · Recipe step 2 of 4 — enumerate what the file cannot choose |
-| 21 | 16 · Recipe step 3 of 4 — the stressed run sets the amplitude |
-| 22 | 17 · Recipe step 4 of 4 — the same run picks one of the nine |
-| 23 | 18 · The recipe, end to end |
-| 24 | Result · the three on one bench, at the deepest pulse |
-| 25 | Result · every buffer, worst of its stressed widths |
-| 26 | Result · what this does not cover yet |
-| 27 | Backup · where Ku(t) comes from |
-| 28 | Backup · the nine candidates as waveforms |
-| 29 | Backup · inv_chain's input threshold |
+| 13 | 9 · What the stage law is a model of |
+| 14 | 10 · The law, symbol by symbol |
+| 15 | 10 · The four numbers that leaves |
+| 16 | 11 · What each of the four actually does |
+| 17 | 12 · Why a chain, and not one stage |
+| 18 | 12 · So: K identical stages, then the file's own map |
+| 19 | 13 · Before the recipe: C_comp is an input, and this file's is wrong |
+| 20 | 14 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
+| 21 | 15 · Recipe step 2 of 4 — enumerate what the file cannot choose |
+| 22 | 16 · Recipe step 3 of 4 — the stressed run sets the amplitude |
+| 23 | 17 · Recipe step 4 of 4 — the same run picks one of the nine |
+| 24 | 18 · The recipe, end to end |
+| 25 | Result · ex2 |
+| 26 | Result · inv_chain |
+| 27 | Result · io_buf |
+| 28 | Result · every buffer, worst of its stressed widths |
+| 29 | Result · what this does not cover yet |
+| 30 | Backup · where Ku(t) comes from |
+| 31 | Backup · the nine candidates as waveforms |
+| 32 | Backup · inv_chain's input threshold |
 
 ## Built on the 09-17 method film
 
@@ -182,6 +185,34 @@ bars are drawn hatched and excluded from the comparison rather than scored as a 
 Native and track 1 are read from the same five widths per buffer:
 `gate_cascade_prototype_2026-09-09/<dev>/sweep.csv` and
 `selector_from_one_run_2026-09-23/selector_picks.csv`.
+
+### The fourth pass: the equation, and results per buffer
+
+* **What the equivalent circuit is a model OF.** Slide 13 now zooms in from ex2's own
+  schematic: the predriver chain, one inverter of it drawn as transistors, and then — during a
+  rise, with the NMOS off and the PMOS saturated — the current source into a capacitance. The
+  current-source-and-capacitor picture arrives as a consequence instead of as an assertion.
+* **Every symbol in the law now has a picture.** Slide 14 is the equation over three panels:
+  `dv/dt` as a rise-over-run on the stage's own output (which is where "swings per nanosecond"
+  comes from), `h(u)` as the share of full current against the input with the dead zone below
+  `vt` shaded, and the taper against how far the output has got.
+* **The parameter table moved to a slide of its own.** On slide 14 it was crowding the thing it
+  was supposed to explain.
+* **The results are per buffer**, three depths each — roughly 50 / 70 / 90 % of each ladder.
+  Only the deepest rung of each was measured, so the other two are out-of-sample predictions,
+  and the slides say so. Numbers, native against track 1:
+
+  | buffer | deepest | middle | mildest |
+  |---|---|---|---|
+  | ex2 | +70.7 / −1.8 % | +24.0 / −7.4 % | +1.3 / −6.6 % |
+  | inv_chain | +87.2 / −3.6 % | +31.7 / +5.0 % | +7.4 / −0.7 % |
+  | io_buf | −20.4 / +1.6 % | −10.2 / +7.0 % | −5.0 / +4.7 % |
+
+  Worth saying out loud at the meeting: on ex2 native comes right by the mildest rung (+1.3 %)
+  while track 1 sits at −6.6 %. Track 1 is flat across the ladder where native collapses, which
+  is the trade, but it is not uniformly better at every depth.
+* **`bullets()` now refuses an unpaired `*`.** Three literal asterisks reached rendered slides
+  across these rounds because the emphasis markers are `**` and a single one renders as itself.
 
 ## Bench and sources
 

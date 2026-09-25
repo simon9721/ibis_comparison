@@ -71,7 +71,11 @@ def bullets(slide, items, size=18):
         p._p.get_or_add_pPr().set("latinLnBrk", "0")
         if t.startswith("  "):          # an indented line is a sub-item of the one above it
             p.level = 1
-        for j, seg in enumerate(t.strip().split("**")):
+        segs = t.strip().split("**")
+        # a lone "*" is emphasis I meant to write as "**": it renders as a literal asterisk
+        # on the slide, and three of them shipped before this check existed
+        assert "*" not in "".join(segs), f"unpaired * in bullet: {t[:60]}"
+        for j, seg in enumerate(segs):
             if not seg:
                 continue
             r = p.add_run()
@@ -246,26 +250,37 @@ slide("8 · But a few samples need a family of shapes to choose from",
       notes="This rules out RC cascades, delay-plus-RC and superposition - which is what the "
             "shipped model is built from.")
 
-slide("9 · Where the stage law comes from",
-      ["Three facts about one CMOS inverter driving the next one's gate. Each contributes one "
-       "factor, and together they are the whole law — there is nothing else in it.",
-       "**A constant current into a fixed capacitance is a constant slope. That is the "
-       "backbone; the threshold and the taper only modulate it.**"],
+slide("9 · What the stage law is a model of",
+      ["Take one inverter out of ex2's predriver and draw it as transistors. While its output "
+       "is rising the NMOS is off and the PMOS is **saturated**, so the current it passes does "
+       "not depend on how far the output has got.",
+       "**A fixed current into a fixed capacitance is a straight ramp.** That ramp is the "
+       "backbone of the law; the next slide adds the two things that modulate it."],
       F24 / "stage_law.png",
       notes="Left: the input and the threshold it must pass. Right: the output the constant "
             "current produces. The next slide turns this picture into the four numbers.")
 
-slide("10 · The four numbers, and what each one is",
-      ["**s_up and s_dn are slopes, not currents** — v is normalised, so dv/dt is swings per "
-       "nanosecond. **x_lin** is named for the MOSFET's linear (triode) region.",
-       "**Does the file not give vt?** Its Vinh/Vinl are the input **pin's** thresholds, and we "
-       "do use those — for our input comparator. vt is an **internal** stage's threshold, and "
-       "the file never describes that node."],
-      F24 / "four_numbers.png",
-      size=16,
-      notes="Colours tie each term of the equation to its row. u is the stage's input, v its "
-            "output, both on their own 0-to-1 swing. On inv_chain the file's Vinh is 2.0 V on "
-            "a 1.8 V part, which is why the converter guards it - the backup slide.")
+slide("10 · The law, symbol by symbol",
+      ["That ramp, times the two things that modulate it. Each symbol below is one picture.",
+       "**dv/dt is a slope, not a current** — v runs 0 at rest to 1 at full swing, so it is "
+       "swings per nanosecond. **h(u)** is the **share** of its full current the device "
+       "passes."],
+      F24 / "law_symbols.png",
+      notes="u is the stage's input, v its output, both on their own 0-to-1 swing. The minus "
+            "term is the same three factors mirrored for the discharge.")
+
+slide("10 · The four numbers that leaves",
+      ["Four free numbers and no more. **s_up and s_dn are slopes** — ex2 fits 2.59/ns, "
+       "0.39 ns to cross a stage's swing flat out. **x_lin** is named for the MOSFET's linear "
+       "(triode) region.",
+       "**Does the file not give vt?** Its Vinh/Vinl are the input **pin's** thresholds, and "
+       "the converter does use those, for our input comparator. vt is an **internal** stage's "
+       "threshold — the file never describes that node."],
+      F24 / "four_table.png",
+      size=17,
+      notes="On inv_chain the file's Vinh is 2.0 V on a 1.8 V part, which is why the converter "
+            "guards it - the backup slide. p is assumed 1 because it is invisible at full "
+            "swing: every p from 1 to 2 fits to rms 0.002-0.007.")
 
 slide("11 · What each of the four actually does",
       ["Each swept on its own about the value the fit chose, on the 810 ps pulse. The thick black "
@@ -371,14 +386,23 @@ slide("18 · The recipe, end to end",
       notes="The same block diagram as the chain slide, with the recipe attached. This is the "
             "slide to leave up during questions.")
 
-slide("Result · the three on one bench, at the deepest pulse",
-      ["Transistor in black, HSPICE native IBIS dotted, track 1 in teal. Same netlist, same "
-       "stimulus, same load.",
-       "**Native IBIS is +71 %, +87 % and −20 % on the three buffers. Track 1 is −2 %, −4 % "
-       "and +2 %.**"],
-      F24 / "three_way.png",
-      notes="The deepest rung of each ladder: ex2 810 ps, inv_chain 104 ps, io_buf 1505 ps. "
-            "io_buf's deepest rung is 37 % of its swing, not 50 - its ladder is shallower.")
+for _dev, _cal, _line in (
+        ("ex2", "810 ps", "Native IBIS collapses from +71 % to +1 % as the pulse lengthens. "
+                          "Track 1 holds −2, −7, −7 % — flat, and slightly shallow away "
+                          "from the rung it was calibrated on."),
+        ("inv_chain", "104 ps", "Native IBIS runs +87 % at the deepest and +7 % at the "
+                                "mildest. Track 1 holds −4, +5, −1 % across the ladder."),
+        ("io_buf", "1505 ps", "io_buf's ladder is shallower — 37 % is as deep as its pulse "
+                              "goes, and native is only −20 % there. Track 1 is +2, +7, "
+                              "+5 %.")):
+    slide(f"Result · {_dev}",
+          [f"Transistor in black, HSPICE native IBIS dotted, track 1 in teal. Only the "
+           f"**{_cal}** rung was measured; the other two are predictions.",
+           f"**{_line}**"],
+          F24 / f"result_{_dev}.png",
+          notes=f"Native from the delay_cmd waveform set, track 1 from the selector's pick for "
+                f"{_dev}. The calibration used the deepest rung only, so the milder two are "
+                f"out-of-sample.")
 
 slide("Result · every buffer, worst of its stressed widths",
       ["**12 of 12 within ±10 % against the transistor; mean 6.9 %.** Native IBIS, where it "

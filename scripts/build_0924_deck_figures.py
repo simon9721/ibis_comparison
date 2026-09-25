@@ -50,6 +50,8 @@ DEV = {
     "ex2": ("ex2_c1.7", "v(xdut.n4)", "n4", [810, 830, 858, 895, 975], 1.75, 2.2),
     "inv_chain": ("inv_chain_c0.6", "v(xdut.vout7)", "vout7", [104, 106, 111, 119, 135], 1.45, 0.45),
 }
+RESULT_W = {"ex2": (810, 858, 975), "inv_chain": (104, 111, 135),
+            "io_buf": (1505, 1853, 2354)}   # ~50 / 70 / 90 % of each ladder
 DEPTH_PCT = {810: 50, 830: 60, 858: 70, 895: 80, 975: 90,
              104: 50, 106: 60, 111: 70, 119: 80, 135: 90}
 
@@ -269,92 +271,139 @@ def ku_consequence(dev: str) -> None:
         save(fig, f"ku_consequence_{dev}")
 
 
+def _inv(ax, x, y, w=3.0, h=2.6, color="#555555", lw=2.0, fill="none"):
+    """A logic inverter triangle with its bubble, pointing right. Returns (in_x, out_x)."""
+    ax.add_patch(mpatches.Polygon([(x, y - h / 2), (x, y + h / 2), (x + w * 0.78, y)],
+                                  closed=True, fill=fill != "none", facecolor=fill,
+                                  edgecolor=color, lw=lw))
+    ax.add_patch(mpatches.Circle((x + w * 0.88, y), w * 0.10, fill=True, facecolor="white",
+                                 edgecolor=color, lw=lw))
+    return x, x + w * 0.98
+
+
+def _fet(ax, x, y, kind="n", color="#555555", lw=2.0, s=1.0):
+    """A MOSFET: gate bar on the left, channel on the right, source and drain leads."""
+    ax.plot([x, x + 0.55 * s], [y, y], color=color, lw=lw)                 # gate lead
+    ax.plot([x + 0.55 * s] * 2, [y - 0.62 * s, y + 0.62 * s], color=color, lw=lw)   # gate bar
+    ax.plot([x + 0.78 * s] * 2, [y - 0.62 * s, y + 0.62 * s], color=color, lw=lw)   # channel
+    for dy in (-0.52 * s, 0.52 * s):
+        ax.plot([x + 0.78 * s, x + 1.45 * s], [y + dy, y + dy], color=color, lw=lw)
+    ax.plot([x + 1.45 * s] * 2, [y - 0.52 * s, y - 1.25 * s], color=color, lw=lw)
+    ax.plot([x + 1.45 * s] * 2, [y + 0.52 * s, y + 1.25 * s], color=color, lw=lw)
+    if kind == "p":                                                         # inversion bubble
+        ax.add_patch(mpatches.Circle((x + 0.40 * s, y), 0.15 * s, fill=True,
+                                     facecolor="white", edgecolor=color, lw=lw))
+    return x + 1.45 * s
+
+
+def _cap(ax, x, y, color="#555555", lw=2.4, s=1.0):
+    """A capacitor to ground, drawn downward from (x, y)."""
+    ax.plot([x, x], [y, y - 0.55 * s], color=color, lw=lw * 0.8)
+    for dy, half in ((-0.55 * s, 0.55 * s), (-0.95 * s, 0.55 * s)):
+        ax.plot([x - half, x + half], [y + dy, y + dy], color=color, lw=lw)
+    ax.plot([x, x], [y - 0.95 * s, y - 1.5 * s], color=color, lw=lw * 0.8)
+    for i, half in enumerate((0.48 * s, 0.30 * s, 0.14 * s)):               # ground
+        ax.plot([x - half, x + half], [y - 1.5 * s - i * 0.2 * s] * 2, color=color, lw=lw)
+
+
 def stage_law() -> None:
-    """Where the stage law comes from: three facts about a CMOS inverter, one term each."""
-    XLIN, VT, SUP = 0.45, 0.45, 0.72
-    t = np.linspace(0, 4.6, 900)
-    u = np.clip((t - 0.30) / 1.50, 0, 1)
+    """What the current-source-and-capacitor picture is a model OF: one predriver inverter."""
     with plt.rc_context(BODY):
-        fig, ax = plt.subplots(1, 3, figsize=(13.0, 4.0))
+        fig, ax = plt.subplots(1, 3, figsize=(13.4, 4.3))
+        for a in ax:
+            a.axis("off")
 
-        # --- 1. a saturated device is a constant current into the next gate --------
+        # --- A. where it sits: ex2's chain, with one inverter picked out -----------
         a = ax[0]
-        a.set_xlim(0, 10); a.set_ylim(0, 11.2); a.axis("off")
-        a.add_patch(mpatches.Circle((2.5, 6.4), 1.05, fill=False, ec=REAL, lw=2.4))
-        a.annotate("", (2.5, 5.9), (2.5, 6.9),
-                   arrowprops=dict(arrowstyle="-|>", color=REAL, lw=2.2))
-        a.text(1.75, 7.9, "I", ha="center", fontsize=15, color=REAL, fontweight="bold",
-               family="monospace")
-        a.text(5.0, 10.0, "while it is saturated the current ignores v", ha="center",
-               va="top", fontsize=11, color=REAL, fontweight="bold")
-        a.plot([2.5, 2.5], [7.45, 8.9], color="#555555", lw=2.0)
-        a.plot([2.5, 7.2], [8.9, 8.9], color="#555555", lw=2.0)
-        a.plot([2.5, 2.5], [5.35, 2.2], color="#555555", lw=2.0)
-        a.plot([2.5, 7.2], [2.2, 2.2], color="#555555", lw=2.0)
-        a.plot([7.2, 7.2], [8.9, 6.4], color="#555555", lw=2.0)
-        a.plot([7.2, 7.2], [2.2, 4.9], color="#555555", lw=2.0)
-        for y in (6.4, 4.9):
-            a.plot([6.2, 8.2], [y, y], color="#555555", lw=3.0)
-        a.text(8.6, 5.65, "C", fontsize=15, color="#555555", fontweight="bold",
-               family="monospace", va="center")
-        a.text(8.6, 4.5, "the next\nstage's gate", fontsize=10, color="#888888", va="top")
-        a.set_title("1.  a constant current into a fixed capacitance\nis a constant SLOPE",
-                    fontsize=12, fontweight="bold")
-        a.text(5.0, 0.4, "dv/dt  =  I / (C\u00b7V_swing)  \u2261  s_up", ha="center",
-               fontsize=13.5, family="monospace", fontweight="bold", color=REAL)
+        a.set_xlim(-1, 34.5); a.set_ylim(0, 20)
+        a.plot([1.5, 4.0], [11, 11], color="#555555", lw=2.0)
+        xs = [4.0, 11.0, 18.0]
+        for i, x in enumerate(xs):
+            hot = i == 2
+            _inv(a, x, 11, color=REAL if hot else "#555555", lw=2.6 if hot else 2.0,
+                 fill="#EAF6F4" if hot else "none")
+            if i < 2:
+                a.plot([x + 2.94, xs[i + 1]], [11, 11], color="#555555", lw=2.0)
+        a.plot([20.94, 24.5], [11, 11], color=REAL, lw=2.6)
+        a.add_patch(mpatches.FancyBboxPatch((24.5, 7.4), 6.4, 7.2, boxstyle="round,pad=0.25",
+                                            fc="#F2F2F2", ec="#555555", lw=2.0))
+        a.text(27.7, 11, "output\nstage", ha="center", va="center", fontsize=11,
+               color="#555555", fontweight="bold")
+        a.plot([30.9, 33.0], [11, 11], color="#555555", lw=2.0)
+        for x, lab, col, ha in ((1.6, "in", "#555555", "left"),
+                                (10.4, "n3", "#555555", "left"),
+                                (22.6, "n4", REAL, "center"),
+                                (33.6, "pad", "#555555", "right")):
+            a.text(x, 16.3, lab, fontsize=11.5, fontweight="bold", color=col, ha=ha)
+        a.add_patch(mpatches.FancyBboxPatch((17.2, 8.4), 4.6, 5.2, boxstyle="round,pad=0.3",
+                                            fc="none", ec=REAL, lw=2.2, ls="--"))
+        a.annotate("", (19.5, 7.6), (19.5, 4.6),
+                   arrowprops=dict(arrowstyle="<|-", color=REAL, lw=2.2))
+        a.text(19.5, 3.6, "this one, and every\ninverter like it", ha="center", va="top",
+               fontsize=11.5, fontweight="bold", color=REAL)
+        a.set_title("A.  ex2's predriver", fontsize=12, fontweight="bold")
 
-        # --- 2. nothing happens until the input passes the threshold ---------------
+        # --- B. that inverter, as transistors --------------------------------------
         b = ax[1]
-        hh = np.clip((u - VT) / (1 - VT), 0, 1)
-        b.plot(t, u, color="#999999", lw=2.4, label="its input, u")
-        b.plot(t, hh, color=OURS, lw=3.4, label="its drive, h(u)")
-        b.axhline(VT, color=OURS, lw=1.6, ls="--")
-        b.text(4.5, VT + 0.03, "vt", color=OURS, fontsize=13, fontweight="bold",
-               family="monospace", ha="right")
-        b.axvspan(0, float(t[np.argmax(u > VT)]), color="#BBBBBB", alpha=0.22)
-        b.text(0.15, 0.62, "dead\nzone", fontsize=10.5, color="#777777",
-               fontweight="bold", va="center")
-        b.set_ylim(-0.05, 1.18); b.set_xlim(0, 4.6)
-        b.set_xlabel("time"); b.set_ylabel("0 to 1")
-        b.grid(alpha=0.3)
-        b.legend(loc="lower right", fontsize=10)
-        b.set_title("2.  the device conducts nothing until its\ninput is past vt",
-                    fontsize=12, fontweight="bold")
+        b.set_xlim(-4.2, 20); b.set_ylim(0, 20)
+        b.plot([4.0, 16.0], [18.2, 18.2], color="#555555", lw=2.4)
+        b.text(4.0, 19.0, "VDD", fontsize=11, color="#555555", fontweight="bold")
+        _fet(b, 4.2, 14.4, "p")
+        _fet(b, 4.2, 6.2, "n")
+        b.plot([5.65, 5.65], [15.65, 18.2], color="#555555", lw=2.0)      # PMOS to VDD
+        b.plot([5.65, 5.65], [4.95, 2.6], color="#555555", lw=2.0)        # NMOS to gnd
+        for i, half in enumerate((0.9, 0.58, 0.28)):
+            b.plot([5.65 - half, 5.65 + half], [2.6 - i * 0.42] * 2, color="#555555", lw=2.2)
+        b.plot([5.65, 5.65], [13.15, 7.45], color="#555555", lw=2.0)      # the output node
+        b.plot([4.2, 1.2], [14.4, 14.4], color="#555555", lw=2.0)
+        b.plot([4.2, 1.2], [6.2, 6.2], color="#555555", lw=2.0)
+        b.plot([1.2, 1.2], [6.2, 14.4], color="#555555", lw=2.0)
+        b.plot([1.2, -1.4], [10.3, 10.3], color=OURS, lw=2.4)
+        b.text(-1.6, 10.3, "u", fontsize=14, color=OURS, fontweight="bold",
+               family="monospace", ha="right", va="center")
+        b.text(-1.6, 8.8, "its input", fontsize=10, color="#888888", ha="right", va="top")
+        b.plot([5.65, 12.0], [10.3, 10.3], color=REAL, lw=2.6)
+        b.text(8.4, 11.1, "v", fontsize=14, color=REAL, fontweight="bold", family="monospace")
+        _cap(b, 12.0, 10.3, color="#555555")
+        b.text(13.0, 10.0, "C  \u2014  the next\nstage's gate", fontsize=10.5,
+               color="#555555", va="center")
+        b.set_title("B.  any one of them, as transistors", fontsize=12, fontweight="bold")
 
-        # --- 3. near the rail it stops being a current source ----------------------
+        # --- C. during a rise, the PMOS is a current source -------------------------
         c = ax[2]
-        gv = np.linspace(0, 1, 400)
-        c.plot(gv, np.minimum(1.0, (1 - gv) / XLIN), color="#1F6F8B", lw=3.4)
-        c.axvspan(1 - XLIN, 1, color="#1F6F8B", alpha=0.13)
-        c.annotate("", (1.0, 1.06), (1 - XLIN, 1.06),
-                   arrowprops=dict(arrowstyle="<|-|>", color="#1F6F8B", lw=1.8))
-        c.text(1 - XLIN / 2, 1.09, "x_lin", ha="center", fontsize=13, color="#1F6F8B",
-               fontweight="bold", family="monospace")
-        c.annotate("linear (triode) region:\nnow a resistor, so the\nslope tapers to zero",
-                   (0.78, 0.40), xytext=(0.03, 0.46), textcoords="data", ha="left",
-                   va="center", fontsize=10.5, color="#1F6F8B", fontweight="bold",
-                   arrowprops=dict(arrowstyle="->", color="#1F6F8B", lw=1.5))
-        c.text(0.26, 0.93, "saturated: full slope", ha="center", fontsize=10.5,
-               color="#777777", fontweight="bold", va="top")
-        c.set_xlim(0, 1.02); c.set_ylim(0, 1.30)
-        c.set_xlabel("the output v, 0 to 1")
-        c.set_ylabel("fraction of full slope")
-        c.grid(alpha=0.3)
-        c.set_title("3.  close to the rail V_DS collapses, it leaves\nsaturation and tapers off",
-                    fontsize=12, fontweight="bold")
+        c.set_xlim(0, 20); c.set_ylim(0, 20)
+        c.plot([3.0, 13.0], [17.6, 17.6], color="#555555", lw=2.4)
+        c.text(3.0, 18.4, "VDD", fontsize=11, color="#555555", fontweight="bold")
+        c.add_patch(mpatches.Circle((6.0, 14.4), 1.5, fill=False, ec=REAL, lw=2.6))
+        c.annotate("", (6.0, 13.3), (6.0, 15.5),
+                   arrowprops=dict(arrowstyle="-|>", color=REAL, lw=2.4))
+        c.text(7.9, 14.4, "I", fontsize=15, color=REAL, fontweight="bold",
+               family="monospace", va="center")
+        c.plot([6.0, 6.0], [15.9, 17.6], color="#555555", lw=2.0)
+        c.plot([6.0, 6.0], [12.9, 10.3], color=REAL, lw=2.6)
+        c.plot([6.0, 12.0], [10.3, 10.3], color=REAL, lw=2.6)
+        c.text(8.6, 11.1, "v", fontsize=14, color=REAL, fontweight="bold", family="monospace")
+        _cap(c, 12.0, 10.3, color="#555555")
+        c.text(13.0, 10.3, "C", fontsize=14, color="#555555", fontweight="bold",
+               family="monospace", va="center")
+        c.text(0.4, 7.6, "The NMOS is off and the PMOS is saturated, so\n"
+                         "its current does not depend on v. A fixed current\n"
+                         "into a fixed capacitance is a straight ramp.",
+               fontsize=11, color="#333333", va="top")
+        c.text(0.4, 1.2, "dv/dt  =  I / (C\u00b7V_swing)  \u2261  s_up", fontsize=13.5,
+               family="monospace", fontweight="bold", color=REAL, va="bottom")
+        c.set_title("C.  and during a rise, this", fontsize=12, fontweight="bold")
 
-        fig.suptitle("ONE STAGE  |  three facts about a CMOS inverter driving the next one",
-                     fontsize=14, fontweight="bold")
-        fig.tight_layout(rect=(0, 0, 1, 0.90))
+        fig.tight_layout()
         save(fig, "stage_law")
 
 
-def four_numbers() -> None:
-    """The three facts assembled, and what each of the four fitted numbers is."""
+def law_symbols() -> None:
+    """The equation with every symbol in it given its own picture."""
     C = {"s": REAL, "h": OURS, "x": "#1F6F8B", "v": "#333333"}
+    XLIN, VT = 0.45, 0.45
 
     def run(ax, fig, x0, y, parts, fs):
-        """Lay coloured monospace fragments end to end; return where each one landed."""
         r = fig.canvas.get_renderer()
         x, spans = x0, []
         for txt, col in parts:
@@ -366,45 +415,108 @@ def four_numbers() -> None:
         return spans
 
     with plt.rc_context(BODY):
-        fig = plt.figure(figsize=(13.4, 4.9))
-        a = fig.add_axes([0, 0.58, 1, 0.40])
-        a.axis("off"); a.set_xlim(0, 100); a.set_ylim(0, 30)
-        a.text(50, 28, "the three facts, multiplied together \u2014 charging up, and the mirror "
-                       "of it discharging back",
-               ha="center", fontsize=12.5, fontweight="bold", color="#333333")
-        sp = run(a, fig, 2.5, 18, [
-            ("dv/dt  =  ", C["v"]),
-            ("s_up", C["s"]),                                   # 1: fact 1
-            ("\u00b7", C["v"]),
-            ("h(u)", C["h"]),                                    # 3: fact 2
-            ("\u00b7", C["v"]),
-            ("min(1, (1\u2212v)/x_lin)", C["x"]),                 # 5: fact 3
-            ("   \u2212   ", C["v"]),
-            ("s_dn", C["s"]), ("\u00b7", C["v"]), ("h(1\u2212u)", C["h"]),
-            ("\u00b7", C["v"]), ("min(1, v/x_lin)", C["x"])], 14.5)
-        # the fact labels are placed under the fragments they actually mark
-        for i, n, col in ((1, "1", C["s"]), (3, "2", C["h"]), (5, "3", C["x"])):
+        fig = plt.figure(figsize=(13.2, 5.0))
+        top = fig.add_axes([0, 0.72, 1, 0.26])
+        top.axis("off"); top.set_xlim(0, 100); top.set_ylim(0, 10)
+        sp = run(top, fig, 6.0, 6.4, [
+            ("dv/dt", C["v"]), ("  =  ", "#888888"),
+            ("s_up", C["s"]), ("\u00b7", "#888888"),
+            ("h(u)", C["h"]), ("\u00b7", "#888888"),
+            ("min(1, (1\u2212v)/x_lin)", C["x"]),
+            ("     \u2212     ", "#888888"),
+            ("s_dn", C["s"]), ("\u00b7", "#888888"), ("h(1\u2212u)", C["h"]),
+            ("\u00b7", "#888888"), ("min(1, v/x_lin)", C["x"])], 15.5)
+        for i, n, col in ((0, "1", C["v"]), (4, "2", C["h"]), (6, "3", C["x"])):
             mid = (sp[i][0] + sp[i][1]) / 2
-            a.plot([sp[i][0], sp[i][1]], [13.6, 13.6], color=col, lw=2.2,
-                   solid_capstyle="butt")
-            a.text(mid, 10.2, n, fontsize=12, color=col, fontweight="bold", ha="center")
-        key = run(a, fig, sp[5][1] + 26, 10.6, [
-            ("1", C["s"]), (" the slope    ", "#666666"),
-            ("2", C["h"]), (" the threshold    ", "#666666"),
-            ("3", C["x"]), (" the taper", "#666666")], 11.5)
-        sp2 = run(a, fig, 2.5, 3.0, [
-            ("with   h(u) = clip((u \u2212 vt)/(1 \u2212 vt), 0, 1)", C["h"])], 13)
-        a.text(sp2[-1][1] + 4, 3.0, "u = the stage's input,   v = its output \u2014 both 0 at "
-                                    "rest, 1 at their own full swing",
-               fontsize=11.5, family="monospace", color="#888888", va="center")
+            top.plot([sp[i][0], sp[i][1]], [3.2, 3.2], color=col, lw=2.4,
+                     solid_capstyle="butt")
+            top.text(mid, 1.2, n, fontsize=13, color=col, fontweight="bold", ha="center")
+        top.text(50, 9.6, "charging up, then the mirror of it discharging back",
+                 ha="center", va="top", fontsize=11.5, color="#888888")
 
-        b = fig.add_axes([0.025, 0.03, 0.95, 0.50])
+        gs = fig.add_gridspec(1, 3, left=0.055, right=0.985, bottom=0.10, top=0.60, wspace=0.30)
+
+        # --- 1. dv/dt ---------------------------------------------------------------
+        a = fig.add_subplot(gs[0])
+        t = np.linspace(0, 4.6, 600)
+        u = np.clip((t - 0.30) / 1.50, 0, 1)
+        h = np.clip((u - VT) / (1 - VT), 0, 1)
+        v = np.zeros_like(t)
+        for i in range(1, len(t)):
+            v[i] = min(1.0, v[i - 1] + 0.72 * h[i] * min(1.0, (1 - v[i - 1]) / XLIN)
+                       * (t[i] - t[i - 1]))
+        a.plot(t, v, color=C["v"], lw=3.4)
+        i0 = int(np.argmax(v > 0.28)); i1 = int(np.argmax(v > 0.58))
+        a.plot([t[i0], t[i1]], [v[i0], v[i0]], color=REAL, lw=2.2)
+        a.plot([t[i1], t[i1]], [v[i0], v[i1]], color=REAL, lw=2.2)
+        a.text((t[i0] + t[i1]) / 2, v[i0] - 0.09, "run", ha="center", va="top", fontsize=10.5,
+               color=REAL, fontweight="bold")
+        a.text(t[i1] + 0.08, (v[i0] + v[i1]) / 2, "rise", fontsize=10.5, color=REAL,
+               fontweight="bold", va="center")
+        a.annotate("dv/dt is this slope", (t[i1] + 0.5, (v[i0] + v[i1]) / 2 + 0.16),
+                   xytext=(2.5, 0.30), textcoords="data", fontsize=11, fontweight="bold",
+                   color=REAL, arrowprops=dict(arrowstyle="->", color=REAL, lw=1.5))
+        a.set_ylim(-0.06, 1.15); a.set_xlim(0, 4.6)
+        a.set_xlabel("time (ns)"); a.set_ylabel("v \u2014 the stage's output")
+        a.grid(alpha=0.3)
+        a.set_title("1.  v is 0 at rest and 1 at full swing, so\ndv/dt is SWINGS PER NANOSECOND",
+                    fontsize=11.5, fontweight="bold")
+
+        # --- 2. h(u) ----------------------------------------------------------------
+        b = fig.add_subplot(gs[1])
+        uu = np.linspace(0, 1, 400)
+        b.plot(uu, np.clip((uu - VT) / (1 - VT), 0, 1), color=C["h"], lw=3.4)
+        b.axvspan(0, VT, color="#BBBBBB", alpha=0.22)
+        b.text(VT / 2, 0.55, "input below vt:\nthe device is off,\nh = 0", ha="center",
+               va="center", fontsize=10.5, color="#777777", fontweight="bold")
+        b.plot([VT, VT], [0, 1.08], color=C["h"], lw=1.6, ls="--")
+        b.text(VT, 1.11, "vt", ha="center", fontsize=13, color=C["h"], fontweight="bold",
+               family="monospace")
+        b.text(0.98, 1.04, "h = 1 at its rail", ha="right", va="bottom",
+               fontsize=10.5, color=C["h"], fontweight="bold")
+        b.set_xlim(0, 1.02); b.set_ylim(-0.05, 1.30)
+        b.set_xlabel("u \u2014 the stage's input, 0 to 1")
+        b.set_ylabel("h(u)")
+        b.grid(alpha=0.3)
+        b.set_title("2.  h(u) is the SHARE of its full current\nthe device passes, set by its "
+                    "input", fontsize=11.5, fontweight="bold")
+
+        # --- 3. the taper -----------------------------------------------------------
+        c = fig.add_subplot(gs[2])
+        gv = np.linspace(0, 1, 400)
+        c.plot(gv, np.minimum(1.0, (1 - gv) / XLIN), color=C["x"], lw=3.4)
+        c.axvspan(1 - XLIN, 1, color=C["x"], alpha=0.13)
+        c.annotate("", (1.0, 1.14), (1 - XLIN, 1.14),
+                   arrowprops=dict(arrowstyle="<|-|>", color=C["x"], lw=1.8))
+        c.text(1 - XLIN / 2, 1.18, "x_lin", ha="center", fontsize=13, color=C["x"],
+               fontweight="bold", family="monospace")
+        c.text(0.03, 0.46, "saturated:\nfull slope", fontsize=10.5, color="#777777",
+               fontweight="bold", va="center")
+        c.annotate("leaves saturation,\nbecomes a resistor,\ntapers to zero",
+                   (0.80, 0.40), xytext=(0.03, 0.14), textcoords="data", ha="left",
+                   va="center", fontsize=10.5, color=C["x"], fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=C["x"], lw=1.5))
+        c.set_xlim(0, 1.02); c.set_ylim(0, 1.36)
+        c.set_xlabel("v \u2014 how far the output has got")
+        c.set_ylabel("fraction of full slope")
+        c.grid(alpha=0.3)
+        c.set_title("3.  and it gives that current up as it\nnears the destination rail",
+                    fontsize=11.5, fontweight="bold")
+
+        save(fig, "law_symbols")
+
+
+def four_table() -> None:
+    """The four fitted numbers: what each is, what it decides, where it comes from."""
+    C = {"s": REAL, "h": OURS, "x": "#1F6F8B"}
+    with plt.rc_context(BODY):
+        fig, b = plt.subplots(figsize=(13.0, 4.4))
         b.axis("off"); b.set_xlim(0, 100); b.set_ylim(0, 100)
-        cols = [1.5, 10.5, 45, 76]
+        cols = [1.5, 11, 45, 76]
         for cx, hd in zip(cols, ["", "is", "what it decides", "where its value comes from"]):
-            b.text(cx, 97, hd, fontsize=11.5, fontweight="bold", color="#777777")
+            b.text(cx, 99, hd, fontsize=12, fontweight="bold", color="#777777")
         rows = [
-            ("s_up", C["s"], "the fastest it can charge,\nin swings per ns",
+            ("s_up", C["s"], "the fastest it can charge,\nin swings per nanosecond",
              "where the gate gets to\nbefore the pulse ends", "fitted to the file's Ku(t)"),
             ("s_dn", C["s"], "the same on the way back",
              "how quickly the gate\nlets go again", "fitted to the file's Ku(t)"),
@@ -415,19 +527,64 @@ def four_numbers() -> None:
              "the shape of the approach\nto the rail", "fitted (pinned 0.45 on 10 of 12)"),
         ]
         for i, (sym, col, is_, dec, src) in enumerate(rows):
-            y = 90 - i * 22
-            b.plot([0.0, 0.8], [y - 1.5, y - 1.5], color=col, lw=5, solid_capstyle="butt")
-            for cx, txt, fs, cc in ((cols[0], sym, 13.5, col), (cols[1], is_, 11.5, "#222222"),
-                                    (cols[2], dec, 11.5, "#222222"), (cols[3], src, 11.5,
-                                                                      "#222222")):
-                b.text(cx, y, txt, fontsize=fs, color=cc, va="top",
-                       family="monospace" if cx == cols[0] else None,
-                       fontweight="bold" if cx == cols[0] else None)
-        b.text(0, 1, "None of these is a current. v is normalised, so dv/dt is swings per "
-                     "nanosecond and s_up is a slope \u2014 ex2 fits 2.59/ns, i.e. 0.39 ns to "
-                     "cross its swing flat out.",
+            y = 88 - i * 22
+            b.plot([0.0, 0.8], [y - 1.5, y - 1.5], color=col, lw=6, solid_capstyle="butt")
+            for cx, txt, fs, mono in ((cols[0], sym, 14, True), (cols[1], is_, 12, False),
+                                      (cols[2], dec, 12, False), (cols[3], src, 12, False)):
+                b.text(cx, y, txt, fontsize=fs, color=col if mono else "#222222", va="top",
+                       family="monospace" if mono else None,
+                       fontweight="bold" if mono else None)
+        b.text(0, 1, "p, the curvature of h(u), is a fifth number \u2014 but it is invisible at "
+                     "full swing (every p from 1 to 2 fits to rms 0.002\u20130.007), so it is "
+                     "assumed to be 1 rather than fitted.",
                fontsize=11.5, color="#B0563C", fontweight="bold", va="bottom")
-        save(fig, "four_numbers")
+        fig.tight_layout()
+        save(fig, "four_table")
+
+
+def buffer_result(dev: str) -> None:
+    """One buffer, three stress depths: transistor, HSPICE native IBIS, track 1."""
+    import build_explainer_figures as bex
+    widths = RESULT_W[dev]
+    t1 = _pick_build(dev)
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, len(widths), figsize=(12.8, 4.3))
+        handles = None
+        for a, w_ps in zip(ax, widths):
+            w = w_ps / 1000.0
+            span = DEV[dev][5] if dev in DEV else 3.4
+            t_si, si, _r = f17.transistor_pad(dev, w_ps)
+            t_si = t_si - 5.0
+            d = f17.read(f17.MATRIX / "delay_cmd" / "waveforms" /
+                         f"{dev}_short_high_w{w_ps}ps.csv")
+            x = d["time_ns"] - 5.0
+            tops = [float(np.nanmax(si)), float(np.nanmax(d["hspice_pad"]))]
+            a.plot(t_si, si, color=SIL, lw=3.6, label="transistor (the truth)", zorder=5)
+            e_nat, _ = _peak_err(x, d["hspice_pad"], t_si, si, w)
+            a.plot(x, d["hspice_pad"], color=NAT, lw=2.8, ls=(0, (1.4, 1.5)),
+                   label="HSPICE native IBIS", zorder=4)
+            lines = [(NAT, f"native IBIS  {e_nat:+.0f} %")]
+            if t1 is not None and (t1 / f"d{w_ps}").is_dir():
+                tt, _ku, pp = _cand(t1, f"d{w_ps}")
+                e_t1, _ = _peak_err(tt, pp, t_si, si, w)
+                tops.append(float(np.nanmax(pp)))
+                a.plot(tt, pp, color=REAL, lw=2.6, label="track 1 (the file + one pad run)")
+                lines.append((REAL, f"track 1  {e_t1:+.0f} %"))
+            for i, (col, s_) in enumerate(lines):
+                a.text(0.035, 0.96 - 0.095 * i, s_, transform=a.transAxes, color=col,
+                       fontsize=12, fontweight="bold", va="top")
+            a.set_xlim(w - (0.35 if span > 1 else 0.20), w + span)
+            a.set_ylim(-0.08 * max(tops), max(tops) * 1.45)
+            a.grid(alpha=0.3)
+            a.set_xlabel("time (ns)")
+            a.set_title(f"{bex.STRESS_PCT[dev][w_ps]} % of the swing   ({w_ps} ps)",
+                        fontsize=12.5, fontweight="bold")
+            handles = a.get_legend_handles_labels()
+        ax[0].set_ylabel("pad (V)")
+        fig.legend(*handles, loc="lower center", ncol=3, fontsize=11.5, frameon=False,
+                   bbox_to_anchor=(0.5, -0.02))
+        fig.tight_layout(rect=(0, 0.06, 1, 1))
+        save(fig, f"result_{dev}")
 
 
 def why_chain(dev: str = "ex2") -> None:
@@ -727,10 +884,13 @@ def main() -> int:
     map_summary()
     what_we_have()
     coverage()
-    four_numbers()
+    law_symbols()
+    four_table()
     why_chain()
     calib_run()
     three_way()
+    for _d in RESULT_W:
+        buffer_result(_d)
     endtoend_3()
     ccomp_reject()
     pick_rank()
