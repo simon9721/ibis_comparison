@@ -65,6 +65,10 @@ def bullets(slide, items, size=18):
     last_em = max((i for i, t in enumerate(items) if t.startswith("**")), default=-1)
     for k, t in enumerate(items):
         p = tf.paragraphs[0] if k == 0 else tf.add_paragraph()
+        # Simon's master sets latinLnBrk="1" on the body style, which lets PowerPoint wrap
+        # inside a Latin word: a bullet that needed two lines broke "choice" into "c" and
+        # "hoice". Turning it off per paragraph restores word wrapping.
+        p._p.get_or_add_pPr().set("latinLnBrk", "0")
         if t.startswith("  "):          # an indented line is a sub-item of the one above it
             p.level = 1
         for j, seg in enumerate(t.strip().split("**")):
