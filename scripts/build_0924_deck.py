@@ -4,10 +4,10 @@
 Every earlier telling started from the method and worked back to the evidence. This one runs
 the other way, which is how the work actually went:
 
-    1  we can probe our own test chips, so measure the map: pair Ku(t) with the gate at each
+    1  the test chips can be probed, so measure the map: pair Ku(t) with the gate at each
        instant and read off Ku as a function of the gate
     2  show that map works - the real gate through the measured map tracks the transistor at
-       every stress level, where native IBIS and our gate-state model do not
+       every stress level, where native IBIS and gate-state do not
     3  show why the gate-state model fails: the real gate changes shape as the pulse shortens
        and GUP keeps one shape, and that shape difference is the whole error
     4  only then the motivation: reproduce the real gate's shape from what is in the file
@@ -121,15 +121,15 @@ slide("Reproducing the real gate from the IBIS file",
        "the gate's shape is right — and the gate is the one thing an IBIS file does not "
        "record.",
        "",
-       "**1  measure the map      2  show it works      3  show why our gate fails**",
+       "**1  measure the map      2  show it works      3  show why the gate-state model fails**",
        "**4  the motivation      5  the method, step by step      6  where it stands**"],
       notes="Order matters here: every earlier version started from the method. This one starts "
             "from the measurement, because that is how the work went and it makes the method's "
             "motivation earned rather than asserted.")
 
 # --------------------------------------------------------------------------- 1  the probe
-slide("1 · We can look inside our own test chips",
-      ["These are our designs, so the transistor netlist is available and every internal node "
+slide("1 · We can look inside the test chips",
+      ["These are in-house designs, so the transistor netlist is available and every internal node "
        "can be probed. A customer using a vendor's IBIS file cannot do this — which is the "
        "whole problem, and the reason to do it once, carefully.",
        "**The node that matters is the output stage's gate** — ex2's n4 below. Everything the "
@@ -151,8 +151,8 @@ slide("2 · Measuring the map: pair Ku(t) with the gate, instant by instant",
 
 # --------------------------------------------------------------------------- 3  does it work
 for dev, extra in (("ex2", "Within ±5 % at every level. Native IBIS runs +71 % at the "
-                           "deepest, our own gate-state model +74 %."),
-                   ("inv_chain", "Within +2…+9 %, where native IBIS runs +87 %. Our gate-state "
+                           "deepest, gate-state +74 %."),
+                   ("inv_chain", "Within +2…+9 %, where native IBIS runs +87 %. Gate-state "
                                  "model looks good at 70–90 % for the wrong reason — "
                                  "see the backup slide on Vinh.")):
     slide(f"3 · Does the measured map work?  {dev}",
@@ -169,23 +169,23 @@ slide("3 · So the output stage is not the problem",
       ["Given the right gate, the map reproduces the pad at every stress level, on both buffers.",
        "The map itself is a fixed curve — it has no memory, and it does not change with the "
        "pulse. Measured hysteresis between the rising and falling branches is 0.07–0.10.",
-       "**Everything that is wrong with our model is therefore in the gate.**"],
+       "**Everything that is wrong with the gate-state model is therefore in the gate.**"],
       F24 / "map_summary.png",
       notes="This is the pivot of the deck. It licenses spending the rest of the time on the "
             "gate's shape and nothing else.")
 
 # --------------------------------------------------------------------------- 4  why
-slide("4 · Why our gate fails: the real gate changes shape, GUP does not",
-      ["Our GUP is a fixed delay then an RC ramp. Truncating the input truncates that one shape.",
+slide("4 · Why the GUP fails: the real gate changes shape, GUP does not",
+      ["The GUP is a fixed delay then an RC ramp. Truncating the input truncates that one shape.",
        "The real gate is already moving long before GUP starts, and it turns round earlier.",
        "**Compare the two at each stress level — the mismatch grows as the pulse shortens.**"],
-      F24 / "gate_shape_ex2.png",
-      notes="Grey: the full-swing gate. Black: the real gate under the stressed pulse. Purple: "
-            "our GUP. Note that the real gate leaves zero around 0.5 ns while GUP is still flat "
+      F24 / "gate_shape_ex2_nofull.png",
+      notes="Black: the real gate under the stressed pulse. Purple: "
+            "the GUP. Note that the real gate leaves zero around 0.5 ns while GUP is still flat "
             "until 1.1 ns, and that GUP's peak arrives after the real gate's.")
 
 slide("4 · What that shape difference does downstream",
-      ["Same map, two gates: Ku on top, the pad below. Our peak error: +74 % at 50 % stress, "
+      ["Two gates, each through its own map: Ku on top, the pad below. Gate-state is +74 % at 50 % stress, "
        "+4 % at 90 %.",
        "**GUP holds Ku high after the real gate has let go, and the pad overshoot is exactly "
        "that extra area.**"],
@@ -264,7 +264,7 @@ slide("9 · What the stage law is a model of",
             "so a fixed current into a fixed capacitance. The next slide says which of "
             "the device's voltages u and v actually are.")
 
-slide("10 · The device's two voltages, in our two variables",
+slide("10 · The device's two voltages, as the model's two variables",
       ["The law is written in **u** and **v**; the physics is written in **V_GS** and "
        "**V_DS**. Same two quantities, measured down from the rail the device sits on: "
        "**u = |V_GS| / swing** and **1 − v = |V_DS| / swing**.",
@@ -296,11 +296,11 @@ slide("11 · What one MOSFET actually does",
             "real constant-current region.")
 
 slide("12 · What we keep of that, and what we replace",
-      ["Our version of each regime, drawn on top of a real device's. Below threshold we copy "
+      ["The stage law's version of each regime, drawn on top of a real device's. Below threshold we copy "
        "it. Saturated we keep the shape and flatten the exponent from 2 to 1. Into triode we "
        "put a straight line of **fixed** width where the device's width changes with its "
        "input.",
-       "**What x_lin really says is: our stage keeps pushing at full current for the first "
+       "**What x_lin really says is: the modelled stage keeps pushing at full current for the first "
        "55 % of its travel, where a real device gives up at 12 %.** Over the travel we deliver "
        "about **10 % more charge** than the device would. That is the largest approximation in "
        "the model and the first thing to distrust.",
@@ -313,9 +313,9 @@ slide("12 · What we keep of that, and what we replace",
             "expression, and the stressed pulse turns round before the gate is deep into "
             "this region on most buffers.")
 
-slide("13 · Term by term: the transistor's equation and ours",
+slide("13 · Term by term: the transistor's equation and the stage law",
       ["Both conducting regions collapse to the same two factors — **how hard it is on**, "
-       "times **how much room is left**. Our law has exactly those two.",
+       "times **how much room is left**. The stage law has exactly those two.",
        "**With p = 2 the gate factor is the transistor's own term, exactly.** Three things "
        "differ, and you can point at each."],
       F24 / "term_map.png",
@@ -324,7 +324,7 @@ slide("13 · Term by term: the transistor's equation and ours",
             "r = V_DS/(V_GS-V_th), checked to 4e-16 over 20 000 random (V_ov, V_DS) in "
             "results/model_provenance_2026-09-25/check_factorisation.py. And the normalised "
             "saturation current is exactly ((u-vt)/(1-vt))^2, which is h(u) with p = 2. If "
-            "anyone asks what is really ours, it is the three cells in the right-hand column.")
+            "anyone asks which parts are assumed, it is the three cells in the right-hand column.")
 
 slide("14 · The law, with where each piece came from",
       ["Read the colours: green is standard transistor behaviour taken as it is, amber is "
@@ -333,12 +333,12 @@ slide("14 · The law, with where each piece came from",
        "**So this is a physically motivated reduced-order model, not one derived from device "
        "physics.** A transistor gives us the shape to expect — a current-limited phase, then a "
        "resistive approach to the rail. It does not hand us the min(), the straight taper, the "
-       "fixed x_lin or p = 1. Those are ours, and the case for them is the measured result on "
+       "fixed x_lin or p = 1. Those are assumed, and the case for them is the measured result on "
        "the next fifteen slides, not the derivation."],
       F24 / "law_badged.png",
       size=16,
       notes="The honest summary: the backbone and the threshold are standard device "
-            "behaviour, the exponent is ours by necessity, the taper and the chain are ours by "
+            "behaviour, the exponent is flattened by necessity, the taper and the chain are chosen by "
             "choice. This is the slide to stand behind if someone says the model is derived "
             "from physics - it is not, and the results do not depend on it being.")
 
@@ -347,7 +347,7 @@ slide("15 · The four numbers that leaves",
        "flat out. **vt and x_lin are effective parameters**, not device quantities: they "
        "absorb the real I-V into a two-region approximation.",
        "**Does the file not give vt?** Its Vinh/Vinl are the input **pin's** thresholds, and "
-       "the converter does use those, for our input comparator. But vt is not a threshold "
+       "the converter does use those, for the input comparator. But vt is not a threshold "
        "voltage at all — it is where one modelled stage hands over to the next, and nothing "
        "in the file describes that."],
       F24 / "four_table.png",
@@ -361,7 +361,7 @@ slide("16 · What each of the four actually does",
        "trace is the fitted value.",
        "**Look at the vt panel: pushed high enough the gate never leaves the floor.** In the "
        "model that is abrupt; in silicon the current falls off continuously and a short pulse "
-       "degrades stage by stage until it is gone. The hard threshold is our approximation of "
+       "degrades stage by stage until it is gone. The hard threshold is an approximation of "
        "that, not the device's behaviour."],
       F24 / "knobs.png",
       notes="Simulated with the project's own stage model from the fitted values the 09-17 film "
@@ -530,7 +530,7 @@ slide("Backup · the nine candidates as waveforms",
       notes="This was the main slide before; the ranking says the same thing more directly.")
 
 slide("Backup · inv_chain's input threshold",
-      ["inv_chain's IBIS file declares Vinh 2.0 V on a 1.8 V part, so our input comparator fires "
+      ["inv_chain's IBIS file declares Vinh 2.0 V on a 1.8 V part, so the input comparator fires "
        "late and trims about 29 ps off every pulse.",
        "That trim cancels most of the gate-state model's overshoot, which is why it reads −2 % "
        "at 70 % stress on the previous slides while native IBIS reads +32 %.",

@@ -8,7 +8,7 @@ argument: the real gate changes shape as the pulse shortens, and GUP does not.
     map_from_probe        how Ku(gate) is built: pair Ku(t) from the file with the probed
                           gate at each instant, and read off the curve
     works_levels_<dev>    the pad at five stress levels - transistor, native HSPICE IBIS,
-                          our gate-state model, and the same model driven by the real gate
+                          the gate-state model, and the same model driven by the real gate
     gate_shape_<dev>      the gate itself at those five levels: the real one against GUP
     ku_consequence_<dev>  what that shape difference does to Ku and to the pad
 
@@ -140,7 +140,7 @@ def map_from_probe(dev: str = "ex2") -> None:
 # --------------------------------------------------------------------------- #
 
 def works_levels(dev: str) -> None:
-    """The pad at five stress levels: transistor, native, our gate-state model, real-gate map."""
+    """The pad at five stress levels: transistor, native, gate-state, real gate."""
     folder, node, gname, widths, ylim, span = DEV[dev]
     with plt.rc_context(BODY):
         fig, ax = plt.subplots(1, len(widths), figsize=(3.05 * len(widths), 4.3), sharey=True)
@@ -158,8 +158,8 @@ def works_levels(dev: str) -> None:
             # short names in the panel, full names in the one legend below: the panel is
             # 3 inches wide and the full names ran off its right-hand edge
             for build, col, lab, short in (
-                    ("shipped", OURS, "our gate-state model", "gate-state"),
-                    ("gate_replay_silicon_full", REAL, "real gate + measured map", "real gate + map")):
+                    ("shipped", OURS, "gate-state", "gate-state"),
+                    ("gate_replay_silicon_full", REAL, "real gate", "real gate")):
                 t, _g, _k, pad = _run(dev, w_ps, build)
                 e, _ = _peak_err(t, pad, t_si, si, w)
                 a.plot(t, pad, color=col, lw=2.4, ls="--" if build == "shipped" else "-", label=lab)
@@ -188,8 +188,8 @@ def works_levels(dev: str) -> None:
 # 3. why: the real gate changes shape, GUP does not
 # --------------------------------------------------------------------------- #
 
-def gate_shape(dev: str) -> None:
-    """The probed gate against our GUP, at each stress level, on one normalised axis."""
+def gate_shape(dev: str, full_swing: bool = True) -> None:
+    """The probed gate against the GUP, at each stress level, on one normalised axis."""
     folder, node, gname, widths, _ylim, span = DEV[dev]
     tf, gfull, _t, _g = f17._norm_pair(dev, widths[0], node)
     with plt.rc_context(BODY):
@@ -198,9 +198,10 @@ def gate_shape(dev: str) -> None:
             w = w_ps / 1000.0
             _tf, _gf, ts, greal = f17._norm_pair(dev, w_ps, node)
             t, gup, _k, _p = _run(dev, w_ps, "shipped")
-            a.plot(tf, gfull, color="#B9B9B9", lw=3.2, label="full swing", zorder=1)
+            if full_swing:
+                a.plot(tf, gfull, color="#B9B9B9", lw=3.2, label="full swing", zorder=1)
             a.plot(ts, greal, color=SIL, lw=3.0, label=f"real gate {gname}", zorder=3)
-            a.plot(t, gup, color=OURS, lw=2.4, ls="--", label="our GUP", zorder=2)
+            a.plot(t, gup, color=OURS, lw=2.4, ls="--", label="the GUP", zorder=2)
             gm, um = float(np.nanmax(greal)), float(np.nanmax(gup))
             a.plot(ts[np.nanargmax(greal)], gm, "o", color=SIL, ms=7, zorder=5)
             a.plot(t[np.nanargmax(gup)], um, "o", color=OURS, ms=7, zorder=5)
@@ -220,7 +221,7 @@ def gate_shape(dev: str) -> None:
         fig.suptitle(f"{dev}  |  the real gate changes shape with the pulse; GUP keeps one shape",
                      fontsize=15, fontweight="bold")
         fig.tight_layout(rect=(0, 0.06, 1, 0.9))
-        save(fig, f"gate_shape_{dev}")
+        save(fig, f"gate_shape_{dev}" + ("" if full_swing else "_nofull"))
 
 
 def ku_consequence(dev: str) -> None:
@@ -241,8 +242,8 @@ def ku_consequence(dev: str) -> None:
             a.plot(xk, kk, color=SIL, lw=3.0, label="transistor (truth)")
             b.plot(t_si, si, color=SIL, lw=3.4, label="transistor (truth)")
             errs = []
-            for build, col, lab in (("shipped", OURS, "our GUP + IBIS map"),
-                                    ("gate_replay_silicon_full", REAL, "real gate + measured map")):
+            for build, col, lab in (("shipped", OURS, "the GUP"),
+                                    ("gate_replay_silicon_full", REAL, "real gate")):
                 t, _g, ku, pad = _run(dev, w_ps, build)
                 a.plot(t, ku, color=col, lw=2.2, ls="--" if build == "shipped" else "-", label=lab)
                 e, _ = _peak_err(t, pad, t_si, si, w)
@@ -873,7 +874,7 @@ def endtoend_3() -> None:
 
 DEVICE = "#2F6B3C"      # standard transistor behaviour, taken as it is
 SIMPLE = "#C07A21"      # same shape, one thing changed for a stated reason
-ASSUMED = "#B0563C"     # no physical basis: our choice
+ASSUMED = "#B0563C"     # no physical basis: a modelling choice
 CITE = ("standard long-channel equations (SPICE Level 1); Leventhal & Green, "
         "Semiconductor Modeling \u00a73.8 p.89. These are ~0.6 \u00b5m devices, so "
         "long-channel is itself an approximation.")
@@ -937,7 +938,7 @@ def mos_regions() -> None:
 
 
 def ours_vs_device() -> None:
-    """Region by region: where our law follows a real device and where it departs."""
+    """Region by region: where the stage law follows a real device and where it departs."""
     VT, XLIN = 0.45, 0.45
     with plt.rc_context(BODY):
         fig, ax = plt.subplots(1, 3, figsize=(13.2, 4.6))
@@ -956,11 +957,11 @@ def ours_vs_device() -> None:
         a.grid(alpha=0.3)
         a.set_title("1.  below threshold", fontsize=12.5, fontweight="bold")
 
-        # --- 2. saturation: same form, our exponent -----------------------------
+        # --- 2. saturation: same form, a simpler exponent -----------------------------
         b = ax[1]
         x = np.clip((u - VT) / (1 - VT), 0, 1)
         b.plot(u, x ** 2, color=DEVICE, lw=3.0, ls="--", label="a real device: squared")
-        b.plot(u, x, color=SIMPLE, lw=3.4, label="ours: p = 1")
+        b.plot(u, x, color=SIMPLE, lw=3.4, label="the stage law: p = 1")
         b.axvspan(0, VT, color="#BBBBBB", alpha=0.22)
         # the dead zone is the only part of this panel with no curve in it
         b.annotate("the file cannot\ntell these apart:\nevery p from 1 to 2\nfits it to rms\n"
@@ -989,7 +990,7 @@ def ours_vs_device() -> None:
         c.plot(v, device_taper(0.573), color=DEVICE, lw=2.0, ls=":", alpha=0.75,
                label="a real device, its input only 57 % on")
         c.plot(v, np.minimum(1.0, (1 - v) / XLIN), color=ASSUMED, lw=3.4,
-               label="our model (x_lin = 0.45, fixed)")
+               label="the stage law (x_lin = 0.45, fixed)")
         for x, col, lab in ((VTHP, DEVICE, "a real device\nstops pushing\nat 0.12"),
                             (1 - XLIN, ASSUMED, "we stop\nat 0.55")):
             c.plot([x, x], [0, 1.0], color=col, lw=1.3, ls="-", alpha=0.45)
@@ -1005,9 +1006,9 @@ def ours_vs_device() -> None:
         c.legend(loc="upper left", fontsize=8.5, framealpha=0.95)
         c.set_title("3.  into the triode region", fontsize=12.5, fontweight="bold")
 
-        for a_, txt, col in ((ax[0], "we copy the device", DEVICE),
+        for a_, txt, col in ((ax[0], "copied from the device", DEVICE),
                              (ax[1], "same shape, simpler exponent", SIMPLE),
-                             (ax[2], "our own \u2014 no physical basis", ASSUMED)):
+                             (ax[2], "no physical basis", ASSUMED)):
             a_.text(0.5, -0.30, txt, transform=a_.transAxes, ha="center", fontsize=12,
                     fontweight="bold", color=col)
         fig.tight_layout(rect=(0, 0.055, 1, 1))
@@ -1209,7 +1210,7 @@ def term_map() -> None:
         # ---------- B. the substitutions ----------------------------------------
         b = fig.add_axes([0, 0.54, 1, 0.09])
         b.axis("off"); b.set_xlim(0, 100); b.set_ylim(0, 10)
-        b.text(1, 6, "now put it in our variables:", fontsize=12.6, color="#555555",
+        b.text(1, 6, "now in the model's variables:", fontsize=12.6, color="#555555",
                fontweight="bold", va="center")
         run(b, fig, 25, 6, [
             ("V_GS = u\u00b7swing", OURS), ("      ", C["v"]),
@@ -1219,7 +1220,7 @@ def term_map() -> None:
         # ---------- C. the map, term by term -------------------------------------
         c = fig.add_axes([0, 0.02, 1, 0.50])
         c.axis("off"); c.set_xlim(0, 100); c.set_ylim(0, 100)
-        for x0, hd in ((1, ""), (14, "the transistor"), (46, "ours"), (76, "what we changed")):
+        for x0, hd in ((1, ""), (14, "the transistor"), (46, "the stage law"), (76, "what differs")):
             if hd:
                 c.text(x0, 95, hd, fontsize=13.1, fontweight="bold", color="#777777", va="top")
         rows = [
@@ -1294,6 +1295,7 @@ def main() -> int:
     for dev in DEV:
         works_levels(dev)
         gate_shape(dev)
+        gate_shape(dev, full_swing=False)
         ku_consequence(dev)
     print(f"wrote {OUT.relative_to(ROOT).as_posix()}")
     return 0
@@ -1635,7 +1637,7 @@ def fit_search() -> None:
         for rank, i in enumerate(keep):
             sh = 0.18 + 0.72 * rank / (len(keep) - 1)
             a.plot(t, cur[i], color=(0.12, 0.31, 0.48, sh), lw=2.0,
-                   label="our K-stage chain, trial by trial" if rank == 0 else None)
+                   label="the K-stage chain, trial by trial" if rank == 0 else None)
         a.plot(t, cur[-1], color=REAL, lw=2.8, label="where the chain lands", zorder=4)
         a.set_xlim(-0.25, 3.0)     # the rise; fit_t runs -0.4 to 13 ns, input on at 0
         a.set_ylim(-0.08, 1.18)
@@ -1779,14 +1781,14 @@ def prior_shape() -> None:
 
 
 def map_summary() -> None:
-    """Peak error against stress depth: native, our gate-state model, the measured map."""
+    """Peak error against stress depth: native, gate-state, real gate."""
     with plt.rc_context(BODY):
         fig, ax = plt.subplots(1, 2, figsize=(11.4, 4.2), sharey=True)
         for a, dev in zip(ax, ("ex2", "inv_chain")):
             _f, node, _g, widths, _y, _s = DEV[dev]
             xs = [DEPTH_PCT[w] for w in widths]
-            series = {"native IBIS": ([], NAT, ":"), "our gate-state model": ([], OURS, "--"),
-                      "real gate + measured map": ([], REAL, "-")}
+            series = {"native IBIS": ([], NAT, ":"), "gate-state": ([], OURS, "--"),
+                      "real gate": ([], REAL, "-")}
             for w_ps in widths:
                 w = w_ps / 1000.0
                 d = f17.read(f17.MATRIX / "delay_cmd" / "waveforms" / f"{dev}_short_high_w{w_ps}ps.csv")
@@ -1794,8 +1796,8 @@ def map_summary() -> None:
                 t_si = t_si - 5.0
                 series["native IBIS"][0].append(
                     _peak_err(d["time_ns"] - 5.0, d["hspice_pad"], t_si, si, w)[0])
-                for build, key in (("shipped", "our gate-state model"),
-                                   ("gate_replay_silicon_full", "real gate + measured map")):
+                for build, key in (("shipped", "gate-state"),
+                                   ("gate_replay_silicon_full", "real gate")):
                     t, _g2, _k, pad = _run(dev, w_ps, build)
                     series[key][0].append(_peak_err(t, pad, t_si, si, w)[0])
             a.axhspan(-10, 10, color=REAL, alpha=0.10)
@@ -1826,7 +1828,7 @@ def what_we_have() -> None:
                 ("one full transition, Ku(t)", True, True),
                 ("the map from gate to Ku", True, False),
                 ("the gate's own trajectory", True, False)]
-        for col, (x, head, c) in enumerate(((6, "us, on our own test chips", REAL),
+        for col, (x, head, c) in enumerate(((6, "on the test chips", REAL),
                                             (54, "a customer, with the published file", OURS))):
             a.add_patch(plt.Rectangle((x - 2, 4), 42, 44, facecolor="#F4F6F5",
                                       edgecolor=c, lw=2.2))
