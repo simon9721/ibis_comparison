@@ -65,11 +65,15 @@ slides teach the same way the film does:
 
 | figure | the beat it carries | slide |
 |---|---|---|
-| `solve_ku` | two loads, two unknowns, one instant — where Ku(t) comes from at all | 10 |
-| `prior_shape` | the measured map against the analytic shape track 1 must assume | 11 |
-| `knobs` | what each of the four stage numbers does, swept one at a time | 15 |
-| `fit_search` | the four numbers searched until the chain lands on the file's Ku(t) | 18 |
-| `bisection` | the stressed run placing the threshold, every iteration it wrote | 20 |
+| `prior_shape` | the measured map against the analytic shape track 1 must assume | *What the file fixes, and what it leaves open* |
+| `knobs` | what each of the four stage numbers does, swept one at a time | *What each of the four actually does* |
+| `fit_search` | the four numbers searched until the chain lands on the file's Ku(t) | *Recipe step 1 of 4* |
+| `calib_run` | the stressed run placing the threshold, from every iteration it wrote | *Recipe step 3 of 4* |
+| `solve_ku` | two loads, two unknowns, one instant — where Ku(t) comes from at all | *Backup · where Ku(t) comes from* |
+
+Slides are named rather than numbered here because the numbers move whenever one is inserted.
+`calib_run` replaced the film's own `bisection` panel: it draws the same `bis_*` arrays, beside
+the run they were taken from and what that run is spent on.
 
 `knobs` is drawn on a **truncated** pulse rather than a full transition. On a full swing the
 discharge rate does nothing visible and the panel drew five identical curves; on the 810 ps
