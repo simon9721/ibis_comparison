@@ -867,6 +867,191 @@ def endtoend_3() -> None:
         save(fig, "endtoend_3")
 
 
+BOOK = "#2F6B3C"        # has a source
+BENT = "#C07A21"        # same form as the source, one thing changed
+OURS_ = "#B0563C"       # no source: ours
+CITE = "Leventhal & Green, Semiconductor Modeling, \u00a73.8 p.89 \u2014 SPICE Level 1, eq. 3-23\u201325"
+
+
+def mos_regions() -> None:
+    """The device characteristic the stage law is built on, straight out of the book."""
+    vth, k = 0.7, 1.0
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(13.0, 4.5),
+                               gridspec_kw={"width_ratios": [1.15, 1]})
+        a = ax[0]
+        vds = np.linspace(0, 3.0, 500)
+        for vgs, sh in zip((1.2, 1.7, 2.2, 2.7), (0.30, 0.50, 0.72, 1.0)):
+            vov = vgs - vth
+            i = np.where(vds < vov, k * vds * (2 * vov - vds), k * vov ** 2)
+            a.plot(vds, i, color=(0.12, 0.31, 0.48, sh), lw=2.8)
+            a.text(2.98, k * vov ** 2, f"  V_GS = {vgs}", fontsize=10, va="center",
+                   color=(0.12, 0.31, 0.48, max(sh, 0.55)), family="monospace")
+        # a device is in triode while V_DS < V_GS - V_th, which in this plane is the
+        # area ABOVE the boundary parabola, not a fixed strip at the left
+        a.fill_between(vds, k * vds ** 2, 4.6, color="#BBBBBB", alpha=0.20, lw=0)
+        a.plot(vds, k * vds ** 2, color="#888888", lw=2.0, ls="--")
+        a.annotate("V_DS = V_GS \u2212 V_th:\nthe boundary", (1.42, k * 1.42 ** 2),
+                   xytext=(2.12, 1.35), textcoords="data", ha="left", va="center",
+                   fontsize=10.5, color="#666666", fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color="#888888", lw=1.4))
+        a.text(0.15, 4.45, "triode: still a resistor", ha="left", va="top", fontsize=11,
+               color="#555555", fontweight="bold")
+        a.text(2.55, 3.35, "saturation: the current\nno longer cares about V_DS",
+               ha="center", va="top", fontsize=11, color="#1F4E79", fontweight="bold")
+        a.plot([0, 3.0], [0, 0], color="#AAAAAA", lw=2.4)
+        a.text(2.95, 0.04, "V_GS < V_th", fontsize=10, va="bottom", ha="right",
+               color="#888888", family="monospace")
+        a.set_xlim(0, 3.75); a.set_ylim(0, 4.6)
+        a.set_xlabel("V_DS  \u2014  across the device")
+        a.set_ylabel("I_D  \u2014  the current it passes")
+        a.grid(alpha=0.3)
+        a.set_title("the three regions of one MOSFET", fontsize=13, fontweight="bold")
+
+        b = ax[1]
+        b.axis("off"); b.set_xlim(0, 100); b.set_ylim(0, 100)
+        rows = [("below threshold", "V_GS \u2212 V_th < 0", "I_D  =  0"),
+                ("saturation", "0 < V_GS \u2212 V_th < V_DS",
+                 "I_D  =  (KP/2)(W/L) \u00b7 (V_GS \u2212 V_th)\u00b2"),
+                ("triode", "0 < V_DS < V_GS \u2212 V_th",
+                 "I_D  =  (KP/2)(W/L) \u00b7 V_DS(2(V_GS \u2212 V_th) \u2212 V_DS)")]
+        for i, (name, cond, eq) in enumerate(rows):
+            y = 92 - i * 28
+            b.add_patch(mpatches.Rectangle((0, y - 3.4), 1.8, 3.0, color=BOOK))
+            b.text(3.0, y - 2.0, name, fontsize=12.5, fontweight="bold", color=BOOK,
+                   va="center")
+            b.text(3.0, y - 11, "when   " + cond, fontsize=11, color="#777777", va="top",
+                   family="monospace")
+            b.text(3.0, y - 19, eq, fontsize=11.5, color="#222222", va="top",
+                   family="monospace", fontweight="bold")
+        b.text(0, 0, CITE, fontsize=10.5, color=BOOK, fontweight="bold", va="bottom")
+        b.set_title("and what the book says each one is", fontsize=13, fontweight="bold")
+        fig.tight_layout()
+        save(fig, "mos_regions")
+
+
+def ours_vs_book() -> None:
+    """Region by region: what our law keeps from the book and what it replaces."""
+    VT, XLIN = 0.45, 0.45
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 3, figsize=(13.2, 4.6))
+
+        # --- 1. below threshold: identical --------------------------------------
+        a = ax[0]
+        u = np.linspace(0, 1, 400)
+        a.plot(u, np.clip((u - VT) / (1 - VT), 0, 1), color=OURS, lw=3.4)
+        a.axvspan(0, VT, color="#BBBBBB", alpha=0.22)
+        a.plot([VT, VT], [0, 1.05], color=OURS, lw=1.5, ls="--")
+        a.text(VT / 2, 0.55, "h = 0", ha="center", fontsize=13, color="#666666",
+               fontweight="bold", family="monospace")
+        a.set_xlim(0, 1.02); a.set_ylim(-0.04, 1.25)
+        a.set_xlabel("u  \u2014  the stage's input")
+        a.set_ylabel("share of full current")
+        a.grid(alpha=0.3)
+        a.set_title("1.  below threshold", fontsize=12.5, fontweight="bold")
+
+        # --- 2. saturation: same form, our exponent -----------------------------
+        b = ax[1]
+        x = np.clip((u - VT) / (1 - VT), 0, 1)
+        b.plot(u, x ** 2, color=BOOK, lw=3.0, ls="--", label="the book: squared  (p = 2)")
+        b.plot(u, x, color=BENT, lw=3.4, label="ours: p = 1")
+        b.axvspan(0, VT, color="#BBBBBB", alpha=0.22)
+        # the dead zone is the only part of this panel with no curve in it
+        b.annotate("the file cannot\ntell these apart:\nevery p from 1 to 2\nfits it to rms\n"
+                   "0.002\u20130.007", (0.72, 0.47), xytext=(0.02, 0.74), textcoords="data",
+                   ha="left", va="top", fontsize=9.5, color=BENT, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=BENT, lw=1.4))
+        b.set_xlim(0, 1.02); b.set_ylim(-0.04, 1.25)
+        b.set_xlabel("u  \u2014  the stage's input")
+        b.grid(alpha=0.3)
+        b.legend(loc="upper left", fontsize=10)
+        b.set_title("2.  saturated", fontsize=12.5, fontweight="bold")
+
+        # --- 3. triode: ours is a straight line where the book has a parabola ----
+        c = ax[2]
+        v = np.linspace(0, 1, 500)
+        r = np.clip((1 - v) / XLIN, 0, 1)
+        c.plot(v, r * (2 - r), color=BOOK, lw=3.0, ls="--",
+               label="the book: a parabola")
+        c.plot(v, r, color=OURS_, lw=3.4, label="ours: a straight line")
+        c.axvspan(1 - XLIN, 1, color=OURS_, alpha=0.10)
+        c.annotate("at half way into the region\nthe book passes 0.75 of the\ncurrent and we pass 0.50",
+                   (1 - XLIN / 2, 0.62), xytext=(0.02, 0.30), textcoords="data", ha="left",
+                   va="center", fontsize=10.5, color=OURS_, fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color=OURS_, lw=1.5))
+        c.set_xlim(0, 1.02); c.set_ylim(-0.04, 1.25)
+        c.set_xlabel("v  \u2014  how far the output has got")
+        c.grid(alpha=0.3)
+        c.legend(loc="upper left", fontsize=10)
+        c.set_title("3.  into the triode region", fontsize=12.5, fontweight="bold")
+
+        for a_, txt, col in ((ax[0], "SAME as the book", BOOK),
+                             (ax[1], "SAME FORM, our exponent", BENT),
+                             (ax[2], "OURS \u2014 no source", OURS_)):
+            a_.text(0.5, -0.30, txt, transform=a_.transAxes, ha="center", fontsize=12,
+                    fontweight="bold", color=col)
+        fig.tight_layout(rect=(0, 0.055, 1, 1))
+        save(fig, "ours_vs_book")
+
+
+def law_badged() -> None:
+    """The assembled law, with where every factor came from written on it."""
+    C = {"s": REAL, "h": OURS, "x": "#1F6F8B", "v": "#333333"}
+
+    def run(ax, fig, x0, y, parts, fs):
+        r = fig.canvas.get_renderer()
+        x, spans = x0, []
+        for txt, col in parts:
+            t_ = ax.text(x, y, txt, fontsize=fs, family="monospace", color=col,
+                         fontweight="bold", va="center")
+            bb = t_.get_window_extent(renderer=r).transformed(ax.transData.inverted())
+            spans.append((bb.x0, bb.x1))
+            x = bb.x1
+        return spans
+
+    with plt.rc_context(BODY):
+        fig = plt.figure(figsize=(13.2, 4.6))
+        a = fig.add_axes([0, 0.40, 1, 0.58])
+        a.axis("off"); a.set_xlim(0, 100); a.set_ylim(0, 40)
+        sp = run(a, fig, 4.0, 33, [
+            ("dv/dt", C["v"]), ("  =  ", "#888888"),
+            ("s_up", C["s"]), ("\u00b7", "#888888"),
+            ("h(u)", C["h"]), ("\u00b7", "#888888"),
+            ("min(1, (1\u2212v)/x_lin)", C["x"]),
+            ("     \u2212     ", "#888888"),
+            ("s_dn", C["s"]), ("\u00b7", "#888888"), ("h(1\u2212u)", C["h"]),
+            ("\u00b7", "#888888"), ("min(1, v/x_lin)", C["x"])], 15.5)
+        for i, col, tag in ((2, BOOK, "book"), (4, BENT, "book*"), (6, OURS_, "ours")):
+            mid = (sp[i][0] + sp[i][1]) / 2
+            a.plot([sp[i][0], sp[i][1]], [27, 27], color=col, lw=3.4, solid_capstyle="butt")
+            a.text(mid, 23.5, tag, ha="center", va="top", fontsize=11, color=col,
+                   fontweight="bold")
+        a.text(sp[7][1], 14.5, "the second term is the same three factors,\nmirrored for the "
+                               "discharge", fontsize=10.5, color="#888888", va="center",
+               ha="left")
+        a.text(4.0, 5.0, "with   h(u) = clip((u \u2212 vt)/(1 \u2212 vt), 0, 1)", fontsize=13,
+               family="monospace", fontweight="bold", color=C["h"])
+        a.text(46.0, 5.0, "u and v are each 0 at rest and 1 at their own full swing, so dv/dt "
+                          "is\nswings per nanosecond \u2014 a slope. No current is computed "
+                          "anywhere.", fontsize=11, color="#666666", va="center")
+
+        b = fig.add_axes([0.03, 0.02, 0.94, 0.30])
+        b.axis("off"); b.set_xlim(0, 100); b.set_ylim(0, 10)
+        for x0, col, head, body in (
+                (0, BOOK, "book  \u2014  has a source",
+                 "the capacitor law; the book's cutoff and saturation forms"),
+                (36, BENT, "book*  \u2014  its form, one thing changed",
+                 "p = 1 rather than the book's 2, because the file cannot see p"),
+                (75, OURS_, "ours  \u2014  no source",
+                 "the linear taper, and K identical stages in series")):
+            b.add_patch(mpatches.Rectangle((x0, 6.6), 2.2, 1.6, color=col))
+            b.text(x0 + 3.2, 7.4, head, fontsize=11.5, fontweight="bold", color=col,
+                   va="center")
+            b.text(x0, 3.8, body, fontsize=10.5, color="#444444", va="top")
+        b.text(0, 0.2, CITE, fontsize=10, color="#888888", va="bottom")
+        save(fig, "law_badged")
+
+
 def main() -> int:
     print("figures for the 09-24 deck:")
     map_from_probe("ex2")
@@ -885,6 +1070,9 @@ def main() -> int:
     what_we_have()
     coverage()
     law_symbols()
+    mos_regions()
+    ours_vs_book()
+    law_badged()
     four_table()
     why_chain()
     calib_run()

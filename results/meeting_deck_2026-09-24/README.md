@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 32 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 34 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout come from Simon's 09-18 deck; none of his
 slides are carried over.
@@ -32,25 +32,27 @@ asserted rather than shown.
 | 11 | 7 · One more measurement, and a stressed pulse is the one |
 | 12 | 8 · But a few samples need a family of shapes to choose from |
 | 13 | 9 · What the stage law is a model of |
-| 14 | 10 · The law, symbol by symbol |
-| 15 | 10 · The four numbers that leaves |
-| 16 | 11 · What each of the four actually does |
-| 17 | 12 · Why a chain, and not one stage |
-| 18 | 12 · So: K identical stages, then the file's own map |
-| 19 | 13 · Before the recipe: C_comp is an input, and this file's is wrong |
-| 20 | 14 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
-| 21 | 15 · Recipe step 2 of 4 — enumerate what the file cannot choose |
-| 22 | 16 · Recipe step 3 of 4 — the stressed run sets the amplitude |
-| 23 | 17 · Recipe step 4 of 4 — the same run picks one of the nine |
-| 24 | 18 · The recipe, end to end |
-| 25 | Result · ex2 |
-| 26 | Result · inv_chain |
-| 27 | Result · io_buf |
-| 28 | Result · every buffer, worst of its stressed widths |
-| 29 | Result · what this does not cover yet |
-| 30 | Backup · where Ku(t) comes from |
-| 31 | Backup · the nine candidates as waveforms |
-| 32 | Backup · inv_chain's input threshold |
+| 14 | 10 · What one MOSFET actually does |
+| 15 | 11 · What we keep of that, and what we replace |
+| 16 | 12 · The law, with where each piece came from |
+| 17 | 13 · The four numbers that leaves |
+| 18 | 14 · What each of the four actually does |
+| 19 | 15 · Why a chain, and not one stage |
+| 20 | 15 · So: K identical stages, then the file's own map |
+| 21 | 16 · Before the recipe: C_comp is an input, and this file's is wrong |
+| 22 | 17 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
+| 23 | 18 · Recipe step 2 of 4 — enumerate what the file cannot choose |
+| 24 | 19 · Recipe step 3 of 4 — the stressed run sets the amplitude |
+| 25 | 20 · Recipe step 4 of 4 — the same run picks one of the nine |
+| 26 | 21 · The recipe, end to end |
+| 27 | Result · ex2 |
+| 28 | Result · inv_chain |
+| 29 | Result · io_buf |
+| 30 | Result · every buffer, worst of its stressed widths |
+| 31 | Result · what this does not cover yet |
+| 32 | Backup · where Ku(t) comes from |
+| 33 | Backup · the nine candidates as waveforms |
+| 34 | Backup · inv_chain's input threshold |
 
 ## Built on the 09-17 method film
 
@@ -213,6 +215,34 @@ Native and track 1 are read from the same five widths per buffer:
   is the trade, but it is not uniformly better at every depth.
 * **`bullets()` now refuses an unpaired `*`.** Three literal asterisks reached rendered slides
   across these rounds because the emphasis markers are `**` and a single one renders as itself.
+
+### The fifth pass: teach the law, and say what is invented
+
+The method core is four slides now instead of one, and every factor of the stage law states on
+its face whether it has a source.
+
+* **Slide 14 teaches the device.** The three regimes of one MOSFET, drawn as an I-V family with
+  the `V_DS = V_GS - V_th` boundary, beside the book's equation for each. Source: Leventhal &
+  Green, *Semiconductor Modeling*, §3.8 printed p.89 (pdf 105) — SPICE Level 1
+  (Shichman-Hodges), eq. 3-23 to 3-25. Note the naming trap the book itself flags on p.63: a
+  MOSFET's *saturation* region is its constant-current one, the opposite sense to a BJT's.
+* **Slide 15 puts our version on top of the book's, region by region**, and labels each one:
+
+  | regime | the book | ours | verdict |
+  |---|---|---|---|
+  | below threshold | `I_D = 0` | `h = 0` | **same** |
+  | saturated | `∝ (V_GS − V_th)²` | `∝ (u − vt)^p`, p = 1 | **same form, our exponent** |
+  | triode | `V_DS(2(V_GS−V_th) − V_DS)`, a parabola | a straight line | **ours, no source** |
+
+  With the numbers attached: half way into the triode region the book passes 0.75 of full
+  current and we pass 0.50. We give the current up faster than the device does. And `p = 1` is
+  not a claim about the device — it is an admission that the file cannot see `p` (every value
+  from 1 to 2 fits the full-swing Ku(t) to rms 0.002–0.007); the book's own value is 2.
+* **Slide 16 is the assembled law, colour-badged**: green has a source, amber is the source's
+  form with one thing changed, red has none. K identical stages in series is called out
+  separately as the other thing with no source behind it.
+* `docs/track1_recipe.md` carries the same factor-by-factor table, so the written recipe and
+  the deck say the same thing about provenance.
 
 ## Bench and sources
 

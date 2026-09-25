@@ -238,6 +238,40 @@ into the file's own I-V tables. All K stages share one set of the four numbers.
 | `vt_map`, `α` | **factor two** — the gate-to-Ku curve | full swing right and stress wrong; inv_chain's 34 % | the samples |
 | `s_up`, `s_dn`, `x_lin` | the family's own parameters | the gate's rate and its approach to the rail | the file's Ku(t) |
 
+### Where each factor of the stage law comes from
+
+The law is
+
+    dv/dt = s_up*h(u)*min(1,(1-v)/x_lin)  -  s_dn*h(1-u)*min(1,v/x_lin)
+    h(u)  = clip((u-vt)/(1-vt), 0, 1)**p
+
+and the four factors have four different provenances. The textbook side is Leventhal & Green,
+*Semiconductor Modeling*, §3.8 printed page 89 (pdf 105), the SPICE Level 1 (Shichman-Hodges)
+equations 3-23 to 3-25:
+
+| factor | where it comes from | verdict |
+|---|---|---|
+| `s_up`, `s_dn` | the capacitor law `C dV/dt = I`, with the book's saturation result that the current does not depend on V_DS | **has a source.** Channel-length modulation (the book's `LAMBDA` term) is dropped |
+| `h(u) = 0` below `vt` | eq. 3-23, `I_D = 0` for `V_GS - V_th < 0` | **has a source**, same form |
+| `h(u)` above `vt` | eq. 3-24, `I_D ∝ (V_GS - V_th)²` | **the source's form, one thing changed.** The book's exponent is 2; we use `p = 1` |
+| `min(1, (1-v)/x_lin)` | eq. 3-25 is `V_DS(2(V_GS-V_th) - V_DS)`, a **parabola** in V_DS | **ours.** A straight line in place of that parabola |
+| K identical stages | nothing | **ours** — a modelling choice, evidenced only by the fit (section 5) |
+
+Two of those deserve their reason stated rather than buried:
+
+* **`p = 1` is not a claim about the device.** It is an admission that the file cannot see `p`:
+  every value from 1 to 2 fits the full-swing Ku(t) to rms 0.002-0.007, so the fit cannot
+  choose, and 1 is taken. The book's own value is 2.
+* **The linear taper is the model's biggest liberty.** Normalising both to the width of the
+  region, the book passes `r(2-r)` of full current at a fraction `r` into it and we pass `r`:
+  half way in, 0.75 against our 0.50. We give the current up faster than the device does. What
+  keeps it usable is that `x_lin` is fitted rather than derived, and that a stressed pulse
+  turns round before the gate is far into this region on most buffers.
+
+The boundary itself is also not free in the book: saturation ends at `V_DS = V_GS - V_th`, so
+the width of the resistive region is set by the device's overdrive. We make that width the free
+parameter `x_lin` and fit it.
+
 `s_up` and `s_dn` are **slopes, not currents**: `v` is normalised, so `dv/dt` is swings per
 nanosecond. The physics behind `s_up` is `I_sat/(C·V_swing)`, but no current is ever computed —
 ex2 fits 2.59/ns, i.e. 0.39 ns to cross a stage's swing flat out. `x_lin` is named for the

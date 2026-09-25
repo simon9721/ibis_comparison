@@ -255,21 +255,48 @@ slide("9 · What the stage law is a model of",
        "is rising the NMOS is off and the PMOS is **saturated**, so the current it passes does "
        "not depend on how far the output has got.",
        "**A fixed current into a fixed capacitance is a straight ramp.** That ramp is the "
-       "backbone of the law; the next slide adds the two things that modulate it."],
+       "backbone of the law. The next slide is where it, and the two things that modulate "
+       "it, come from."],
       F24 / "stage_law.png",
       notes="Left: the input and the threshold it must pass. Right: the output the constant "
             "current produces. The next slide turns this picture into the four numbers.")
 
-slide("10 · The law, symbol by symbol",
-      ["That ramp, times the two things that modulate it. Each symbol below is one picture.",
-       "**dv/dt is a slope, not a current** — v runs 0 at rest to 1 at full swing, so it is "
-       "swings per nanosecond. **h(u)** is the **share** of its full current the device "
-       "passes."],
-      F24 / "law_symbols.png",
-      notes="u is the stage's input, v its output, both on their own 0-to-1 swing. The minus "
-            "term is the same three factors mirrored for the discharge.")
+slide("10 · What one MOSFET actually does",
+      ["A transistor has three regimes, and the book writes an equation for each. **Below "
+       "threshold** it passes nothing. **Saturated** — which here means a large voltage "
+       "across it — the current stops depending on that voltage. **In triode**, close to the "
+       "rail, it is a resistor again.",
+       "**Those three regimes are the whole of the stage law. Everything after this slide is "
+       "either taken from them or is an admitted substitute for them.**"],
+      F24 / "mos_regions.png",
+      size=17,
+      notes="Leventhal & Green, Semiconductor Modeling, section 3.8 printed page 89 (pdf 105): "
+            "the SPICE Level 1 / Shichman-Hodges equations 3-23 to 3-25. Note the naming trap: "
+            "a MOSFET's SATURATION region is its constant-current one, the opposite sense to a "
+            "BJT (the book makes the same point on p.63).")
 
-slide("10 · The four numbers that leaves",
+slide("11 · What we keep of that, and what we replace",
+      ["Same three regimes, our version of each, drawn on top of the book's.",
+       "**Below threshold we copy the book. Saturated we keep its form but flatten the "
+       "exponent from 2 to 1. Into triode we replace its parabola with a straight line — "
+       "that one is ours, and it is the biggest liberty in the model.**"],
+      F24 / "ours_vs_book.png",
+      notes="Why p = 1: it is not a claim about the device, it is an admission that the file "
+            "cannot see p - every value from 1 to 2 fits the full-swing Ku(t) to rms "
+            "0.002-0.007. Why the straight line: it keeps the stage law solvable in one "
+            "expression, and the stressed pulse turns round before the gate is deep into "
+            "this region on most buffers.")
+
+slide("12 · The law, with where each piece came from",
+      ["Read the colours: green has a source, amber is the source's own form with one thing "
+       "changed, red has no source at all.",
+       "**One more thing carries no source: putting K of these in series. That is a modelling "
+       "choice, and the next slide is the evidence for it.**"],
+      F24 / "law_badged.png",
+      notes="The honest summary: the backbone and the threshold come from the book, the "
+            "exponent is ours by necessity, the taper and the chain are ours by choice.")
+
+slide("13 · The four numbers that leaves",
       ["Four free numbers and no more. **s_up and s_dn are slopes** — ex2 fits 2.59/ns, "
        "0.39 ns to cross a stage's swing flat out. **x_lin** is named for the MOSFET's linear "
        "(triode) region.",
@@ -282,7 +309,7 @@ slide("10 · The four numbers that leaves",
             "guards it - the backup slide. p is assumed 1 because it is invisible at full "
             "swing: every p from 1 to 2 fits to rms 0.002-0.007.")
 
-slide("11 · What each of the four actually does",
+slide("14 · What each of the four actually does",
       ["Each swept on its own about the value the fit chose, on the 810 ps pulse. The thick black "
        "trace is the fitted value.",
        "**Look at the vt panel: pushed high enough the gate never leaves the floor — a chain "
@@ -291,7 +318,7 @@ slide("11 · What each of the four actually does",
       notes="Simulated with the project's own stage model from the fitted values the 09-17 film "
             "exported.")
 
-slide("12 · Why a chain, and not one stage",
+slide("15 · Why a chain, and not one stage",
       ["Fit one stage as well as it can be fitted and it still misses the file's own Ku(t) by "
        "4.6× the best error. One stage is one ramp: it starts the instant the input does, "
        "where the real Ku(t) waits, and then bends over too early.",
@@ -302,7 +329,7 @@ slide("12 · Why a chain, and not one stage",
             "0.0202. The real predriver is a chain too - ex2's schematic showed three "
             "inverters - but this is the file saying so on its own.")
 
-slide("12 · So: K identical stages, then the file's own map",
+slide("15 · So: K identical stages, then the file's own map",
       ["We cannot see how many stages a vendor's part has, so the count K is a parameter. The "
        "stages are held **identical**: a real tapered predriver approximately is, and letting "
        "them differ makes the fit degenerate.",
@@ -313,7 +340,7 @@ slide("12 · So: K identical stages, then the file's own map",
             "reproduces the full swing slightly better, and predicts a stressed gate of 0.23 "
             "against a measured 0.76.")
 
-slide("13 · Before the recipe: C_comp is an input, and this file's is wrong",
+slide("16 · Before the recipe: C_comp is an input, and this file's is wrong",
       ["C_comp is not something the method derives — it is an input the solve needs, and we "
        "assume it arrives with the file. **When s2ibispy extracts it properly, it drops into "
        "this same slot and nothing downstream changes.**",
@@ -328,7 +355,7 @@ slide("13 · Before the recipe: C_comp is an input, and this file's is wrong",
       notes="C_comp is not a model parameter: it is a number the file's own Ku tables were "
             "solved with, so a wrong value inflates the curve everything downstream is fitted to.")
 
-slide("14 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t)",
+slide("17 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t)",
       ["**The chain** is the K stages above, in series. Its output is a gate; put that gate "
        "through the map and it becomes a Ku. The four numbers are searched until that Ku "
        "reproduces **the file's own full-swing Ku(t)** — the black curve. Nelder–Mead, three "
@@ -339,7 +366,7 @@ slide("14 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t)",
       notes="Every trial the optimiser actually took, exported live by the 09-17 film. What it "
             "does NOT give us is K, or the map's shape.")
 
-slide("15 · Recipe step 2 of 4 — enumerate what the file cannot choose",
+slide("18 · Recipe step 2 of 4 — enumerate what the file cannot choose",
       ["Left: past K = 3 the fit error against the file's Ku(t) is **flat**. Right: the three "
        "candidates inside that band on one 810 ps pulse — same file, same fit quality, "
        "**three completely different buffers**.",
@@ -351,7 +378,7 @@ slide("15 · Recipe step 2 of 4 — enumerate what the file cannot choose",
             "that all three already match the peak - that is the calibration, and it is why the "
             "peak cannot be what chooses.")
 
-slide("16 · Recipe step 3 of 4 — the stressed run sets the amplitude",
+slide("19 · Recipe step 3 of 4 — the stressed run sets the amplitude",
       ["One pulse into the real part, at the deepest rung of the ladder, and one number off "
        "it: the peak. Nothing is probed.",
        "**Why vt and not the drive rates?** The rates were fitted to reproduce the full swing, "
@@ -361,7 +388,7 @@ slide("16 · Recipe step 3 of 4 — the stressed run sets the amplitude",
             "emitted. The vt here is the film's ex2 case; the deck's own K = 3 build lands on "
             "0.632 from a different starting fit.")
 
-slide("17 · Recipe step 4 of 4 — the same run picks one of the nine",
+slide("20 · Recipe step 4 of 4 — the same run picks one of the nine",
       ["All nine candidates are now calibrated, so **all nine hit the measured peak** — the "
        "calibration put it there. Right-hand panel: ranked on the peak every one is within 2.5 %, "
        "in no meaningful order.",
@@ -374,7 +401,7 @@ slide("17 · Recipe step 4 of 4 — the same run picks one of the nine",
       notes="Ranking on the peak instead picks a chain that arrives up to 300 ps late with four "
             "times the waveform error. The nine waveforms themselves are the backup slide.")
 
-slide("18 · The recipe, end to end",
+slide("21 · The recipe, end to end",
       ["**Assumed as an input:** C_comp, with a Ku > 1 validity check on it.",
        "**Steps 1–2, from the file alone:** fit s_up, s_dn, vt, x_lin to the file's Ku(t) at "
        "each stage count in the band; that leaves nine candidates the file cannot separate.",
