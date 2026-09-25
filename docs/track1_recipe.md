@@ -237,13 +237,36 @@ into the file's own I-V tables. All K stages share one set of the four numbers.
 | `K` | **factor one** — how fast the gate travels | a short pulse passes too easily, or is extinguished | the samples |
 | `vt_map`, `α` | **factor two** — the gate-to-Ku curve | full swing right and stress wrong; inv_chain's 34 % | the samples |
 | `s_up`, `s_dn`, `x_lin` | the family's own parameters | the gate's rate and its approach to the rail | the file's Ku(t) |
+
+`s_up` and `s_dn` are **slopes, not currents**: `v` is normalised, so `dv/dt` is swings per
+nanosecond. The physics behind `s_up` is `I_sat/(C·V_swing)`, but no current is ever computed —
+ex2 fits 2.59/ns, i.e. 0.39 ns to cross a stage's swing flat out. `x_lin` is named for the
+MOSFET's **linear (triode) region**: within `x_lin` of the destination rail the device has left
+saturation and the drive tapers linearly to zero. `vt` is an **internal** stage's threshold —
+the file's `Vinh`/`Vinl` are the input **pin's** thresholds, which the converter uses for the
+input comparator, and say nothing about this node.
+
 | `vt` | the stage handoff — and the amplitude knob | how much of a pulse survives each hop | fitted, then recalibrated |
 | `p` | drive curvature under a partial input | invisible at full swing | assumed = 1 |
 
-### S1 — C_comp: repair the product first
+The four numbered steps below are S2–S6. **S1 is not one of them**: C_comp is an input the
+method assumes it is given, with a validity check on it, in the same way the I-V tables are an
+input. When s2ibispy extracts C_comp properly it drops into the S1 slot and S2–S6 are unchanged.
 
-C_comp is not a model parameter. It is a number in the file that **the file's own Ku tables were
-solved with**, so a wrong value inflates the curve everything downstream is fitted to.
+| deck | here |
+|---|---|
+| before the recipe | S1 — C_comp, an input with a Ku ≤ 1 check |
+| recipe step 1 of 4 | S2 — fit the four numbers to the file's Ku(t) |
+| recipe step 2 of 4 | S3 + S4 — the stage-count band × the shape grid = nine candidates |
+| recipe step 3 of 4 | S5 — calibrate `vt` on the one stressed run |
+| recipe step 4 of 4 | S6 — select on that same run's whole waveform |
+
+### S1 — C_comp: an input, not a step
+
+C_comp is not a model parameter, and it is not something this method derives. It is a number in
+the file that **the file's own Ku tables were solved with**, so a wrong value inflates the curve
+everything downstream is fitted to. Today's numbers take it from the file, because the file's
+declared value fails the check below.
 
 **How the true value is measured** (track 2, needs the gate): the solve subtracts `C_comp·dV/dt`,
 and dV/dt flips sign between rise and fall, so a wrong C_comp adds on one branch and subtracts

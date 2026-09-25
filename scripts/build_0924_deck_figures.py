@@ -33,6 +33,7 @@ for _p in (ROOT / "scripts", ROOT / ".codex_deps" / "presentation" / "python"):
 import matplotlib  # noqa: E402
 
 matplotlib.use("Agg")
+import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 
@@ -269,51 +270,444 @@ def ku_consequence(dev: str) -> None:
 
 
 def stage_law() -> None:
-    """The four numbers as geometry: a threshold on the input, a slope, and a taper."""
-    XLIN, VT = 0.45, 0.45
-    t = np.linspace(0, 4.6, 500)
-    u = np.clip((t - 0.35) / 0.30, 0, 1)                    # the stage's input, rising
-    h = np.clip((u - VT) / (1 - VT), 0, 1)                  # drive: nothing until u passes vt
-    v = np.zeros_like(t)
-    for i in range(1, len(t)):
-        up = 0.72 * h[i] * min(1.0, (1 - v[i - 1]) / XLIN)
-        v[i] = min(1.0, v[i - 1] + up * (t[i] - t[i - 1]))
+    """Where the stage law comes from: three facts about a CMOS inverter, one term each."""
+    XLIN, VT, SUP = 0.45, 0.45, 0.72
+    t = np.linspace(0, 4.6, 900)
+    u = np.clip((t - 0.30) / 1.50, 0, 1)
     with plt.rc_context(BODY):
-        fig, ax = plt.subplots(1, 2, figsize=(12.6, 3.8))
+        fig, ax = plt.subplots(1, 3, figsize=(13.0, 4.0))
+
+        # --- 1. a saturated device is a constant current into the next gate --------
         a = ax[0]
-        a.plot(t, u, color="#666666", lw=3.4)
-        a.axhline(VT, color=OURS, lw=1.8, ls="--")
-        a.annotate("vt  —  the stage does nothing\nuntil its input passes this",
-                   (2.30, VT), textcoords="offset points", xytext=(-30, -44), color=OURS,
-                   fontsize=12, fontweight="bold",
-                   arrowprops=dict(arrowstyle="->", color=OURS, lw=1.5))
-        a.set_title("its input", fontweight="bold", fontsize=13)
-        a.set_ylim(-0.06, 1.22)
-        a.set_xlabel("time")
-        a.set_ylabel("0 to 1")
+        a.set_xlim(0, 10); a.set_ylim(0, 11.2); a.axis("off")
+        a.add_patch(mpatches.Circle((2.5, 6.4), 1.05, fill=False, ec=REAL, lw=2.4))
+        a.annotate("", (2.5, 5.9), (2.5, 6.9),
+                   arrowprops=dict(arrowstyle="-|>", color=REAL, lw=2.2))
+        a.text(1.75, 7.9, "I", ha="center", fontsize=15, color=REAL, fontweight="bold",
+               family="monospace")
+        a.text(5.0, 10.0, "while it is saturated the current ignores v", ha="center",
+               va="top", fontsize=11, color=REAL, fontweight="bold")
+        a.plot([2.5, 2.5], [7.45, 8.9], color="#555555", lw=2.0)
+        a.plot([2.5, 7.2], [8.9, 8.9], color="#555555", lw=2.0)
+        a.plot([2.5, 2.5], [5.35, 2.2], color="#555555", lw=2.0)
+        a.plot([2.5, 7.2], [2.2, 2.2], color="#555555", lw=2.0)
+        a.plot([7.2, 7.2], [8.9, 6.4], color="#555555", lw=2.0)
+        a.plot([7.2, 7.2], [2.2, 4.9], color="#555555", lw=2.0)
+        for y in (6.4, 4.9):
+            a.plot([6.2, 8.2], [y, y], color="#555555", lw=3.0)
+        a.text(8.6, 5.65, "C", fontsize=15, color="#555555", fontweight="bold",
+               family="monospace", va="center")
+        a.text(8.6, 4.5, "the next\nstage's gate", fontsize=10, color="#888888", va="top")
+        a.set_title("1.  a constant current into a fixed capacitance\nis a constant SLOPE",
+                    fontsize=12, fontweight="bold")
+        a.text(5.0, 0.4, "dv/dt  =  I / (C\u00b7V_swing)  \u2261  s_up", ha="center",
+               fontsize=13.5, family="monospace", fontweight="bold", color=REAL)
+
+        # --- 2. nothing happens until the input passes the threshold ---------------
+        b = ax[1]
+        hh = np.clip((u - VT) / (1 - VT), 0, 1)
+        b.plot(t, u, color="#999999", lw=2.4, label="its input, u")
+        b.plot(t, hh, color=OURS, lw=3.4, label="its drive, h(u)")
+        b.axhline(VT, color=OURS, lw=1.6, ls="--")
+        b.text(4.5, VT + 0.03, "vt", color=OURS, fontsize=13, fontweight="bold",
+               family="monospace", ha="right")
+        b.axvspan(0, float(t[np.argmax(u > VT)]), color="#BBBBBB", alpha=0.22)
+        b.text(0.15, 0.62, "dead\nzone", fontsize=10.5, color="#777777",
+               fontweight="bold", va="center")
+        b.set_ylim(-0.05, 1.18); b.set_xlim(0, 4.6)
+        b.set_xlabel("time"); b.set_ylabel("0 to 1")
+        b.grid(alpha=0.3)
+        b.legend(loc="lower right", fontsize=10)
+        b.set_title("2.  the device conducts nothing until its\ninput is past vt",
+                    fontsize=12, fontweight="bold")
+
+        # --- 3. near the rail it stops being a current source ----------------------
+        c = ax[2]
+        gv = np.linspace(0, 1, 400)
+        c.plot(gv, np.minimum(1.0, (1 - gv) / XLIN), color="#1F6F8B", lw=3.4)
+        c.axvspan(1 - XLIN, 1, color="#1F6F8B", alpha=0.13)
+        c.annotate("", (1.0, 1.06), (1 - XLIN, 1.06),
+                   arrowprops=dict(arrowstyle="<|-|>", color="#1F6F8B", lw=1.8))
+        c.text(1 - XLIN / 2, 1.09, "x_lin", ha="center", fontsize=13, color="#1F6F8B",
+               fontweight="bold", family="monospace")
+        c.annotate("linear (triode) region:\nnow a resistor, so the\nslope tapers to zero",
+                   (0.78, 0.40), xytext=(0.03, 0.46), textcoords="data", ha="left",
+                   va="center", fontsize=10.5, color="#1F6F8B", fontweight="bold",
+                   arrowprops=dict(arrowstyle="->", color="#1F6F8B", lw=1.5))
+        c.text(0.26, 0.93, "saturated: full slope", ha="center", fontsize=10.5,
+               color="#777777", fontweight="bold", va="top")
+        c.set_xlim(0, 1.02); c.set_ylim(0, 1.30)
+        c.set_xlabel("the output v, 0 to 1")
+        c.set_ylabel("fraction of full slope")
+        c.grid(alpha=0.3)
+        c.set_title("3.  close to the rail V_DS collapses, it leaves\nsaturation and tapers off",
+                    fontsize=12, fontweight="bold")
+
+        fig.suptitle("ONE STAGE  |  three facts about a CMOS inverter driving the next one",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.90))
+        save(fig, "stage_law")
+
+
+def four_numbers() -> None:
+    """The three facts assembled, and what each of the four fitted numbers is."""
+    C = {"s": REAL, "h": OURS, "x": "#1F6F8B", "v": "#333333"}
+
+    def run(ax, fig, x0, y, parts, fs):
+        """Lay coloured monospace fragments end to end; return where each one landed."""
+        r = fig.canvas.get_renderer()
+        x, spans = x0, []
+        for txt, col in parts:
+            t_ = ax.text(x, y, txt, fontsize=fs, family="monospace", color=col,
+                         fontweight="bold", va="center")
+            bb = t_.get_window_extent(renderer=r).transformed(ax.transData.inverted())
+            spans.append((bb.x0, bb.x1))
+            x = bb.x1
+        return spans
+
+    with plt.rc_context(BODY):
+        fig = plt.figure(figsize=(13.4, 4.9))
+        a = fig.add_axes([0, 0.58, 1, 0.40])
+        a.axis("off"); a.set_xlim(0, 100); a.set_ylim(0, 30)
+        a.text(50, 28, "the three facts, multiplied together \u2014 charging up, and the mirror "
+                       "of it discharging back",
+               ha="center", fontsize=12.5, fontweight="bold", color="#333333")
+        sp = run(a, fig, 2.5, 18, [
+            ("dv/dt  =  ", C["v"]),
+            ("s_up", C["s"]),                                   # 1: fact 1
+            ("\u00b7", C["v"]),
+            ("h(u)", C["h"]),                                    # 3: fact 2
+            ("\u00b7", C["v"]),
+            ("min(1, (1\u2212v)/x_lin)", C["x"]),                 # 5: fact 3
+            ("   \u2212   ", C["v"]),
+            ("s_dn", C["s"]), ("\u00b7", C["v"]), ("h(1\u2212u)", C["h"]),
+            ("\u00b7", C["v"]), ("min(1, v/x_lin)", C["x"])], 14.5)
+        # the fact labels are placed under the fragments they actually mark
+        for i, n, col in ((1, "1", C["s"]), (3, "2", C["h"]), (5, "3", C["x"])):
+            mid = (sp[i][0] + sp[i][1]) / 2
+            a.plot([sp[i][0], sp[i][1]], [13.6, 13.6], color=col, lw=2.2,
+                   solid_capstyle="butt")
+            a.text(mid, 10.2, n, fontsize=12, color=col, fontweight="bold", ha="center")
+        key = run(a, fig, sp[5][1] + 26, 10.6, [
+            ("1", C["s"]), (" the slope    ", "#666666"),
+            ("2", C["h"]), (" the threshold    ", "#666666"),
+            ("3", C["x"]), (" the taper", "#666666")], 11.5)
+        sp2 = run(a, fig, 2.5, 3.0, [
+            ("with   h(u) = clip((u \u2212 vt)/(1 \u2212 vt), 0, 1)", C["h"])], 13)
+        a.text(sp2[-1][1] + 4, 3.0, "u = the stage's input,   v = its output \u2014 both 0 at "
+                                    "rest, 1 at their own full swing",
+               fontsize=11.5, family="monospace", color="#888888", va="center")
+
+        b = fig.add_axes([0.025, 0.03, 0.95, 0.50])
+        b.axis("off"); b.set_xlim(0, 100); b.set_ylim(0, 100)
+        cols = [1.5, 10.5, 45, 76]
+        for cx, hd in zip(cols, ["", "is", "what it decides", "where its value comes from"]):
+            b.text(cx, 97, hd, fontsize=11.5, fontweight="bold", color="#777777")
+        rows = [
+            ("s_up", C["s"], "the fastest it can charge,\nin swings per ns",
+             "where the gate gets to\nbefore the pulse ends", "fitted to the file's Ku(t)"),
+            ("s_dn", C["s"], "the same on the way back",
+             "how quickly the gate\nlets go again", "fitted to the file's Ku(t)"),
+            ("vt", C["h"], "the fraction of its input's\nswing it needs to conduct",
+             "how much of a short pulse\nsurvives each hop",
+             "fitted, then re-set by\nthe stressed run"),
+            ("x_lin", C["x"], "how close to the rail it leaves\nsaturation (its linear region)",
+             "the shape of the approach\nto the rail", "fitted (pinned 0.45 on 10 of 12)"),
+        ]
+        for i, (sym, col, is_, dec, src) in enumerate(rows):
+            y = 90 - i * 22
+            b.plot([0.0, 0.8], [y - 1.5, y - 1.5], color=col, lw=5, solid_capstyle="butt")
+            for cx, txt, fs, cc in ((cols[0], sym, 13.5, col), (cols[1], is_, 11.5, "#222222"),
+                                    (cols[2], dec, 11.5, "#222222"), (cols[3], src, 11.5,
+                                                                      "#222222")):
+                b.text(cx, y, txt, fontsize=fs, color=cc, va="top",
+                       family="monospace" if cx == cols[0] else None,
+                       fontweight="bold" if cx == cols[0] else None)
+        b.text(0, 1, "None of these is a current. v is normalised, so dv/dt is swings per "
+                     "nanosecond and s_up is a slope \u2014 ex2 fits 2.59/ns, i.e. 0.39 ns to "
+                     "cross its swing flat out.",
+               fontsize=11.5, color="#B0563C", fontweight="bold", va="bottom")
+        save(fig, "four_numbers")
+
+
+def why_chain(dev: str = "ex2") -> None:
+    """Why a chain and not one stage: K = 1 cannot reproduce the file's own Ku(t)."""
+    import csv as _csv
+    import current_limited_stage_model as cl
+    rows = {int(r["K"]): r for r in
+            _csv.DictReader((SC / "step1" / f"est_knee__{dev}__pull-up.csv").open())}
+    d = film()
+    t, tgt = d["fit_t"], d["fit_target"]
+    u = (t >= 0).astype(float)                       # the digital input, on at t = 0
+    dt = float(t[1] - t[0])
+    cl.DT, keep = dt, (t >= -0.25) & (t <= 3.0)
+
+    def chain(K, r):
+        v = u.copy()
+        for _ in range(K):
+            v = cl.simulate(v, float(r["s_up"]), float(r["s_dn"]), float(r["vt"]),
+                            float(r["x_lin"]), 1.0)
+        return v
+
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 2, figsize=(12.4, 4.3),
+                               gridspec_kw={"width_ratios": [1.5, 1]})
+        a = ax[0]
+        a.plot(t[keep], tgt[keep], color=SIL, lw=4.6, label="the file's Ku(t) \u2014 the target",
+               zorder=5)
+        for K, col, ls in ((1, "#B0563C", "--"), (3, REAL, "-")):
+            a.plot(t[keep], chain(K, rows[K])[keep], color=col, lw=2.8, ls=ls,
+                   label=f"K = {K} stages, best fit  (error {float(rows[K]['rms']):.3f})")
+        # the only region clear of all three curves is the lower right
+        a.annotate("one stage is one ramp: it starts\nmoving at once, where the file's\n"
+                   "Ku(t) waits, then bends over early",
+                   (1.18, 0.80), xytext=(1.72, 0.30), textcoords="data", ha="left",
+                   va="center", fontsize=11.5, fontweight="bold", color="#B0563C",
+                   arrowprops=dict(arrowstyle="->", color="#B0563C", lw=1.6))
+        a.set_xlim(-0.25, 3.0); a.set_ylim(-0.08, 1.20)
+        a.set_xlabel("time (ns)"); a.set_ylabel("Ku")
         a.grid(alpha=0.3)
+        a.legend(loc="upper left", fontsize=10.5)
+        a.set_title("the file's own Ku(t) rules out a single stage", fontsize=13,
+                    fontweight="bold")
 
         b = ax[1]
-        i0, i1 = int(np.argmax(v > 0.02)), int(np.argmax(v > 1 - XLIN))
-        b.plot(t[i0:i1 + 1], v[i0:i1 + 1], color=REAL, lw=7.0, alpha=0.4, zorder=1)
-        b.plot(t, v, color=SIL, lw=3.4, zorder=2)
-        b.axhline(1 - XLIN, color="#999999", lw=1.5, ls=":")
-        b.annotate("s_up  —  constant current,\nso the gate travels on a\nstraight ramp",
-                   (t[(i0 + i1) // 2], v[(i0 + i1) // 2]), textcoords="offset points",
-                   xytext=(-66, 52), color=REAL, fontsize=12, fontweight="bold",
-                   arrowprops=dict(arrowstyle="->", color=REAL, lw=1.5))
-        b.annotate("x_lin  —  within this much of\nthe rail the current tapers off",
-                   (2.60, 0.90), textcoords="offset points", xytext=(-40, -80),
-                   color="#4A4A4A", fontsize=12, fontweight="bold",
-                   arrowprops=dict(arrowstyle="->", color="#4A4A4A", lw=1.5))
-        b.set_title("the gate it produces", fontweight="bold", fontsize=13)
-        b.set_ylim(-0.06, 1.22)
-        b.set_xlabel("time")
+        Ks = sorted(rows)
+        rms = [float(rows[k]["rms"]) for k in Ks]
+        best = min(rms)
+        b.plot(Ks, rms, "o-", color=SIL, lw=2.6, ms=7, zorder=3)
+        for k, col in ((1, "#B0563C"), (3, REAL)):
+            b.plot(k, rms[k - 1], "o", color=col, ms=14, zorder=4)
+        b.axhline(1.25 * best, color="#999999", lw=1.4, ls="--")
+        b.text(10, 1.25 * best + 0.0022, "within 25 % of the best", fontsize=10,
+               color="#777777", ha="right", fontweight="bold")
+        b.annotate(f"{rms[0] / best:.1f}\u00d7 the best fit", (1, rms[0]),
+                   textcoords="offset points", xytext=(18, -4), fontsize=11.5,
+                   fontweight="bold", color="#B0563C")
+        b.set_xticks(Ks)
+        b.set_xlabel("number of stages, K")
+        b.set_ylabel("fit error against the file's Ku(t)")
+        b.set_ylim(0, max(rms) * 1.12)
         b.grid(alpha=0.3)
-        fig.suptitle("one stage  —  s_dn is the same picture on the way back",
+        b.set_title("and it takes three before the error settles", fontsize=13,
+                    fontweight="bold")
+        fig.suptitle(f"{dev}  |  the file itself says one stage is not enough",
                      fontsize=14, fontweight="bold")
-        fig.tight_layout(rect=(0, 0, 1, 0.88))
-        save(fig, "stage_law")
+        fig.tight_layout(rect=(0, 0, 1, 0.91))
+        save(fig, "why_chain")
+
+
+def calib_run(dev: str = "ex2") -> None:
+    """Which stressed run the calibration uses, and what it does with it: one picture."""
+    folder, node, gname, widths, ylim, span = DEV[dev]
+    w_ps = widths[0]                                    # the deepest of the five
+    w = w_ps / 1000.0
+    t_si, si, _r = f17.transistor_pad(dev, w_ps)
+    t_si = t_si - 5.0
+    peak = float(np.nanmax(si))
+    d = film()
+    bt, bcur, bvt = d["bis_t"], d["bis_curves"], d["bis_vt"]
+    order = np.argsort(np.abs(bvt - bvt[-1]))[::-1]
+
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, 3, figsize=(13.4, 4.2),
+                               gridspec_kw={"width_ratios": [1.05, 1.3, 1.0]})
+
+        # --- 1. the one measurement the user is asked for --------------------------
+        a = ax[0]
+        a.plot(t_si, si, color=SIL, lw=3.6)
+        a.axhline(peak, color=REAL, lw=1.8, ls="--")
+        a.plot(t_si[int(np.nanargmax(si))], peak, "o", color=REAL, ms=12, zorder=5)
+        a.annotate(f"its peak, {peak:.2f} V:\nthe whole measurement",
+                   (t_si[int(np.nanargmax(si))], peak), textcoords="offset points",
+                   xytext=(14, -6), ha="left", va="top", fontsize=11, fontweight="bold",
+                   color=REAL)
+        a.annotate("", (w, -0.17), (0, -0.17),
+                   arrowprops=dict(arrowstyle="<|-|>", color="#555555", lw=1.6))
+        a.text(w / 2, -0.21, f"{w_ps} ps", ha="center", va="top", fontsize=11.5,
+               fontweight="bold", color="#555555")
+        a.set_xlim(-0.45, w + span * 0.7)
+        a.set_ylim(-0.36, ylim * 1.05)
+        a.set_xlabel("time (ns)"); a.set_ylabel("pad (V)")
+        a.grid(alpha=0.3)
+        a.set_title(f"1.  one pulse into the real part:\nthe deepest, "
+                    f"{DEPTH_PCT[w_ps]} % of its swing", fontsize=12, fontweight="bold")
+
+        # --- 2. the model's peak walked onto it ------------------------------------
+        b = ax[1]
+        b.axhline(1.0, color=REAL, lw=2.2, ls="--", zorder=4)
+        b.text(bt[0], 1.04, "the measured peak", ha="left", va="bottom", fontsize=11,
+               color=REAL, fontweight="bold")
+        for rank, i in enumerate(order):
+            sh = 0.14 + 0.62 * rank / max(1, len(order) - 1)
+            b.plot(bt, bcur[i] / peak, color=(0.12, 0.31, 0.48, sh), lw=1.8)
+        b.plot(bt, bcur[order[-1]] / peak, color=REAL, lw=3.0, zorder=5)
+        b.annotate(f"first try, vt = {bvt[order[0]]:.2f}",
+                   (bt[int(np.argmax(bcur[order[0]]))],
+                    float(np.max(bcur[order[0]])) / peak), textcoords="offset points",
+                   xytext=(12, 6), fontsize=11, fontweight="bold", color="#1F4E79")
+        b.annotate(f"lands at vt = {bvt[-1]:.2f}", (bt[int(np.argmax(bcur[order[-1]]))], 1.0),
+                   textcoords="offset points", xytext=(30, -42), fontsize=11,
+                   fontweight="bold", color=REAL,
+                   arrowprops=dict(arrowstyle="->", color=REAL, lw=1.5))
+        b.set_ylim(-0.15, 1.85)
+        b.set_xlabel("time from the input edge (ns)")
+        b.set_ylabel("pad / the measured peak")
+        b.grid(alpha=0.3)
+        b.set_title("2.  move vt until the model's peak lands\non it \u2014 bisection, ten runs",
+                    fontsize=12, fontweight="bold")
+
+        # --- 3. what the run is spent on ---------------------------------------------
+        c = ax[2]
+        c.axis("off"); c.set_xlim(0, 100); c.set_ylim(0, 100)
+        c.set_title("3.  what that one run buys", fontsize=12, fontweight="bold")
+        for y, hd, bd, col in (
+                (92, "the amplitude", "fitted to the file alone the chain\n"
+                                      "leaves this pad 28 % low. vt sets it.", REAL),
+                (54, "and then the choice", "all nine candidates now hit the peak;\n"
+                                            "their whole waveforms do not.", "#1F6F8B"),
+                (16, "nothing else", "no probe, no internal node \u2014 one\n"
+                                     "voltage at the pad, from outside.", "#777777")):
+            c.plot([0, 4], [y + 3, y + 3], color=col, lw=5, solid_capstyle="butt")
+            c.text(0, y, hd, fontsize=12.5, fontweight="bold", color=col, va="top")
+            c.text(0, y - 11, bd, fontsize=11.5, color="#333333", va="top")
+
+        fig.suptitle(f"{dev}  |  the single stressed run: what is measured, and what it sets",
+                     fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0, 1, 0.90))
+        save(fig, "calib_run")
+
+
+# HSPICE's two-waveform solver dies outright on the tr1ps variant files: it reports the pulse
+# missing at EVERY depth, the mildest included, which no amount of model error can do. A run
+# whose mildest depth is off by more than this is dead, not wrong.
+ALIVE_MILD = 25.0
+_SELP = ROOT / "results/selector_from_one_run_2026-09-23/selector_picks.csv"
+
+
+def _selector_picks():
+    import csv as _csv
+    return {r["buffer"]: r for r in _csv.DictReader(_SELP.open(encoding="utf-8"))}
+
+
+def _pick_build(dev: str):
+    """The build directory of the candidate the selector chose on the whole waveform."""
+    k_sh = _selector_picks()[dev]["rms"]                 # e.g. "K3 0.5/0.7"
+    k, shape = k_sh.split()[0][1:], k_sh.split()[1].replace("/", "_")
+    for step in ("step6", "step8"):
+        for d in sorted((SC / step).glob(f"{dev}_c*/ibis_prior_K{k}*_prior{shape}*calibpad*")):
+            return d
+    return None
+
+
+def _native(dev: str):
+    """(worst |peak| %, did the solver run?) for HSPICE native IBIS, from the cascade sweep."""
+    import csv as _csv
+    p = ROOT / "results/gate_cascade_prototype_2026-09-09" / dev / "sweep.csv"
+    if not p.exists():
+        return None, False
+    rr = {r["build"]: r for r in _csv.DictReader(p.open(encoding="utf-8"))}
+    if "native" not in rr:
+        return None, False
+    vals = [float(v) for k, v in rr["native"].items()
+            if k.startswith("pk_d") and v not in ("", "nan")]
+    if not vals:
+        return None, False
+    return max(map(abs, vals)), abs(vals[0]) < ALIVE_MILD
+
+
+def three_way() -> None:
+    """The real comparison, as waveforms: transistor, HSPICE native IBIS, track 1."""
+    import build_explainer_figures as bex          # owns the measured depth table
+    devs = [("ex2", 810), ("inv_chain", 104), ("io_buf", 1505)]
+    with plt.rc_context(BODY):
+        fig, ax = plt.subplots(1, len(devs), figsize=(13.2, 4.4))
+        handles = None
+        for a, (dev, w_ps) in zip(ax, devs):
+            w = w_ps / 1000.0
+            span = DEV[dev][5] if dev in DEV else 3.4
+            t_si, si, _r = f17.transistor_pad(dev, w_ps)
+            t_si = t_si - 5.0
+            d = f17.read(f17.MATRIX / "delay_cmd" / "waveforms" /
+                         f"{dev}_short_high_w{w_ps}ps.csv")
+            x = d["time_ns"] - 5.0
+            a.plot(t_si, si, color=SIL, lw=3.6, label="transistor (the truth)", zorder=5)
+            e_nat, _ = _peak_err(x, d["hspice_pad"], t_si, si, w)
+            a.plot(x, d["hspice_pad"], color=NAT, lw=2.8, ls=(0, (1.4, 1.5)),
+                   label="HSPICE native IBIS", zorder=4)
+            t1 = _pick_build(dev)
+            e_t1, tops = None, [float(np.nanmax(si)), float(np.nanmax(d["hspice_pad"]))]
+            if t1 is not None and (t1 / f"d{w_ps}").is_dir():
+                tt, _ku, pp = _cand(t1, f"d{w_ps}")
+                e_t1, _ = _peak_err(tt, pp, t_si, si, w)
+                tops.append(float(np.nanmax(pp)))
+                a.plot(tt, pp, color=REAL, lw=2.6, label="track 1 (the file + one pad run)")
+            lines = [(NAT, f"native IBIS  {e_nat:+.0f} %")]
+            if e_t1 is not None:
+                lines.append((REAL, f"track 1  {e_t1:+.0f} %"))
+            for i, (col, s_) in enumerate(lines):
+                a.text(0.035, 0.96 - 0.095 * i, s_, transform=a.transAxes, color=col,
+                       fontsize=12, fontweight="bold", va="top")
+            lead = 0.35 if span > 1 else 0.20
+            a.set_xlim(w - lead, w + span)
+            a.set_ylim(-0.08 * max(tops), max(tops) * 1.45)   # headroom for the two labels
+            a.grid(alpha=0.3)
+            a.set_xlabel("time (ns)")
+            pct = bex.STRESS_PCT[dev][w_ps]
+            a.set_title(f"{dev}   \u2014   {w_ps} ps, {pct} % of the swing",
+                        fontsize=12.5, fontweight="bold")
+            handles = a.get_legend_handles_labels()
+        ax[0].set_ylabel("pad (V)")
+        fig.legend(*handles, loc="lower center", ncol=3, fontsize=11.5, frameon=False,
+                   bbox_to_anchor=(0.5, -0.02))
+        fig.suptitle("the deepest stressed pulse on each of the three buffers, against the "
+                     "transistor", fontsize=14, fontweight="bold")
+        fig.tight_layout(rect=(0, 0.06, 1, 0.92))
+        save(fig, "three_way")
+
+
+def endtoend_3() -> None:
+    """Worst stressed peak error per buffer: native IBIS against track 1, transistor = 0."""
+    import csv as _csv
+    import stage_count_from_file as sc
+    sel = _selector_picks()
+    devs, nat, t1, dead = [], [], [], []
+    for dev in sc.BUFFERS:
+        if dev not in sel:
+            continue
+        n, alive = _native(dev)
+        devs.append(dev)
+        nat.append(n if (n is not None and alive) else np.nan)
+        dead.append(not alive)
+        t1.append(float(sel[dev]["rms_pct"]))
+    x = np.arange(len(devs))
+    with plt.rc_context(BODY):
+        fig, a = plt.subplots(figsize=(12.6, 4.8))
+        a.axhline(0, color=SIL, lw=3.0, zorder=4)
+
+        a.bar(x - 0.19, nat, 0.36, color=NAT, label="HSPICE native IBIS")
+        a.bar(x + 0.19, t1, 0.36, color=REAL, label="track 1 (the file + one pad run)")
+        top = np.nanmax(nat) * 1.28
+        for i, isdead in enumerate(dead):
+            if isdead:
+                a.bar(i - 0.19, top * 0.93, 0.36, color="none", edgecolor="#AAAAAA",
+                      hatch="///", lw=1.2)
+        a.axhline(10, color="#555555", ls="--", lw=1.1)
+        a.text(len(devs) - 0.4, 11, "\u00b110 %", fontsize=10, color="#555555", ha="right")
+        a.set_xticks(x, devs, rotation=28, ha="right")
+        a.set_ylabel("worst stressed peak error\nagainst the transistor (%)")
+        a.set_ylim(0, top)
+        a.set_xlim(-0.75, len(devs) - 0.25)
+        a.grid(axis="y", alpha=0.3)
+        a.set_title("Every buffer, worst of its stressed widths", fontweight="bold",
+                    pad=30)
+        h, l = a.get_legend_handles_labels()
+        h.append(mpatches.Patch(facecolor="none", edgecolor="#AAAAAA", hatch="///"))
+        l.append("native IBIS did not converge (tr1ps file)")
+        a.legend(h, l, loc="lower center", bbox_to_anchor=(0.5, 1.03), ncol=3,
+                 frameon=False, fontsize=10.5, columnspacing=1.4)
+        fig.tight_layout()
+        save(fig, "endtoend_3")
 
 
 def main() -> int:
@@ -334,6 +728,10 @@ def main() -> int:
     what_we_have()
     coverage()
     four_numbers()
+    why_chain()
+    calib_run()
+    three_way()
+    endtoend_3()
     ccomp_reject()
     pick_rank()
     for dev in DEV:
@@ -520,6 +918,7 @@ def k_choice(dev: str = "ex2") -> None:
         a.set_ylabel("fit error against the file's Ku(t)")
         a.set_ylim(0, max(rms) * 1.12)
         a.set_title("what the file sees \u2014 a plateau", fontsize=13, fontweight="bold")
+
         a.grid(alpha=0.3)
 
         b = ax[1]
@@ -536,9 +935,12 @@ def k_choice(dev: str = "ex2") -> None:
         b.set_ylabel("pad (V)")
         b.grid(alpha=0.3)
         b.legend(loc="upper right", fontsize=10.5)
+        fig.text(0.5, 0.012, "\u2193  neither panel can pick one \u2014 the single stressed "
+                 "run breaks both ties", ha="center", fontsize=12.5, fontweight="bold",
+                 color=REAL)
         fig.suptitle("ex2  |  the file narrows K to a band of three and cannot choose inside it",
                      fontsize=14, fontweight="bold")
-        fig.tight_layout(rect=(0, 0, 1, 0.91))
+        fig.tight_layout(rect=(0, 0.055, 1, 0.91))
         save(fig, "k_choice")
 
 
@@ -676,8 +1078,8 @@ def fit_search() -> None:
         for rank, i in enumerate(keep):
             sh = 0.18 + 0.72 * rank / (len(keep) - 1)
             a.plot(t, cur[i], color=(0.12, 0.31, 0.48, sh), lw=2.0,
-                   label="the chain, as the search improves it" if rank == 0 else None)
-        a.plot(t, cur[-1], color=REAL, lw=2.8, label="where it lands", zorder=4)
+                   label="our K-stage chain, trial by trial" if rank == 0 else None)
+        a.plot(t, cur[-1], color=REAL, lw=2.8, label="where the chain lands", zorder=4)
         a.set_xlim(-0.25, 3.0)     # the rise; fit_t runs -0.4 to 13 ns, input on at 0
         a.set_ylim(-0.08, 1.18)
         a.set_xlabel("time (ns)")
@@ -916,65 +1318,6 @@ def coverage() -> None:
         save(fig, "coverage")
 
 
-def four_numbers() -> None:
-    """The stage law dissected: every term coloured, every symbol defined."""
-    C = {"s": "#1F6F8B", "h": "#8E44AD", "x": "#B0563C", "v": "#444444"}
-
-    def run(ax, fig, x, y, parts, size):
-        """Draw coloured segments left to right, advancing by what each one measured."""
-        for txt, col in parts:
-            t = ax.text(x, y, txt, fontsize=size, family="monospace", color=col,
-                        fontweight="bold" if col != C["v"] else "normal", va="center")
-            fig.canvas.draw()
-            x += t.get_window_extent().width / fig.get_size_inches()[0] / fig.dpi * 100
-        return x
-
-    with plt.rc_context(BODY):
-        fig = plt.figure(figsize=(12.6, 5.5))
-        a = fig.add_axes([0, 0.52, 1, 0.46])
-        a.axis("off")
-        a.set_xlim(0, 100)
-        a.set_ylim(0, 30)
-        a.text(50, 27, "one stage, as the physics on the last slide requires it",
-               ha="center", fontsize=13, fontweight="bold", color="#333333")
-        run(a, fig, 3.5, 16, [
-            ("dv/dt  =  ", C["v"]), ("s_up", C["s"]), ("\u00b7h(u)\u00b7", C["h"]),
-            ("min(1, (1\u2212v)/", C["v"]), ("x_lin", C["x"]), (")", C["v"]),
-            ("   \u2212   ", C["v"]), ("s_dn", C["s"]), ("\u00b7h(1\u2212u)\u00b7", C["h"]),
-            ("min(1, v/", C["v"]), ("x_lin", C["x"]), (")", C["v"])], 15)
-        x = run(a, fig, 3.5, 5, [
-            ("with   h(u) = clip((u \u2212 ", C["v"]), ("vt", C["h"]),
-            (")/(1 \u2212 ", C["v"]), ("vt", C["h"]), ("), 0, 1)", C["v"])], 14)
-        a.text(x + 6, 5, "u = the stage's input,   v = its output", fontsize=13,
-               family="monospace", color="#888888", va="center")
-
-        b = fig.add_axes([0.03, 0.02, 0.94, 0.46])
-        b.axis("off")
-        b.set_xlim(0, 100)
-        b.set_ylim(0, 100)
-        cols = [2, 13, 40, 72]
-        for cx, h in zip(cols, ["", "is", "what it decides", "where its value comes from"]):
-            b.text(cx, 92, h, fontsize=11.5, fontweight="bold", color="#777777")
-        rows = [
-            ("s_up", C["s"], "the charging current",
-             "where the gate is when the pulse ends", "fitted to the file's Ku(t)"),
-            ("s_dn", C["s"], "the discharging current",
-             "how quickly the gate lets go again", "fitted to the file's Ku(t)"),
-            ("vt", C["h"], "the input it needs to react",
-             "how much of a pulse survives each hop", "fitted, then re-set by the run"),
-            ("x_lin", C["x"], "where saturation ends",
-             "the shape of the approach to the rail", "fitted (pinned 0.45 on most)"),
-        ]
-        for i, (sym, col, is_, dec, src) in enumerate(rows):
-            y = 76 - i * 19
-            b.plot([0.2, 1.1], [y + 2, y + 2], color=col, lw=5, solid_capstyle="butt")
-            b.text(cols[0], y, sym, fontsize=14, family="monospace", fontweight="bold", color=col)
-            b.text(cols[1], y, is_, fontsize=12.5, color="#222222")
-            b.text(cols[2], y, dec, fontsize=12.5, color="#222222")
-            b.text(cols[3], y, src, fontsize=12.5, color="#222222")
-        save(fig, "four_numbers")
-
-
 def ccomp_reject() -> None:
     """Why the file rejects its own declared C_comp: Ku cannot exceed 1."""
     import csv as _csv
@@ -989,12 +1332,12 @@ def ccomp_reject() -> None:
         fig, a = plt.subplots(figsize=(10.8, 4.6))
         a.plot(cc, ku, color=SIL, lw=3.6, zorder=3)
         a.axhline(1.0, color="#B0563C", lw=2.2, ls="--", zorder=2)
-        a.text(3.25, 1.004, "Ku = 1: the device conducting everything it has",
-               fontsize=11.5, color="#B0563C", fontweight="bold", va="bottom")
+        a.text(2.30, 0.9905, "Ku = 1: the device conducting everything it has",
+               fontsize=11.5, color="#B0563C", fontweight="bold", va="top")
         # annotations above their own points, staggered so none overlaps another or the curve
         for x, lab, col, off, ha in (
                 (loop, f"loop-measured {loop} pF", REAL, (-14, 112), "right"),
-                (knee, f"the knee {knee} pF", "#1F6F8B", (14, 44), "left"),
+                (knee, f"the knee {knee} pF", "#1F6F8B", (-16, 62), "right"),
                 (decl, f"declared in the file {decl} pF", "#B0563C", (-12, 26), "right")):
             y = float(np.interp(x, cc, ku))
             a.plot(x, y, "o", color=col, ms=11, zorder=5)
@@ -1002,7 +1345,7 @@ def ccomp_reject() -> None:
                        xytext=off, ha=ha, fontsize=11.5, fontweight="bold", color=col,
                        arrowprops=dict(arrowstyle="->", color=col, lw=1.4))
         a.set_xlim(0, 5.7)
-        a.set_ylim(0.985, 1.42)
+        a.set_ylim(0.9725, 1.42)
         a.set_xlabel("C_comp assumed when solving the file (pF)")
         a.set_ylabel("peak Ku the solve returns")
         a.grid(alpha=0.3)

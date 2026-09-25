@@ -246,24 +246,26 @@ slide("8 · But a few samples need a family of shapes to choose from",
       notes="This rules out RC cascades, delay-plus-RC and superposition - which is what the "
             "shipped model is built from.")
 
-slide("9 · The family: a stage is a current source with a threshold",
-      ["A CMOS inverter driving a large load is a **current source** while its input sits at the "
-       "rail, because its conducting device is in saturation. Only near the destination rail does "
-       "it leave saturation and become a resistor.",
-       "**A constant current into a gate capacitance is a ramp, tapering at the end** — which "
-       "is what the measured stages do."],
+slide("9 · Where the stage law comes from",
+      ["Three facts about one CMOS inverter driving the next one's gate. Each contributes one "
+       "factor, and together they are the whole law — there is nothing else in it.",
+       "**A constant current into a fixed capacitance is a constant slope. That is the "
+       "backbone; the threshold and the taper only modulate it.**"],
       F24 / "stage_law.png",
       notes="Left: the input and the threshold it must pass. Right: the output the constant "
             "current produces. The next slide turns this picture into the four numbers.")
 
-slide("10 · The four numbers that picture requires",
-      ["Written out, the stage law has exactly four free numbers and no more. Each one is a "
-       "named part of the picture on the last slide, not a fitting coefficient.",
-       "**Three are fitted to the file and cost nothing. One, vt, is fitted and then re-set by "
-       "the single stressed run — that is step 4.**"],
+slide("10 · The four numbers, and what each one is",
+      ["**s_up and s_dn are slopes, not currents** — v is normalised, so dv/dt is swings per "
+       "nanosecond. **x_lin** is named for the MOSFET's linear (triode) region.",
+       "**Does the file not give vt?** Its Vinh/Vinl are the input **pin's** thresholds, and we "
+       "do use those — for our input comparator. vt is an **internal** stage's threshold, and "
+       "the file never describes that node."],
       F24 / "four_numbers.png",
+      size=16,
       notes="Colours tie each term of the equation to its row. u is the stage's input, v its "
-            "output, both on their own 0-to-1 swing.")
+            "output, both on their own 0-to-1 swing. On inv_chain the file's Vinh is 2.0 V on "
+            "a 1.8 V part, which is why the converter guards it - the backup slide.")
 
 slide("11 · What each of the four actually does",
       ["Each swept on its own about the value the fit chose, on the 810 ps pulse. The thick black "
@@ -274,64 +276,77 @@ slide("11 · What each of the four actually does",
       notes="Simulated with the project's own stage model from the fitted values the 09-17 film "
             "exported.")
 
-slide("12 · Why a chain of K of them",
-      ["The real predriver **is** a chain — the schematic earlier showed three inverters between "
-       "ex2's input and its output gate, and the stage walk watched a pulse lose height at each.",
-       "We cannot see how many a vendor's part has, so the count K is a parameter. The stages are "
-       "held **identical**: a real tapered predriver approximately is, and letting them differ "
-       "makes the fit degenerate.",
+slide("12 · Why a chain, and not one stage",
+      ["Fit one stage as well as it can be fitted and it still misses the file's own Ku(t) by "
+       "4.6× the best error. One stage is one ramp: it starts the instant the input does, "
+       "where the real Ku(t) waits, and then bends over too early.",
+       "**The file itself rules out a single stage — no stressed data needed to see it.** "
+       "Three stages is where the error settles."],
+      F24 / "why_chain.png",
+      notes="est_knee fit, ex2 pull-up: K=1 rms 0.0920, K=2 0.0360, K=3 0.0233, best (K=6) "
+            "0.0202. The real predriver is a chain too - ex2's schematic showed three "
+            "inverters - but this is the file saying so on its own.")
+
+slide("12 · So: K identical stages, then the file's own map",
+      ["We cannot see how many stages a vendor's part has, so the count K is a parameter. The "
+       "stages are held **identical**: a real tapered predriver approximately is, and letting "
+       "them differ makes the fit degenerate.",
        "**Everything to the right of the gate is the file's own, untouched — the map and the "
        "I-V tables. We are only building the left-hand box.**"],
       F24 / "model_blocks.png",
-      size=17,
       notes="Degenerate: a free fit splits the delay into one sluggish stage plus one quick one, "
             "reproduces the full swing slightly better, and predicts a stressed gate of 0.23 "
             "against a measured 0.76.")
 
-slide("13 · Step 1 — C_comp, rejected by the file's own arithmetic",
-      ["Ku is a fraction of the device's own current, so it cannot exceed 1. Solve the file at a "
-       "range of assumed C_comp and watch what the solve returns.",
-       "**ex2's declared 5.0 pF makes the file imply Ku = 1.24 — impossible. The file rejects "
-       "its own declared value.**",
-       "So: keep what the file declares unless it implies Ku > 1, then take the value at which Ku "
-       "just reaches 1. That reads 2.64 pF here, against 1.70 measured with a probe — 55 % "
-       "off, and it still works, because the stressed peak is not sharp in C_comp."],
+slide("13 · Before the recipe: C_comp is an input, and this file's is wrong",
+      ["C_comp is not something the method derives — it is an input the solve needs, and we "
+       "assume it arrives with the file. **When s2ibispy extracts it properly, it drops into "
+       "this same slot and nothing downstream changes.**",
+       "It still needs a validity check, because this file's declared value fails one. Ku is a "
+       "fraction of the device's own current, so it cannot exceed 1; ex2's declared 5.0 pF makes "
+       "the file imply **Ku = 1.24**, which is impossible.",
+       "Today's numbers therefore use the value at which Ku just reaches 1 — 2.64 pF here, "
+       "against 1.70 measured with a probe. 55 % off, and it still works, because the stressed "
+       "peak is not sharp in C_comp."],
       F24 / "ccomp_reject.png",
       size=17,
       notes="C_comp is not a model parameter: it is a number the file's own Ku tables were "
             "solved with, so a wrong value inflates the curve everything downstream is fitted to.")
 
-slide("14 · Step 2 — the four numbers, fitted to the file's Ku(t)",
-      ["The four are searched until the chain's output, put through the map, reproduces **the "
-       "file's own full-swing Ku(t)** — the black curve. Nelder–Mead, three restarts.",
+slide("14 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t)",
+      ["**The chain** is the K stages above, in series. Its output is a gate; put that gate "
+       "through the map and it becomes a Ku. The four numbers are searched until that Ku "
+       "reproduces **the file's own full-swing Ku(t)** — the black curve. Nelder–Mead, three "
+       "restarts.",
        "Error 0.284 down to 0.0098, landing on s_up 2.59, s_dn 2.38, vt 0.51, x_lin 0.66.",
        "**No measurement is involved: the target is a curve the file already contains.**"],
       F24 / "fit_search.png",
       notes="Every trial the optimiser actually took, exported live by the 09-17 film. What it "
             "does NOT give us is K, or the map's shape.")
 
-slide("15 · Step 3 — what the file cannot choose",
-      ["Left: the fit error against the file's Ku(t), for every stage count. Past K = 3 it is "
-       "**flat** — the file has nothing left to say.",
-       "Right: the three candidates inside that band, on one 810 ps pulse. Same file, same fit "
-       "quality, **three completely different buffers**.",
-       "**The map's shape is under-determined in the same way** — the degeneracy slide. "
-       "Three stage counts × three map shapes = nine candidates."],
+slide("15 · Recipe step 2 of 4 — enumerate what the file cannot choose",
+      ["Left: past K = 3 the fit error against the file's Ku(t) is **flat**. Right: the three "
+       "candidates inside that band on one 810 ps pulse — same file, same fit quality, "
+       "**three completely different buffers**.",
+       "The map's shape is under-determined the same way: 3 stage counts × 3 map shapes = "
+       "**nine candidates**, all equally good against the file.",
+       "**The file is now spent. Everything left is decided by the one stressed run.**"],
       F24 / "k_choice.png",
       notes="The three shapes are (0.50, 0.70), (0.40, 0.60) and (0.40, 0.90). Note on the right "
             "that all three already match the peak - that is the calibration, and it is why the "
             "peak cannot be what chooses.")
 
-slide("16 · Step 4 — the stressed run, first job: set the amplitude",
-      ["Now the measured waveform enters. **Fitted to the file alone the chain leaves the 810 ps pad 28 % low** — the file can set the shape, but not the amplitude.",
-       "So bisect vt against the measured peak. The two spikes are the bracket being probed first: vt = 0 overshoots by 26 %, vt = 0.7 kills the pulse entirely at −99 %. Then halve. Ten runs, landing on vt 0.487 and +1.4 %.",
-       "**Why vt and not the drive rates? The rates were fitted to reproduce the full swing, and moving them breaks it. vt changes when the chain hands off, not how fast it runs.**"],
-      F24 / "bisection.png",
+slide("16 · Recipe step 3 of 4 — the stressed run sets the amplitude",
+      ["One pulse into the real part, at the deepest rung of the ladder, and one number off "
+       "it: the peak. Nothing is probed.",
+       "**Why vt and not the drive rates?** The rates were fitted to reproduce the full swing, "
+       "and moving them breaks it. vt changes **when** the chain hands off, not how fast it runs."],
+      F24 / "calib_run.png",
       notes="Every iteration the calibration actually wrote, recovered from the netlists it "
             "emitted. The vt here is the film's ex2 case; the deck's own K = 3 build lands on "
             "0.632 from a different starting fit.")
 
-slide("17 · Step 5 — the stressed run, second job: pick one",
+slide("17 · Recipe step 4 of 4 — the same run picks one of the nine",
       ["All nine candidates are now calibrated, so **all nine hit the measured peak** — the "
        "calibration put it there. Right-hand panel: ranked on the peak every one is within 2.5 %, "
        "in no meaningful order.",
@@ -345,28 +360,40 @@ slide("17 · Step 5 — the stressed run, second job: pick one",
             "times the waveform error. The nine waveforms themselves are the backup slide.")
 
 slide("18 · The recipe, end to end",
-      ["**From the file alone:** C_comp, kept unless its own Ku > 1 test rejects it; then s_up, "
-       "s_dn, vt, x_lin fitted to the file's Ku(t) at each stage count in the band.",
-       "**Left undetermined by the file:** the stage count and the map's shape — nine "
-       "candidates in all.",
-       "**From one stressed pad run, in order:** bisect vt until the peak matches, then pick the "
-       "candidate whose whole waveform matches.",
+      ["**Assumed as an input:** C_comp, with a Ku > 1 validity check on it.",
+       "**Steps 1–2, from the file alone:** fit s_up, s_dn, vt, x_lin to the file's Ku(t) at "
+       "each stage count in the band; that leaves nine candidates the file cannot separate.",
+       "**Steps 3–4, from one stressed pad run:** bisect vt until the peak matches, then pick "
+       "the candidate whose whole waveform matches.",
        "**Nothing is probed.** The only measurement is a pad voltage, from outside the chip."],
       F24 / "model_blocks.png",
       size=16,
       notes="The same block diagram as the chain slide, with the recipe attached. This is the "
             "slide to leave up during questions.")
 
-slide("Result · where the file-only recipe stands",
-      ["**12 of 12 buffers within ±10 % on the worst stressed pulse; mean 6.9 %.**",
-       "On inv_chain the file-only build reaches 5.1 %, against 25.8 % for a build that uses the "
-       "probed silicon — the shape choice matters more than the measurement.",
+slide("Result · the three on one bench, at the deepest pulse",
+      ["Transistor in black, HSPICE native IBIS dotted, track 1 in teal. Same netlist, same "
+       "stimulus, same load.",
+       "**Native IBIS is +71 %, +87 % and −20 % on the three buffers. Track 1 is −2 %, −4 % "
+       "and +2 %.**"],
+      F24 / "three_way.png",
+      notes="The deepest rung of each ladder: ex2 810 ps, inv_chain 104 ps, io_buf 1505 ps. "
+            "io_buf's deepest rung is 37 % of its swing, not 50 - its ladder is shallower.")
+
+slide("Result · every buffer, worst of its stressed widths",
+      ["**12 of 12 within ±10 % against the transistor; mean 6.9 %.** Native IBIS, where it "
+       "runs at all, is 20 % to 100 %.",
+       "Native does not converge on the five ex2 variants — HSPICE's two-waveform solver dies "
+       "on their 1 ps files and reports the pulse missing at **every** depth, the mildest "
+       "included. Those bars are hatched, not scored.",
        "**What it costs:** the full transition is worse than the shipped model on 10 of 12 "
        "buffers, and a stressed pulse train is still lost on ex2 and io_buf. We are buying "
        "stressed accuracy with full-swing accuracy."],
-      ROOT / "results/track1_summary_2026-09-23/endtoend.png",
-      notes="Grey is the shipped model, blue the build using probed silicon, red the file-only "
-            "one. Full numbers in docs/track1_recipe.md.")
+      F24 / "endtoend_3.png",
+      size=16,
+      notes="Native from gate_cascade_prototype_2026-09-09 sweeps, track 1 from "
+            "selector_from_one_run_2026-09-23. Same five widths per buffer in both. The "
+            "tr1ps death is documented in docs/native_vt_waveform_modes.md.")
 
 slide("Result · what this does not cover yet",
       ["**Direction.** Everything here is a short HIGH pulse. Only io_buf has been run pulling "

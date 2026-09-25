@@ -1,6 +1,6 @@
 # Meeting deck — 24 September 2026
 
-`0924_track1_story.pptx`, 27 slides. Built by `scripts/build_0924_deck.py`; figures by
+`0924_track1_story.pptx`, 29 slides. Built by `scripts/build_0924_deck.py`; figures by
 `scripts/build_0924_deck_figures.py`. Rendered to `slides/` with
 `scripts/render_deck_slides.ps1`. Style and layout come from Simon's 09-18 deck; none of his
 slides are carried over.
@@ -31,21 +31,23 @@ asserted rather than shown.
 | 10 | 6 · What the file fixes, and what it leaves open |
 | 11 | 7 · One more measurement, and a stressed pulse is the one |
 | 12 | 8 · But a few samples need a family of shapes to choose from |
-| 13 | 9 · The family: a stage is a current source with a threshold |
-| 14 | 10 · The four numbers that picture requires |
+| 13 | 9 · Where the stage law comes from |
+| 14 | 10 · The four numbers, and what each one is |
 | 15 | 11 · What each of the four actually does |
-| 16 | 12 · Why a chain of K of them |
-| 17 | 13 · Step 1 — C_comp, rejected by the file's own arithmetic |
-| 18 | 14 · Step 2 — the four numbers, fitted to the file's Ku(t) |
-| 19 | 15 · Step 3 — what the file cannot choose |
-| 20 | 16 · Step 4 — the stressed run, first job: set the amplitude |
-| 21 | 17 · Step 5 — the stressed run, second job: pick one |
-| 22 | 18 · The recipe, end to end |
-| 23 | Result · where the file-only recipe stands |
-| 24 | Result · what this does not cover yet |
-| 25 | Backup · where Ku(t) comes from |
-| 26 | Backup · the nine candidates as waveforms |
-| 27 | Backup · inv_chain's input threshold |
+| 16 | 12 · Why a chain, and not one stage |
+| 17 | 12 · So: K identical stages, then the file's own map |
+| 18 | 13 · Before the recipe: C_comp is an input, and this file's is wrong |
+| 19 | 14 · Recipe step 1 of 4 — fit the four numbers to the file's Ku(t) |
+| 20 | 15 · Recipe step 2 of 4 — enumerate what the file cannot choose |
+| 21 | 16 · Recipe step 3 of 4 — the stressed run sets the amplitude |
+| 22 | 17 · Recipe step 4 of 4 — the same run picks one of the nine |
+| 23 | 18 · The recipe, end to end |
+| 24 | Result · the three on one bench, at the deepest pulse |
+| 25 | Result · every buffer, worst of its stressed widths |
+| 26 | Result · what this does not cover yet |
+| 27 | Backup · where Ku(t) comes from |
+| 28 | Backup · the nine candidates as waveforms |
+| 29 | Backup · inv_chain's input threshold |
 
 ## Built on the 09-17 method film
 
@@ -139,6 +141,47 @@ Reading all twenty-seven rendered slides again found defects that only show up i
 * **Numeric cross-references were removed.** The numbers in the titles are section numbers, not
   slide numbers, so "(slide 7)" pointed at nothing; one was wrong outright. The two result
   slides also had no section marker while every other slide does — they now read `Result · …`.
+
+### The third pass: the method half, again
+
+* **The stage law now has a source.** Slide 13 is three facts about one CMOS inverter, each
+  drawn and each contributing one factor; slide 14 multiplies them and dissects the result. The
+  equation no longer appears asserted.
+* **s_up and s_dn were described as currents. They are not.** `v` is normalised, so `dv/dt` is
+  swings per nanosecond and `s_up` is a slope — ex2 fits 2.59/ns, 0.39 ns to cross a stage's
+  swing flat out. The physics behind it is `I_sat/(C·V_swing)`, but no current is ever computed.
+  `x_lin` is named for the MOSFET's **linear (triode) region**.
+* **Does the file give vt?** It gives `Vinh`/`Vinl`, the input **pin's** thresholds, and the
+  converter does use them, for the input comparator. `vt` is an **internal** stage's threshold
+  and the file never describes that node. Now stated on the slide.
+* **"Why a chain" now shows why.** Fit K = 1 as well as it can be fitted and it still misses the
+  file's own Ku(t) by 4.6× the best error (rms 0.0920 against 0.0202): one stage is one ramp, it
+  starts when the input does where the real Ku(t) waits, and bends over early. The file rules a
+  single stage out on its own, with no stressed data.
+* **C_comp is no longer a step.** It is an input the method assumes, with a Ku ≤ 1 validity
+  check; when s2ibispy extracts it, it drops into the same slot. The recipe is now four numbered
+  steps, and `docs/track1_recipe.md` carries the same mapping (S1 is the input; S2–S6 are the
+  four steps).
+* **"The chain" is now defined before it is used** — a slide of its own, immediately before the
+  fit that talks about it — and the degeneracy slide ends on the resolution rather than the
+  problem.
+* **The calibration slide is a picture.** Which run (the deepest rung), what is taken off it
+  (the peak), how it is used (bisection on vt), and what it buys — in three panels instead of
+  three paragraphs.
+
+### The results are now the three-way comparison
+
+`three_way.png` puts transistor, HSPICE native IBIS and track 1 on one axis at the deepest
+stressed pulse: native +71 %, +87 %, −20 % against track 1's −2 %, −4 %, +2 %.
+`endtoend_3.png` does the same per buffer.
+
+**Native does not converge on the five ex2 variants.** Its worst peak error reads −97 to
+−100 % at *every* depth on those files, the mildest included, which is not a model error but
+HSPICE's two-waveform solver dying on a 1 ps file (`docs/native_vt_waveform_modes.md`). Those
+bars are drawn hatched and excluded from the comparison rather than scored as a 100 % win.
+Native and track 1 are read from the same five widths per buffer:
+`gate_cascade_prototype_2026-09-09/<dev>/sweep.csv` and
+`selector_from_one_run_2026-09-23/selector_picks.csv`.
 
 ## Bench and sources
 
