@@ -4,6 +4,7 @@ __pycache__/
 
 # Large/generated simulator waveform outputs
 *.raw
+*.raw.gz
 *.cir.csv
 *.prn
 *.out

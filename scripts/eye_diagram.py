@@ -20,6 +20,7 @@ Design notes:
     wire it into load_waveform() via the 'fmt' argument.
 """
 
+import gzip
 import sys
 import re
 import argparse
@@ -140,16 +141,40 @@ def _unique_names(names):
     return out
 
 
+def resolve_raw(filepath):
+    """The path to read for `filepath`, preferring it but falling back to `<name>.gz`.
+
+    ngspice raw files compress about 6x and are kept compressed in place; callers still ask
+    for `run.raw`. Raises FileNotFoundError naming both candidates if neither exists.
+    """
+    filepath = Path(filepath)
+    if filepath.exists():
+        return filepath
+    gz = filepath.with_suffix(filepath.suffix + ".gz")
+    if gz.exists():
+        return gz
+    raise FileNotFoundError(f"neither {filepath} nor {gz} exists")
+
+
+def read_maybe_gz(filepath):
+    """Bytes of `filepath`, transparently decompressing a .gz."""
+    filepath = Path(filepath)
+    if filepath.suffix == ".gz":
+        with gzip.open(filepath, "rb") as fh:
+            return fh.read()
+    return filepath.read_bytes()
+
+
 def parse_ngspice_raw(filepath):
     """
-    Parse an NGspice .raw file.
+    Parse an NGspice .raw file, compressed (.raw.gz) or not.
 
     Returns
     -------
     dict  {signal_name: np.ndarray}  — all signals including 'time'
     """
-    filepath = Path(filepath)
-    data = filepath.read_bytes()
+    filepath = resolve_raw(filepath)
+    data = read_maybe_gz(filepath)
 
     marker = b"Binary:"
     idx = data.find(marker)
@@ -207,8 +232,8 @@ def parse_ngspice_ascii_raw(filepath):
     Some Windows ngspice.exe batch runs emit a `Values:` raw file rather than
     the `Binary:` format used by the older local workflow.
     """
-    filepath = Path(filepath)
-    lines = filepath.read_text(encoding='latin1', errors='replace').splitlines()
+    filepath = resolve_raw(filepath)
+    lines = read_maybe_gz(filepath).decode('latin1', errors='replace').splitlines()
 
     nvars = None
     npts = None
