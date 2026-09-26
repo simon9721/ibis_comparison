@@ -664,13 +664,31 @@ def float_or_none(value):
         return None
 
 
-def estimate_input_threshold(ibis_data, corner):
+def estimate_input_threshold(ibis_data, corner, notes=None):
     """
     Estimates a single switching threshold for an input-driven output model.
+
+    `notes` is an optional list; when the Vinh/Vinl fallback below is taken, a comment is
+    appended to it so the generated netlist can record that it happened.
     """
     vinl = float_or_none(getattr(ibis_data, "vinl", None))
     vinh = float_or_none(getattr(ibis_data, "vinh", None))
+    try:
+        vcc = float(get_nominal_vcc(ibis_data, corner))
+    except Exception:  # noqa: BLE001
+        vcc = None
     if vinl is not None and vinh is not None:
+        # Vinh/Vinl are specification limits, not the switching point. When they
+        # sit outside the supply (inv_chain declares Vinh 2.0 V on a 1.8 V part)
+        # their midpoint moves the digital edge off centre and shortens every
+        # pulse by ~2 * (t_mid - t_50%) of the input edge; use mid-supply then.
+        if vcc is not None and (vinh >= vcc or vinl <= 0.0 or vinh <= vinl):
+            if notes is not None:
+                notes.append(
+                    f"* Input threshold: the file's Vinh/Vinl ({vinh:g}/{vinl:g} V) do not sit\n"
+                    f"* inside the {vcc:g} V supply, so they are specification limits rather than a\n"
+                    f"* switching point. Mid-supply {vcc / 2:g} V is used instead of their midpoint.\n")
+            return vcc / 2
         return (vinl + vinh) / 2
 
     _INDEX = convert_corner_str_to_index(corner)
@@ -4522,7 +4540,8 @@ def create_ngspice_input_driven_output_model(ibis_data, corner, io_type, output_
         kr = pybis2spice.compress_param(kr, threshold=compress_threshold)
         kf = pybis2spice.compress_param(kf, threshold=compress_threshold)
 
-        threshold = estimate_input_threshold(ibis_data, corner)
+        threshold_notes = []
+        threshold = estimate_input_threshold(ibis_data, corner, threshold_notes)
         subckt_name = sanitize_ngspice_identifier(f'{ibis_data.model_name}-OutputInput-{corner}')
 
         if pad_matched_replay_mode is not None:
@@ -4559,6 +4578,7 @@ def create_ngspice_input_driven_output_model(ibis_data, corner, io_type, output_
             extra_info = "* Note: NgSpiceInputDriven exposes OUT IN EN VCC VSS pins.\n"
             extra_info += "* IN edges trigger waveform-derived Ku/Kd coefficient curves.\n"
 
+        extra_info += "".join(threshold_notes)
         spice_text = spice_header_info(ibis_data, corner, extra_info=extra_info)
         spice_text += f'.SUBCKT {subckt_name} OUT IN EN VCC VSS '
         spice_text += f'params: input_threshold={threshold} enable_threshold={threshold} '
