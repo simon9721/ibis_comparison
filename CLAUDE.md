@@ -78,6 +78,30 @@ out of date.
    `results/` root.
 3. Run `python scripts/make_results_index.py` to update `results/INDEX.md`.
 4. Never write into `results/archive/`.
+5. Commit it. A study that is not committed does not exist for anyone else.
+
+## Git: leave the tree clean, every time
+
+**Finish each piece of work with `git status` clean.** Not "clean except for the outputs",
+not "I will tidy it later" - clean. Check it before you say you are done, and say what the
+state is.
+
+- **Commit the script with the results.** A tracked file must never import an untracked one.
+  This has already bitten: `scripts/build_0924_deck_figures.py` is committed and imports
+  `build_0917_deck_figures`, `build_0918_deck_figures`, `build_explainer_figures`,
+  `current_limited_stage_model` and `predriver_stage_probe`, none of which are - so the
+  committed deck does not build from a fresh clone. Check with
+  `git ls-files --error-unmatch scripts/<module>.py` before relying on an import.
+- **Stage by name, never `git add -A` or `git add .`** - not even with a path, because
+  `git add -A results/foo/` still sweeps every untracked file beneath it. One commit swept
+  115 files under a message describing 11. List the paths you mean.
+- **One commit, one subject.** If the staged set does not match the message, split it.
+- **Never commit on the user's behalf outside the work you were asked to do.** Untracked
+  files that were already there are theirs; ask before adopting them.
+- Scratch work belongs in the scratchpad directory, never in the repo. Loose `.md` notes at
+  the repo root are not a place to keep anything.
+- `results/**/slides/` is gitignored on purpose - rendered slide PNGs are regenerable, the
+  `.pptx` and its figures are not.
 
 **PowerPoint:** a deck the user made is never edited in place. Write a versioned copy
 (`..._v2.pptx`). An open file in PowerPoint is locked, so a save to the same name fails.
