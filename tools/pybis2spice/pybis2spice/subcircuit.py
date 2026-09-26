@@ -4442,6 +4442,16 @@ def spice_rlc_netlist_with_supply(ibis_data, corner, pin_name):
     return st
 
 
+def clamped_die_str(table_str):
+    """V(DIE,VSS) held inside the I-V table's voltage range. ngspice's pwl() extrapolates
+    linearly beyond the table ends; a pull-down table with a negative-slope region below its
+    first point diverged into a 1 kOhm load (open-drain, 2026-09-11). IBIS simulators hold the
+    end currents, which the clamp reproduces."""
+    vals = [float(x) for x in table_str.split(',') if x.strip()]
+    xs = vals[0::2]
+    return f"min(max(V(DIE,VSS), {min(xs):.6g}), {max(xs):.6g})"
+
+
 def define_pwr_and_gnd_clamps_with_supply(ibis_data, corner):
     """
     Defines clamp branches using explicit VCC/VSS pins.
@@ -4459,14 +4469,14 @@ def define_pwr_and_gnd_clamps_with_supply(ibis_data, corner):
         return_val += f'V1 PWR_CLAMP_REF VCC {pwr_offset}\n'
         pwr_clamp_table_str = convert_iv_table_to_str(np.flip(pwr_clamp_ref - ibis_data.iv_pwr_clamp[:, 0]),
                                                       np.flip(ibis_data.iv_pwr_clamp[:, _CORNER_INDEX]))
-        return_val += f'B1 DIE PWR_CLAMP_REF I = pwl(V(DIE,VSS), {pwr_clamp_table_str})\n'
+        return_val += f'B1 DIE PWR_CLAMP_REF I = pwl({clamped_die_str(pwr_clamp_table_str)}, {pwr_clamp_table_str})\n'
 
     if ibis_data.iv_gnd_clamp is not None:
         gnd_offset = format_voltage_offset(float(gnd_clamp_ref))
         return_val += f'V2 GND_CLAMP_REF VSS {gnd_offset}\n'
         gnd_clamp_table_str = convert_iv_table_to_str(ibis_data.iv_gnd_clamp[:, 0] - gnd_clamp_ref,
                                                       ibis_data.iv_gnd_clamp[:, _CORNER_INDEX])
-        return_val += f'B2 DIE GND_CLAMP_REF I = pwl(V(DIE,VSS), {gnd_clamp_table_str})\n\n'
+        return_val += f'B2 DIE GND_CLAMP_REF I = pwl({clamped_die_str(gnd_clamp_table_str)}, {gnd_clamp_table_str})\n\n'
 
     return return_val
 
@@ -4488,14 +4498,14 @@ def define_pullup_and_pulldown_devices_with_supply(ibis_data, corner):
         return_val += f'V3 PULLUP_REF VCC {pullup_offset}\n'
         pullup_table_str = convert_iv_table_to_str(np.flip(pullup_ref - ibis_data.iv_pullup[:, 0]),
                                                    np.flip(ibis_data.iv_pullup[:, _CORNER_INDEX]))
-        return_val += f'B3 DIE PULLUP_REF I={{V(Ku)*pwl(V(DIE,VSS), {pullup_table_str})}}\n'
+        return_val += f'B3 DIE PULLUP_REF I={{V(Ku)*pwl({clamped_die_str(pullup_table_str)}, {pullup_table_str})}}\n'
 
     if ibis_data.iv_pulldown is not None:
         pulldown_offset = format_voltage_offset(float(pulldown_ref))
         return_val += f'V4 PULLDOWN_REF VSS {pulldown_offset}\n'
         pulldown_table_str = convert_iv_table_to_str(ibis_data.iv_pulldown[:, 0] - pulldown_ref,
                                                      ibis_data.iv_pulldown[:, _CORNER_INDEX])
-        return_val += f'B4 DIE PULLDOWN_REF I={{V(Kd)*pwl(V(DIE,VSS), {pulldown_table_str})}}\n\n'
+        return_val += f'B4 DIE PULLDOWN_REF I={{V(Kd)*pwl({clamped_die_str(pulldown_table_str)}, {pulldown_table_str})}}\n\n'
 
     return return_val
 
