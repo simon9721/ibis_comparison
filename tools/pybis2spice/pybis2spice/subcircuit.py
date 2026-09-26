@@ -2898,6 +2898,29 @@ def create_ngspice_charge_limited_gate_state_input_control_netlist(kr, kf, ibis_
     return st
 
 
+def open_drain_tables_as_push_pull(kr, kf):
+    """
+    Widens open-drain [time, Kd] coefficient tables into the [time, Ku, Kd]
+    form the gate-state fits expect, with Ku = 1 - Kd as a placeholder.
+
+    An open-drain buffer has one predriver and one output device, so its whole
+    switching state is the pull-down gate. The push-pull two-state builder
+    already carries that as GDN with a Kd map and residual; feeding it a
+    mirrored Ku keeps every fit well posed (endpoints 0/1, finite taus) while
+    the generated Ku node is never read, because no pull-up I-V branch exists.
+    Tables that are already three columns are returned unchanged.
+    """
+    out = []
+    for k in (kr, kf):
+        k = np.asarray(k, dtype=float)
+        if k.ndim == 2 and k.shape[1] >= 3:
+            out.append(k)
+            continue
+        kd = k[:, _KD_OD]
+        out.append(np.column_stack([k[:, _TIME], 1.0 - kd, kd]))
+    return out[0], out[1]
+
+
 def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode="pwl_full"):
     """
     Creates the v2 two-state hidden-gate coefficient model.
@@ -2908,9 +2931,31 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
     tables are consumed offline into two continuous gate states and optional
     monotonic coefficient maps.
     """
+    open_drain_note = ""
     if ibis_data.model_type.lower() == "open_drain":
-        st = "* InputDrivenTwoStateGate v1 is push-pull only; using legacy Kd control for open-drain.\n"
-        return st + create_ngspice_input_control_netlist(kr, kf, ibis_data)
+        # One gate, one device. The pull-down gate GDN, its Kd map and residual
+        # are exactly the push-pull machinery with the pull-up half unused, so
+        # the two-column open-drain Kd tables are widened into push-pull form
+        # with a mirrored Ku = 1 - Kd placeholder and the same fit runs. The
+        # delayed-level command gives the right rest state from the DC solution
+        # whichever way the input rests, which the legacy Kd control could not
+        # (it held Kd = 1, pad pulled low, until the first edge).
+        #
+        # That placeholder is only safe while nothing reads Ku, which is true
+        # exactly when there is no [Pullup] table: define_pullup_and_pulldown_
+        # devices_with_supply emits the B3 branch only when iv_pullup is not
+        # None. A model typed open_drain that does carry one - a weak keeper,
+        # say - would have B3 multiply the real pull-up I-V by a meaningless
+        # 1 - Kd, so it keeps the legacy path.
+        if getattr(ibis_data, "iv_pullup", None) is not None:
+            st = ("* InputDrivenTwoStateGate: open-drain model declares a [Pullup] table, so the\n"
+                  "* mirrored Ku placeholder would be read by B3; using legacy Kd control.\n")
+            return st + create_ngspice_input_control_netlist(kr, kf, ibis_data)
+        kr, kf = open_drain_tables_as_push_pull(kr, kf)
+        open_drain_note = (
+            "* Open-drain: pull-down gate GDN / Kd only; the GUP / Ku half is a\n"
+            "* mirrored placeholder (Ku = 1 - Kd) that no device branch reads.\n"
+        )
 
     if str(getattr(ibis_data, "enable", "")).lower() == "active-low":
         enable_expr = "(V(EN,VSS) < {enable_threshold})"
@@ -3053,6 +3098,7 @@ def create_ngspice_two_state_gate_input_control_netlist(kr, kf, ibis_data, mode=
 
     st = ""
     st += "* Two-state gate input-driven waveform coefficient control\n"
+    st += open_drain_note
     st += "* GUP/GDN are continuous pullup/pulldown hidden gate states.\n"
     st += "* Complete-edge Ku/Kd tables are used only to fit delays, taus, and maps.\n"
     if state_initialized_replay:
