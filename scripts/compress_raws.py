@@ -48,7 +48,15 @@ def compress_one(raw: Path, apply: bool, keep: bool) -> tuple[int, int, str]:
     before = raw.stat().st_size
     gz = raw.with_suffix(raw.suffix + ".gz")
     if gz.exists():
-        return before, gz.stat().st_size, "already compressed, skipped"
+        # A rebuild can regenerate a raw next to an older .gz - build_0923_figures calls
+        # gp.run_ours, which re-runs ngspice. Skipping would leave a stale .gz that
+        # resolve_raw would fall back to the moment the fresh .raw went away, so the
+        # newer file always wins and the .gz is rewritten.
+        if raw.stat().st_mtime <= gz.stat().st_mtime:
+            return before, gz.stat().st_size, "already compressed, skipped"
+        if not apply:
+            return before, 0, "would re-compress (raw is newer than its .gz)"
+        gz.unlink()
     if not apply:
         return before, 0, "would compress"
 
