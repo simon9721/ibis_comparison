@@ -123,11 +123,15 @@ def timing_shift() -> None:
     ax.axhline(lvl, color="#111", lw=1.2, ls=":")
     ax.text(t_tx - 0.02, lvl + 0.06, "50% of the transistor's excursion",
             fontsize=14, ha="right")
-    for label, y, colour, _lw, _a in marks[1:]:
+    # Stagger the two labels and name the curve in each. The crossings are ~25 ps
+    # apart, so anchoring both to their own x at one height printed them on top of
+    # each other -- "+18 ps" and "+40 ps" overlapped into an unreadable "+184ps".
+    for i, (label, y, colour, _lw, _a) in enumerate(marks[1:]):
         x = sl.cross(t, y, lvl, after=4.9)
         if np.isfinite(x):
-            ax.annotate(f"{(x - t_tx) * 1e3:+.0f} ps", xy=(x, lvl),
-                        xytext=(x + 0.06, lvl - 0.22), fontsize=15, color=colour,
+            ax.annotate(f"{label.replace('HSPICE ', '')} {(x - t_tx) * 1e3:+.0f} ps",
+                        xy=(x, lvl), xytext=(t_tx + 0.14, lvl - 0.15 - 0.16 * i),
+                        fontsize=15, color=colour, fontweight="bold",
                         arrowprops=dict(arrowstyle="->", color=colour, lw=1.6))
     ax.set_xlim(t_tx - 0.55, t_tx + 0.75)
     ax.set_xlabel("Time (ns)")
@@ -585,7 +589,7 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     for fn in (recap, restore_gate, clean_edge, stress_pair, timing_shift,
                offset_chain,
-               command_mechanism, command_pad, offset_removed,
+               command_pad, offset_removed,
                variant_pair, fixture_kukd):
         try:
             fn()
@@ -593,8 +597,13 @@ def main() -> int:
             print(f"  {fn.__name__} failed: {exc}")
     # An error-budget bar, a max|Ku| scatter and a C_comp bar used to live here.
     # They are numbers, and numbers get listed on the slide instead.
+    # command_node.png is retired, not just unused: it was drawn from a 1 ps-edge
+    # probe run, titled 2354 ps while the probe had actually run 1792, and
+    # annotated -0.144 where its own trace sat at -0.079. The section it served now
+    # uses cmd_clean_0_command_node.png, built on the real 1792 ps case with the
+    # 50 ps edge and with both numbers read off the plotted data.
     for stale in ("error_budget.png", "ku_cap.png", "ccomp.png",
-                  "shift_vs_depth.png"):
+                  "shift_vs_depth.png", "command_node.png"):
         p = OUT / stale
         if p.exists():
             p.unlink()

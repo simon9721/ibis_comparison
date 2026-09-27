@@ -38,11 +38,17 @@ F = R / "meeting_deck_2026-09-04" / "figures"
 FIG = {k: F / f"{k}.png" for k in
        ("recap_pad", "recap_kukd",
         "clean_edge", "stress_pad", "stress_kukd", "timing_shift",
-        "offset_chain", "command_node", "command_pad", "offset_removed",
+        "offset_chain",
+        # Last week's two pages, redrawn with cmd_clean as a third curve.
+        # scripts/build_cmd_clean_slides.py, both on io_buf 1792 ps.
+        "cmd_clean_gate_and_ku", "cmd_clean_pad",
         "fixture_vt", "fixture_ku", "variant_pad", "variant_kukd")}
 
 # One wide figure under two lines of text, and the pair layout beside it.
 WIDE = dict(x=0.55, y=2.02, w=12.2, h=4.95)
+# For figures that carry their own title line: no bullets, so the picture starts
+# right under the rule and gets the rest of the slide.
+TALL = dict(x=0.55, y=1.35, w=12.2, h=5.75)
 LEFT = dict(x=0.45, y=2.28, w=6.1, h=4.75)
 RIGHT = dict(x=6.75, y=2.28, w=6.1, h=4.75)
 
@@ -93,11 +99,13 @@ def main() -> int:
     d.add_picture_contain(s, FIG["recap_kukd"], **WIDE)
 
     # ------------------------------------------------------------ the offset
-    s = d.add_slide("The offset: charge stranded in the command capacitor",
+    s = d.add_slide("The offset: the command bucket never empties",
                     section="Delaying the input command")
     points(d, s, [
-        "GUPCMD is a capacitor across 1e15 ohm, charged once per input edge.",
-        "A truncated pulse leaves charge in it with no resistive path out.",
+        "GUPCMD is a bucket: one fixed pour in on the rising edge, one back out "
+        "on the falling edge.",
+        "On a truncated pulse the two pours are not equal, and there is no drain "
+        "— so some is left.",
     ])
     d.add_picture_contain(s, FIG["offset_chain"], **WIDE)
     d.add_notes(s, "The sign of the stranded charge flips with the timestep, so it "
@@ -105,48 +113,56 @@ def main() -> int:
                    "coin flip, which is why the retuned version helped on some "
                    "cases and not others.")
 
-    # --------------------------------------------------- how delay_cmd works
-    s = d.add_slide("How delay_cmd works", section="Delaying the input command")
-    points(d, s, [
-        "gate-state: GUPCMD is a capacitor across 1e15 Ω, given a fixed packet of "
-        "charge on each input edge — an integrator with no DC path.",
-        "delay_cmd: GUPCMD is driven straight from the present input level.",
-    ])
-    d.add_picture_contain(s, FIG["command_node"], **LEFT)
-    d.add_picture_contain(s, FIG["command_pad"], **RIGHT)
-    d.add_notes(s, "One line of the generated subcircuit separates them. "
-                   "gate_state: CGUPCMD across RGUPCMD 1e15 with BGUPCMDON "
-                   "injecting a packet per edge. delay_cmd: BGUPCMD GUPCMD 0 "
-                   "V = V(PUCMDLVL). On the tail after the reversal gate_state "
-                   "sits at -0.144 and creeps back over ~3 ns; delay_cmd is at "
-                   "exactly 0. On this particular bench the stranded charge is "
-                   "negative and the command clamp removes it before it reaches "
-                   "Ku, so the two pads agree to 5 mV -- the pad consequence on "
-                   "the right is the case where the charge is positive.")
+    # ------------------------------------------- last week's two pages, redrawn
+    s = d.add_slide("GUP and Ku", section="Delaying the input command")
+    d.add_picture_contain(s, FIG["cmd_clean_gate_and_ku"], **TALL)
+    d.add_notes(s, "Last week's page, with cmd_clean added as a third curve. Same "
+                   "case, same colours -- fix_old is the purple that was labelled "
+                   "'fix' last week. On the tail, 1.0 to 1.7 ns after the "
+                   "reversal, the command GUPCMD sits at +0.036 original, +0.024 "
+                   "fix_old, +0.000 cmd_clean. The gate state is a lag on the "
+                   "command, so it copies that straight through, and Ku scales it "
+                   "by about 1.18. fix_old does eventually clear, but not until "
+                   "8.7 ns -- the restore gate does not open until the reversal "
+                   "plus 3.0 ns, and the pad has been holding the offset since "
+                   "7.5. That is why last week's approach drove the command back "
+                   "to a clean 0 and still left the pedestal: it was late, not "
+                   "wrong. cmd_clean is at zero from the start because the "
+                   "command is read off the present input level rather than "
+                   "accumulated from past edges. The code calls that build "
+                   "delay_cmd.")
 
-    # ------------------------------------------------------------- delay_cmd
-    s = d.add_slide("delay_cmd removes the offset", section="Delaying the input command")
-    points(d, s, [
-        "The command returns to exactly zero, so nothing is stranded.",
-        "The pedestal goes from 97.9 mV to 5.2 mV, against the transistor's 2.1.",
-    ])
-    d.add_picture_contain(s, FIG["offset_removed"], **WIDE)
-    d.add_notes(s, "On this case the pedestal goes from 97.9 mV to 5.2 mV against "
-                   "the transistor's 2.1 mV. Across all 29 matched stress cases "
-                   "RMSE goes from 108.6 to 92.2 mV, the only build that beats "
-                   "native IBIS. Caveat to state: delay_cmd has a 1.25 ns dead zone "
-                   "after a reversal where neither device is commanded on.")
+    s = d.add_slide("Pad voltage", section="Delaying the input command")
+    d.add_picture_contain(s, FIG["cmd_clean_pad"], **TALL)
+    d.add_notes(s, "The same three builds at the pad, against both references. "
+                   "Measured on the same 1.0 to 1.7 ns window: transistor 5.9 mV, "
+                   "native IBIS 6.2, original 76.3, fix_old 51.9, cmd_clean 4.0. "
+                   "fix_old removes a third of the pedestal; cmd_clean removes "
+                   "all of it. Across all 29 matched stress cases RMSE goes from "
+                   "108.6 to 92.2 mV, the only build that beats native IBIS. "
+                   "Caveat worth stating out loud: cmd_clean has a dead zone of "
+                   "about 0.9 ns after a reversal, the gap between the fitted "
+                   "on-delay and off-delay, where neither device is commanded on. "
+                   "At a 500 ps delay it gives 0.043 V where the original gives "
+                   "0.122; above about 1.2 ns the two are identical.")
 
     # -------------------------------------------------- but not the timing
     s = d.add_slide("It does not fix the timing", section="Delaying the input command")
     points(d, s, [
-        "delay_cmd improved the timing on 0 of 19 stress cases — so the offset and "
-        "the shift are two mechanisms, not one.",
+        "cmd_clean improved the timing on 0 of 19 stress cases — two mechanisms, "
+        "not one.",
         "Our 50% crossing still arrives after native's: io_buf +27..+34 ps against "
         "native's +11..+18.",
     ])
     d.add_picture_contain(s, FIG["timing_shift"], **WIDE)
-    d.add_notes(s, "The plan quotes 69-99 ps late where native is 5-26 ps early. "
+    d.add_notes(s, "Why it cannot help: the edge timing is set by the gate lag and "
+                   "the Ku(t) map, and cmd_clean changes neither -- it changes only "
+                   "how the command that drives them is generated. Measured on one "
+                   "truncated pulse, the 50% crossing of every node moves by single "
+                   "digits: GUPCMD -4.5 ps, GUP -8.2, Ku -13.6, pad -7.5, against a "
+                   "model-to-transistor shift of 27 to 46 ps. cmd_clean changes what "
+                   "is left behind, not how fast the edge moves. "
+                   "The plan quotes 69-99 ps late where native is 5-26 ps early. "
                    "That is not reproducible from the data on disk with a "
                    "50%-of-excursion metric. The stress matrix gives io_buf native "
                    "+11..+18 against ours +27..+34; inv_chain native -6..-5 "
@@ -211,13 +227,14 @@ def main() -> int:
   skewp            8 (x2)    1.0 um    1.0 um   Wp = Wn, rise slower than fall
   weak             8 (x2)    0.5 um    1.0 um   half drive at every stage
 
-ex2                device widths scaled        what it changes
+ex2                device change                what it changes
 
   base             none                         reference
   weak             mx15-19 + mx24-28  x0.5      output stage at half width
-  skewp            mx24-28            x0.5      output PMOS only, rise slows
+  skewp            mx24-28            x0.5      output PMOS halved, rise slows
   slowpre          mx11-14 + mx20-23  x0.5      predriver, delays the onset
-  nomiller         n4->out caps removed         tests Miller feedthrough""",
+  nomiller         n4->out caps removed         tests Miller feedthrough
+  opendrain        mx24-28 removed              NMOS only, no path to VCC""",
                    0.7, 2.15, 12.0, 4.35, size=14.5)
     d.add_notes(s, "Plus an open-drain build of ex2. The nomiller variant came "
                    "back identical to the control -- those caps are 20.5 fF "
@@ -245,7 +262,7 @@ ex2                device widths scaled        what it changes
         "C_comp is handled correctly",
         "the SPICE engine is not a confounder",
         "our model reproduces its own golden waveforms",
-        "delay_cmd removes the settled offset",
+        "cmd_clean removes the settled offset",
     ], y=1.9)
     d.add_text(s, "Open:", 0.7, 4.2, 12.0, 0.5, size=17)
     points(d, s, [
