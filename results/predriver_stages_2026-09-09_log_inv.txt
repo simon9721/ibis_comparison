@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Users\sh3qm\code\ibis_comparison\scripts\predriver_stage_probe.py", line 248, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "C:\Users\sh3qm\code\ibis_comparison\scripts\predriver_stage_probe.py", line 236, in main
+    analyse(dev, stage_runs(dev, hspice), rows)
+                 ~~~~~~~~~~^^^^^^^^^^^^^
+  File "C:\Users\sh3qm\code\ibis_comparison\scripts\predriver_stage_probe.py", line 107, in stage_runs
+    out["full" if full else W] = (t, {n: np.asarray(raw[n], float) for n in nodes})
+                                                    ~~~^^^
+KeyError: 'v(xdut.vout2)'

@@ -1,0 +1,11 @@
+pass,buffer,chain,C_comp,K,rms,s_up,s_dn,vt,x_lin
+file_only,inv_stage4,pull-up,declared,1,0.028617,6.41823,3.32052,0.25875,0.45000
+file_only,inv_stage4,pull-up,declared,2,0.010164,16.04674,13.54026,0.69996,0.45000
+file_only,inv_stage4,pull-up,declared,3,0.005984,25.18614,23.65739,0.67249,0.45000
+file_only,inv_stage4,pull-up,declared,4,0.005887,26.41665,25.12126,0.35999,0.45000
+file_only,inv_stage4,pull-up,declared,5,0.005631,28.48214,27.51784,0.09580,0.45000
+file_only,inv_stage4,pull-up,declared,6,0.005520,33.85132,32.80899,0.02158,0.45000
+file_only,inv_stage4,pull-up,declared,7,0.005633,39.41058,38.70135,0.00332,0.45000
+file_only,inv_stage4,pull-up,declared,8,0.006161,44.54296,44.16179,0.00046,0.45000
+file_only,inv_stage4,pull-up,declared,9,0.006693,49.84488,49.91197,0.00005,0.45000
+file_only,inv_stage4,pull-up,declared,10,0.009605,55.06832,56.88320,0.14799,0.45000

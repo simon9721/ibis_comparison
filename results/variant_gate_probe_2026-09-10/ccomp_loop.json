@@ -1,0 +1,56 @@
+{
+  "ex2_base": {
+    "declared_pF": 5.0,
+    "loop_declared": 0.477,
+    "argmin_pF": 1.75,
+    "min_loop": 0.09
+  },
+  "ex2_weak": {
+    "declared_pF": 5.0,
+    "loop_declared": 0.632,
+    "argmin_pF": 2.0,
+    "min_loop": 0.128
+  },
+  "ex2_nomiller": {
+    "declared_pF": 5.0,
+    "loop_declared": 0.495,
+    "argmin_pF": 1.75,
+    "min_loop": 0.089
+  },
+  "ex2_skewp": {
+    "declared_pF": 5.0,
+    "loop_declared": 0.549,
+    "argmin_pF": 2.0,
+    "min_loop": 0.178
+  },
+  "ex2_slowpre": {
+    "declared_pF": 5.0,
+    "loop_declared": 0.344,
+    "argmin_pF": 1.75,
+    "min_loop": 0.052
+  },
+  "inv_base8": {
+    "declared_pF": 0.468,
+    "loop_declared": 0.086,
+    "argmin_pF": 0.5,
+    "min_loop": 0.081
+  },
+  "inv_weak": {
+    "declared_pF": 0.468,
+    "loop_declared": 0.249,
+    "argmin_pF": 0.3,
+    "min_loop": 0.073
+  },
+  "inv_skewp": {
+    "declared_pF": 0.468,
+    "loop_declared": 0.136,
+    "argmin_pF": 0.4,
+    "min_loop": 0.125
+  },
+  "inv_stage4": {
+    "declared_pF": 0.468,
+    "loop_declared": 0.088,
+    "argmin_pF": 0.5,
+    "min_loop": 0.082
+  }
+}

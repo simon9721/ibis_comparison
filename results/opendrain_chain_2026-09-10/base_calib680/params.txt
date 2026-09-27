@@ -1,0 +1,1 @@
+K=2 s_up=2.18379 s_dn=2.62703 vt=0.699968 x_lin=0.45 prior3=0.52,1.1,0.91 ccomp=None calib_width=0.68

@@ -1,0 +1,8 @@
+component,convert_s,edge_samples,edge_width_s,exit_code,recipe,reject,sampling_s,sim_time_s,tr_s,window_s
+MCM Driver 1,1366.4,,,1,ex2_od_slowpre.yaml,conversion exit 1,,2.422375e-09,2e-10,
+MCM Driver 1,1350.1,83.05812417437255,2.012000000000001e-10,0,ex2_od_slowpre.yaml,extraction failed: IndexError,2.4224000000000003e-12,2.422375e-09,1e-10,2.4224000000000002e-09
+MCM Driver 1,1499.0,81.0766182298547,1.9640000000000007e-10,0,ex2_od_slowpre.yaml,extraction failed: IndexError,2.4224000000000003e-12,2.422375e-09,5e-11,2.4224000000000002e-09
+MCM Driver 1,1322.6,83.05812417437247,2.0119999999999988e-10,0,ex2_od_slowpre.yaml,extraction failed: IndexError,2.4224000000000003e-12,2.422375e-09,2e-11,2.4224000000000002e-09
+MCM Driver 1,1513.2,82.10865257595763,1.988999999999998e-10,0,ex2_od_slowpre.yaml,extraction failed: IndexError,2.4224000000000003e-12,2.422375e-09,1e-11,2.4224000000000002e-09
+MCM Driver 1,1439.0,82.10865257595772,1.989e-10,0,ex2_od_slowpre.yaml,extraction failed: IndexError,2.4224000000000003e-12,2.422375e-09,5e-12,2.4224000000000002e-09
+MCM Driver 1,1472.5,,,1,ex2_od_slowpre.yaml,conversion exit 1,,2.422375e-09,1e-12,

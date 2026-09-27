@@ -1,0 +1,11 @@
+pass,buffer,chain,C_comp,K,rms,s_up,s_dn,vt,x_lin
+file_only,ex2_skewp,pull-up,declared,1,0.094614,0.69987,0.40164,0.64066,0.45000
+file_only,ex2_skewp,pull-up,declared,2,0.045668,1.74960,1.72967,0.69996,0.45000
+file_only,ex2_skewp,pull-up,declared,3,0.032222,2.84671,3.12013,0.69993,0.45000
+file_only,ex2_skewp,pull-up,declared,4,0.030600,3.77686,4.32396,0.66831,0.45000
+file_only,ex2_skewp,pull-up,declared,5,0.030440,3.66222,4.16684,0.36563,0.45000
+file_only,ex2_skewp,pull-up,declared,6,0.028443,3.83712,4.22098,0.05504,0.45000
+file_only,ex2_skewp,pull-up,declared,7,0.027482,4.48356,4.94969,0.03261,0.45000
+file_only,ex2_skewp,pull-up,declared,8,0.027144,5.14079,5.67879,0.01623,0.45000
+file_only,ex2_skewp,pull-up,declared,9,0.027164,5.79338,6.40632,0.00660,0.45000
+file_only,ex2_skewp,pull-up,declared,10,0.027408,6.44412,7.13183,0.00008,0.45000

@@ -1,0 +1,83 @@
+{
+  "ex2_base": {
+    "node": "v(xdut.n4)",
+    "width_ps": 812,
+    "depth": 50,
+    "gate_max": 0.76,
+    "full_t50_ps": 1106,
+    "rest_v": 3.3,
+    "high_v": 0.0
+  },
+  "ex2_weak": {
+    "node": "v(xdut.n4)",
+    "width_ps": 706,
+    "depth": 50,
+    "gate_max": 0.7965,
+    "full_t50_ps": 953,
+    "rest_v": 3.3,
+    "high_v": 0.0
+  },
+  "ex2_nomiller": {
+    "node": "v(xdut.n4)",
+    "width_ps": 809,
+    "depth": 50,
+    "gate_max": 0.7575,
+    "full_t50_ps": 1107,
+    "rest_v": 3.3,
+    "high_v": 0.0
+  },
+  "ex2_skewp": {
+    "node": "v(xdut.n4)",
+    "width_ps": 757,
+    "depth": 50,
+    "gate_max": 0.8071,
+    "full_t50_ps": 1026,
+    "rest_v": 3.3,
+    "high_v": 0.0
+  },
+  "ex2_slowpre": {
+    "node": "v(xdut.n4)",
+    "width_ps": 1094,
+    "depth": 50,
+    "gate_max": 0.7466,
+    "full_t50_ps": 1346,
+    "rest_v": 3.3,
+    "high_v": -0.0
+  },
+  "inv_base8": {
+    "node": "v(xdut.vout7)",
+    "width_ps": 102,
+    "depth": 50,
+    "gate_max": 0.8892,
+    "full_t50_ps": 268,
+    "rest_v": 1.8,
+    "high_v": 0.0
+  },
+  "inv_weak": {
+    "node": "v(xdut.vout7)",
+    "width_ps": 114,
+    "depth": 50,
+    "gate_max": 0.9578,
+    "full_t50_ps": 290,
+    "rest_v": 1.8,
+    "high_v": 0.0
+  },
+  "inv_skewp": {
+    "node": "v(xdut.vout7)",
+    "width_ps": 100,
+    "depth": 50,
+    "gate_max": 0.9842,
+    "full_t50_ps": 266,
+    "rest_v": 1.8,
+    "high_v": 0.0
+  },
+  "inv_stage4": {
+    "node": "v(xdut.vout3)",
+    "width_ps": 83,
+    "depth": 50,
+    "gate_max": 0.8965,
+    "full_t50_ps": 105,
+    "rest_v": 1.8,
+    "high_v": 0.0
+  }
+}

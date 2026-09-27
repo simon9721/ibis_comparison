@@ -1,0 +1,25 @@
+{
+  "deck_sha256": "ef1041e6a68f4659aeaa689291c341baa546da4ba5fe54f46c46a056104372b9",
+  "extra": {
+    "case_id": "short_high_w2090ps_2090ps",
+    "device": "io_buf",
+    "edge_ns": 0.05,
+    "family": "pad_match_io_buf_transistor",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 2.09
+  },
+  "inputs": [
+    {
+      "name": "io_buf.sp",
+      "sha256": "1567b3cae6390433ab4f6cc22133f017cd86a607fbb8b06bfb3fd75408bf581a",
+      "size": 2203
+    },
+    {
+      "name": "hspice.mod",
+      "sha256": "571abd309444d3e38673fd2f6c00f61afe4e9e8c199e286b73bc7f13b4a128f0",
+      "size": 5659
+    }
+  ]
+}

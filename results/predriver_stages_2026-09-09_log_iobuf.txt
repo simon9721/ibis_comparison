@@ -1,0 +1,40 @@
+
+=== io_buf: full-swing step responses per stage (normalised to each node's own swing)
+    node             t50 rise 10-90 rise t50 fall 10-90 fall   (ps from the input edge)
+    v(in_dig)              26         40       26         40
+    v(xdut.n1)            632       1556      946       2158
+    v(xdut.nand_n3)       718        410     1622        930
+    v(xdut.n3)           1224        812     2010        724
+    v(xdut.n2)           1198       2566      260        448
+    v(pad_sp)            1856       1766      346        396
+
+    stressed pulses: measured node vs the linear prediction P2 = g_rise(t) + g_fall(t-W) - 1
+    node              W ps meas max  P2 max  P1 max t50 meas  t50 P2 rms(m-P2)  sign
+    v(xdut.n1)        1505    0.887   0.894   0.903      542     546     0.042     =
+    v(xdut.nand_n3)   1505    1.015   1.021   1.030      720     722     0.094     =
+    v(xdut.n3)        1505    1.009   1.007   1.008     1228    1226     0.104     =
+    v(xdut.n2)        1505    0.672   0.671   0.786      824     824     0.080     =
+    v(pad_sp)         1505    0.373   0.371   0.772     1476    1474     0.124     =
+    v(xdut.n1)        1666    0.928   0.933   0.942      574     576     0.030     =
+    v(xdut.nand_n3)   1666    1.019   1.021   1.033      722     722     0.065     =
+    v(xdut.n3)        1666    1.009   1.013   1.010     1228    1230     0.072     =
+    v(xdut.n2)        1666    0.720   0.719   0.834      876     876     0.066     =
+    v(pad_sp)         1666    0.496   0.496   0.808     1542    1542     0.097     =
+    v(xdut.n1)        1853    0.961   0.964   0.974      600     602     0.020     =
+    v(xdut.nand_n3)   1853    1.020   1.021   1.033      722     722     0.042     =
+    v(xdut.n3)        1853    1.012   1.017   1.011     1228    1230     0.047     =
+    v(xdut.n2)        1853    0.770   0.769   0.884      932     932     0.053     =
+    v(pad_sp)         1853    0.600   0.600   0.842     1594    1594     0.072     =
+    v(xdut.n1)        2090    0.989   0.990   1.001      624     624     0.012     =
+    v(xdut.nand_n3)   2090    1.020   1.021   1.034      722     722     0.024     =
+    v(xdut.n3)        2090    1.015   1.019   1.012     1230    1232     0.026     =
+    v(xdut.n2)        2090    0.826   0.825   0.939      996     994     0.040     =
+    v(pad_sp)         2090    0.707   0.705   0.879     1650    1650     0.049     =
+    v(xdut.n1)        2354    1.007   1.007   1.018      638     638     0.006     =
+    v(xdut.nand_n3)   2354    1.020   1.021   1.034      722     722     0.012     =
+    v(xdut.n3)        2354    1.017   1.019   1.013     1230    1232     0.013     =
+    v(xdut.n2)        2354    0.876   0.875   0.989     1052    1052     0.029     =
+    v(pad_sp)         2354    0.801   0.801   0.910     1706    1706     0.033     =
+    figures: C:\Users\sh3qm\code\ibis_comparison\results\predriver_stages_2026-09-09\io_buf\stages_vs_linear.png, C:\Users\sh3qm\code\ibis_comparison\results\predriver_stages_2026-09-09\io_buf\pulse_down_the_chain.png
+
+  wrote C:\Users\sh3qm\code\ibis_comparison\results\predriver_stages_2026-09-09\stages.csv

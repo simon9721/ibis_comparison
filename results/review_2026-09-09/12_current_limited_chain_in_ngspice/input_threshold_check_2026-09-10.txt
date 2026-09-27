@@ -1,0 +1,8 @@
+  inv_chain: shipped model, input threshold 1.4 V (from Vinh/Vinl) vs 0.9 V (mid-supply)
+    threshold    |  d135 pk% d119 pk% d111 pk% d106 pk% d104 pk% |  d135 lag d119 lag d111 lag d106 lag d104 lag
+    1.4          |      -8.0     -7.6     -1.8     11.0     31.1 |        -4        5       16       29       41
+    0.9          |       1.7      8.4     18.2     36.7     65.9 |        16       27       38       51       65
+  ex2: shipped model, input threshold 1.4 V (from Vinh/Vinl) vs 1.65 V (mid-supply)
+    threshold    |  d975 pk% d895 pk% d858 pk% d830 pk% d810 pk% |  d975 lag d895 lag d858 lag d830 lag d810 lag
+    1.4          |       3.7     13.3     26.4     45.8     73.7 |       149      214      268      300      300
+    1.65         |       3.5     12.9     25.8     45.1     72.8 |       145      210      263      300      300

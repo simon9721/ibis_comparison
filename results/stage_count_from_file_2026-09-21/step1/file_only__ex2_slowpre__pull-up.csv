@@ -1,0 +1,11 @@
+pass,buffer,chain,C_comp,K,rms,s_up,s_dn,vt,x_lin
+file_only,ex2_slowpre,pull-up,declared,1,0.092724,0.49906,0.33099,0.04896,0.45000
+file_only,ex2_slowpre,pull-up,declared,2,0.030117,1.26188,1.33728,0.69999,0.45000
+file_only,ex2_slowpre,pull-up,declared,3,0.024589,1.69981,1.94644,0.48218,0.45000
+file_only,ex2_slowpre,pull-up,declared,4,0.022554,1.87127,2.07557,0.05667,0.45000
+file_only,ex2_slowpre,pull-up,declared,5,0.022343,2.35301,2.63623,0.01643,0.45000
+file_only,ex2_slowpre,pull-up,declared,6,0.023771,2.84133,3.20891,0.00010,0.45000
+file_only,ex2_slowpre,pull-up,declared,7,0.026111,3.30287,3.79911,0.00006,0.45000
+file_only,ex2_slowpre,pull-up,declared,8,0.028640,3.77146,4.38455,0.00000,0.45000
+file_only,ex2_slowpre,pull-up,declared,9,0.031057,4.24605,4.96387,0.00001,0.45000
+file_only,ex2_slowpre,pull-up,declared,10,0.033337,4.70912,5.54852,0.00001,0.45000

@@ -1,0 +1,11 @@
+pass,buffer,chain,C_comp,K,rms,s_up,s_dn,vt,x_lin
+est_knee,ex2_slowpre,pull-up,4.65,1,0.091798,0.49553,0.32543,0.53187,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,2,0.028954,1.25431,1.32676,0.69995,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,3,0.023642,1.62674,1.83867,0.42705,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,4,0.022126,1.85743,2.06349,0.06191,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,5,0.022227,2.34228,2.61505,0.01360,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,6,0.023974,2.82348,3.18720,0.00013,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,7,0.026594,3.28981,3.76407,0.00005,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,8,0.029388,3.75246,4.34580,0.00005,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,9,0.031979,4.22507,4.92902,0.00003,0.45000
+est_knee,ex2_slowpre,pull-up,4.65,10,0.034346,4.69606,5.51193,0.00000,0.45000

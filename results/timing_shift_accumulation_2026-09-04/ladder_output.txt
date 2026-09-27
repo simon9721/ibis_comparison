@@ -1,0 +1,135 @@
+  shift vs the transistor across the ladder, ps, in time order.
+  'into' = base to the excursion's extremum, 'out' = back again.
+
+    device / direction        case        build       into: first   last  change   |  out: first   last  change
+    io_buf short_high         2354 ps     native              +28    -13     -41             -41    +46     +87
+    io_buf short_high         2354 ps     original            +40    +30     -10             +53   +378    +325
+    io_buf short_high         2354 ps     cmd_clean           +41    +10     -31             +43   +120     +77
+    io_buf short_high         2226 ps     native              +29    -25     -54             -38    +54     +92
+    io_buf short_high         2226 ps     original            +40    +23     -17             +50   +144     +95
+    io_buf short_high         2226 ps     cmd_clean           +41     -5     -46             +44   +124     +80
+    io_buf short_high         2090 ps     native              +29     -5     -34             -62    +40    +102
+    io_buf short_high         2090 ps     original            +41    +22     -19             +48   +125     +76
+    io_buf short_high         2090 ps     cmd_clean           +42    +21     -21             +46   +127     +81
+    io_buf short_high         1989 ps     native              +29     +5     -25             -66    +44    +110
+    io_buf short_high         1989 ps     cmd_clean           +41    +22     -18             +45   +129     +85
+    io_buf short_high         1853 ps     native              +30     +0     -30             -53    +48    +101
+    io_buf short_high         1853 ps     original            +40    +25     -14             +54   +131     +77
+    io_buf short_high         1853 ps     cmd_clean           +41    +26     -15             +46   +133     +87
+    io_buf short_high         1792 ps     native              +31     +7     -24             -57    +49    +107
+    io_buf short_high         1792 ps     cmd_clean           +41    +28     -12             +42   +132     +89
+    io_buf short_high         1666 ps     native              +29     +8     -21             -70    +37    +107
+    io_buf short_high         1666 ps     cmd_clean           +38    +30      -9             +41   +131     +91
+    io_buf short_high         1634 ps     native              +29    +12     -17             -76    +37    +113
+    io_buf short_high         1634 ps     cmd_clean           +37    +29      -8             +38   +130     +92
+    io_buf short_high         1505 ps     native              +28    +16     -12             -69    +43    +112
+    io_buf short_high         1505 ps     cmd_clean           +36    +31      -6             +35   +131     +96
+    io_buf short_high         full swing  native              +32    -73    -105             +20    +87     +67
+    io_buf short_high         full swing  cmd_clean           +40    -50     -90             +22    +91     +69
+
+    device / direction        case        build       into: first   last  change   |  out: first   last  change
+    io_buf short_low          325 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          325 ps      original            +17    +67     +50            +903   +877     -26
+    io_buf short_low          325 ps      cmd_clean           +16   +118    +102            -110   +727    +838
+    io_buf short_low          307 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          307 ps      original            +17    +59     +42            +966  +1088    +122
+    io_buf short_low          307 ps      cmd_clean           +16   +100     +84             -69   +790    +859
+    io_buf short_low          281 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          281 ps      original            +17    +46     +29           +1056  +1463    +407
+    io_buf short_low          281 ps      cmd_clean           +16    +71     +55             -17   +930    +947
+    io_buf short_low          256 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          256 ps      original     excursion differs by >30%, not a timing comparison
+    io_buf short_low          256 ps      cmd_clean           +16    +49     +33             +39  +1031    +993
+    io_buf short_low          242 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          242 ps      original     excursion differs by >30%, not a timing comparison
+    io_buf short_low          242 ps      cmd_clean           +16    +37     +21             +74  +1086   +1012
+    io_buf short_low          220 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          220 ps      original     excursion differs by >30%, not a timing comparison
+    io_buf short_low          220 ps      cmd_clean           +16    +20      +4            +126  +1190   +1065
+    io_buf short_low          209 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          209 ps      original     excursion differs by >30%, not a timing comparison
+    io_buf short_low          209 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    io_buf short_low          191 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          191 ps      original     excursion differs by >30%, not a timing comparison
+    io_buf short_low          191 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    io_buf short_low          180 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          180 ps      original     excursion differs by >30%, not a timing comparison
+    io_buf short_low          180 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    io_buf short_low          163 ps      native       excursion differs by >30%, not a timing comparison
+    io_buf short_low          163 ps      original     excursion differs by >30%, not a timing comparison
+    io_buf short_low          163 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+
+    device / direction        case        build       into: first   last  change   |  out: first   last  change
+    inv_chain short_high      135 ps      native               -6     -7      -0             +34    +32      -2
+    inv_chain short_high      135 ps      original     outward leg is not monotonic (ringing), not a timing comparison
+    inv_chain short_high      135 ps      cmd_clean           +12    +15      +3              -7     +1      +8
+    inv_chain short_high      119 ps      native               -6     -6      -0             +47    +43      -4
+    inv_chain short_high      119 ps      original             +4    +12      +8             +28    +52     +24
+    inv_chain short_high      119 ps      cmd_clean           +12    +17      +5              +4    +11      +6
+    inv_chain short_high      111 ps      native       excursion differs by >30%, not a timing comparison
+    inv_chain short_high      111 ps      original     outward leg is not monotonic (ringing), not a timing comparison
+    inv_chain short_high      111 ps      cmd_clean           +13    +16      +3             +15    +19      +4
+    inv_chain short_high      106 ps      native       excursion differs by >30%, not a timing comparison
+    inv_chain short_high      106 ps      original     outward leg is not monotonic (ringing), not a timing comparison
+    inv_chain short_high      106 ps      cmd_clean           +12    +13      +0             +31    +30      -1
+    inv_chain short_high      104 ps      native       excursion differs by >30%, not a timing comparison
+    inv_chain short_high      104 ps      original     excursion differs by >30%, not a timing comparison
+    inv_chain short_high      104 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    inv_chain short_high      full swing  native               -0     -1      -1              +2     +4      +1
+    inv_chain short_high      full swing  cmd_clean            +8     +8      -1              +6     +7      +2
+
+    device / direction        case        build       into: first   last  change   |  out: first   last  change
+    inv_chain short_low       116 ps      native              +19    +20      +0             +28    +24      -4
+    inv_chain short_low       116 ps      original     outward leg is not monotonic (ringing), not a timing comparison
+    inv_chain short_low       116 ps      cmd_clean           -14     -9      +5             +60    +58      -2
+    inv_chain short_low       114 ps      native              +19    +17      -2             +40    +35      -5
+    inv_chain short_low       114 ps      original     outward leg is not monotonic (ringing), not a timing comparison
+    inv_chain short_low       114 ps      cmd_clean           -15    -12      +3             +73    +70      -4
+    inv_chain short_low       112 ps      native       excursion differs by >30%, not a timing comparison
+    inv_chain short_low       112 ps      original     excursion differs by >30%, not a timing comparison
+    inv_chain short_low       112 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    inv_chain short_low       111 ps      native       excursion differs by >30%, not a timing comparison
+    inv_chain short_low       111 ps      original     excursion differs by >30%, not a timing comparison
+    inv_chain short_low       111 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    inv_chain short_low       110 ps      native       excursion differs by >30%, not a timing comparison
+    inv_chain short_low       110 ps      original     excursion differs by >30%, not a timing comparison
+    inv_chain short_low       110 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+
+    device / direction        case        build       into: first   last  change   |  out: first   last  change
+    ex2 short_high            975 ps      native              -15     +2     +17            +127   +219     +92
+    ex2 short_high            975 ps      original             -8     -5      +3            +116   +216    +100
+    ex2 short_high            975 ps      cmd_clean            -4     -5      -1            +104   +207    +103
+    ex2 short_high            895 ps      native              -14    -39     -25            +206   +274     +68
+    ex2 short_high            895 ps      original            -14    -36     -22            +196   +250     +54
+    ex2 short_high            895 ps      cmd_clean            -9    -37     -27            +179   +260     +82
+    ex2 short_high            858 ps      native              -15    -62     -47            +259   +312     +54
+    ex2 short_high            858 ps      original            -22    -57     -35            +237   +302     +65
+    ex2 short_high            858 ps      cmd_clean           -17    -58     -41            +230   +297     +67
+    ex2 short_high            830 ps      native       excursion differs by >30%, not a timing comparison
+    ex2 short_high            830 ps      original     excursion differs by >30%, not a timing comparison
+    ex2 short_high            830 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    ex2 short_high            810 ps      native       excursion differs by >30%, not a timing comparison
+    ex2 short_high            810 ps      original     excursion differs by >30%, not a timing comparison
+    ex2 short_high            810 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    ex2 short_high            full swing  native              -18    +39     +56              -4    +89     +93
+    ex2 short_high            full swing  cmd_clean            +2    +91     +89             -24    +80    +103
+
+    device / direction        case        build       into: first   last  change   |  out: first   last  change
+    ex2 short_low             772 ps      native       excursion differs by >30%, not a timing comparison
+    ex2 short_low             772 ps      original     excursion differs by >30%, not a timing comparison
+    ex2 short_low             772 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    ex2 short_low             734 ps      native       excursion differs by >30%, not a timing comparison
+    ex2 short_low             734 ps      original     excursion differs by >30%, not a timing comparison
+    ex2 short_low             734 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    ex2 short_low             715 ps      native       excursion differs by >30%, not a timing comparison
+    ex2 short_low             715 ps      original     excursion differs by >30%, not a timing comparison
+    ex2 short_low             715 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    ex2 short_low             702 ps      native       excursion differs by >30%, not a timing comparison
+    ex2 short_low             702 ps      original     excursion differs by >30%, not a timing comparison
+    ex2 short_low             702 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+    ex2 short_low             688 ps      native       excursion differs by >30%, not a timing comparison
+    ex2 short_low             688 ps      original     excursion differs by >30%, not a timing comparison
+    ex2 short_low             688 ps      cmd_clean    excursion differs by >30%, not a timing comparison
+
+  wrote results\timing_shift_accumulation_2026-09-04\ladder_summary.csv
+  timing_shift_ladder.png

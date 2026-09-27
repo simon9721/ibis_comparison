@@ -1,0 +1,11 @@
+pass,buffer,chain,C_comp,K,rms,s_up,s_dn,vt,x_lin
+as_track1,io_buf,pull-down,declared,1,0.113315,0.67073,0.15924,0.69686,0.06869
+as_track1,io_buf,pull-down,declared,2,0.043081,1.96058,0.69843,0.69998,0.52112
+as_track1,io_buf,pull-down,declared,3,0.015957,4.07513,1.62107,0.70000,0.75205
+as_track1,io_buf,pull-down,declared,4,0.013069,5.61732,2.31053,0.58669,0.87800
+as_track1,io_buf,pull-down,declared,5,0.013350,5.61533,2.31680,0.39332,0.86547
+as_track1,io_buf,pull-down,declared,6,0.014236,6.16176,2.65359,0.28304,0.90214
+as_track1,io_buf,pull-down,declared,7,0.015600,6.71023,3.11639,0.20090,0.92602
+as_track1,io_buf,pull-down,declared,8,0.016789,6.78745,3.43771,0.13112,0.87461
+as_track1,io_buf,pull-down,declared,9,0.018075,6.80839,3.67753,0.09006,0.79526
+as_track1,io_buf,pull-down,declared,10,0.022787,14.80024,7.45141,0.17028,1.49952

@@ -1,0 +1,26 @@
+{
+  "returncode": 0,
+  "errors": [],
+  "warnings": [
+    "WARNING (line   13) - Component 'MCM Driver 1' contains a blank character.",
+    "WARNING (line   33) - Vinl should not be specified for model type Open_drain",
+    "WARNING (line   34) - Vinh should not be specified for model type Open_drain",
+    "WARNING - Model 'driver': Vmeas, Vref and Rref timing test load parameters should be specified"
+  ],
+  "notes": [
+    "NOTE (line   58) - Pulldown Typical data is non-monotonic",
+    "NOTE (line   58) - Pulldown Minimum data is non-monotonic",
+    "NOTE (line   58) - Pulldown Maximum data is non-monotonic",
+    "NOTE (line  170) - GND Clamp Typical data is non-monotonic",
+    "NOTE (line  170) - GND Clamp Minimum data is non-monotonic",
+    "NOTE (line  170) - GND Clamp Maximum data is non-monotonic",
+    "NOTE - Combined Pulldown for Model: driver Typical data is non-monotonic based on piece-wise linear interpolation",
+    "NOTE - Combined Pullup for Model: driver Typical data is non-monotonic based on piece-wise linear interpolation",
+    "NOTE - Combined Pulldown for Model: driver Minimum data is non-monotonic based on piece-wise linear interpolation",
+    "NOTE - Combined Pullup for Model: driver Minimum data is non-monotonic based on piece-wise linear interpolation",
+    "NOTE - Combined Pulldown for Model: driver Maximum data is non-monotonic based on piece-wise linear interpolation",
+    "NOTE - Combined Pullup for Model: driver Maximum data is non-monotonic based on piece-wise linear interpolation"
+  ],
+  "total_errors": 0,
+  "total_warnings": 4
+}

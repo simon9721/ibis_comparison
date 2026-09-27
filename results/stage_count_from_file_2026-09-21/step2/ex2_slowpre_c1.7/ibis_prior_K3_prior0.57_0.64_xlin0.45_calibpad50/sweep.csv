@@ -1,0 +1,3 @@
+build,K,full_pad_rms_mV,pk_d90,pk_d80,pk_d70,pk_d60,pk_d50,lag_d90,lag_d80,lag_d70,lag_d60,lag_d50,gate_d90,gate_d80,gate_d70,gate_d60,gate_d50
+shipped,,12.2,1.8,7.9,17.8,31.5,51.3,88.0,160.0,228.0,293.0,300.0,0.89/nan,0.84/nan,0.81/nan,0.79/nan,0.76/nan
+ibis_prior_K3_prior0.57_0.64_xlin0.45_calibpad50,3,34.4,-4.7,-4.9,-3.9,-2.1,-0.3,-3.0,19.0,33.0,39.0,38.0,0.90/nan,0.84/nan,0.80/nan,0.76/nan,0.72/nan

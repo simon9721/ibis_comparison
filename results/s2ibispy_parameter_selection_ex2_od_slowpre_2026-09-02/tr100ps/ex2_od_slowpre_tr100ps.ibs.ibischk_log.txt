@@ -1,0 +1,25 @@
+IBISCHK7 V7.2.1
+
+Checking C:\Users\sh3qm\code\ibis_comparison\results\s2ibispy_parameter_selection_ex2_od_slowpre_2026-09-02\tr100ps\ex2_od_slowpre_tr100ps.ibs for IBIS 7.1 Compatibility...
+
+WARNING (line   13) - Component 'MCM Driver 1' contains a blank character.
+WARNING (line   33) - Vinl should not be specified for model type Open_drain
+WARNING (line   34) - Vinh should not be specified for model type Open_drain
+NOTE (line   58) - Pulldown Typical data is non-monotonic
+NOTE (line   58) - Pulldown Minimum data is non-monotonic
+NOTE (line   58) - Pulldown Maximum data is non-monotonic
+NOTE (line  170) - GND Clamp Typical data is non-monotonic
+NOTE (line  170) - GND Clamp Minimum data is non-monotonic
+NOTE (line  170) - GND Clamp Maximum data is non-monotonic
+WARNING - Model 'driver': Vmeas, Vref and Rref timing test load parameters should be specified
+NOTE - Combined Pulldown for Model: driver Typical data is non-monotonic based on piece-wise linear interpolation
+NOTE - Combined Pullup for Model: driver Typical data is non-monotonic based on piece-wise linear interpolation
+NOTE - Combined Pulldown for Model: driver Minimum data is non-monotonic based on piece-wise linear interpolation
+NOTE - Combined Pullup for Model: driver Minimum data is non-monotonic based on piece-wise linear interpolation
+NOTE - Combined Pulldown for Model: driver Maximum data is non-monotonic based on piece-wise linear interpolation
+NOTE - Combined Pullup for Model: driver Maximum data is non-monotonic based on piece-wise linear interpolation
+
+Errors  : 0
+Warnings: 4
+
+File Passed

@@ -5,6 +5,21 @@ __pycache__/
 # Large/generated simulator waveform outputs
 *.raw
 *.raw.gz
+
+# Per-run generated artefacts under results/: the converted model, the audit copy of the
+# model a run actually used, and the deck. All three are written by a committed script from
+# committed inputs, and together they are ~31 700 files and ~2 GB - too much to put in
+# history permanently for something regenerable. They stay on disk; this only keeps them out
+# of git. Files of these types committed before this rule stay tracked, as git ignores
+# .gitignore for anything already in the index.
+results/**/*.sub
+results/**/*.sub.used
+results/**/*.used
+results/**/*.sp
+
+# Every .lib copied into a run folder is byte-identical to the next: 200 sampled, one
+# distinct content, 160 MB of the same process library. The original is a committed input.
+results/**/*.lib
 *.cir.csv
 *.prn
 *.out

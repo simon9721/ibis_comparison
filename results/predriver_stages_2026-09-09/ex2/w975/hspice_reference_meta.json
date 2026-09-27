@@ -1,0 +1,25 @@
+{
+  "deck_sha256": "d780f2b80144ac04c1c8f5a2a1580f5debfc0d2049f52d2d007d132203f6c4e2",
+  "extra": {
+    "case_id": "short_high_w975ps_975ps",
+    "device": "ex2",
+    "edge_ns": 0.05,
+    "family": "pad_match_ex2_transistor",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 0.9747
+  },
+  "inputs": [
+    {
+      "name": "buffer.sp",
+      "sha256": "16a371d8927df1a442e292d17a11f7ff6e420ad2283b940966a406655bed215f",
+      "size": 1973
+    },
+    {
+      "name": "hspice.mod",
+      "sha256": "775f90f0dcd626b80757299afab84ae7dae84f450273da34eb70c79abd3763fa",
+      "size": 5227
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "deck_sha256": "a10a84b967a11e6037f0ad7c4100cbf442b3ce6f584fa6fa7d86bffda68e903e",
+  "extra": {
+    "case_id": "short_high_w1666ps_1666ps",
+    "device": "io_buf",
+    "edge_ns": 0.05,
+    "family": "pad_match_io_buf_transistor",
+    "load_ohm": 50.0,
+    "load_pf": 2.0,
+    "pattern": "short_high",
+    "pulse_width_ns": 1.6663
+  },
+  "inputs": [
+    {
+      "name": "io_buf.sp",
+      "sha256": "1567b3cae6390433ab4f6cc22133f017cd86a607fbb8b06bfb3fd75408bf581a",
+      "size": 2203
+    },
+    {
+      "name": "hspice.mod",
+      "sha256": "571abd309444d3e38673fd2f6c00f61afe4e9e8c199e286b73bc7f13b4a128f0",
+      "size": 5659
+    }
+  ]
+}

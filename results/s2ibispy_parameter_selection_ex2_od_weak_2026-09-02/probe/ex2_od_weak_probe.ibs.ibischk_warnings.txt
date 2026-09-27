@@ -1,0 +1,4 @@
+WARNING (line   13) - Component 'MCM Driver 1' contains a blank character.
+WARNING (line   33) - Vinl should not be specified for model type Open_drain
+WARNING (line   34) - Vinh should not be specified for model type Open_drain
+WARNING - Model 'driver': Vmeas, Vref and Rref timing test load parameters should be specified

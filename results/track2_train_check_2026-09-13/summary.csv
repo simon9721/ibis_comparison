@@ -1,0 +1,23 @@
+device,build,width_ns,pulse1_pk_pct,settled_pk_pct,settled_peak_shift_ps
+ex2,track 1: file chain + prior map + pad point,0.858,-7.492903746561825,-9.491712237321524,-20.00000000000348
+ex2,track 2: file chain + measured map + pad point,0.858,-0.807644640564631,-3.431218980038561,-16.400000000003345
+inv_chain,track 1: file chain + prior map + pad point,0.111,0.10459603352962556,-22.012333042851328,1.5999999999998238
+inv_chain,track 2: file chain + measured map + pad point,0.111,2.076684595562696,-20.496409985230088,-0.39999999999995595
+inv_chain,track 2, square-law stage (p = 2),0.111,3.104100537295722,-19.761469768526883,-13.99999999999846
+inv_chain,track 2, chain fitted to the real gate (truth-bounded),0.111,-2.381964709065633,1.7244191769980846,18.79999999999793
+inv_chain,track 2, chain fitted to the real gate, gate-calibrated,0.111,10.607244724795082,-4.3267148568360705,-4.799999999999471
+inv_chain,plain law, fitted to the real gate + pad point,0.111,9.042533912705617,-2.1063273562189186,1.9999999999997797
+inv_chain,square-root law, fitted to the real gate,0.111,6.85828770420562,-0.899398809521985,16.399999999998194
+inv_chain,square-root law, fitted to the real gate + pad point,0.111,9.067318992961358,-0.5741303449035418,15.199999999998326
+inv_chain,square-root law, from the tables + pad point,0.111,0.41666557678759625,-21.359470469049686,9.199999999998987
+inv_chain,square-root law, tables + tail pinned at 0.41 + pad point,0.111,-1.310738595530877,-22.6721483814459,-34.79999999999617
+ex2,track 2, square-law stage (p = 2),0.858,5.127759736639426,-5.090847835262026,-14.400000000003743
+ex2,chain fitted to the real last stage + pad point,0.858,-3.9241006280958457,-0.6581686574489085,-5.600000000004002
+ex2,chain fitted to the real last stage, joint with the stressed gate, + pad point,0.858,-2.897573565082235,-0.977286101758177,-22.800000000003706
+ex2,real last stage + pad point, map ends anchored,0.858,-9.736720028132575,-5.969239353334548,-23.600000000002908
+ex2,real last stage + pad point, pull-down end only,0.858,-10.021380286012219,-6.113366927241121,-24.800000000003664
+inv_chain,real last stage + pad point, map ends anchored,0.111,4.700742132160305,-5.277732199236542,-0.39999999999995595
+inv_chain,real last stage + pad point, pull-down end only,0.111,3.9848663136946216,-7.120832095710791,-1.9999999999997797
+io_buf,track 1: file step response + pad point,1.792,0.15511925978658964,-41.17599938362545,53.5999999999781
+io_buf,track 2: measured step response + pad point,1.792,0.42217798020134123,-42.775433263199794,52.399999999978775
+io_buf,track 2, 3-slot: last 3 edges superposed,1.792,0.8040196689782504,-5.08745102332388,23.199999999990695

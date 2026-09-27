@@ -1,0 +1,11 @@
+pass,buffer,chain,C_comp,K,rms,s_up,s_dn,vt,x_lin
+file_only,inv_weak,pull-up,declared,1,0.056946,2.53185,1.25252,0.68718,0.45000
+file_only,inv_weak,pull-up,declared,2,0.029300,6.30273,5.04141,0.69999,0.45000
+file_only,inv_weak,pull-up,declared,3,0.018355,10.16085,9.18900,0.69992,0.45000
+file_only,inv_weak,pull-up,declared,4,0.012384,14.03426,13.28313,0.70000,0.45000
+file_only,inv_weak,pull-up,declared,5,0.009029,17.89519,17.34530,0.69978,0.45000
+file_only,inv_weak,pull-up,declared,6,0.007355,21.68309,21.39061,0.69995,0.45000
+file_only,inv_weak,pull-up,declared,7,0.006746,25.51242,25.43590,0.69977,0.45000
+file_only,inv_weak,pull-up,declared,8,0.006726,25.84432,25.77122,0.58827,0.45000
+file_only,inv_weak,pull-up,declared,9,0.006702,25.74202,25.66402,0.46374,0.45000
+file_only,inv_weak,pull-up,declared,10,0.006763,28.68587,28.89300,0.46889,0.45000

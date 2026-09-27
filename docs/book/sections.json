@@ -1,0 +1,1829 @@
+[
+ {
+  "number": "1",
+  "title": "How the Workplace Supports Successful Design",
+  "printed_page": 3,
+  "pdf_page": 22,
+  "chapter": 1
+ },
+ {
+  "number": "1.1",
+  "title": "High-Speed Digital Design Is Challenging",
+  "printed_page": 3,
+  "pdf_page": 22,
+  "chapter": 1
+ },
+ {
+  "number": "1.2",
+  "title": "Needs for Technical Specialization",
+  "printed_page": 6,
+  "pdf_page": 24,
+  "chapter": 1
+ },
+ {
+  "number": "1.3",
+  "title": "The Role of Processes and Procedures",
+  "printed_page": 7,
+  "pdf_page": 25,
+  "chapter": 1
+ },
+ {
+  "number": "1.4",
+  "title": "Using Judgment When Making Design Tradeoffs",
+  "printed_page": 8,
+  "pdf_page": 26,
+  "chapter": 1
+ },
+ {
+  "number": "1.5",
+  "title": "HSDD Needs the Help of EDA Tools",
+  "printed_page": 9,
+  "pdf_page": 27,
+  "chapter": 1
+ },
+ {
+  "number": "1.6",
+  "title": "HSDD Needs a Team That Extends Beyond the Company",
+  "printed_page": 9,
+  "pdf_page": 27,
+  "chapter": 1
+ },
+ {
+  "number": "1.7",
+  "title": "HSDD Team Members Often Have Their Own Agendas",
+  "printed_page": 10,
+  "pdf_page": 28,
+  "chapter": 1
+ },
+ {
+  "number": "1.8",
+  "title": "HSDD Simulations Performed in the Workplace",
+  "printed_page": 11,
+  "pdf_page": 29,
+  "chapter": 1
+ },
+ {
+  "number": "1.9",
+  "title": "Modeling and Simulation Versus Prototype and Debug",
+  "printed_page": 12,
+  "pdf_page": 30,
+  "chapter": 1
+ },
+ {
+  "number": "1.10",
+  "title": "Ten Tips for Modeling and Simulation",
+  "printed_page": 13,
+  "pdf_page": 31,
+  "chapter": 1
+ },
+ {
+  "number": "1.11",
+  "title": "Summary",
+  "printed_page": 13,
+  "pdf_page": 31,
+  "chapter": 1
+ },
+ {
+  "number": "2",
+  "title": "Introduction to Modeling Concepts",
+  "printed_page": 15,
+  "pdf_page": 33,
+  "chapter": 2
+ },
+ {
+  "number": "2.1",
+  "title": "Modeling and Simulation for All Scales of System Size",
+  "printed_page": 15,
+  "pdf_page": 33,
+  "chapter": 2
+ },
+ {
+  "number": "2.2",
+  "title": "Communicating Across Specialties",
+  "printed_page": 15,
+  "pdf_page": 33,
+  "chapter": 2
+ },
+ {
+  "number": "2.3",
+  "title": "What Is a Model?",
+  "printed_page": 16,
+  "pdf_page": 33,
+  "chapter": 2
+ },
+ {
+  "number": "2.4",
+  "title": "What Is a System?",
+  "printed_page": 18,
+  "pdf_page": 35,
+  "chapter": 2
+ },
+ {
+  "number": "2.5",
+  "title": "Needs for Model Accuracy Change as a Design Progresses.... 20 2.6 There Are Many Kinds of Models and Simulations",
+  "printed_page": 22,
+  "pdf_page": 39,
+  "chapter": 2
+ },
+ {
+  "number": "2.7",
+  "title": "Modeling and Simulation for Systems",
+  "printed_page": 23,
+  "pdf_page": 40,
+  "chapter": 2
+ },
+ {
+  "number": "2.8",
+  "title": "Bottom-Up and Top-Down Design",
+  "printed_page": 24,
+  "pdf_page": 41,
+  "chapter": 2
+ },
+ {
+  "number": "2.9",
+  "title": "Analog Issues in Digital Design",
+  "printed_page": 27,
+  "pdf_page": 44,
+  "chapter": 2
+ },
+ {
+  "number": "2.10",
+  "title": "Noise Modeling on Electrical Signals",
+  "printed_page": 34,
+  "pdf_page": 51,
+  "chapter": 2
+ },
+ {
+  "number": "2.11",
+  "title": "Additional Design Issues to Model and Simulate",
+  "printed_page": 36,
+  "pdf_page": 53,
+  "chapter": 2
+ },
+ {
+  "number": "2.12",
+  "title": "Using EDA Tools for Semiconductors",
+  "printed_page": 41,
+  "pdf_page": 58,
+  "chapter": 2
+ },
+ {
+  "number": "2.13",
+  "title": "Using EDA Tools for Board Interconnections",
+  "printed_page": 43,
+  "pdf_page": 60,
+  "chapter": 2
+ },
+ {
+  "number": "2.14",
+  "title": "Looking Ahead in the Book",
+  "printed_page": 45,
+  "pdf_page": 62,
+  "chapter": 2
+ },
+ {
+  "number": "2.15",
+  "title": "Summary",
+  "printed_page": 45,
+  "pdf_page": 62,
+  "chapter": 2
+ },
+ {
+  "number": "3",
+  "title": "Model Properties Derived from Device Physics Theory",
+  "printed_page": 49,
+  "pdf_page": 66,
+  "chapter": 3
+ },
+ {
+  "number": "3.1",
+  "title": "Introduction",
+  "printed_page": 49,
+  "pdf_page": 66,
+  "chapter": 3
+ },
+ {
+  "number": "3.2",
+  "title": "Why Deep Sub-Micron Technology Is Complex",
+  "printed_page": 50,
+  "pdf_page": 66,
+  "chapter": 3
+ },
+ {
+  "number": "3.3",
+  "title": "Models Extracted from Semiconductor Design Theory",
+  "printed_page": 52,
+  "pdf_page": 68,
+  "chapter": 3
+ },
+ {
+  "number": "3.4",
+  "title": "Example of the BJT Process",
+  "printed_page": 53,
+  "pdf_page": 69,
+  "chapter": 3
+ },
+ {
+  "number": "3.5",
+  "title": "How BJT and FET Construction Affect Their Operation",
+  "printed_page": 54,
+  "pdf_page": 70,
+  "chapter": 3
+ },
+ {
+  "number": "3.6",
+  "title": "Calculating Device Physics Properties",
+  "printed_page": 65,
+  "pdf_page": 81,
+  "chapter": 3
+ },
+ {
+  "number": "3.7",
+  "title": "Examples of Computing Electrical Properties from Structure. 71 3.8 Examples of SPICE Models and Parameters",
+  "printed_page": 75,
+  "pdf_page": 91,
+  "chapter": 3
+ },
+ {
+  "number": "3.9",
+  "title": "Modeling Packaging Interconnections",
+  "printed_page": 90,
+  "pdf_page": 106,
+  "chapter": 3
+ },
+ {
+  "number": "3.10",
+  "title": "Summary",
+  "printed_page": 93,
+  "pdf_page": 109,
+  "chapter": 3
+ },
+ {
+  "number": "4",
+  "title": "Measuring Model Properties in the Laboratory",
+  "printed_page": 95,
+  "pdf_page": 111,
+  "chapter": 4
+ },
+ {
+  "number": "4.1",
+  "title": "Introduction to Model Measurements",
+  "printed_page": 95,
+  "pdf_page": 111,
+  "chapter": 4
+ },
+ {
+  "number": "4.2",
+  "title": "Matrix Models",
+  "printed_page": 97,
+  "pdf_page": 112,
+  "chapter": 4
+ },
+ {
+  "number": "4.3",
+  "title": "Scattering-Parameter Models",
+  "printed_page": 103,
+  "pdf_page": 118,
+  "chapter": 4
+ },
+ {
+  "number": "4.4",
+  "title": "SPICE Models",
+  "printed_page": 106,
+  "pdf_page": 121,
+  "chapter": 4
+ },
+ {
+  "number": "4.5",
+  "title": "IBIS Models",
+  "printed_page": 114,
+  "pdf_page": 129,
+  "chapter": 4
+ },
+ {
+  "number": "4.6",
+  "title": "Web Sites for IBIS Visual Editors and Other Tools",
+  "printed_page": 126,
+  "pdf_page": 141,
+  "chapter": 4
+ },
+ {
+  "number": "4.7",
+  "title": "TDR/TDT - VNA Measurements",
+  "printed_page": 126,
+  "pdf_page": 141,
+  "chapter": 4
+ },
+ {
+  "number": "4.8",
+  "title": "RLGC Matrixes",
+  "printed_page": 127,
+  "pdf_page": 142,
+  "chapter": 4
+ },
+ {
+  "number": "4.10",
+  "title": "What is Model Synthesis?",
+  "printed_page": 130,
+  "pdf_page": 145,
+  "chapter": 4
+ },
+ {
+  "number": "4.11",
+  "title": "Test Equipment Providers",
+  "printed_page": 130,
+  "pdf_page": 145,
+  "chapter": 4
+ },
+ {
+  "number": "4.9",
+  "title": "Field Solver RLGC Extraction for ICs",
+  "printed_page": 130,
+  "pdf_page": 145,
+  "chapter": 4
+ },
+ {
+  "number": "4.12",
+  "title": "Software for Test Equipment Control",
+  "printed_page": 131,
+  "pdf_page": 146,
+  "chapter": 4
+ },
+ {
+  "number": "4.13",
+  "title": "Summary",
+  "printed_page": 132,
+  "pdf_page": 147,
+  "chapter": 4
+ },
+ {
+  "number": "5",
+  "title": "Using Statistical Data to Characterize Component Populations",
+  "printed_page": 133,
+  "pdf_page": 148,
+  "chapter": 5
+ },
+ {
+  "number": "5.1",
+  "title": "Why Process Variation Is Important",
+  "printed_page": 133,
+  "pdf_page": 148,
+  "chapter": 5
+ },
+ {
+  "number": "5.2",
+  "title": "Achieving Process Control with Population Statistics",
+  "printed_page": 133,
+  "pdf_page": 148,
+  "chapter": 5
+ },
+ {
+  "number": "5.3",
+  "title": "Basics of Population Statistics",
+  "printed_page": 134,
+  "pdf_page": 149,
+  "chapter": 5
+ },
+ {
+  "number": "5.4",
+  "title": "Characterization for Six-Sigma Quality",
+  "printed_page": 144,
+  "pdf_page": 159,
+  "chapter": 5
+ },
+ {
+  "number": "5.5",
+  "title": "Six-Sigma Quality for Modeling and Design",
+  "printed_page": 149,
+  "pdf_page": 164,
+  "chapter": 5
+ },
+ {
+  "number": "5.6",
+  "title": "Summary",
+  "printed_page": 150,
+  "pdf_page": 165,
+  "chapter": 5
+ },
+ {
+  "number": "6",
+  "title": "Using Selection Guides to Compare and Contrast Components",
+  "printed_page": 153,
+  "pdf_page": 168,
+  "chapter": 6
+ },
+ {
+  "number": "6.1",
+  "title": "Tools for Making Component Choices",
+  "printed_page": 153,
+  "pdf_page": 168,
+  "chapter": 6
+ },
+ {
+  "number": "6.2",
+  "title": "Team Members Use of Selection Guides",
+  "printed_page": 155,
+  "pdf_page": 169,
+  "chapter": 6
+ },
+ {
+  "number": "6.3",
+  "title": "Selection Guide Examples",
+  "printed_page": 156,
+  "pdf_page": 170,
+  "chapter": 6
+ },
+ {
+  "number": "6.4",
+  "title": "Selection Guides Help Component Standardization",
+  "printed_page": 161,
+  "pdf_page": 175,
+  "chapter": 6
+ },
+ {
+  "number": "6.5",
+  "title": "Simulation as a Selection Guide",
+  "printed_page": 161,
+  "pdf_page": 175,
+  "chapter": 6
+ },
+ {
+  "number": "6.6",
+  "title": "Right-Thinking",
+  "printed_page": 166,
+  "pdf_page": 180,
+  "chapter": 6
+ },
+ {
+  "number": "6.7",
+  "title": "Summary",
+  "printed_page": 167,
+  "pdf_page": 181,
+  "chapter": 6
+ },
+ {
+  "number": "7",
+  "title": "Using Data Sheets to Compare and Contrast Components",
+  "printed_page": 169,
+  "pdf_page": 183,
+  "chapter": 7
+ },
+ {
+  "number": "7.1",
+  "title": "Data Sheets as Product Descriptions",
+  "printed_page": 169,
+  "pdf_page": 183,
+  "chapter": 7
+ },
+ {
+  "number": "7.2",
+  "title": "Are Data Sheets Accurate and Complete?",
+  "printed_page": 173,
+  "pdf_page": 186,
+  "chapter": 7
+ },
+ {
+  "number": "7.3",
+  "title": "Selecting a Component That Is Fit for Use",
+  "printed_page": 175,
+  "pdf_page": 188,
+  "chapter": 7
+ },
+ {
+  "number": "7.4",
+  "title": "Using Data Sheets to Begin the Selection Process",
+  "printed_page": 176,
+  "pdf_page": 189,
+  "chapter": 7
+ },
+ {
+  "number": "7.5",
+  "title": "Construction Characteristics of Amplifiers and Switches",
+  "printed_page": 178,
+  "pdf_page": 191,
+  "chapter": 7
+ },
+ {
+  "number": "7.6",
+  "title": "Using Beta to Explain Device Tradeoffs",
+  "printed_page": 179,
+  "pdf_page": 192,
+  "chapter": 7
+ },
+ {
+  "number": "7.7",
+  "title": "Comparing Five BJTs to Illustrate Making a Selection",
+  "printed_page": 182,
+  "pdf_page": 195,
+  "chapter": 7
+ },
+ {
+  "number": "7.8",
+  "title": "Process for Making Tradeoffs",
+  "printed_page": 195,
+  "pdf_page": 208,
+  "chapter": 7
+ },
+ {
+  "number": "7.10",
+  "title": "Thoughts About the Physical Design Examples",
+  "printed_page": 197,
+  "pdf_page": 210,
+  "chapter": 7
+ },
+ {
+  "number": "7.9",
+  "title": "Additional Choices for Picking a Component",
+  "printed_page": 197,
+  "pdf_page": 210,
+  "chapter": 7
+ },
+ {
+  "number": "7.11",
+  "title": "Summary",
+  "printed_page": 198,
+  "pdf_page": 211,
+  "chapter": 7
+ },
+ {
+  "number": "8",
+  "title": "Selecting the Best Model for a Simulation",
+  "printed_page": 199,
+  "pdf_page": 212,
+  "chapter": 8
+ },
+ {
+  "number": "8.1",
+  "title": "From Component Choice to Model Choice",
+  "printed_page": 199,
+  "pdf_page": 212,
+  "chapter": 8
+ },
+ {
+  "number": "8.2",
+  "title": "Questions That Modeling and Simulation Can Answer",
+  "printed_page": 200,
+  "pdf_page": 213,
+  "chapter": 8
+ },
+ {
+  "number": "8.3",
+  "title": "Types of Models",
+  "printed_page": 201,
+  "pdf_page": 214,
+  "chapter": 8
+ },
+ {
+  "number": "8.4",
+  "title": "Using Symbols and Schematics to Represent Models",
+  "printed_page": 202,
+  "pdf_page": 215,
+  "chapter": 8
+ },
+ {
+  "number": "8.5",
+  "title": "Major Types of Models",
+  "printed_page": 205,
+  "pdf_page": 218,
+  "chapter": 8
+ },
+ {
+  "number": "8.6",
+  "title": "Compare Models by Simulation Performance",
+  "printed_page": 211,
+  "pdf_page": 224,
+  "chapter": 8
+ },
+ {
+  "number": "8.7",
+  "title": "Additional Model Comparisons",
+  "printed_page": 221,
+  "pdf_page": 234,
+  "chapter": 8
+ },
+ {
+  "number": "8.8",
+  "title": "Recommendations for Modeling",
+  "printed_page": 223,
+  "pdf_page": 236,
+  "chapter": 8
+ },
+ {
+  "number": "8.9",
+  "title": "Converting a Model to Another Type of Model",
+  "printed_page": 227,
+  "pdf_page": 240,
+  "chapter": 8
+ },
+ {
+  "number": "8.10",
+  "title": "Transform Models for Systems",
+  "printed_page": 234,
+  "pdf_page": 247,
+  "chapter": 8
+ },
+ {
+  "number": "8.11",
+  "title": "Summary",
+  "printed_page": 241,
+  "pdf_page": 254,
+  "chapter": 8
+ },
+ {
+  "number": "9",
+  "title": "Modeling and Simulation in the Design Process Flow",
+  "printed_page": 243,
+  "pdf_page": 256,
+  "chapter": 9
+ },
+ {
+  "number": "9.1",
+  "title": "Simulation in the Design Process",
+  "printed_page": 243,
+  "pdf_page": 256,
+  "chapter": 9
+ },
+ {
+  "number": "9.2",
+  "title": "A Typical Design Flow",
+  "printed_page": 244,
+  "pdf_page": 256,
+  "chapter": 9
+ },
+ {
+  "number": "9.3",
+  "title": "Strategy of Modeling and Simulation in Design",
+  "printed_page": 248,
+  "pdf_page": 260,
+  "chapter": 9
+ },
+ {
+  "number": "9.4",
+  "title": "Acquiring IBIS Models: An Overview",
+  "printed_page": 249,
+  "pdf_page": 261,
+  "chapter": 9
+ },
+ {
+  "number": "9.5",
+  "title": "Summary",
+  "printed_page": 257,
+  "pdf_page": 269,
+  "chapter": 9
+ },
+ {
+  "number": "10",
+  "title": "Key Concepts of the IBIS Specification",
+  "printed_page": 261,
+  "pdf_page": 272,
+  "chapter": 10
+ },
+ {
+  "number": "10.1",
+  "title": "Introduction",
+  "printed_page": 261,
+  "pdf_page": 272,
+  "chapter": 10
+ },
+ {
+  "number": "10.2",
+  "title": "IBIS Specification",
+  "printed_page": 264,
+  "pdf_page": 274,
+  "chapter": 10
+ },
+ {
+  "number": "10.3",
+  "title": "Sample IBIS Data File",
+  "printed_page": 283,
+  "pdf_page": 293,
+  "chapter": 10
+ },
+ {
+  "number": "10.4",
+  "title": "Parsing and Checking IBIS Data Files",
+  "printed_page": 294,
+  "pdf_page": 304,
+  "chapter": 10
+ },
+ {
+  "number": "10.5",
+  "title": "Schematic of a Basic IBIS Model",
+  "printed_page": 297,
+  "pdf_page": 307,
+  "chapter": 10
+ },
+ {
+  "number": "10.6",
+  "title": "How IBIS Circuit Modeling Methodology Is Used",
+  "printed_page": 301,
+  "pdf_page": 311,
+  "chapter": 10
+ },
+ {
+  "number": "10.7",
+  "title": "IBIS Test Circuits",
+  "printed_page": 309,
+  "pdf_page": 319,
+  "chapter": 10
+ },
+ {
+  "number": "10.8",
+  "title": "ISO 9000 Process Documentation for IBIS Models",
+  "printed_page": 310,
+  "pdf_page": 320,
+  "chapter": 10
+ },
+ {
+  "number": "10.9",
+  "title": "Summary",
+  "printed_page": 314,
+  "pdf_page": 324,
+  "chapter": 10
+ },
+ {
+  "number": "11",
+  "title": "Using IBIS Models in What-If Simulations",
+  "printed_page": 315,
+  "pdf_page": 325,
+  "chapter": 11
+ },
+ {
+  "number": "11.1",
+  "title": "A New Method of Design and Development",
+  "printed_page": 315,
+  "pdf_page": 325,
+  "chapter": 11
+ },
+ {
+  "number": "11.2",
+  "title": "Virtual Experiments",
+  "printed_page": 316,
+  "pdf_page": 326,
+  "chapter": 11
+ },
+ {
+  "number": "11.3",
+  "title": "Virtual Experiment Techniques",
+  "printed_page": 316,
+  "pdf_page": 326,
+  "chapter": 11
+ },
+ {
+  "number": "11.4",
+  "title": "Propagation Delay in High-Speed Nets",
+  "printed_page": 317,
+  "pdf_page": 327,
+  "chapter": 11
+ },
+ {
+  "number": "11.5",
+  "title": "Why We Use the IBIS Model",
+  "printed_page": 318,
+  "pdf_page": 328,
+  "chapter": 11
+ },
+ {
+  "number": "11.6",
+  "title": "Data Used in Experiments",
+  "printed_page": 320,
+  "pdf_page": 330,
+  "chapter": 11
+ },
+ {
+  "number": "11.7",
+  "title": "Experiment 1: Output Drive Capabity Versus Load",
+  "printed_page": 322,
+  "pdf_page": 332,
+  "chapter": 11
+ },
+ {
+  "number": "11.8",
+  "title": "Experiment 2: Ccomp Loading",
+  "printed_page": 327,
+  "pdf_page": 337,
+  "chapter": 11
+ },
+ {
+  "number": "11.9",
+  "title": "All-Important Zo: Algorithms and Field Solvers",
+  "printed_page": 332,
+  "pdf_page": 342,
+  "chapter": 11
+ },
+ {
+  "number": "11.10",
+  "title": "Experiment 3: Edge Rate of a Driver and Reflections",
+  "printed_page": 333,
+  "pdf_page": 343,
+  "chapter": 11
+ },
+ {
+  "number": "11.11",
+  "title": "Experiment 4: Using V-T Data Versus a Ramp",
+  "printed_page": 336,
+  "pdf_page": 346,
+  "chapter": 11
+ },
+ {
+  "number": "11.12",
+  "title": "Experiment 5: Parasitics and Packaging Effects",
+  "printed_page": 346,
+  "pdf_page": 356,
+  "chapter": 11
+ },
+ {
+  "number": "11.13",
+  "title": "Experiment 6: Environmental and Population Variables",
+  "printed_page": 349,
+  "pdf_page": 359,
+  "chapter": 11
+ },
+ {
+  "number": "11.14",
+  "title": "Other Considerations: Timing and Noise Margin Issues",
+  "printed_page": 352,
+  "pdf_page": 362,
+  "chapter": 11
+ },
+ {
+  "number": "11.15",
+  "title": "Experiment 7: Vol from Simulation Versus Data Sheet",
+  "printed_page": 356,
+  "pdf_page": 366,
+  "chapter": 11
+ },
+ {
+  "number": "11.16",
+  "title": "How IBIS Handles Simulator Issues",
+  "printed_page": 358,
+  "pdf_page": 368,
+  "chapter": 11
+ },
+ {
+  "number": "11.17",
+  "title": "Summary",
+  "printed_page": 359,
+  "pdf_page": 369,
+  "chapter": 11
+ },
+ {
+  "number": "12",
+  "title": "Fixing Errors and Omissions in IBIS Models",
+  "printed_page": 361,
+  "pdf_page": 371,
+  "chapter": 12
+ },
+ {
+  "number": "12.1",
+  "title": "IBIS Model Validation Steps",
+  "printed_page": 361,
+  "pdf_page": 371,
+  "chapter": 12
+ },
+ {
+  "number": "12.2",
+  "title": "Process and Product Improvement Steps",
+  "printed_page": 362,
+  "pdf_page": 371,
+  "chapter": 12
+ },
+ {
+  "number": "12.3",
+  "title": "Step 1: Detect and Acknowledge the Quality Problem",
+  "printed_page": 363,
+  "pdf_page": 372,
+  "chapter": 12
+ },
+ {
+  "number": "12.4",
+  "title": "Step 2: Diagnose the Problem's Root Cause",
+  "printed_page": 364,
+  "pdf_page": 373,
+  "chapter": 12
+ },
+ {
+  "number": "12.5",
+  "title": "Step 3: Design a Fix Based on Root Cause",
+  "printed_page": 366,
+  "pdf_page": 375,
+  "chapter": 12
+ },
+ {
+  "number": "12.6",
+  "title": "Step 4: Verify the Fix",
+  "printed_page": 370,
+  "pdf_page": 379,
+  "chapter": 12
+ },
+ {
+  "number": "12.7",
+  "title": "Step 5: Archive Corrected Models",
+  "printed_page": 372,
+  "pdf_page": 381,
+  "chapter": 12
+ },
+ {
+  "number": "12.8",
+  "title": "Beyond Parsers and Checklists: Simulations and Reality Checking",
+  "printed_page": 372,
+  "pdf_page": 381,
+  "chapter": 12
+ },
+ {
+  "number": "12.9",
+  "title": "Tools Provided by the IBIS Committee",
+  "printed_page": 374,
+  "pdf_page": 383,
+  "chapter": 12
+ },
+ {
+  "number": "12.10",
+  "title": "IBIS Common Errors Checklist and Correction Procedures.. 382 12.11 3Com's ISO 9000 Process for IBIS Models",
+  "printed_page": 386,
+  "pdf_page": 395,
+  "chapter": 12
+ },
+ {
+  "number": "12.12",
+  "title": "IBIS Model Acceptance and Legitimacy",
+  "printed_page": 391,
+  "pdf_page": 400,
+  "chapter": 12
+ },
+ {
+  "number": "12.13",
+  "title": "Summary",
+  "printed_page": 394,
+  "pdf_page": 403,
+  "chapter": 12
+ },
+ {
+  "number": "13",
+  "title": "Using EDA Tools to Create and Validate IBIS Models from SPICE",
+  "printed_page": 395,
+  "pdf_page": 404,
+  "chapter": 13
+ },
+ {
+  "number": "13.1",
+  "title": "Introduction",
+  "printed_page": 395,
+  "pdf_page": 404,
+  "chapter": 13
+ },
+ {
+  "number": "13.2",
+  "title": "I/O Buffer Example",
+  "printed_page": 396,
+  "pdf_page": 405,
+  "chapter": 13
+ },
+ {
+  "number": "13.3",
+  "title": "SPICE-to-IBIS Conversion Methodology",
+  "printed_page": 399,
+  "pdf_page": 408,
+  "chapter": 13
+ },
+ {
+  "number": "13.4",
+  "title": "Modeling Passive Interconnections in IBIS",
+  "printed_page": 414,
+  "pdf_page": 423,
+  "chapter": 13
+ },
+ {
+  "number": "13.5",
+  "title": "IBIS Model Validation",
+  "printed_page": 415,
+  "pdf_page": 424,
+  "chapter": 13
+ },
+ {
+  "number": "13.6",
+  "title": "Summary",
+  "printed_page": 422,
+  "pdf_page": 431,
+  "chapter": 13
+ },
+ {
+  "number": "14",
+  "title": "Sources of IBIS Models",
+  "printed_page": 427,
+  "pdf_page": 435,
+  "chapter": 14
+ },
+ {
+  "number": "14.1",
+  "title": "Model Needs Change as a Product is Developed",
+  "printed_page": 427,
+  "pdf_page": 435,
+  "chapter": 14
+ },
+ {
+  "number": "14.2",
+  "title": "List of IBIS Model Sources",
+  "printed_page": 428,
+  "pdf_page": 435,
+  "chapter": 14
+ },
+ {
+  "number": "14.3",
+  "title": "Using Default Models to Get Started",
+  "printed_page": 430,
+  "pdf_page": 437,
+  "chapter": 14
+ },
+ {
+  "number": "14.4",
+  "title": "Using the Company's Model Library",
+  "printed_page": 430,
+  "pdf_page": 437,
+  "chapter": 14
+ },
+ {
+  "number": "14.5",
+  "title": "Using the EDA Tool Provider's Model Library",
+  "printed_page": 430,
+  "pdf_page": 437,
+  "chapter": 14
+ },
+ {
+  "number": "14.6",
+  "title": "Searching the Web for the SuppHer's Model",
+  "printed_page": 431,
+  "pdf_page": 438,
+  "chapter": 14
+ },
+ {
+  "number": "14.7",
+  "title": "Requesting Models Directly from the Supplier",
+  "printed_page": 434,
+  "pdf_page": 441,
+  "chapter": 14
+ },
+ {
+  "number": "14.8",
+  "title": "Purchasing a Commercial Third-Party Model Library",
+  "printed_page": 436,
+  "pdf_page": 443,
+  "chapter": 14
+ },
+ {
+  "number": "14.9",
+  "title": "Using Models Adapted from Other Models",
+  "printed_page": 437,
+  "pdf_page": 444,
+  "chapter": 14
+ },
+ {
+  "number": "14.10",
+  "title": "Review",
+  "printed_page": 440,
+  "pdf_page": 447,
+  "chapter": 14
+ },
+ {
+  "number": "14.11",
+  "title": "Purchasing Custom Models from a Third-Party",
+  "printed_page": 441,
+  "pdf_page": 448,
+  "chapter": 14
+ },
+ {
+  "number": "14.12",
+  "title": "Converting SPICE Models to IBIS Models",
+  "printed_page": 441,
+  "pdf_page": 448,
+  "chapter": 14
+ },
+ {
+  "number": "14.13",
+  "title": "Using a Supplier's Preliminary Models",
+  "printed_page": 441,
+  "pdf_page": 448,
+  "chapter": 14
+ },
+ {
+  "number": "14.14",
+  "title": "Asking SI-List and IBIS E-mail Reflectors for Help",
+  "printed_page": 450,
+  "pdf_page": 457,
+  "chapter": 14
+ },
+ {
+  "number": "14.15",
+  "title": "Modeling Tools on the IBIS Website",
+  "printed_page": 451,
+  "pdf_page": 458,
+  "chapter": 14
+ },
+ {
+  "number": "14.16",
+  "title": "Summary",
+  "printed_page": 452,
+  "pdf_page": 459,
+  "chapter": 14
+ },
+ {
+  "number": "15",
+  "title": "Working with the Model Library",
+  "printed_page": 453,
+  "pdf_page": 460,
+  "chapter": 15
+ },
+ {
+  "number": "15.1",
+  "title": "The Best Way to Manage Models",
+  "printed_page": 453,
+  "pdf_page": 460,
+  "chapter": 15
+ },
+ {
+  "number": "15.2",
+  "title": "Component Standardization and Library Management",
+  "printed_page": 458,
+  "pdf_page": 465,
+  "chapter": 15
+ },
+ {
+  "number": "15.3",
+  "title": "Storing and Retrieving Model Files",
+  "printed_page": 470,
+  "pdf_page": 477,
+  "chapter": 15
+ },
+ {
+  "number": "15.4",
+  "title": "Assigning Models to Components in EDA Simulators",
+  "printed_page": 473,
+  "pdf_page": 480,
+  "chapter": 15
+ },
+ {
+  "number": "15.5",
+  "title": "Flexibility in Model Choices at Run Time",
+  "printed_page": 476,
+  "pdf_page": 483,
+  "chapter": 15
+ },
+ {
+  "number": "15.6",
+  "title": "Summary",
+  "printed_page": 476,
+  "pdf_page": 483,
+  "chapter": 15
+ },
+ {
+  "number": "16",
+  "title": "Methodology for Verifying Models",
+  "printed_page": 479,
+  "pdf_page": 486,
+  "chapter": 16
+ },
+ {
+  "number": "16.1",
+  "title": "Overview of Model Verification",
+  "printed_page": 479,
+  "pdf_page": 486,
+  "chapter": 16
+ },
+ {
+  "number": "16.2",
+  "title": "Model Verification Methodology",
+  "printed_page": 481,
+  "pdf_page": 487,
+  "chapter": 16
+ },
+ {
+  "number": "16.3",
+  "title": "Verifying SPICE Models",
+  "printed_page": 489,
+  "pdf_page": 495,
+  "chapter": 16
+ },
+ {
+  "number": "16.4",
+  "title": "Verifying PDS Models",
+  "printed_page": 497,
+  "pdf_page": 503,
+  "chapter": 16
+ },
+ {
+  "number": "16.5",
+  "title": "Verifying IBIS Models",
+  "printed_page": 503,
+  "pdf_page": 509,
+  "chapter": 16
+ },
+ {
+  "number": "16.6",
+  "title": "Verifying Other Model Types",
+  "printed_page": 508,
+  "pdf_page": 514,
+  "chapter": 16
+ },
+ {
+  "number": "16.7",
+  "title": "Summary",
+  "printed_page": 510,
+  "pdf_page": 516,
+  "chapter": 16
+ },
+ {
+  "number": "17",
+  "title": "Verifying Model Accuracy by Using Laboratory Measurements .... 511 17.1 Introduction",
+  "printed_page": 511,
+  "pdf_page": 517,
+  "chapter": 17
+ },
+ {
+  "number": "17.2",
+  "title": "Instrumentation Loading as a Source of Errors",
+  "printed_page": 512,
+  "pdf_page": 518,
+  "chapter": 17
+ },
+ {
+  "number": "17.3",
+  "title": "Other Test Setup Errors",
+  "printed_page": 517,
+  "pdf_page": 523,
+  "chapter": 17
+ },
+ {
+  "number": "17.4",
+  "title": "Signal Noise as a Source of Errors",
+  "printed_page": 519,
+  "pdf_page": 525,
+  "chapter": 17
+ },
+ {
+  "number": "17.5",
+  "title": "Measurement Definitions and Terms as a Source of Errors... 520 17.6 Two Ways to Correlate Models with Measurements",
+  "printed_page": 522,
+  "pdf_page": 528,
+  "chapter": 17
+ },
+ {
+  "number": "17.7",
+  "title": "Involving Production in Verification",
+  "printed_page": 523,
+  "pdf_page": 529,
+  "chapter": 17
+ },
+ {
+  "number": "17.8",
+  "title": "An EMI/EMC Example",
+  "printed_page": 523,
+  "pdf_page": 529,
+  "chapter": 17
+ },
+ {
+  "number": "17.9",
+  "title": "Correlating Unit-by-Unit Model Measurements",
+  "printed_page": 524,
+  "pdf_page": 530,
+  "chapter": 17
+ },
+ {
+  "number": "17.10",
+  "title": "Statistical Envelope Correlation",
+  "printed_page": 525,
+  "pdf_page": 531,
+  "chapter": 17
+ },
+ {
+  "number": "17.11",
+  "title": "Signal Integrity and Correlation",
+  "printed_page": 526,
+  "pdf_page": 532,
+  "chapter": 17
+ },
+ {
+  "number": "17.12",
+  "title": "Waveform Correlation",
+  "printed_page": 527,
+  "pdf_page": 533,
+  "chapter": 17
+ },
+ {
+  "number": "17.13",
+  "title": "Computational Electromagnetics and the Feature Selective Validation Method",
+  "printed_page": 530,
+  "pdf_page": 536,
+  "chapter": 17
+ },
+ {
+  "number": "17.14",
+  "title": "IBIS Golden Waveforms",
+  "printed_page": 534,
+  "pdf_page": 540,
+  "chapter": 17
+ },
+ {
+  "number": "17.15",
+  "title": "How Unexpected Errors Led to an Advance in Modeling",
+  "printed_page": 535,
+  "pdf_page": 541,
+  "chapter": 17
+ },
+ {
+  "number": "17.16",
+  "title": "Recommended Verification Strategy",
+  "printed_page": 541,
+  "pdf_page": 547,
+  "chapter": 17
+ },
+ {
+  "number": "17.17",
+  "title": "Summary",
+  "printed_page": 544,
+  "pdf_page": 550,
+  "chapter": 17
+ },
+ {
+  "number": "18",
+  "title": "Balancing Accuracy Against Practicality When Correlating Simulation Results",
+  "printed_page": 545,
+  "pdf_page": 551,
+  "chapter": 18
+ },
+ {
+  "number": "18.1",
+  "title": "Establishing Absolute Accuracy Is Difficult",
+  "printed_page": 545,
+  "pdf_page": 551,
+  "chapter": 18
+ },
+ {
+  "number": "18.2",
+  "title": "Is a Model Accurate Enough to Be Usable?",
+  "printed_page": 547,
+  "pdf_page": 553,
+  "chapter": 18
+ },
+ {
+  "number": "18.3",
+  "title": "Model Accuracy Definitions",
+  "printed_page": 547,
+  "pdf_page": 553,
+  "chapter": 18
+ },
+ {
+  "number": "18.4",
+  "title": "Confidence Limits in Measurements and Simulations",
+  "printed_page": 548,
+  "pdf_page": 554,
+  "chapter": 18
+ },
+ {
+  "number": "18.5",
+  "title": "How Much to Guard-Band Design Simulation?",
+  "printed_page": 549,
+  "pdf_page": 555,
+  "chapter": 18
+ },
+ {
+  "number": "18.6",
+  "title": "Differences in Accuracy, Dispersion, and Precision for Simulation and Measurement",
+  "printed_page": 550,
+  "pdf_page": 556,
+  "chapter": 18
+ },
+ {
+  "number": "18.7",
+  "title": "Model Limitations",
+  "printed_page": 551,
+  "pdf_page": 557,
+  "chapter": 18
+ },
+ {
+  "number": "18.8",
+  "title": "Standardization and the Compact Model Council",
+  "printed_page": 551,
+  "pdf_page": 557,
+  "chapter": 18
+ },
+ {
+  "number": "18.9",
+  "title": "Summary",
+  "printed_page": 554,
+  "pdf_page": 560,
+  "chapter": 18
+ },
+ {
+  "number": "19",
+  "title": "Deriving an Equation-Based Model from a Macromodel",
+  "printed_page": 555,
+  "pdf_page": 561,
+  "chapter": 19
+ },
+ {
+  "number": "19.1",
+  "title": "A \"New\" RF Design Challenge",
+  "printed_page": 555,
+  "pdf_page": 561,
+  "chapter": 19
+ },
+ {
+  "number": "19.2",
+  "title": "Background",
+  "printed_page": 555,
+  "pdf_page": 561,
+  "chapter": 19
+ },
+ {
+  "number": "19.3",
+  "title": "Applying the RF Example to High-Speed Digital Circuits.... 556 19.4 Predicted and Measured Results",
+  "printed_page": 558,
+  "pdf_page": 564,
+  "chapter": 19
+ },
+ {
+  "number": "19.5",
+  "title": "Reverse Isolation Analyzed",
+  "printed_page": 559,
+  "pdf_page": 565,
+  "chapter": 19
+ },
+ {
+  "number": "19.6",
+  "title": "Optimizing Single-Stage Reverse Isolation",
+  "printed_page": 566,
+  "pdf_page": 572,
+  "chapter": 19
+ },
+ {
+  "number": "19.7",
+  "title": "Combining Stages for Power Isolation",
+  "printed_page": 567,
+  "pdf_page": 573,
+  "chapter": 19
+ },
+ {
+  "number": "19.8",
+  "title": "Calculations Versus Measurements",
+  "printed_page": 569,
+  "pdf_page": 575,
+  "chapter": 19
+ },
+ {
+  "number": "19.9",
+  "title": "Construction and Test Techniques",
+  "printed_page": 569,
+  "pdf_page": 575,
+  "chapter": 19
+ },
+ {
+  "number": "19.10",
+  "title": "Summary",
+  "printed_page": 570,
+  "pdf_page": 576,
+  "chapter": 19
+ },
+ {
+  "number": "20",
+  "title": "The Challenge to IBIS",
+  "printed_page": 573,
+  "pdf_page": 579,
+  "chapter": 20
+ },
+ {
+  "number": "20.1",
+  "title": "Emerging Simulation Requirements",
+  "printed_page": 573,
+  "pdf_page": 579,
+  "chapter": 20
+ },
+ {
+  "number": "20.2",
+  "title": "The Leading Contenders to Change IBIS",
+  "printed_page": 576,
+  "pdf_page": 581,
+  "chapter": 20
+ },
+ {
+  "number": "20.3",
+  "title": "Models in the Context of Simplification",
+  "printed_page": 577,
+  "pdf_page": 582,
+  "chapter": 20
+ },
+ {
+  "number": "20.4",
+  "title": "Physical Modeling",
+  "printed_page": 578,
+  "pdf_page": 583,
+  "chapter": 20
+ },
+ {
+  "number": "20.5",
+  "title": "Behavioral Modeling",
+  "printed_page": 580,
+  "pdf_page": 585,
+  "chapter": 20
+ },
+ {
+  "number": "20.6",
+  "title": "Developing a Macromodel from the Behavioral Model",
+  "printed_page": 588,
+  "pdf_page": 593,
+  "chapter": 20
+ },
+ {
+  "number": "20.7",
+  "title": "Developing a SPICE Macromodel from a Physical Model.... 592 20.8 Limitations in Models Due to Simplification",
+  "printed_page": 608,
+  "pdf_page": 613,
+  "chapter": 20
+ },
+ {
+  "number": "20.9",
+  "title": "AMS Modeling Simplified",
+  "printed_page": 610,
+  "pdf_page": 615,
+  "chapter": 20
+ },
+ {
+  "number": "20.10",
+  "title": "Limitations Because of Parameter Variation",
+  "printed_page": 618,
+  "pdf_page": 623,
+  "chapter": 20
+ },
+ {
+  "number": "20.11",
+  "title": "Limitations of Deterministic Modeling and Design",
+  "printed_page": 621,
+  "pdf_page": 626,
+  "chapter": 20
+ },
+ {
+  "number": "20.12",
+  "title": "Summary",
+  "printed_page": 629,
+  "pdf_page": 634,
+  "chapter": 20
+ },
+ {
+  "number": "21",
+  "title": "Feedback to the Model Provider Improves Model Accuracy",
+  "printed_page": 631,
+  "pdf_page": 636,
+  "chapter": 21
+ },
+ {
+  "number": "21.1",
+  "title": "Continuing Need for Better Models",
+  "printed_page": 631,
+  "pdf_page": 636,
+  "chapter": 21
+ },
+ {
+  "number": "21.2",
+  "title": "How Far We Have Come",
+  "printed_page": 632,
+  "pdf_page": 636,
+  "chapter": 21
+ },
+ {
+  "number": "21.3",
+  "title": "Four-Step Universal Process for Improvement",
+  "printed_page": 633,
+  "pdf_page": 637,
+  "chapter": 21
+ },
+ {
+  "number": "21.4",
+  "title": "Specs That Swim Upstream; A New Approach",
+  "printed_page": 633,
+  "pdf_page": 637,
+  "chapter": 21
+ },
+ {
+  "number": "21.5",
+  "title": "Warnings About Doing What-If Model Simulations",
+  "printed_page": 634,
+  "pdf_page": 638,
+  "chapter": 21
+ },
+ {
+  "number": "21.6",
+  "title": "Selling the Idea of Better Models and Simulation",
+  "printed_page": 635,
+  "pdf_page": 639,
+  "chapter": 21
+ },
+ {
+  "number": "21.7",
+  "title": "Summary",
+  "printed_page": 640,
+  "pdf_page": 644,
+  "chapter": 21
+ },
+ {
+  "number": "22",
+  "title": "Future Trends in Modeling",
+  "printed_page": 641,
+  "pdf_page": 645,
+  "chapter": 22
+ },
+ {
+  "number": "22.1",
+  "title": "Bridges to the Future",
+  "printed_page": 641,
+  "pdf_page": 645,
+  "chapter": 22
+ },
+ {
+  "number": "22.2",
+  "title": "Challenge of HSDD",
+  "printed_page": 642,
+  "pdf_page": 646,
+  "chapter": 22
+ },
+ {
+  "number": "22.3",
+  "title": "How Design Methods Have Changed",
+  "printed_page": 644,
+  "pdf_page": 648,
+  "chapter": 22
+ },
+ {
+  "number": "22.4",
+  "title": "Attitudes in EMI/EMC about Modeling and Simulation",
+  "printed_page": 645,
+  "pdf_page": 649,
+  "chapter": 22
+ },
+ {
+  "number": "22.5",
+  "title": "High-Speed Design Is Becoming More Challenging",
+  "printed_page": 646,
+  "pdf_page": 650,
+  "chapter": 22
+ },
+ {
+  "number": "22.6",
+  "title": "Advantages of SPICE, S-Parameters, and IBIS",
+  "printed_page": 648,
+  "pdf_page": 652,
+  "chapter": 22
+ },
+ {
+  "number": "22.7",
+  "title": "Combining Models and EDA Tools to Design High-Speed Serial Busses",
+  "printed_page": 654,
+  "pdf_page": 658,
+  "chapter": 22
+ },
+ {
+  "number": "22.8",
+  "title": "IBIS: Past, Present, and Future Specification Additions",
+  "printed_page": 655,
+  "pdf_page": 659,
+  "chapter": 22
+ },
+ {
+  "number": "22.9",
+  "title": "Advantages of Pre-Layout Simulation for EMI/EMC",
+  "printed_page": 659,
+  "pdf_page": 663,
+  "chapter": 22
+ },
+ {
+  "number": "22.10",
+  "title": "Interconnection Design Applied to EMI/EMC",
+  "printed_page": 660,
+  "pdf_page": 664,
+  "chapter": 22
+ },
+ {
+  "number": "22.11",
+  "title": "Modeling for Power Integrity and EMI/EMC",
+  "printed_page": 661,
+  "pdf_page": 665,
+  "chapter": 22
+ },
+ {
+  "number": "22.12",
+  "title": "Computational Electromagnetics",
+  "printed_page": 671,
+  "pdf_page": 675,
+  "chapter": 22
+ },
+ {
+  "number": "22.13",
+  "title": "EDA Tool Supplier Survey",
+  "printed_page": 676,
+  "pdf_page": 680,
+  "chapter": 22
+ },
+ {
+  "number": "22.14",
+  "title": "Risk Management and the Limitations of Simulation",
+  "printed_page": 681,
+  "pdf_page": 685,
+  "chapter": 22
+ },
+ {
+  "number": "22.15",
+  "title": "Summary",
+  "printed_page": 681,
+  "pdf_page": 685,
+  "chapter": 22
+ },
+ {
+  "number": "23",
+  "title": "Using Probability: The Ultimate Future of Simulation Contributing author: Darren J. Carpenter, BTExact",
+  "printed_page": 683,
+  "pdf_page": 687,
+  "chapter": 23
+ },
+ {
+  "number": "23.1",
+  "title": "Introduction",
+  "printed_page": 683,
+  "pdf_page": 687,
+  "chapter": 23
+ },
+ {
+  "number": "23.2",
+  "title": "Limitations of Deterministic Modeling and Design",
+  "printed_page": 685,
+  "pdf_page": 689,
+  "chapter": 23
+ },
+ {
+  "number": "23.3",
+  "title": "A New Approach: Probabilistic Modeling",
+  "printed_page": 687,
+  "pdf_page": 691,
+  "chapter": 23
+ },
+ {
+  "number": "23.4",
+  "title": "Complexity of the EMI Chain of Cause and Effect",
+  "printed_page": 688,
+  "pdf_page": 692,
+  "chapter": 23
+ },
+ {
+  "number": "23.5",
+  "title": "Risk Management Mathematics",
+  "printed_page": 689,
+  "pdf_page": 693,
+  "chapter": 23
+ },
+ {
+  "number": "23.6",
+  "title": "Identical Equipments Case",
+  "printed_page": 692,
+  "pdf_page": 696,
+  "chapter": 23
+ },
+ {
+  "number": "23.7",
+  "title": "Non-Identical Equipments Case",
+  "printed_page": 693,
+  "pdf_page": 697,
+  "chapter": 23
+ },
+ {
+  "number": "23.8",
+  "title": "Risk Assessment",
+  "printed_page": 693,
+  "pdf_page": 697,
+  "chapter": 23
+ },
+ {
+  "number": "23.9",
+  "title": "Distribution Examples",
+  "printed_page": 694,
+  "pdf_page": 698,
+  "chapter": 23
+ },
+ {
+  "number": "23.10",
+  "title": "Review of Probability Distributions",
+  "printed_page": 701,
+  "pdf_page": 705,
+  "chapter": 23
+ },
+ {
+  "number": "23.11",
+  "title": "Follow Up Simulation with Product Assurance",
+  "printed_page": 702,
+  "pdf_page": 706,
+  "chapter": 23
+ },
+ {
+  "number": "23.12",
+  "title": "Summary",
+  "printed_page": 703,
+  "pdf_page": 707,
+  "chapter": 23
+ }
+]
