@@ -55,10 +55,40 @@ def _wrap(line: str, width: int = 780) -> str:
     return ("\n+ ").join(pieces)
 
 
-def _pwl_table_to_pairs(table: str) -> str:
-    """`x0, y0, x1, y1, ...` -> `x0,y0 x1,y1 ...` for a G/E PWL(1) element."""
+# How far outside the table the flat guard segments are placed. Only has to be
+# further than any excursion the control node can plausibly reach.
+_CLAMP_MARGIN = 1.0e3
+
+
+def _pwl_table_to_pairs(table: str, clamp: bool = True) -> str:
+    """`x0, y0, x1, y1, ...` -> `x0,y0 x1,y1 ...` for a G/E PWL(1) element.
+
+    With `clamp`, one flat guard segment is added at each end. HSPICE's PWL(1)
+    extrapolates past the last point using the end slope, so a control node that
+    briefly runs off its table diverges: on base8 that put the pad at -4394 V from
+    0.84 ns to 5.10 ns, straight through the rising edge.
+
+    ngspice's `pwl()` extrapolates too - measured, on a table spanning [0, 1] with
+    y = 2x it returns -4 at x = -2 and +6 at x = 3 - so this is not a difference
+    between the simulators. What both are being made to do is hold the end value,
+    which is what IBIS simulators do; on the ngspice side the same thing is done by
+    clamping the argument in subcircuit.clamped_die_str.
+
+    A point at `x_first - margin` with `y_first` (and the mirror at the top) makes
+    the end slope zero, so HSPICE's extrapolation holds the end value: ngspice's
+    behaviour, expressed in table data rather than an option.
+    """
     nums = [t.strip() for t in table.split(",") if t.strip()]
-    return " ".join(f"{nums[i]},{nums[i + 1]}" for i in range(0, len(nums) - 1, 2))
+    pairs = [(nums[i], nums[i + 1]) for i in range(0, len(nums) - 1, 2)]
+    if clamp and len(pairs) >= 2:
+        try:
+            lo, hi = float(pairs[0][0]), float(pairs[-1][0])
+        except ValueError:
+            pass                   # a parameterised table; leave it alone
+        else:
+            pairs = ([(f"{lo - _CLAMP_MARGIN:.6g}", pairs[0][1])] + pairs
+                     + [(f"{hi + _CLAMP_MARGIN:.6g}", pairs[-1][1])])
+    return " ".join(f"{x},{y}" for x, y in pairs)
 
 
 def _parse_pwl_body(expr: str):
@@ -141,7 +171,20 @@ def translate(src: str) -> str:
                     cp, cn = f"CTRL{lut}", "0"
                     out.append(f"{indent}ECTRL{lut} CTRL{lut} 0 VOL='{ctrl}'")
                 lut_node = f"LUT{lut}"
-                out.append(_wrap(f"{indent}GLUT{lut} {lut_node} 0 PWL(1) {cp} {cn} {pairs}"))
+                # Node order matters, and getting it wrong is silent. A current
+                # source draws its value OUT of its first node, so
+                # `GLUT LUT 0 PWL(1) ...` across `RLUT LUT 0 1` leaves
+                # V(LUT) = -table: every I-V lookup came out negated. Sourcing
+                # into the node instead gives V(LUT) = +table, which is what the
+                # consuming expression assumes.
+                #
+                # Measured on base8: at a pad of -0.946 V the ngspice table gives
+                # -0.4067 A and the old helper node read +0.406. The negated
+                # current is positive feedback, so the pad ran away to whichever
+                # table endpoint it reached first -- -87.88 A or +151.5 A, which
+                # into the 50 ohm load are exactly the -4394 V and +7575 V rails
+                # the translated model was producing.
+                out.append(_wrap(f"{indent}GLUT{lut} 0 {lut_node} PWL(1) {cp} {cn} {pairs}"))
                 out.append(f"{indent}RLUT{lut} {lut_node} 0 1")
                 value = f"{_strip_braces(scale_pfx).strip()}*V({lut_node})" if scale_pfx else f"V({lut_node})"
                 if kind == "V":
