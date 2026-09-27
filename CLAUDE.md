@@ -47,9 +47,21 @@ out of date.
   `python scripts/<name>.py`.
 - **HSPICE and ngspice paths** come from `scripts/spice_tool_paths.py`; don't hard-code
   them. HSPICE is T-2022.06; ngspice 46 is in `.codex_deps/ngspice-46_64`.
-- **Disk:** C: is nearly full, about 12 GB free. A sweep of ngspice builds writes tens of
-  GB of `.raw`. Delete intermediate raws when a build finishes, and check free space
-  before a large run. A full disk killed a run on 09-21.
+- **Disk:** a sweep of ngspice builds writes tens of GB of `.raw`. Check free space before a
+  large run; a full disk killed one on 09-21.
+
+  **Compress raws, never delete them.** They are not scratch output - 65 scripts read them at
+  build time, every deck figure builder among them, so deleting a study's raws means re-running
+  its whole ngspice campaign before you can redraw a figure.
+
+      py -3.14 scripts/compress_raws.py results/<folder>            # dry run
+      py -3.14 scripts/compress_raws.py results/<folder> --apply
+
+  It re-parses each `.gz` and compares it array-by-array against the original before removing
+  anything, and stops the run on any mismatch. `eye_diagram.resolve_raw` then falls back to
+  `<name>.gz`, so every caller keeps asking for `run.raw` and nothing else changes. Measured
+  5.3-13x across the repo on 2026-09-26; all 45 deck and summary figures rebuilt byte-for-byte
+  afterwards.
 - **Shells:** Git Bash and Windows PowerShell 5.1. Put multi-line Python in a file, not a
   bash heredoc; backslash escapes get mangled.
 
