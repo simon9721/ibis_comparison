@@ -2,7 +2,7 @@
 .title stressed transistor
 .option post=2 probe accurate ingold=2
 .temp 27
-Vin in_dig 0 PWL(0n 0  5n 0  5.001n 1.8  5.0884n 1.8  5.0894n 0  22n 0)
+Vin in_dig 0 PWL(0n 0  5n 0  5.001n 1.8  5.0878n 1.8  5.0888n 0  22n 0)
 .OPTIONS METHOD=GEAR GSHUNT=1E-12
 .PARAM vccr_typ=1.300V
 .PARAM vccq_typ=1.800V
