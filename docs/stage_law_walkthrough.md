@@ -276,9 +276,111 @@ Badges: **device** = standard device behaviour · **simplified** = same shape, o
 | K identical stages | nothing — a modelling choice, evidenced only by the fit | **assumed** |
 | one shared `s_up` across every stage | in normalised coordinates the *charging* term is the PMOS on odd stages and the **NMOS** on even ones (§3), so a single `s_up` asserts the two are equally strong — a **β-ratio assumption** | **assumed** |
 
-Source for the standard forms: Leventhal & Green, *Semiconductor Modeling*, §3.8 printed p.89
-(pdf 105), eq. 3-23 to 3-25. Its own limitation applies: these are ~0.6 µm devices, so the
-long-channel form is itself an approximation for the silicon in question.
+### The sources, and exactly what each one covers
+
+A source earns its place only if it maps onto a **specific term**. Four tiers, because they are
+not equally solid.
+
+#### Tier 1 — held in this repository, quoted verbatim
+
+`docs/book/` holds Leventhal & Green, *Semiconductor Modeling: For Simulating Signal, Power, and
+Electromagnetic Integrity* (Springer 2006) as JSON. Every quote below is checked against
+`pages.json`; `py -3.14 scripts/extract_book_json.py --find "phrase"` greps it with page
+references. Page numbers are printed page, PDF page in brackets.
+
+**(a) The three-region structure and the two conducting laws** — §3.8.3.4, p.89 [pdf 105],
+equations 3-23 to 3-25, transcribed from the OCR:
+
+```
+(3-23)  ID = 0                                             for  VGS - VTO < 0
+(3-24)  ID = (KP/2)(W/L)(VGS - VTE)^2                      for  0 < VGS - VTO < VDS   [saturation]
+(3-25)  ID = (KP/2)(W/L) VDS (2(VGS - VTE) - VDS)(1 + LAMBDA VDS)
+                                                           for  0 < VDS < VGS - VTO   [triode]
+```
+
+> "A few MOSFET model equations (3-23) through (3-26) are shown for illustration. These equations
+> are level 1 and level 2 with terms for gate modulation specifically included…"
+> — p.89 [pdf 105]
+
+**This sources four things and no more:** `h = 0` below threshold (3-23) · that the gate factor is
+a **power of the overdrive** (3-24) · that a **different law** takes over near the rail, and that
+it is a parabola in V_DS (3-25) · and the identity of §4.1, which is just 3-24 and 3-25 divided by
+each other.
+
+Two things to notice. The book prints 3-25 **with** `LAMBDA` — channel-length modulation. The
+factorisation check drops it, and so does the stage law: without it a saturated device's current
+is exactly flat in V_DS, and that flatness is what makes the ramp a ramp. And these are ~0.6 µm
+parts, so the long-channel form is itself an approximation for this silicon.
+
+**(b) A caution against treating any of this as device physics** — §20.4.1, p.578 [pdf 583]:
+
+> "All so-called physical models (Ebers-Moll [34], Shichman-Hodges [109]) are actually
+> macromodels when compared to the device physics formulations."
+
+This one matters more than it looks. **Even Level 1 is a macromodel.** The stage law is therefore
+a reduced-order model *of a macromodel*, and citing Level 1 buys structure, not authority. It is
+the book's own warning against the overclaim §4.5 avoids.
+
+**(c) Explicit sanction for modelling the pre-driver at reduced detail** — §20.5 and §20.5.1,
+p.580 [pdf 585]:
+
+> "But complex I/O requires some modeling of the buffer internal behavior. A new balance between
+> simulation speed and I/O internal modeling will have to be devised."
+
+> "The black-box model can simplify the physical model of the output stage so that we can model
+> driver and pre-driver at a less detailed level."
+
+That is the closest thing in the literature we hold to a description of the job track 1 is doing.
+
+#### Tier 2 — the primary source, cited by the book, not held here
+
+Level 1 is not the book's; the book restates it. The original is
+
+> H. Shichman and D. A. Hodges, "Modeling and Simulation of Insulated-Gate Field-Effect
+> Transistor Switching Circuits," *IEEE Journal of Solid-State Circuits*, SC-3, 1968.
+
+— bibliography entry [109], p.740 [pdf 742]. **We hold the restatement, not the paper.** Cite the
+book, which is what was actually read.
+
+#### Tier 3 — an outside reference that genuinely connects, not verified against a copy
+
+**For `p`, the gate exponent — the α-power law:**
+
+> T. Sakurai and A. R. Newton, "Alpha-Power Law MOSFET Model and its Applications to CMOS Inverter
+> Delay and Other Formulas," *IEEE Journal of Solid-State Circuits*, vol. 25, no. 2, pp. 584–594,
+> April 1990.
+
+It replaces (3-24)'s square with `I_D ∝ (V_GS − V_th)^α`, with `α` running from 2 (long channel)
+down toward 1 as velocity saturation takes over. **That is exactly the `p` in `h(x)`** — same
+position, same role — so the connection is structural rather than decorative, and it is why
+`p = 1` is a defensible end of a documented range instead of merely a convenience.
+
+**Status: not verified in-repo.** `docs/book/` contains neither "Sakurai" nor "velocity
+saturation" (checked 2026-09-28), so this is outside knowledge and nobody here has checked it
+against the paper. **Treat it as a lead, not as evidence**, until someone does.
+
+#### Tier 4 — no source, and none is claimed
+
+| term | status |
+|---|---|
+| `min(1, ·)` in place of the parabola | **no source.** A straight line, chosen for simplicity; §4.6 measures what it costs |
+| `x_lin` constant, not the overdrive | **no source.** A real boundary moves with the input |
+| `x_lin = 0.45` | **no source.** It sits inside the 0.37–0.63 the real probed stages fitted (§5) — which is evidence, not derivation |
+| K identical stages | **no source.** Evidenced only by the fit (§7) |
+| one shared `s_up` (the β-ratio assumption) | **no source** |
+| the hard threshold in `h` | **no source.** Silicon rolls off continuously (§7.3) |
+
+**Roughly half the equation has a reference and half does not.** That is the honest summary, and
+it is why §4.5 calls this a physically motivated reduced-order model rather than a derivation.
+
+#### What would close the gaps
+
+* **`p`** — read Sakurai–Newton, then re-fit with `--p` (already a flag) against the stressed
+  runs, which *can* see `p` where full swing cannot (§9).
+* **the taper** — swap `min(1, r')` for the device form `q(2−q)`, `q = min(r,1)`, normalised by the
+  overdrive `(u − vt)` instead of by a constant. It is the shape (3-25) actually gives, it costs
+  **one parameter fewer** because `x_lin` disappears into `vt`, and it has never been tried.
+* **`x_lin`** — pinned or fitted, not both (§9).
 
 ### 4.5 What kind of model this is
 

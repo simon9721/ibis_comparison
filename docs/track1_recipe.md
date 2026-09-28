@@ -248,7 +248,12 @@ The law is
 and the four factors have four different provenances. Where a factor below is called standard
 device behaviour, the standard long-channel form is written down in Leventhal & Green,
 *Semiconductor Modeling*, §3.8 printed page 89 (pdf 105), the SPICE Level 1 (Shichman-Hodges)
-equations 3-23 to 3-25:
+equations 3-23 to 3-25.
+
+**The full reference audit is `docs/stage_law_walkthrough.md` §4.4** — every source tiered by how
+solid it is, mapped to the specific term it covers, with the terms that have *no* source listed
+outright. Quotes are checked by `results/model_provenance_2026-09-25/check_quotes.py`. The table
+below is the summary; that section is the authority.
 
 | factor | where it comes from | verdict |
 |---|---|---|
