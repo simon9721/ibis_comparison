@@ -45,9 +45,15 @@ an effective hand-over point, and the stressed-run calibration overwrites it any
 
 Level 1 over the two conducting regions collapses to a function of one ratio:
 
-    I / I_sat  =  min(1, r(2-r)),    r = V_DS / (V_GS - V_th)
+    I / I_sat  =  q(2 - q),    q = min(r, 1),    r = V_DS / (V_GS - V_th)
 
-verified to 4e-16 over 20 000 random `(V_ov, V_DS)`. So the standard form is `[gate term] x [drain term]`,
+verified to 4e-16 over 20 000 random `(V_ov, V_DS)`, 66 % of them in saturation.
+
+**Correction, 2026-09-28.** This was written as `min(1, r(2-r))` until an outside review
+caught it. `r(2-r)` peaks at `r = 1` and falls after, so `min()` takes the falling branch
+above saturation - max error 340 on the same sample. The clamp goes on `r`, not on the
+result. `check_factorisation.py` always computed it correctly; only the wording was wrong,
+here and in `docs/stage_law_walkthrough.md`. So the standard form is `[gate term] x [drain term]`,
 exactly our shape. The three differences are: our exponent (1 not 2), our drain term
 (`min(1,r')` not `min(1,r(2-r))`), and our normaliser (constant `x_lin`, not the overdrive).
 

@@ -102,8 +102,9 @@ written `min(1, (1−v)/x_lin)` and not something in `v`.
 **slopes**, not currents. Nothing in the model ever computes an ampere.
 
 The physical content behind `s_up` is `I_sat / (C · V_swing)` — but that grouping is never
-unpacked, and it does not need to be. The ex2 file-only fit gives `s_up = 2.190 /ns`, i.e. a
-stage flat out crosses its full swing in **457 ps**.
+unpacked, and it does not need to be. ex2's track-1 build fits `s_up = 2.190 /ns`, i.e. a stage
+flat out crosses its full swing in **457 ps**. (File-only for the stages and the threshold — §6.4
+is precise about what that build does and does not take from the file.)
 
 > **Why this matters.** Calling them currents was an error in an earlier write-up. They are
 > slopes. Anything that reads "the stage's charging current" means "the slope the stage produces
@@ -135,10 +136,25 @@ Because `h` clips to zero below `vt`, at a settled input only one term is alive:
 |---|---|---|---|
 | 1 (high) | 1 | 0 | charging only, `v → 1` |
 | 0 (low) | 0 | 1 | discharging only, `v → 0` |
-| mid | both partial | both partial | the two fight; net is the difference |
+| mid | see below | see below | depends on `vt` |
 
 That middle row is the case a short pulse creates and a full transition never shows you. It is
-exactly where the model has to be right and exactly where the file carries no information.
+exactly where the model has to be right and exactly where the file carries no information — so it
+is worth being precise about what the law actually does there.
+
+**Both terms are alive only when `vt < u < 1 − vt`.** That interval is non-empty only if
+**`vt < 0.5`**. Above that the two live regions stop overlapping and a **dead band** opens around
+mid-input where *both* terms are zero and the stage simply **holds** its output.
+
+| fitted `vt` | behaviour at mid-input |
+|---|---|
+| `vt < 0.5` | the two terms overlap and fight; net drive is the difference |
+| `vt ≥ 0.5` | dead band of width `2·vt − 1`; the stage freezes until the input clears it |
+
+This is not hypothetical: ex2's file-only fit lands at **`vt = 0.528`** and inv_weak at **0.524**,
+both of which open a dead band — 5.6 % and 4.8 % of the swing wide. A stage that freezes
+mid-input is a real mechanism for extinguishing a short pulse (§7.3), not a fitting artefact, but
+it is the model's behaviour and not a device's.
 
 ### `h(x)` — the gate factor
 
@@ -198,12 +214,17 @@ For SPICE Level 1 (Shichman–Hodges) across both conducting regions, write `r =
 — the drain voltage normalised by the overdrive. Then:
 
 ```
-I / I_sat  =  min(1, r(2 − r))
+I / I_sat  =  q(2 − q),      q = min(r, 1)        ( equivalently 1 − (1 − q)² )
 ```
+
+**The clamp goes on `r`, not on the result.** `r(2 − r)` is a downward parabola peaking at
+`r = 1`, so above saturation it *falls* — 0.75 at `r = 1.5`, 0 at `r = 2`, negative beyond. Writing
+it `min(1, r(2−r))` would pick that falling branch and give the wrong current in saturation, which
+is where a driving stage spends most of its travel.
 
 This is an algebraic identity, not an approximation: `check_factorisation.py` in
 `results/model_provenance_2026-09-25/` verifies it to **4e-16** over 20 000 random `(V_ov, V_DS)`
-pairs.
+pairs, **66 % of them in saturation**.
 
 So the standard form really is `[gate term] × [drain term]`, with the drain term saturating at 1.
 **That is the stage law's shape.**
@@ -233,7 +254,7 @@ cancels out of the resulting `dv/dt` and is there only to make it a real capacit
 | | a real device (Level 1) | the stage law |
 |---|---|---|
 | gate exponent | `(V_GS − V_th)²` | `(…)¹` — `p = 1` |
-| drain factor | `min(1, r(2−r))` — a parabola | `min(1, r′)` — a straight line |
+| drain factor | `q(2−q)`, `q = min(r,1)` — a parabola into a clamp | `min(1, r′)` — a straight line |
 | the normaliser | `r` is divided by the **overdrive**, so the boundary moves with the input | `r′` is divided by a **constant** `x_lin` |
 
 Everything else — off below threshold, saturate above it, taper into the rail, current-into-a-cap
@@ -250,9 +271,10 @@ Badges: **device** = standard device behaviour · **simplified** = same shape, o
 | `h(u) = 0` below `vt` | `I_D = 0` for `V_GS − V_th < 0` | **device** |
 | `h(u)` above `vt` | a real device squares it; `p = 1` here | **simplified** |
 | `min(1, (1−v)/x_lin)` | the real taper is the parabola `r(2−r)`; a straight line here | **assumed** |
-| `x_lin` held at 0.45 | a real device's zone is 0.77–0.89 of the swing (§6) | **assumed** |
+| `x_lin` held at 0.45 | a real device's zone is 0.77–0.89 of the swing (§5) | **assumed** |
 | boundary at constant `x_lin` | a real device's boundary is `1−v = u−vt`, which **moves with the input** | **assumed** |
 | K identical stages | nothing — a modelling choice, evidenced only by the fit | **assumed** |
+| one shared `s_up` across every stage | in normalised coordinates the *charging* term is the PMOS on odd stages and the **NMOS** on even ones (§3), so a single `s_up` asserts the two are equally strong — a **β-ratio assumption** | **assumed** |
 
 Source for the standard forms: Leventhal & Green, *Semiconductor Modeling*, §3.8 printed p.89
 (pdf 105), eq. 3-23 to 3-25. Its own limitation applies: these are ~0.6 µm devices, so the
@@ -284,8 +306,12 @@ Done properly, at full gate drive on a 3.3 V part (`compare_taper.py`):
 | 0.99 | 0.023 | 0.022 |
 
 A real device gives up its constant current at **v = 0.12**; the stage law holds to **v = 0.55**.
-Integrated over the travel the stage law delivers **1.095×** the charge. **It is *more*
-current-source-like than long-channel theory, not less** — the opposite of the old claim.
+Integrated over the travel the stage law delivers **1.095×** the *average current*. **It is
+*more* current-source-like than long-channel theory, not less** — the opposite of the old claim.
+
+*(Not 1.095× the charge: the charge moved is `C · swing` either way, since both traverse the same
+0 → 1. `compare_taper.py` integrates the normalised drain factor over `v`, so the ratio is of mean
+drive — which is to say the stage law crosses its swing faster, not further.)*
 
 There is a favourable post-hoc reading of `x_lin = 0.45`: a device's boundary sits at
 `1 − v = u − vt`, so 0.45 is where a real one lands at about **57 % gate drive**. The constant is
@@ -328,6 +354,17 @@ inv_skewp 0.077   inv_stage4 0.018   inv_weak 0.524   io_buf 0.432
 
 Range **0.015 to 0.524**, against a physical `V_th/V_DD` of 0.11 (3.3 V) or 0.20 (1.8 V). It is an
 effective hand-over point, and the stressed-run calibration overwrites it anyway.
+
+**And `vt` is not even stable across passes of the same buffer.** The list above is the `est_knee`
+pass at each buffer's best K; ex2 sits at **0.029** there and at **0.528** in the `as_track1`
+K = 3 build of §6.4 — half a swing apart, at near-identical fit quality (Ku-domain rms 0.0215 vs
+0.0233). Different C_comp, different map, wildly different `vt`, same curve reproduced. Note that
+0.528 falls *outside* the range quoted above, because that range is one pass and not a property of
+the buffers.
+
+That is not a contradiction to explain away. It is the §7.1 degeneracy showing up in a second
+parameter: **`vt` is essentially unidentified by the file.** Which is precisely why the recipe
+spends its one stressed run recalibrating it (S5).
 
 **`vt` is also not the file's `Vinh`/`Vinl`.** Those are the input **pin's** thresholds, used by
 the converter for the input comparator. `vt` is an *internal* stage's threshold and the file says
@@ -437,7 +474,9 @@ the recipe that is S4, the shape grid.
 
 **The pull-down needs its own domain.** For an open-drain part, fitting the pull-down in the Ku
 domain leaves its onset unconstrained: the Ku-domain target is zero wherever `g < vt`, which is
-exactly where Kd turns on. Measured **250 ps early** on the open-drain ex2. Hence `which="kd_map"`,
+exactly where Kd turns on. Measured **250 ps early** on the open-drain parts (`opendrain`,
+`od_slowpre`, `od_weak` — open-drain buffers built from ex2, a separate line of work; ex2 itself
+is push-pull). Hence `which="kd_map"`,
 which fits Kd through its own map with `GDN = 1 − GUP`.
 
 ### 6.4 A worked example — ex2, file-only
@@ -492,9 +531,26 @@ other, and the minimum is at **K = 5** while the netlist has **3**.
 
 inv_chain is worse: K = 6, 7, 8, 9 differ in the fourth decimal.
 
-Taking the single best-fitting K recovers the netlist count on **1 of 13 chains** — io_buf's
-pull-up, the one that really is a single stage, and the only row where the curve has a genuine
-minimum rather than a plateau.
+Taking the single best-fitting K recovers the netlist count on **2 of 13 chains** in this pass —
+inv_chain and io_buf's pull-up.
+
+**But the count is the wrong statistic.** Look instead at the **margin** between the best K and
+the runner-up:
+
+| chain | best K | netlist K | margin to runner-up |
+|---|---:|---:|---:|
+| ex2 | 5 | 3 | 0.0007 |
+| inv_chain | 7 | **7** | 0.0001 |
+| io_buf pull-up | 1 | **1** | **0.0088** |
+
+Across all thirteen chains in this pass the margin is **0.0000–0.0007 on twelve of them**, and
+0.0088 on the thirteenth. **io_buf's pull-up is the only row with a real minimum** — it genuinely
+is one stage. inv_chain landing on 7 is a coincidence decided in the fourth decimal; the same fit
+on the `est_knee` pass puts it at 8.
+
+*(The recipe's "1 of 13" is a different statistic: `pick_K`, the smallest K within 5 % of the
+best, which is the rule the band is built on. Argmin and `pick_K` disagree, and both are
+arbitrary at these margins — which is the point.)*
 
 **So the file's Ku(t) constrains how fast the gate moves, and barely constrains how many stages
 move it.** That is not a defect in the fit. It is the §1 degeneracy showing up quantitatively: many
@@ -503,10 +559,30 @@ trajectories reproduce the same product.
 The recipe's response is S3 — take the **three smallest K within 25 % of the best rms** as a band,
 and let the stressed run choose inside it. The band contains the netlist count on all 12 buffers.
 
+**Doesn't that spend one observation on two unknowns?** K and `vt` are both settled by the same
+single stressed run, which looks like it should be degenerate — and `vt` and K trade off exactly
+the way the chain makes easy (a later hand-off and a shorter chain both pass more pulse). The
+recipe's answer is that the two are read off **different features of the same waveform**:
+
+| | uses | from that run |
+|---|---|---|
+| S5 calibrates `vt` | the **peak** at the calibration width | bisected until it matches |
+| S6 selects K and the shape | the **whole waveform**, peak already matched for every candidate | rms over the pulse + 1.5 ns of return |
+
+Because S5 has forced the peak to match at that width for *every* candidate, the peak carries no
+information left for S6 — so K is chosen on shape, not amplitude. That is measured, not asserted:
+ranking candidates by stressed peak instead of by waveform gives **217.3 mV** mean waveform error
+against **52.3 mV** for the waveform rule, and lags of +155…+300 ps against −27…+17 ps
+(`track1_recipe.md` S6).
+
+It is still two unknowns from one run. The claim is only that they are not reading the same
+number.
+
 ### 7.2 A free fit is not just uninformative — it is actively wrong
 
 Fit K stages to ex2's full swing with **all 4K parameters free**
-(`current_limited_stages_2026-09-10/ex2_chain_K.csv`):
+(`current_limited_stages_2026-09-10/ex2_chain_K.csv`). **Gate-domain** rms here — against the
+probed gate n4, not against Ku, so these numbers are not comparable with §7.1's:
 
 | K | full-swing rms | predicted stressed gate, deepest width | measured |
 |---:|---:|---:|---:|
@@ -530,6 +606,19 @@ why K is a first-order parameter and not a refinement — and it is exactly why 
 chain is inert on short pulses: its stages each want 0.7 of the swing, so a 163–322 ps pulse dies
 in the first one and GDN never rises.
 
+**Two caveats on that 0.7.**
+
+* **It is the optimiser's ceiling, not a free landing.** The fitter bounds `vt` to `[0, 0.7]` and
+  the fit returned **0.699999**. Its own study reads that correctly: *"a sign the full-swing fit
+  wanted something it was not allowed to have"*
+  (`results/io_buf_pulldown_calib_2026-09-23/FINDINGS.md`). An active bound is not a measurement,
+  and it should never be quoted as one.
+* **It does not contradict §8's "io_buf is linear end to end".** Those are different stimuli:
+  the linearity was measured on **short HIGH** pulses at **1505–2354 ps**, the extinction on
+  **short LOW** at **163–322 ps** — opposite direction, an order of magnitude apart in width. The
+  pull-up path is linear over the widths tested; the pull-down dies at widths an order of
+  magnitude shorter.
+
 *Honest qualifier:* that hard extinction is the **model's** threshold. In silicon the current falls
 off continuously and a short pulse degrades stage by stage until it is gone. The extinction is
 real; the abruptness is the model's.
@@ -545,6 +634,24 @@ equation.
 input* and compare against the *measured stressed output*. **No stressed data anywhere in the
 fit.**
 
+> ### What this section does and does not show
+>
+> The fits below are **gate-domain**: K identical stages fitted to the **probed transistor gate**
+> (`fit_chain_shared(full[input_pin], full[gate_node], K)`). That is the `--source real` path of
+> §6.4's first trap — **it needs the transistor.** So what §8 establishes is:
+>
+> **the stage law's *shape* extrapolates** — a family fitted at full swing to the true gate
+> predicts the stressed gate, where the linear families do not.
+>
+> It does **not** establish that §6's *file-only pipeline* extrapolates, because that pipeline
+> never sees the true gate: it fits in the **Ku domain** through an **assumed map**, then
+> recalibrates `vt` on the stressed run. The evidence for that is the end-to-end pad result —
+> **12 of 12 within ±10 %** (`track1_recipe.md` §7) — and that one is not held out either: its
+> calibration width (810 ps on ex2) is one of the five widths scored.
+>
+> Keep the two apart. **§8 is why the family is the right family; the end-to-end number is why
+> the pipeline built on it works.** Neither substitutes for the other.
+
 ### ex2 — 3 identical stages, input pin to output gate n4
 
 | width (ps) | 810 | 830 | 858 | 895 | 975 |
@@ -553,8 +660,8 @@ fit.**
 | **stage law, K=3** | **0.755** | **0.782** | **0.813** | **0.847** | **0.898** |
 | linear superposition | 0.926 | 0.932 | 0.940 | 0.951 | 0.968 |
 
-Within **0.05 everywhere**. Linear superposition is off by **0.17** at the deepest width. Full-swing
-rms 0.0066; stressed rms 0.012 (stage law) against 0.069 (linear).
+Within **0.05 everywhere on ex2**. Linear superposition is off by **0.17** at the deepest width.
+Gate-domain rms: full-swing 0.0066, stressed 0.012 (stage law) against 0.069 (linear).
 
 And K matters, exactly as §7 predicts: K = 2 gives 0.287 … 0.520 — it swallows the pulse.
 
@@ -566,6 +673,10 @@ And K matters, exactly as §7 predicts: K = 2 gives 0.287 … 0.520 — it swall
 | **K = 7** | **0.672** | **0.820** | **0.909** | **0.960** | **0.987** |
 | K = 5 | 0 | 0 | 0 | 0 | 0.869 |
 | K = 3 | 0 | 0 | 0 | 0 | 0 |
+
+**inv_chain does not meet ex2's 0.05.** K = 7 is off by **0.21** at 104 ps and 0.115 at 106 ps,
+converging to 0.016 at the shallowest. What it gets right is that the pulse *survives at all* and
+in the right order — which is the thing that decides the pad.
 
 Now read the full-swing rms for those three: **0.0032 (K=7) · 0.0037 (K=5) · 0.0141 (K=3)**. K = 5
 is within 16 % of K = 7 at the thing the file can see, and **swallows four of the five stressed
@@ -590,11 +701,14 @@ why the gate's *shape*, not just its timing, is what a truncation sees.
 
 | | |
 |---|---|
-| **`p = 1` is an admission, not a claim.** | At full swing the stage input is always at the rail, so every `p` from 1 to 2 fits to rms 0.002–0.007. The fit **cannot** choose. A real device squares it. `p` acts only under a *partial* input — precisely what a truncation can see and the recipe already samples. An open gap. |
+| **`p = 1` is an admission, not a claim.** | At full swing the stage input is always at the rail, so every `p` from 1 to 2 fits to rms 0.002–0.007. The fit **cannot** choose, and 1 is taken. `p` acts only under a *partial* input — precisely what a truncation can see and the recipe already samples. An open gap. |
+| **But `p = 1` may be closer to the silicon than `p = 2`.** | The square law is the *long-channel* form. In short-channel devices velocity saturation flattens the exponent — the alpha-power law (Sakurai–Newton) puts it nearer 1.2–1.5 — so on ~0.6 µm parts `p = 1` is plausibly the better approximation, not merely the convenient one. **Not verified in-repo:** the book JSON in `docs/book/` contains neither the alpha-power law nor velocity saturation, so this is an outside reference and a hypothesis, like the velocity-saturation note in §4.6. It would be cheap to test, since `--p` is already a flag. |
 | **The linear taper is the biggest liberty.** | A parabola replaced by a straight line. §4.6 shows it errs toward *more* current, not less. |
 | **`x_lin` is inconsistent.** | Pinned at 0.45 on ten buffers, fitted on inv_chain and io_buf. Defensible (inside the measured 0.37–0.63) but it should be one or the other. |
 | **K identical stages has no derivation.** | Only the fit evidences it. A real tapered predriver has deliberately *different* devices; the claim is that their **normalised dynamics** are similar. |
 | **The map shape grid saw the answer key.** | `(0.40, 0.60)` and `(0.40, 0.90)` are the two best of an earlier grid run on these same 12 buffers. A thirteenth may need a shape the grid does not contain. |
+| **So did the S3 band rule.** | "The three smallest K within 25 %" was chosen on these same 12 buffers. "The band contains the netlist K on all 12" therefore carries the same answer-key caveat as the shape grid — it is a property of a rule tuned until it did, not an independent result. |
+| **The rms window was chosen once.** | The pulse plus 1.5 ns of its return, never tuned. The one untested free choice in the selection rule. |
 
 ---
 
@@ -605,17 +719,21 @@ why the gate's *shape*, not just its timing, is what a truncation sees.
 3. The law says: **off below threshold, constant slope while there is headroom, taper into the
    rail.** Two terms, one per device.
 4. `u` = \|V_GS\|/swing, `1 − v` = \|V_DS\|/swing, `dv/dt` is **swings per ns**.
-5. A real device's current factors as `min(1, r(2−r))` — the **same shape**, verified to 4e-16. The
-   departures are the exponent (1 not 2), a straight taper (not a parabola), and a constant
-   `x_lin` (not the overdrive).
+5. A real device's current factors as `q(2−q)` with `q = min(r, 1)` — the **same shape**, verified
+   to 4e-16. (The clamp is on `r`; `min(1, r(2−r))` is a different and wrong function above
+   saturation.) The departures are the exponent (1 not 2), a straight taper (not a parabola), and
+   a constant `x_lin` (not the overdrive).
 6. **Ku is constructed** by driving K identical stages from a comparator, taking the last stage's
    output as the gate, and reading it through a static map. **Ku_model is compared against
    `kugate_base` from the shipped model's full-swing run**, rms over 4–21 ns at 2 ps.
-7. That comparison **fixes the rate and barely constrains K** — flat to the third decimal across
-   K = 3…6 on ex2. The best-fitting K is the netlist K on **1 of 13 chains**.
+7. That comparison **fixes the rate and barely constrains K** — within **0.002** across K = 3…6 on
+   ex2, and the best-to-runner-up margin is **0.0007 or less on twelve of thirteen chains**. Only
+   io_buf's pull-up has a real minimum. `vt` is unidentified the same way (§5).
 8. So: **identical stages** kill the degenerate corner, a **band** of K survives the file, and the
    **one stressed run** picks inside it.
-9. The evidence it works: fitted at full swing only, it predicts ex2's stressed gate to within
-   0.05 at five widths where linear superposition is off by 0.17.
+9. Two separate claims, both needed. **The family is right:** fitted at full swing to the *probed*
+   gate, it predicts ex2's stressed gate to within 0.05 where linear superposition is off by 0.17
+   (§8 — this uses the transistor). **The file-only pipeline works:** 12 of 12 within ±10 % at the
+   pad (`track1_recipe.md` §7). §8 does not prove the second.
 10. It is a **physically motivated reduced-order model**. The results stand on the measurements,
     not on the derivation.
