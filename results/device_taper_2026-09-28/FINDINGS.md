@@ -23,11 +23,12 @@ which is the one number in the set that is wrong.
 So `x_lin` is not deleted. It is **renamed and made measurable**: it is `V_D0/V_swing`, the
 drain saturation voltage, extractable from any model card in one DC sweep.
 
-**The improvement worth having is a different one.** Sakurai–Newton's boundary moves with
-drive as `x0·D^(α/2)`. Adding that movement *around the same x0* takes inv_chain's stressed
-peak error from **0.077 to 0.016** at identical full-swing fit, and costs **no new parameter**
-because α is `p`. On ex2 it is neutral-to-worse. That split is itself informative: ex2 is
-0.6 µm drawn, inv_chain is 180 nm.
+**And the drain factor should not change at all.** Sakurai–Newton's drive-dependent boundary
+looked promising on the gate-domain bench (inv_chain's stressed peak error 0.077 → 0.016 for no
+new parameter). **It does not survive the Ku domain** (§8): every four-parameter form fits the
+file's Ku(t) within 1–10 %, and the drive-tied boundary is located no better than the constant
+— both land at about half the measured value. The one change this study supports is to **pin
+`x_lin` per buffer from the model card instead of fitting it or using a universal 0.45.**
 
 ---
 
@@ -208,12 +209,73 @@ re-quoted. It is quoted in `stage_law_walkthrough.md` §8 (0.672, "off by 0.21")
 | "these are ~0.6 µm devices" (3 documents) | **corrected.** True of ex2; inv_chain is 180 nm drawn on a different card |
 | `check_xlin.py`'s 1.8 V row | **corrected.** It used `hspice.mod`'s VTH0 for a buffer that does not use that card |
 
-## 8. Next
+## 8. The decisive test: the Ku domain cannot choose a drain factor
 
-1. **Adopt nothing yet.** Re-run the whole grid in the **Ku domain** — the decisive test.
-2. If S-N survives there, `x0` should be **measured per buffer** from the model card by
-   `device_alpha_extract.py`, not fitted — which would remove a *fitted* parameter rather than
-   a parameter.
-3. Re-run `current_limited_stage_model.py --shared` and find what moved inv_chain since 09-10.
-4. `p` and the boundary exponent are now the same parameter. Fitting `p` would also be fitting
-   the boundary — elegant or a new identifiability problem, and it should be checked.
+`scripts/device_taper_ku.py` repeats the comparison in the domain track 1 actually fits in.
+The target is `v(x1.kugate_base)` from a full-swing ngspice run of the **shipped pybis2spice
+subcircuit**, built from the IBIS file with C_comp rewritten — no transistor anywhere in the
+loop. Same cost and optimiser budget as `gate_chain_prototype.fit_chain_ku`.
+
+**Harness validated first.** Pinning `x_lin = 0.45`, as the shipped build does, reproduces the
+committed track-1 fit exactly:
+
+| | `s_up` | `s_dn` | `vt` | Ku rms |
+|---|--:|--:|--:|--:|
+| committed track-1 ex2 build | 2.190 | 2.124 | 0.528 | 0.023 |
+| this harness, `x_lin` pinned 0.45 | **2.19** | **2.12** | **0.528** | **0.0233** |
+
+### The result
+
+| ex2, K = 3 | n | Ku rms | `x0`/`x_lin` | | inv_chain, K = 7 | n | Ku rms | `x0`/`x_lin` |
+|---|--:|--:|--:|---|---|--:|--:|--:|
+| `min(1,d/x_lin)` **today** | 4 | **0.0193** | 0.206 | | `min(1,d/x_lin)` **today** | 4 | **0.0069** | 0.135 |
+| `q(2−q), d/x_lin` | 4 | 0.0193 | 0.333 | | `q(2−q), d/x_lin` | 4 | 0.0076 | 0.546 |
+| **Sakurai–Newton** | 4 | 0.0195 | 0.218 | | **Sakurai–Newton** | 4 | 0.0069 | 0.147 |
+| `q(2−q)` + S-N edge | 4 | 0.0195 | 0.350 | | `q(2−q)` + S-N edge | 4 | 0.0071 | 0.177 |
+| collapsed vsat | 3 | 0.0220 | — | | collapsed vsat | 3 | 0.0076 | — |
+
+**1. Every four-parameter form fits Ku(t) the same.** Spread 0.0002 on ex2 (1 %) and 0.0007 on
+inv_chain (10 %). The file cannot choose the curve *or* the boundary. This is the §1 degeneracy
+for the third time — after K (§7.1) and `vt` (§5), now the drain factor itself.
+
+**2. The drive-tied boundary is no better determined than the constant.** That was the
+hypothesis, and it fails outright:
+
+```
+                          ex2            inv_chain
+measured on silicon       0.347-0.420    0.232-0.400
+today, x_lin free         0.206          0.135
+Sakurai-Newton, x0 free   0.218          0.147
+```
+
+S-N lands within 0.01 of today's value, and **both land at roughly half the device**. Tying the
+boundary to drive buys no identifiability.
+
+**3. The gate-domain winner loses here.** The 3-parameter collapsed vsat is 14 % / 10 % worse in
+Ku rms, and its `vt` reaches 0.506 and **0.650** — the latter near the 0.7 bound, both opening
+the mid-input dead band. Not adoptable.
+
+### So: measure `x0`, do not fit it
+
+The fit, given freedom, puts the boundary at half the physical value. One DC sweep puts it in
+the right place. **That removes a *fitted* parameter rather than a parameter** — a better
+outcome than either option this study set out to compare, and it is what §2's convergence was
+really pointing at.
+
+It also **vindicates the recipe's existing choice to pin `x_lin` rather than fit it**. Pinning
+costs 21 % in Ku rms on ex2 (0.0233 against 0.0193) and buys a boundary that is defensible. The
+one change worth making is that the pin could be **per buffer and measured** — ex2 ≈ 0.38,
+inv_chain ≈ 0.30 — rather than a universal 0.45.
+
+## 9. Next
+
+1. **Do not change the drain factor.** Neither domain supports it: the Ku domain cannot see the
+   difference, and the gate-domain gain did not survive.
+2. **Pin `x_lin` per buffer from the model card** (`device_alpha_extract.py`) instead of the
+   universal 0.45, and score the pad on all 12. This is the only change this study supports, and
+   it is cheap.
+3. Re-run `current_limited_stage_model.py --shared`; find what moved inv_chain since 09-10.
+4. `p` is measured at 1.11–1.39 (§1). The recipe assumes 1. Worth scoring `--p 1.25` at the pad.
+5. The identifiability result is the real find: **three separate parameters — K, `vt`, and now
+   the drain factor — are all invisible to Ku(t).** That is an argument about what the one
+   stressed run has to carry, and it belongs in `docs/stage_law_walkthrough.md` §7.
