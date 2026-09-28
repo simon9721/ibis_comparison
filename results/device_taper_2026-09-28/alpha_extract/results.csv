@@ -1,0 +1,5 @@
+device,vdd,L_m,vth_extracted,vd0,vd0_over_vdd,alpha
+ex2 predriver NMOS,3.3,6e-07,0.6660,1.1440,0.3467,1.109
+ex2 predriver PMOS,3.3,6e-07,0.7190,1.3873,0.4204,1.386
+inv_chain NMOS,1.8,1.8e-07,0.6071,0.4175,0.2319,1.266
+inv_chain PMOS,1.8,1.8e-07,0.5481,0.7198,0.3999,1.316

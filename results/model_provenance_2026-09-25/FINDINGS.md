@@ -14,10 +14,18 @@ Run each script from the repo root with `py -3.14`.
 A real device leaves saturation at `V_DS = V_GS - V_th`, so at full gate drive the resistive region
 occupies `1 - V_th/V_DD` of the swing. Using `VTH0` from `buffers/models/hspice.mod`:
 
-| | a real device | our model |
-|---|---|---|
-| 1.8 V parts | 0.77 (NMOS) / 0.80 (PMOS) | **0.45** |
-| 3.3 V parts | 0.88 (NMOS) / 0.89 (PMOS) | **0.45** |
+| | long-channel **prediction** | **measured** | our model |
+|---|---|---|---|
+| inv_chain, 1.8 V, 180 nm | 0.74 / 0.66 | **0.232 / 0.400** | **0.45** |
+| ex2, 3.3 V, 0.6 µm | 0.89 / 0.88 | **0.347 / 0.420** | **0.45** |
+
+**Correction, 2026-09-28.** The original table gave only the prediction column, called it "a
+real device", and computed the 1.8 V row from `hspice.mod`'s `VTH0` — not the card inv_chain
+uses. Measured on the devices as drawn (`scripts/device_alpha_extract.py`), the boundary is
+**0.23–0.42**, so **0.45 is close to the silicon and the prediction is the thing that is
+wrong**. This finding's conclusion — that `x_lin` is not the textbook boundary — still holds;
+what changes is that it is not far from the *real* one. See
+`results/device_taper_2026-09-28/FINDINGS.md`.
 
 ## 2. `x_lin` is not even fitted  (`check_xlin_fitted.py`)
 
@@ -79,7 +87,8 @@ theory, not less.
 **The favourable reading.** A device's boundary is at `1 - v = u - vt`, so `x_lin = 0.45` is
 where it lands at about **57 % gate drive** — right for a partly-driven stage, too generous for a
 fully-driven one. The stressed pulse is the partly-driven case. Nobody chose 0.45 for that
-reason, but it is defensible post hoc. Separately, these are ~0.6 um devices and velocity
+reason, but it is defensible post hoc. Separately, ex2 draws 0.6 um devices and inv_chain
+180 nm ones (and on a different card), and velocity
 saturation extends the real constant-current region, moving real silicon toward our model and away
 from the long-channel form — a hypothesis, not a measurement.
 
@@ -123,7 +132,8 @@ much**. So:
 * the provenance badges went from `book / book* / ours` to **`device / simplified / assumed`**,
   which say what they mean without needing a reference;
 * the citation survives exactly once, as a small grey source note under the equations it
-  actually sources, together with its own limitation: these are ~0.6 um devices, so the
+  actually sources, together with its own limitation: ex2 draws 0.6 um devices and inv_chain
+  180 nm ones, so the
   long-channel form is itself an approximation;
 * the headline that read "x_lin is not the book's boundary" now reads **"our stage keeps
   pushing at full current for the first 55 % of its travel, where a real device gives up at

@@ -133,8 +133,8 @@ Read by many scripts; regenerate rather than edit.
 
 | folder | what it is | write-up | written by |
 |---|---|---|---|
-| `device_taper_2026-09-28` | Can the device's own taper replace `x_lin = 0.45`? | FINDINGS.md PLAN.md | `scripts/device_taper_probe.py` |
-| `model_provenance_2026-09-25` | What in the stage law has a source, and what does not | FINDINGS.md | `scripts/build_0924_deck.py` |
+| `device_taper_2026-09-28` | Can the device's own taper replace `x_lin = 0.45`? | FINDINGS.md PLAN.md | `scripts/device_alpha_extract.py`, `scripts/device_taper_probe.py` |
+| `model_provenance_2026-09-25` | What in the stage law has a source, and what does not | FINDINGS.md | `scripts/build_0924_deck.py`, `scripts/device_alpha_extract.py` |
 
 ## Loose files at the `results/` root
 

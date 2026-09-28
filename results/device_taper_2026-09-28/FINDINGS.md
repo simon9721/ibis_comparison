@@ -1,194 +1,219 @@
 # Can the device's own taper replace `x_lin = 0.45`?
 
-*2026-09-28. Plan and pre-recorded hypothesis in `PLAN.md`. Script: `scripts/device_taper_probe.py`.*
+*2026-09-28. Plan and pre-recorded hypothesis in `PLAN.md`. Scripts:
+`scripts/device_taper_probe.py`, `scripts/device_alpha_extract.py`.*
+
+> **This file was rewritten after its first version was reviewed.** The first version's
+> headline — that the velocity-saturated form is "physically right" — was **refuted** by
+> measuring the actual devices. The yardstick it used was a long-channel *prediction*, not a
+> measurement. What survives is a better result, and the opposite recommendation. Section 7
+> lists every claim that changed.
 
 ## Answer
 
-**Yes — but not with the textbook long-channel form. The one that works is the
-velocity-saturated boundary.**
+**No — and it turns out it should not.** `x_lin = 0.45` is close to the devices' real
+saturation boundary. What was wrong was never the number; it was the justification attached
+to it.
 
-`q(2−q)` with `q = d / (u−vt)^(p/2)` costs **one parameter fewer** than today's
-`min(1, d/x_lin)`, is **sourced**, fits full swing **as well or better**, and predicts the
-stressed gate **peak** substantially better on both buffers. It predicts the stressed gate
-*waveform* worse. It has not yet been tested in the Ku domain or at the pad, which is where
-track 1 actually lives — so this is a strong candidate, not a decision.
+Measured on the transistors as drawn, `V_D0/V_DD` is **0.23 – 0.42**. Two independent fits
+that were never shown the devices land on **0.429** (ex2) and **0.487** (inv_chain). The
+pinned **0.45** sits right there. The old rationale pointed at long-channel's 0.77–0.89,
+which is the one number in the set that is wrong.
 
-And separately, a result that was not the question but matters more for the write-up:
-**`x_lin = 0.45` is considerably more defensible than `docs/stage_law_walkthrough.md` §5 says.**
+So `x_lin` is not deleted. It is **renamed and made measurable**: it is `V_D0/V_swing`, the
+drain saturation voltage, extractable from any model card in one DC sweep.
+
+**The improvement worth having is a different one.** Sakurai–Newton's boundary moves with
+drive as `x0·D^(α/2)`. Adding that movement *around the same x0* takes inv_chain's stressed
+peak error from **0.077 to 0.016** at identical full-swing fit, and costs **no new parameter**
+because α is `p`. On ex2 it is neutral-to-worse. That split is itself informative: ex2 is
+0.6 µm drawn, inv_chain is 180 nm.
 
 ---
 
-## 1. The numbers
+## 1. The measurement (the part that decides everything else)
 
-Five drain factors, one integrator (verified identical to `cl.simulate` to **1.1e-16**), one
-optimiser budget, fitted to **full swing only**, then asked to predict the stressed gate.
-`edge@1` is the boundary each form implies at full gate drive, in swings.
+`results/model_provenance_2026-09-25/check_xlin.py` compared our `x_lin` against
+`1 − VTH0/V_DD`. That is the long-channel Shockley `V_DSAT = V_GS − V_TH` — **a prediction of
+the very model we depart from**, and the one the α-power law exists because it fails.
 
-### ex2, K = 3, 3.3 V
+`scripts/device_alpha_extract.py` replaces it with the devices' own numbers, by Sakurai &
+Newton's Appendix A procedure in HSPICE: `V_D0` from where the origin tangent meets the
+saturation level (the breakpoint of their piecewise model), α from the log-log slope of
+saturation current against overdrive.
 
-| form | n | full rms | 810 | 830 | 858 | 895 | 975 | mean\|e\| | wave rms | `vt` | edge@1 |
-|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| *measured* | | | .758 | .797 | .838 | .880 | .936 | | | | |
-| `min(1,d/x_lin)` **today** | 4 | 0.0066 | .756 | .782 | .813 | .847 | .898 | 0.023 | **0.0108** | 0.265 | 0.406 |
-| `q(2−q), d/x_lin` | 4 | 0.0057 | .739 | .769 | .804 | .844 | .902 | 0.030 | 0.0105 | 0.302 | 0.730 |
-| `min(1,d/ov)` | 3 | 0.0092 | .856 | .873 | .890 | .908 | .934 | 0.051 | 0.0211 | 0.414 | 0.586 |
-| `q(2−q), d/ov` long-channel | 3 | 0.0066 | .830 | .850 | .872 | .895 | .929 | 0.036 | 0.0277 | 0.240 | 0.760 |
-| **`q(2−q), d/ov^(p/2)` vel-sat** | **3** | **0.0062** | .785 | .811 | .839 | .871 | .917 | **0.014** | 0.0161 | 0.325 | 0.822 |
+| device | card | drawn L | **V_D0/V_DD** | **α** |
+|---|---|---:|---:|---:|
+| ex2 predriver NMOS | `hspice.mod` | 0.6 µm | **0.347** | 1.11 |
+| ex2 predriver PMOS | `hspice.mod` | 0.6 µm | **0.420** | 1.39 |
+| inv_chain NMOS | `HL18G-S3.7S.lib` | 180 nm | **0.232** | 1.27 |
+| inv_chain PMOS | `HL18G-S3.7S.lib` | 180 nm | **0.400** | 1.32 |
 
-### inv_chain, K = 7, 1.8 V
+| | |
+|---|---|
+| long-channel prediction (the old yardstick) | 0.66 – 0.89 |
+| **measured** | **0.23 – 0.42** |
+| `x_lin` today | **0.45** |
 
-| form | n | full rms | 104 | 106 | 111 | 119 | 135 | mean\|e\| | wave rms | `vt` | edge@1 |
-|---|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|--:|
-| *measured* | | | .879 | .935 | .972 | .992 | 1.003 | | | | |
-| `min(1,d/x_lin)` **today** | 4 | **0.0032** | .701 | .832 | .913 | .961 | .987 | 0.077 | **0.0079** | 0.507 | 0.482 |
-| `q(2−q), d/x_lin` | 4 | 0.0032 | .658 | .823 | .917 | .966 | .989 | 0.086 | 0.0103 | 0.554 | 1.106 |
-| `min(1,d/ov)` | 3 | 0.0032 | .960 | .968 | .975 | .985 | .993 | 0.027 | 0.0148 | 0.496 | 0.504 |
-| `q(2−q), d/ov` long-channel | 3 | 0.0035 | .978 | .983 | .988 | .993 | .998 | 0.034 | 0.0188 | 0.392 | 0.608 |
-| **`q(2−q), d/ov^(p/2)` vel-sat** | **3** | 0.0033 | .941 | .958 | .974 | .987 | .996 | **0.020** | 0.0146 | 0.466 | 0.731 |
+**Two errors in the old comparison, both inflating it.** It was a prediction rather than a
+measurement; and it used `hspice.mod`'s VTH0 for *every* buffer, when inv_chain runs on
+`HL18G-S3.7S.lib` (VTH0 0.464/0.613 against 0.363/0.407). The "1.8 V parts: 0.77/0.80" row was
+never inv_chain's device. `check_xlin.py` is corrected.
 
-**Peak error, today against velocity-saturated:**
+**α is measured at 1.11 – 1.39, not 2.** That closes an open gap: `p = 1` is well supported on
+these devices and `p = 2` is not. The walkthrough listed the α-power law as "a lead, not
+evidence" — it is now evidence, for this silicon.
+
+---
+
+## 2. Three independent routes converge on ~0.45
+
+| route | ex2 | inv_chain |
+|---|---:|---:|
+| measured on the device | 0.347 – 0.420 | 0.232 – 0.400 |
+| `x0` free, Sakurai–Newton's model (never saw the device) | **0.429** | **0.487** |
+| `x_lin` free, today's form | 0.406 | 0.482 |
+| `x_lin` pinned, shipped | 0.45 | 0.45 |
+
+The two fits agree with each other, with the pinned constant, and with the silicon. **0.45 was
+right all along.**
+
+Note the parabola variants do *not* do this: they push `x0` to **0.758** and **0.958**, roughly
+double the device, compensating for the parabola's gentler taper. **The straight line finds the
+physical value and the parabola does not** — and the straight line is what Sakurai–Newton's
+model actually uses, so the citable form and the physically-correct form are the same form.
+
+---
+
+## 3. All seven drain factors
+
+One integrator (verified identical to `cl.simulate` to **1.1e-16**), one optimiser budget,
+fitted to **full swing only**, then asked to predict the stressed gate. `q` is clipped —
+`q̂ = min(q,1)` — on both Heun stages and both directions.
+
+### ex2, K = 3, 3.3 V, 0.6 µm — measured `.758 .797 .838 .880 .936`
+
+| form | n | full rms | mean\|e\| | wave rms | `x_lin`/`x0` | `vt` |
+|---|--:|--:|--:|--:|--:|--:|
+| `min(1,d/x_lin)` **today** | 4 | 0.0066 | 0.023 | **0.0108** | 0.406 | 0.265 |
+| `q(2−q), d/x_lin` | 4 | 0.0057 | 0.030 | 0.0105 | 0.730 | 0.302 |
+| `min(1,d/ov)` | 3 | 0.0092 | 0.051 | 0.0211 | — | 0.414 |
+| `q(2−q), d/ov` long-channel | 3 | 0.0066 | 0.036 | 0.0277 | — | 0.240 |
+| `q(2−q), d/ov^(p/2)` collapsed | 3 | 0.0062 | **0.014** | 0.0161 | — | 0.325 |
+| **`min(1,d/(x0·D^(p/2)))` Sakurai–Newton** | 4 | 0.0070 | 0.024 | 0.0204 | **0.429** | 0.262 |
+| `q(2−q), d/(x0·D^(p/2))` | 4 | 0.0060 | 0.016 | 0.0188 | 0.758 | 0.286 |
+
+### inv_chain, K = 7, 1.8 V, 180 nm — measured `.879 .935 .972 .992 1.003`
+
+| form | n | full rms | mean\|e\| | wave rms | `x_lin`/`x0` | `vt` |
+|---|--:|--:|--:|--:|--:|--:|
+| `min(1,d/x_lin)` **today** | 4 | 0.0032 | 0.077 | **0.0079** | 0.482 | 0.507 |
+| `q(2−q), d/x_lin` | 4 | 0.0032 | 0.086 | 0.0103 | 1.106 | 0.554 |
+| `min(1,d/ov)` | 3 | 0.0032 | 0.027 | 0.0148 | — | 0.496 |
+| `q(2−q), d/ov` long-channel | 3 | 0.0035 | 0.034 | 0.0188 | — | 0.392 |
+| `q(2−q), d/ov^(p/2)` collapsed | 3 | 0.0033 | 0.020 | 0.0146 | — | 0.466 |
+| **`min(1,d/(x0·D^(p/2)))` Sakurai–Newton** | 4 | 0.0032 | **0.016** | 0.0105 | **0.487** | 0.498 |
+| `q(2−q), d/(x0·D^(p/2))` | 4 | 0.0032 | 0.013 | 0.0117 | 0.958 | 0.522 |
+
+**Sakurai–Newton's own model on inv_chain: the stressed peak error falls from 0.077 to 0.016 —
+4.8× — at identical full-swing rms and essentially the same boundary (0.487 against 0.482).**
+The whole gain comes from letting the boundary move with drive. Waveform rms goes 0.0079 →
+0.0105, a far smaller cost than any other form paid.
+
+---
+
+## 4. Offset or trend? Per buffer, honestly
+
+Mean |error| flatters a form whose error merely *straddles* zero. The spread across widths is
+the harder test.
 
 ```
-ex2         today  -0.002  -0.015  -0.025  -0.033  -0.038     all low, drifting
-            vsat   +0.027  +0.013  +0.002  -0.009  -0.019     straddles zero
+ex2        today   -0.002 -0.015 -0.025 -0.033 -0.038     spread 0.036
+           S-N     +0.049 +0.030 +0.011 -0.005 -0.023     spread 0.072    WORSE
 
-inv_chain   today  -0.178  -0.103  -0.059  -0.031  -0.016     badly low at the deep end
-            vsat   +0.062  +0.023  +0.001  -0.005  -0.008     straddles zero
+inv_chain  today   -0.178 -0.103 -0.059 -0.031 -0.016     spread 0.162
+           S-N     +0.026 -0.005 -0.018 -0.017 -0.013     spread 0.044    BETTER
 ```
 
-Today's errors are **one-signed and drifting** — the signature of a missing mechanism. The
-velocity-saturated form's straddle zero.
+**On ex2 the S-N form is an offset shift and its trend is worse. On inv_chain it is better in
+both offset and trend.** The earlier draft's "straddles zero" framing overstated the ex2 case
+and is withdrawn.
+
+The likely reason for the split is in §1: inv_chain is **180 nm** drawn and strongly
+velocity-saturated (measured boundary 0.232), ex2 is **0.6 µm** (0.347–0.420). Drive-dependent
+movement is a bigger effect on the shorter device. That is a hypothesis this study supports but
+does not establish.
+
+**Statistical weight.** Five widths per buffer are highly correlated — a single stressed
+trajectory sampled five times. "4.8× better" rests on **two buffers**, not ten observations.
 
 ---
 
-## 2. What the 2×2 attributes
+## 5. Why the waveform gets worse
 
-The four original forms were a deliberate 2×2 (curve × boundary) so a change could be
-attributed rather than lumped.
-
-**The curve hardly matters.** Straight line → parabola, boundary held fixed: full rms
-0.0066→0.0057 on ex2, 0.0032→0.0032 on inv_chain; stressed error 0.023→0.030 and 0.077→0.086.
-**The most-criticised approximation in the stage law — the straight taper — is nearly
-irrelevant.**
-
-**The boundary is everything.** Fixed → moving, curve held straight: ex2 stressed error
-0.023→0.051 (worse), inv_chain 0.077→0.027 (much better). Opposite signs on the two buffers.
-
-**And the real parameter is how fast the boundary moves.** A fixed boundary **undershoots**
-(10 of 10 cases). A fully-moving long-channel boundary **overshoots** (8 of 10). The
-velocity-saturated boundary moves as `√overdrive` — between the two — and is the best peak
-predictor on both buffers. That is the pre-recorded hypothesis confirmed, after the
-long-channel form alone had appeared to refute it.
-
----
-
-## 3. The result that decides it: the implied boundary is physically right
-
-The fit is never told the supply or `V_th`. If a form is physically sound, the boundary it
-implies at full gate drive should land near the device's own — and should be **larger on the
-3.3 V part than on the 1.8 V part**.
-
-| buffer | supply | today | long-channel | **velocity-sat** | a real device |
-|---|--:|--:|--:|--:|--:|
-| ex2 | 3.3 V | 0.450 | 0.760 | **0.822** | 0.88 – 0.89 |
-| inv_chain | 1.8 V | 0.450 | 0.608 | **0.731** | 0.77 – 0.80 |
-
-(device values from `results/model_provenance_2026-09-25/check_xlin.py`, `VTH0` in
-`buffers/models/hspice.mod`)
-
-**The velocity-saturated form recovers the right ordering and lands within 0.06–0.07 of the
-silicon**, from a fit that saw only a full-swing waveform. `0.45` is off by 0.32–0.44 and is
-the same number on both parts, which cannot be right when the two have different thresholds.
-
-Closed form, for the record: the boundary at full drive is `1 − vt` for the long-channel form
-and `√(1 − vt)` for the velocity-saturated one. Neither introduces a new parameter — **`x_lin`
-collapses into `vt`.**
-
----
-
-## 4. The cost, stated plainly
-
-**Waveform rms gets worse on both buffers**: ex2 0.0161 against 0.0108, inv_chain 0.0146
-against 0.0079 — roughly 1.5–1.9×. So the trade is **better peaks, worse shape**.
-
-That matters because the recipe's S6 selects on the whole waveform, having measured that
-ranking on peaks alone is far worse (217.3 mV against 52.3 mV). A form that improves peaks and
-degrades shape could help the depth number and hurt the selector. **Not resolvable on this
-bench** — it needs the pad.
-
----
-
-## 5. Incidental, and it changes the write-up: 0.45 is defensible
-
-Left **free** in this gate-domain fit, `x_lin` lands at **0.406** (ex2) and **0.482**
-(inv_chain) — bracketing 0.45, and consistent with the 0.37–0.47 and 0.52–0.63 the individually
-probed stages gave.
-
-`docs/stage_law_walkthrough.md` §5 says free `x_lin` "lands anywhere between 0.02 and 1.50 — the
-full-swing data barely constrains it". That is true of the **Ku-domain** fit and **false of the
-gate-domain fit**. Against the true gate the parameter is well determined and it agrees with the
-pinned value.
-
-**So the problem was never the number. It is that the file-only fit cannot see it.** 0.45 has an
-empirical basis; what it lacks is a derivation — and §3 above is that derivation, at a price.
+Every moving-boundary form has a boundary of 0.43–0.82 at full drive, so a fully driven stage
+spends most of its travel in triode and behaves largely like an RC; it stays current-limited
+only under partial drive. That is physically coherent, and partial drive is the stressed case —
+but §8 of the walkthrough credits the **ramp shape** for the model's stressed behaviour, so
+trading ramp for RC at full swing is a plausible mechanism for the waveform-rms cost. Worth
+testing directly rather than assuming.
 
 ---
 
 ## 6. What this does not show
 
-* **Wrong domain.** This is the §8 bench: fitted against the **probed** gate. Track 1 fits in
-  the **Ku domain** through an assumed map. The swap has to be re-tested there.
-* **Not at the pad.** Gate accuracy is not depth accuracy; the map and the I-V tables sit
-  between.
-* **Two buffers**, one direction (short HIGH), one K each.
-* **`vt` now does two jobs** in every moving-boundary form — threshold and boundary — which is
-  the shape of the `pu_off` trap. It has not misbehaved here (fitted 0.325 and 0.466, both
-  interior, neither on a bound, and *neither opens the mid-input dead band* that today's
-  inv_chain fit at `vt = 0.507` does), but it is a coupling to watch.
+* **Wrong domain.** This is the §8 bench, fitted against the **probed** gate. Track 1 fits in
+  the **Ku domain** through an assumed map. The decisive test has not been run.
+* **Not at the pad.** Gate accuracy is not depth accuracy.
+* **Two buffers, one direction, one K each.** K was taken from §8 rather than re-selected per
+  form; a form that changes the gate's speed could shift the best K, and that interaction is
+  untested.
+* **`V_TH` in §1 is extracted at 2 % of peak current**, a crude definition. `V_D0` and α do not
+  depend on it strongly, but the "Level-1 prediction" column does.
+* **The √ arm was post hoc.** `PLAN.md` pre-registered a different fifth variant (a moving
+  boundary with its own threshold). The velocity-saturated arm was added *after* seeing the
+  long-channel result, and scored on the same stressed data. The §1 measurement is independent
+  of it and is what should carry the weight.
+
 ## 6b. A committed result no longer reproduces — and it is not this harness
 
-ex2's `linear_const` reproduces the committed §8 numbers exactly; inv_chain's does not
-(**.701 here against .672 committed**). I guessed the pulse-swallowing cliff amplifying a
-1e-16 integrator difference. **That guess was wrong.** Running `cl.fit_chain_shared` — the
-owner, untouched — side by side with the probe:
+ex2's `linear_const` reproduces the committed §8 numbers; inv_chain's does not (**.701 here
+against .672 committed**). Running `cl.fit_chain_shared` — the owner, untouched — beside the
+probe:
 
 ```
-=== inv_chain, K=7 ===
   cl.fit_chain_shared   rms 0.00316  s_up 22.952 s_dn 22.304 vt 0.508 x_lin 0.482
   probe linear_const    rms 0.00316  s_up 22.952 s_dn 22.304 vt 0.508 x_lin 0.482
-       W  measured       cl    probe  committed CSV
-     104     0.879    0.701    0.701          0.672
-     106     0.935    0.832    0.832          0.820
+     104     0.879    0.701    0.701          0.672   <- committed CSV
   same params, both integrators: max diff 1.36e-20
 ```
 
-**Identical parameters, identical predictions, integrators agreeing to 1e-20.** The two fitters
-are the same fitter. What disagrees is `inv_chain_chain_shared_K.csv`, committed 09-10: the
-current code does not produce it.
+Identical fits. **The committed `inv_chain_chain_shared_K.csv` is stale**, and its K = 5 and
+K = 3 rows are presumably stale too — so the whole file needs re-running before any of it is
+re-quoted. It is quoted in `stage_law_walkthrough.md` §8 (0.672, "off by 0.21") and
+`track1_recipe.md` §5.
 
-So the probe is sound and **the committed CSV is stale** — some change since 09-10 moved
-inv_chain's fit, and nobody noticed because nothing re-ran it. It matters beyond this study:
+---
 
-| quoted where | says | code produces today |
-|---|--:|--:|
-| `stage_law_walkthrough.md` §8 ("off by 0.21 at 104 ps") | 0.672 | **0.701** (off by 0.18) |
-| `track1_recipe.md` §5 stressed-gate row | 0.672 … 0.987 | 0.701 … 0.987 |
+## 7. Claims withdrawn or corrected
 
-Neither conclusion changes — both are large undershoots, and K = 7 still beats K = 5 and K = 3
-by a wide margin. But **the documented number is not the one the code gives**, and that should
-be chased down rather than papered over: re-run `current_limited_stage_model.py --shared` and
-find what moved. Not done here; it is outside this study's question.
+| claim | status |
+|---|---|
+| "the implied boundary is physically right", vsat 0.822/0.731 vs "real device" 0.77–0.89 | **withdrawn.** The yardstick was a long-channel prediction. Measured is 0.23–0.42, which makes the vsat form the *worst* of the three, not the best |
+| "0.45 is off by 0.32–0.44 and cannot be right for both parts" | **withdrawn.** 0.45 is close to the measurement on both |
+| "getting the supply ordering right corroborates the form" | **withdrawn.** The long-channel form reproduces the ordering too; any boundary decreasing in `vt` does |
+| "the velocity-saturated form is Sakurai–Newton" | **corrected.** It hard-wires their free `x0` to `(1−vt)^(p/2)`. Their model has `x0` measured independently, and uses a straight line. Both now run |
+| "straddles zero" | **corrected.** True on inv_chain, an offset shift on ex2 (§4) |
+| "one expression in the emitter" | **corrected.** A fractional power needs `max(·, ε)` before the power and the division, or ngspice hits NaN and infinite derivatives at threshold |
+| "these are ~0.6 µm devices" (3 documents) | **corrected.** True of ex2; inv_chain is 180 nm drawn on a different card |
+| `check_xlin.py`'s 1.8 V row | **corrected.** It used `hspice.mod`'s VTH0 for a buffer that does not use that card |
 
-* **One K per buffer.** K was taken from §8 rather than re-selected per drain factor. A form
-  that changes the gate's speed could shift the best K, and that interaction is untested.
+## 8. Next
 
-## 7. Next
-
-1. Repeat in the **Ku domain** (`gate_chain_prototype.fit_chain_ku`) — the decisive test.
-2. If it survives, emit it: `chain_command.stage_block` writes the drain factor as SPICE, and
-   the change is one expression.
-3. Then the pad, on all 12 buffers, against the existing ±10 %.
-4. `p` and the boundary exponent are now **the same parameter** (`α/2`). The stressed runs can
-   see `p` where full swing cannot — so fitting `p` would now also be fitting the boundary. That
-   is either an elegant simplification or a new identifiability problem, and it should be
-   checked before anything ships.
+1. **Adopt nothing yet.** Re-run the whole grid in the **Ku domain** — the decisive test.
+2. If S-N survives there, `x0` should be **measured per buffer** from the model card by
+   `device_alpha_extract.py`, not fitted — which would remove a *fitted* parameter rather than
+   a parameter.
+3. Re-run `current_limited_stage_model.py --shared` and find what moved inv_chain since 09-10.
+4. `p` and the boundary exponent are now the same parameter. Fitting `p` would also be fitting
+   the boundary — elegant or a new identifiability problem, and it should be checked.

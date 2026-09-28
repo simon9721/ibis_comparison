@@ -312,7 +312,7 @@ There is a reading of `x_lin = 0.45` that is favourable and worth knowing: a dev
 sits at `1 - v = u - vt`, so 0.45 is where it lands at about **57 % gate drive**. The constant
 is right for a partly-driven stage and too generous for a fully-driven one - and the stressed
 pulse is the partly-driven case. Nobody chose it for that reason, but it is a defensible
-post-hoc reading. Note also that these are ~0.6 um devices, and velocity saturation in real
+post-hoc reading. Note also that ex2 draws 0.6 um devices and inv_chain 180 nm ones, and velocity saturation in real
 short-channel silicon extends the constant-current region, moving real silicon toward our model
 and away from the long-channel form. That is a hypothesis, not a measurement.
 

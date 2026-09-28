@@ -271,7 +271,7 @@ Badges: **device** = standard device behaviour · **simplified** = same shape, o
 | `h(u) = 0` below `vt` | `I_D = 0` for `V_GS − V_th < 0` | **device** |
 | `h(u)` above `vt` | a real device squares it; `p = 1` here | **simplified** |
 | `min(1, (1−v)/x_lin)` | the real taper is the parabola `r(2−r)`; a straight line here | **assumed** |
-| `x_lin` held at 0.45 | a real device's zone is 0.77–0.89 of the swing (§5) | **assumed** |
+| `x_lin` held at 0.45 | **measured** at 0.23–0.42 on these devices, so 0.45 is close (§5); it is the *value* that is now sourced, not the constancy | **assumed** (that it does not move with drive) |
 | boundary at constant `x_lin` | a real device's boundary is `1−v = u−vt`, which **moves with the input** | **assumed** |
 | K identical stages | nothing — a modelling choice, evidenced only by the fit | **assumed** |
 | one shared `s_up` across every stage | in normalised coordinates the *charging* term is the PMOS on odd stages and the **NMOS** on even ones (§3), so a single `s_up` asserts the two are equally strong — a **β-ratio assumption** | **assumed** |
@@ -309,8 +309,10 @@ each other.
 
 Two things to notice. The book prints 3-25 **with** `LAMBDA` — channel-length modulation. The
 factorisation check drops it, and so does the stage law: without it a saturated device's current
-is exactly flat in V_DS, and that flatness is what makes the ramp a ramp. And these are ~0.6 µm
-parts, so the long-channel form is itself an approximation for this silicon.
+is exactly flat in V_DS, and that flatness is what makes the ramp a ramp. And the long-channel
+form is itself an approximation for this silicon: ex2 draws **0.6 µm** devices on a 180 nm card,
+and inv_chain draws **180 nm** on a different card (`HL18G-S3.7S.lib`). §5 gives the measured
+consequence.
 
 **(b) A caution against treating any of this as device physics** — §20.4.1, p.578 [pdf 583]:
 
@@ -355,9 +357,16 @@ down toward 1 as velocity saturation takes over. **That is exactly the `p` in `h
 position, same role — so the connection is structural rather than decorative, and it is why
 `p = 1` is a defensible end of a documented range instead of merely a convenience.
 
-**Status: not verified in-repo.** `docs/book/` contains neither "Sakurai" nor "velocity
-saturation" (checked 2026-09-28), so this is outside knowledge and nobody here has checked it
-against the paper. **Treat it as a lead, not as evidence**, until someone does.
+**Status: the paper is not held here; its exponent is now measured on our own devices.**
+`docs/book/` contains neither "Sakurai" nor "velocity saturation" (checked 2026-09-28), so the
+reference itself is outside knowledge and nobody here has read the paper. But the quantity it
+predicts has been extracted directly from the model cards
+(`scripts/device_alpha_extract.py`): **α = 1.11–1.39** across the four predriver devices —
+1.11 and 1.39 on ex2's 0.6 µm NMOS and PMOS, 1.27 and 1.32 on inv_chain's 180 nm pair.
+
+**So `p = 1` is supported by measurement on this silicon and `p = 2` is not.** That is a
+measurement of our own devices, not a citation — the citation would be for *why* the exponent
+falls between 1 and 2, and it remains unread.
 
 #### Tier 4 — no source, and none is claimed
 
@@ -428,23 +437,37 @@ toward the model — a hypothesis, not a measurement.
 
 The names invite the wrong reading, so state it plainly.
 
-**`x_lin` is not the saturation/triode boundary.** A real device leaves saturation at
-`V_DS = V_GS − V_th`, so at full drive the resistive region occupies `1 − V_th/V_DD` of the swing.
-Using `VTH0` from `buffers/models/hspice.mod`:
+**`x_lin` is not the *long-channel* boundary — but it is close to the real one.** This section
+said the opposite until 2026-09-28, on the strength of a prediction rather than a measurement.
 
-| | a real device | the stage law |
-|---|---|---|
-| 1.8 V parts | 0.77 (NMOS) / 0.80 (PMOS) | **0.45** |
-| 3.3 V parts | 0.88 (NMOS) / 0.89 (PMOS) | **0.45** |
+The long-channel rule is `V_DSAT = V_GS − V_th`, so at full drive the resistive region would
+occupy `1 − V_th/V_DD` of the swing. That is the Shockley value — exactly what the α-power law
+exists because it *fails* on short-channel devices. Measuring the predriver transistors as drawn
+(`scripts/device_alpha_extract.py`, HSPICE, Sakurai–Newton Appendix A):
 
-**And it is not even fitted.** Across all `step1` fit rows, **360 of ~390 have `x_lin = 0.45`
-exactly** — the fitter is handed it as a fixed constant on every pass that produces a shipped
-number. In the one pass where it is left free it lands anywhere between **0.02 and 1.50**: the
-full-swing data barely constrains it.
+| device | drawn L | **measured `V_D0/V_DD`** | long-channel prediction | the stage law |
+|---|---:|---:|---:|---:|
+| ex2 NMOS / PMOS | 0.6 µm | **0.347 / 0.420** | 0.89 / 0.88 | **0.45** |
+| inv_chain NMOS / PMOS | 180 nm | **0.232 / 0.400** | 0.74 / 0.66 | **0.45** |
 
-What makes 0.45 defensible is not theory but measurement: fitting the *real probed stages*
-individually gave **0.37–0.47** on ex2's three and **0.52–0.63** on inv_chain's. 0.45 sits inside
-that range.
+**The real boundary is 0.23–0.42, and 0.45 sits just above it.** The number was right; the
+justification attached to it was not. `x_lin` is best understood as `V_D0/V_swing` — a device
+quantity extractable from any model card in one DC sweep.
+
+(The old table also used `buffers/models/hspice.mod`'s `VTH0` for *every* buffer, but inv_chain
+runs on `HL18G-S3.7S.lib`, whose `VTH0` is 0.464/0.613 against 0.363/0.407. Its "1.8 V" row was
+never inv_chain's device. `results/model_provenance_2026-09-25/check_xlin.py` is corrected.)
+
+**It is still not fitted**, and that remains a real inconsistency. Across all `step1` rows,
+**360 of ~390 have `x_lin = 0.45` exactly**. Where it is left free *in the Ku domain* it lands
+anywhere between **0.02 and 1.50** — that fit barely constrains it. **In the gate domain it is
+well determined**: fitting against the probed gate puts it at **0.406** (ex2) and **0.482**
+(inv_chain), and an independent Sakurai–Newton fit with a free boundary lands at **0.429** and
+**0.487** (`results/device_taper_2026-09-28`). Fitting the *individual* probed stages gave
+**0.37–0.47** and **0.52–0.63**.
+
+So four independent routes — the silicon, two chain fits and the per-stage fits — agree on
+roughly 0.4–0.5. **What cannot see `x_lin` is the file-only Ku-domain fit, not the parameter.**
 
 **`vt` is not the device threshold.** Fitted values at each buffer's best K:
 
@@ -777,7 +800,14 @@ And K matters, exactly as §7 predicts: K = 2 gives 0.287 … 0.520 — it swall
 | K = 3 | 0 | 0 | 0 | 0 | 0 |
 
 **inv_chain does not meet ex2's 0.05.** K = 7 is off by **0.21** at 104 ps and 0.115 at 106 ps,
-converging to 0.016 at the shallowest. What it gets right is that the pulse *survives at all* and
+converging to 0.016 at the shallowest.
+
+> **These inv_chain numbers are stale.** The committed `inv_chain_chain_shared_K.csv` (09-10)
+> gives 0.672 at 104 ps, but the current code produces **0.701** from an identical fit —
+> `cl.fit_chain_shared` and an independent harness agree exactly, integrators to 1e-20
+> (`results/device_taper_2026-09-28` §6b). Something moved since 09-10 and nothing re-ran it.
+> The K = 5 and K = 3 rows are presumably stale too. Re-run
+> `current_limited_stage_model.py --shared` before re-quoting any of this table. What it gets right is that the pulse *survives at all* and
 in the right order — which is the thing that decides the pad.
 
 Now read the full-swing rms for those three: **0.0032 (K=7) · 0.0037 (K=5) · 0.0141 (K=3)**. K = 5
@@ -804,7 +834,7 @@ why the gate's *shape*, not just its timing, is what a truncation sees.
 | | |
 |---|---|
 | **`p = 1` is an admission, not a claim.** | At full swing the stage input is always at the rail, so every `p` from 1 to 2 fits to rms 0.002–0.007. The fit **cannot** choose, and 1 is taken. `p` acts only under a *partial* input — precisely what a truncation can see and the recipe already samples. An open gap. |
-| **But `p = 1` may be closer to the silicon than `p = 2`.** | The square law is the *long-channel* form. In short-channel devices velocity saturation flattens the exponent — the alpha-power law (Sakurai–Newton) puts it nearer 1.2–1.5 — so on ~0.6 µm parts `p = 1` is plausibly the better approximation, not merely the convenient one. **Not verified in-repo:** the book JSON in `docs/book/` contains neither the alpha-power law nor velocity saturation, so this is an outside reference and a hypothesis, like the velocity-saturation note in §4.6. It would be cheap to test, since `--p` is already a flag. |
+| **`p = 1` is closer to the silicon than `p = 2` — now measured.** | The square law is the *long-channel* form; velocity saturation flattens the exponent. Extracted from the model cards on 2026-09-28, **α = 1.11–1.39** on the four predriver devices (`scripts/device_alpha_extract.py`). So `p = 1` is the better approximation on this silicon, not merely the convenient one — though it is still *taken*, not fitted, and the full-swing fit still cannot see it. |
 | **The linear taper is the biggest liberty.** | A parabola replaced by a straight line. §4.6 shows it errs toward *more* current, not less. |
 | **`x_lin` is inconsistent.** | Pinned at 0.45 on ten buffers, fitted on inv_chain and io_buf. Defensible (inside the measured 0.37–0.63) but it should be one or the other. |
 | **K identical stages has no derivation.** | Only the fit evidences it. A real tapered predriver has deliberately *different* devices; the claim is that their **normalised dynamics** are similar. |

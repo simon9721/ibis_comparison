@@ -59,14 +59,18 @@ OUT = ROOT / "results" / "device_taper_2026-09-28"
 # K is not under test here: take the count section 8 established for each buffer.
 BUFFERS = {"ex2": dict(K=3, gate="v(xdut.n4)"), "inv_chain": dict(K=7, gate="v(xdut.vout7)")}
 
-KINDS = ("linear_const", "parab_const", "linear_ov", "parab_ov", "parab_vsat")
-NP_ = {"linear_const": 4, "parab_const": 4, "linear_ov": 3, "parab_ov": 3, "parab_vsat": 3}
+KINDS = ("linear_const", "parab_const", "linear_ov", "parab_ov", "parab_vsat",
+         "linear_snx0", "parab_snx0")
+NP_ = {"linear_const": 4, "parab_const": 4, "linear_ov": 3, "parab_ov": 3, "parab_vsat": 3,
+       "linear_snx0": 4, "parab_snx0": 4}
 LABEL = {
     "linear_const": "min(1, d/x_lin)      straight, fixed edge   [today]",
     "parab_const":  "q(2-q), q = d/x_lin  device curve, fixed edge",
     "linear_ov":    "min(1, d/ov)         straight, moving edge",
     "parab_ov":     "q(2-q), q = d/ov     DEVICE FORM, moving edge",
     "parab_vsat":   "q(2-q), q = d/ov^(p/2)  vsat edge, moves less",
+    "linear_snx0":  "min(1, d/(x0*D^(p/2)))  SAKURAI-NEWTON, x0 free",
+    "parab_snx0":   "q(2-q), d/(x0*D^(p/2))  parabola + S-N edge, x0 free",
 }
 EPS = 1e-9
 
@@ -81,11 +85,16 @@ def simulate(u, s_up, s_dn, vt, x_lin, p, kind, n_sub=2):
         nu = np.maximum(u - vt, EPS)                 # charging device's overdrive
         nd = np.maximum((1.0 - u) - vt, EPS)         # discharging device's overdrive
     elif kind.endswith("_vsat"):
-        # Sakurai-Newton: V_DSAT ~ (V_GS - V_th)^(alpha/2), so the boundary moves with
-        # the gate but MORE SLOWLY than the long-channel form. alpha is the same
-        # exponent as p, so this costs no extra parameter. p=2 recovers the _ov case.
+        # The COLLAPSED sqrt boundary: x0 hard-wired to (1-vt)^(p/2) by using the raw
+        # overdrive. Kept for continuity with the 09-28 run; `_snx0` is the real thing.
         nu = np.maximum(u - vt, EPS) ** (p / 2.0)
         nd = np.maximum((1.0 - u) - vt, EPS) ** (p / 2.0)
+    elif kind.endswith("_snx0"):
+        # Sakurai-Newton proper: V_DSAT = V_D0 * D^(alpha/2), D the NORMALISED drive
+        # (the same quantity h(u) uses) and x0 = V_D0/V_swing a free parameter. alpha
+        # is p. x_lin carries x0 here.
+        nu = np.maximum(x_lin * cl.h(u, vt, 1.0) ** (p / 2.0), EPS)
+        nd = np.maximum(x_lin * cl.h(1.0 - u, vt, 1.0) ** (p / 2.0), EPS)
     else:
         nu = np.full_like(hu, x_lin)
         nd = np.full_like(hd, x_lin * cl.XLIN_DN_RATIO)
@@ -230,13 +239,14 @@ def run(dev: str, rows: list, kinds=KINDS, tag: str = "") -> dict:
 
     fig, axes = plt.subplots(1, len(widths), figsize=(3.9 * len(widths), 3.7), sharey=True)
     col = {"linear_const": "#111111", "parab_const": "#C05621",
-           "linear_ov": "#2B6CA3", "parab_ov": "#B03060", "parab_vsat": "#2E8B57"}
+           "linear_ov": "#2B6CA3", "parab_ov": "#B03060", "parab_vsat": "#2E8B57",
+           "linear_snx0": "#6A5ACD", "parab_snx0": "#A0522D"}
     for j, W in enumerate(widths):
         a = axes[j]
         a.plot(grid - 5.0, meas[W], color="#111111", lw=3.0, alpha=0.35, label="measured gate")
         for kind in kinds:
             a.plot(grid - 5.0, preds[kind][W], lw=1.5, color=col[kind],
-                   ls=("-", "--", "-.", ":", (0, (3, 1, 1, 1)))[KINDS.index(kind)],
+                   ls=("-", "--", "-.", ":", (0, (3, 1, 1, 1)), (0, (5, 2)), (0, (1, 1)))[KINDS.index(kind) % 7],
                    label=f"{kind} ({NP_[kind]}p)")
         a.set_xlim(-0.2, psp.XMAX_NS[dev])
         a.set_ylim(-0.1, 1.2)
