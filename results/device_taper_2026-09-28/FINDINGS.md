@@ -189,6 +189,8 @@ probe:
   same params, both integrators: max diff 1.36e-20
 ```
 
+**Resolved 2026-10-01:** the cause was the integrator (the CSV predates the Euler → Heun change by thirteen hours) and the table is regenerated in `results/stage_law_doc_2026-10-01/` (K = 7: 0.701 confirmed; K = 5 at 135 ps: 0.869 → 0.810; K = 3 unchanged at zero).
+
 Identical fits. **The committed `inv_chain_chain_shared_K.csv` is stale**, and its K = 5 and
 K = 3 rows are presumably stale too — so the whole file needs re-running before any of it is
 re-quoted. It is quoted in `stage_law_walkthrough.md` §8 (0.672, "off by 0.21") and

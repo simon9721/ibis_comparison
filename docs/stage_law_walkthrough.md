@@ -795,20 +795,20 @@ And K matters, exactly as §7 predicts: K = 2 gives 0.287 … 0.520 — it swall
 | width (ps) | 104 | 106 | 111 | 119 | 135 |
 |---|---|---|---|---|---|
 | **measured** | 0.879 | 0.935 | 0.972 | 0.992 | 1.003 |
-| **K = 7** | **0.672** | **0.820** | **0.909** | **0.960** | **0.987** |
-| K = 5 | 0 | 0 | 0 | 0 | 0.869 |
+| **K = 7** | **0.701** | **0.832** | **0.913** | **0.961** | **0.987** |
+| K = 5 | 0 | 0 | 0 | 0 | 0.810 |
 | K = 3 | 0 | 0 | 0 | 0 | 0 |
 
-**inv_chain does not meet ex2's 0.05.** K = 7 is off by **0.21** at 104 ps and 0.115 at 106 ps,
-converging to 0.016 at the shallowest.
-
-> **These inv_chain numbers are stale.** The committed `inv_chain_chain_shared_K.csv` (09-10)
-> gives 0.672 at 104 ps, but the current code produces **0.701** from an identical fit —
-> `cl.fit_chain_shared` and an independent harness agree exactly, integrators to 1e-20
-> (`results/device_taper_2026-09-28` §6b). Something moved since 09-10 and nothing re-ran it.
-> The K = 5 and K = 3 rows are presumably stale too. Re-run
-> `current_limited_stage_model.py --shared` before re-quoting any of this table. What it gets right is that the pulse *survives at all* and
+**inv_chain does not meet ex2's 0.05.** K = 7 is off by **0.18** at 104 ps and 0.10 at 106 ps,
+converging to 0.016 at the shallowest. What it gets right is that the pulse *survives at all* and
 in the right order — which is the thing that decides the pad.
+
+> **Regenerated 2026-10-01.** Until then this table carried the committed 09-10 numbers (0.672 at
+> 104 ps for K = 7, 0.869 at 135 ps for K = 5), which the code no longer produced. The cause: that
+> CSV was written on 09-09 at 23:39 and the script was changed on 09-10 at 12:30, when explicit
+> Euler was replaced by Heun because Euler biased inv_chain's fast stages. The table above is the
+> current integrator's (`results/stage_law_doc_2026-10-01/regen_inv_chain_shared.py`). The K = 3
+> and K = 5 fits end with `vt` on its 0.7 bound.
 
 Now read the full-swing rms for those three: **0.0032 (K=7) · 0.0037 (K=5) · 0.0141 (K=3)**. K = 5
 is within 16 % of K = 7 at the thing the file can see, and **swallows four of the five stressed
