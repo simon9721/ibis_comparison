@@ -9,6 +9,29 @@
 > measurement. What survives is a better result, and the opposite recommendation. Section 7
 > lists every claim that changed.
 
+> **Correction, 2026-10-01, after reading the alpha-power-law paper itself.** Two things in §1
+> were attributed to "Sakurai & Newton's Appendix A" that are not in it. Appendix A extracts
+> `V_TH` and α only (choose `V_TH` so the log-log plot is straight); it gives **no procedure for
+> `V_D0`**. The origin tangent used below is steeper than the "effective resistance" line of the
+> paper's Fig. 4 and reads low. Re-extracted the paper's way (`device_alpha_extract.py`, now
+> corrected):
+>
+> | device | `V_D0/V_DD` tangent (below) | **fit of the piecewise model** | α below | **α, Appendix A** |
+> |---|--:|--:|--:|--:|
+> | ex2 NMOS | 0.347 | **0.472** | 1.11 | **1.10** |
+> | ex2 PMOS | 0.420 | **0.559** | 1.39 | **1.63** |
+> | inv_chain NMOS | 0.232 | **0.343** | 1.27 | **1.28** |
+> | inv_chain PMOS | 0.400 | **0.569** | 1.32 | **1.41** |
+>
+> So the measured boundary is **0.34–0.57** and `x_lin = 0.45` lies **inside** it (the paper
+> itself uses 0.5–0.55), not just above its top; α is **1.10–1.63**. The conclusions below are
+> unchanged or stronger: 0.45 is right, the Ku-domain fit still lands far below the device
+> (0.206 / 0.135), and `p = 1` remains the lower limit of the measured α rather than its
+> centre. Where §1, §2 and §8 quote 0.23–0.42, read 0.34–0.57. Also from the paper: its triode
+> region **is** a straight line, so the stage law's straight taper is sourced, and one stage of
+> the law reproduces the paper's delay formula (5) within 4 ps
+> (`results/stage_law_doc_2026-10-01/check_delay_formula.py`).
+
 ## Answer
 
 **No — and it turns out it should not.** `x_lin = 0.45` is close to the devices' real

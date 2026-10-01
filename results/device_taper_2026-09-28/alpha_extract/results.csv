@@ -1,5 +1,5 @@
-device,vdd,L_m,vth_extracted,vd0,vd0_over_vdd,alpha
-ex2 predriver NMOS,3.3,6e-07,0.6660,1.1440,0.3467,1.109
-ex2 predriver PMOS,3.3,6e-07,0.7190,1.3873,0.4204,1.386
-inv_chain NMOS,1.8,1.8e-07,0.6071,0.4175,0.2319,1.266
-inv_chain PMOS,1.8,1.8e-07,0.5481,0.7198,0.3999,1.316
+device,vdd,L_m,vth_extracted,vd0,vd0_over_vdd,alpha,vd0_tangent_over_vdd
+ex2 predriver NMOS,3.3,6e-07,0.7000,1.5576,0.4720,1.098,0.3467
+ex2 predriver PMOS,3.3,6e-07,0.4700,1.8447,0.5590,1.634,0.4204
+inv_chain NMOS,1.8,1.8e-07,0.6000,0.6174,0.3430,1.281,0.2319
+inv_chain PMOS,1.8,1.8e-07,0.5000,1.0242,0.5690,1.409,0.3999

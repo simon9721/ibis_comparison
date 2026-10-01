@@ -357,22 +357,30 @@ down toward 1 as velocity saturation takes over. **That is exactly the `p` in `h
 position, same role — so the connection is structural rather than decorative, and it is why
 `p = 1` is a defensible end of a documented range instead of merely a convenience.
 
-**Status: the paper is not held here; its exponent is now measured on our own devices.**
-`docs/book/` contains neither "Sakurai" nor "velocity saturation" (checked 2026-09-28), so the
-reference itself is outside knowledge and nobody here has read the paper. But the quantity it
-predicts has been extracted directly from the model cards
-(`scripts/device_alpha_extract.py`): **α = 1.11–1.39** across the four predriver devices —
-1.11 and 1.39 on ex2's 0.6 µm NMOS and PMOS, 1.27 and 1.32 on inv_chain's 180 nm pair.
+**Status: read in full on 2026-10-01, and it sources more than the exponent.**
 
-**So `p = 1` is supported by measurement on this silicon and `p = 2` is not.** That is a
-measurement of our own devices, not a citation — the citation would be for *why* the exponent
-falls between 1 and 2, and it remains unread.
+| what the paper gives | where | what it sources in the stage law |
+|---|---|---|
+| cutoff / straight-line triode / flat saturation | eq. (2) | the hard threshold **and the straight taper** `min(1, x/x_lin)` |
+| `I'_D0 ∝ D^α`, `V'_D0 ∝ D^(α/2)` | eqs. (3), (4) | `h(u)` with `p` for α; the boundary that A2 freezes |
+| constant-current ramp, then exponential with `R_3 = V_D0/I_D0` | App. B, (B3)–(B6) | one stage's step response |
+| one `V_TH` and one α for both devices | Sec. VI | sharing `vt` and `p` between the two terms |
+| typical `V_D0/V_DD` of 0.5–0.55, "less than 0.6" | Sec. III, Figs. 9–10 | `x_lin = 0.45` |
+
+Measured on our devices the paper's way (`scripts/device_alpha_extract.py`): **α = 1.10–1.63**
+and **`V_D0/V_DD` = 0.34–0.57**. And one stage of the law reproduces the paper's delay formula
+(5) within 4 ps (`results/stage_law_doc_2026-10-01/check_delay_formula.py`), so the stage law
+*is* this model with two simplifications, not merely similar to it.
+
+**Two things the paper does not cover:** it says the model fails near and below threshold, and
+its delay analysis neglects the opposing device. A truncated pulse lives in exactly that regime,
+so the evidence there is ours (§8), not the paper's.
 
 #### Tier 4 — no source, and none is claimed
 
 | term | status |
 |---|---|
-| `min(1, ·)` in place of the parabola | **no source.** A straight line, chosen for simplicity; §4.6 measures what it costs |
+| `min(1, ·)` in place of the parabola | **sourced after all** — the α-power law's triode region is a straight line (tier 3). It departs from Level 1, not from the model the law is derived from |
 | `x_lin` constant, not the overdrive | **no source.** A real boundary moves with the input |
 | `x_lin = 0.45` | **no source.** It sits inside the 0.37–0.63 the real probed stages fitted (§5) — which is evidence, not derivation |
 | K identical stages | **no source.** Evidenced only by the fit (§7) |
@@ -447,10 +455,14 @@ exists because it *fails* on short-channel devices. Measuring the predriver tran
 
 | device | drawn L | **measured `V_D0/V_DD`** | long-channel prediction | the stage law |
 |---|---:|---:|---:|---:|
-| ex2 NMOS / PMOS | 0.6 µm | **0.347 / 0.420** | 0.89 / 0.88 | **0.45** |
-| inv_chain NMOS / PMOS | 180 nm | **0.232 / 0.400** | 0.74 / 0.66 | **0.45** |
+| ex2 NMOS / PMOS | 0.6 µm | **0.472 / 0.559** | 0.89 / 0.88 | **0.45** |
+| inv_chain NMOS / PMOS | 180 nm | **0.343 / 0.569** | 0.74 / 0.66 | **0.45** |
 
-**The real boundary is 0.23–0.42, and 0.45 sits just above it.** The number was right; the
+*(`V_D0` is the breakpoint that best fits the α-power law's piecewise model to the full-drive
+curve. Until 2026-10-01 this table gave the origin-tangent values, 0.347/0.420 and 0.232/0.400,
+which read low; the paper prescribes no `V_D0` extraction and uses 0.5–0.55 itself.)*
+
+**The real boundary is 0.34–0.57, and 0.45 lies inside it.** The number was right; the
 justification attached to it was not. `x_lin` is best understood as `V_D0/V_swing` — a device
 quantity extractable from any model card in one DC sweep.
 

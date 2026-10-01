@@ -58,3 +58,22 @@ script itself and its K = 3 row is unchanged to the third decimal (K = 2: 0.287â
 The bisection curves in the 09-24 deck's `calib_run.png` are plotted against time from the
 input's **falling** edge (`export_method_animation_data`: `bis_t = g âˆ’ rev`) under an axis
 labelled "time from the input edge". Fig. 7(b) here shifts them onto the rising edge.
+
+## Checked against the paper (2026-10-01, later the same day)
+
+Reference [1] (Sakurai & Newton 1990) was read in full. The stage law stands: its equations
+(2)-(5) are the paper's (2)-(4), the straight-line triode region is the paper's own, and one
+stage reproduces the paper's delay formula (5) within 4 ps (`check_delay_formula.py`).
+
+Two corrections came out of it, both to the device extraction, not to the law:
+
+- Appendix A extracts `V_TH` and alpha only. The first build of this document said `V_D0` was
+  taken "following [1, App. A]" from the origin tangent; the paper prescribes no `V_D0`
+  extraction, and the tangent reads low. Table II now uses the breakpoint that best fits the
+  paper's piecewise model: `x0` 0.34-0.57 (was 0.23-0.42).
+- alpha is now extracted the paper's way (the `V_TH` that linearises the log-log plot):
+  1.10-1.63 (was 1.11-1.39).
+
+Also added: a limits paragraph (the paper says the model fails near threshold and neglects the
+opposing device - the regime a truncated pulse lives in), and reference [3] restored with the
+details the paper's own reference list confirms.

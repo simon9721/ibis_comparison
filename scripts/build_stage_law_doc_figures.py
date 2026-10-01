@@ -109,7 +109,7 @@ def fig_device():
         ax[1].plot([], [], color=K_, lw=0.9, ls=(0, (3, 2)), label="α-power law, eq. (2)")
         ax[1].legend(loc="upper left", frameon=False, fontsize=6.0, handlelength=1.6)
         ax[2].set_xlabel("gate drive $D$"); ax[2].set_ylabel("$I'_{D0}/I_{D0}$")
-        ax[2].legend(loc="upper left", frameon=False, fontsize=6.0, handlelength=1.4)
+        ax[2].legend(loc="lower right", frameon=False, fontsize=6.0, handlelength=1.4)
         ax[2].grid(alpha=0.25, which="both", lw=0.4)
         for a, s in zip(ax, "abc"):
             tag(a, f"({s})", x=0.0)

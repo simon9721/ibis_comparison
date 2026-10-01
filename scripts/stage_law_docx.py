@@ -188,6 +188,8 @@ def table(header: list[str], rows: list[list[str]], widths: list[int], caption: 
     """widths in twentieths of a point (dxa); they should sum to about 9600."""
     def cell(text, w, head=False):
         runs = inline(f"**{text}**" if head and "$" not in text and text else text, size=size)
+        if text.startswith("$") and text.endswith("$"):
+            runs += _text_run("\u200b", size=size)      # keeps a math-only cell inline, left-aligned
         return (f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:pStyle w:val="Compact"/>'
                 f'<w:jc w:val="left"/></w:pPr>{runs}</w:p></w:tc>')
 

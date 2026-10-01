@@ -39,17 +39,19 @@ VTH_N, VTH_P = 0.3627858, 0.4064886          # VTH0 from buffers/models/hspice.m
 HL_N, HL_P = 0.46435, 0.61250                # VTH0 from buffers/inv_chain/HL18G-S3.7S.lib (inv_*)
 
 # measured, not predicted - scripts/device_alpha_extract.py
-MEASURED = {"ex2 (3.3 V, 0.6 um)": (0.347, 0.420), "inv_chain (1.8 V, 180 nm)": (0.232, 0.400)}
+# breakpoint of the alpha-power law's piecewise model fitted to the full-drive curve (the origin
+# tangent quoted here until 2026-10-01 reads lower: 0.347/0.420 and 0.232/0.400)
+MEASURED = {"ex2 (3.3 V, 0.6 um)": (0.472, 0.559), "inv_chain (1.8 V, 180 nm)": (0.343, 0.569)}
 
 print("long-channel PREDICTION, x_lin = 1 - V_th/V_DD  (full gate drive):")
 print(f"   ex2 / io_buf   V_DD 3.3 V :  NMOS {1 - VTH_N / 3.3:.2f}   PMOS {1 - VTH_P / 3.3:.2f}   (hspice.mod)")
 print(f"   inv_chain      V_DD 1.8 V :  NMOS {1 - HL_N / 1.8:.2f}   PMOS {1 - HL_P / 1.8:.2f}   (HL18G)")
 print("   [the old version printed 0.77/0.80 for the 1.8 V row, using hspice.mod's VTH0,")
 print("    which is not the card inv_chain uses]")
-print("\nMEASURED V_D0/V_DD on the devices as drawn (Sakurai-Newton Appendix A):")
+print("\nMEASURED V_D0/V_DD on the devices as drawn (fit of the alpha-power piecewise model):")
 for k, (n, p_) in MEASURED.items():
     print(f"   {k:<26} NMOS {n:.3f}   PMOS {p_:.3f}")
-print("   -> the real boundary is 0.23-0.42, so x_lin = 0.45 is close to it and the")
+print("   -> the real boundary is 0.34-0.57, so x_lin = 0.45 lies inside it and the")
 print("      long-channel prediction above is the thing that is wrong.")
 
 print("\nwhat the fit actually lands on (est_knee, pull-up), per buffer:")

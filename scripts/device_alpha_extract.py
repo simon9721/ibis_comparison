@@ -9,13 +9,17 @@ use that card: it runs on `HL18G-S3.7S.lib` at 180 nm drawn, whose VTH0 is 0.464
 against hspice.mod's 0.363/0.407.
 
 So the yardstick in `results/device_taper_2026-09-28/FINDINGS.md` section 3 is doubly
-suspect. This replaces it with the devices' own numbers, by Sakurai & Newton's Appendix A
-procedure (IEEE JSSC 25(2) 584-594, 1990):
+suspect. This replaces it with the devices' own numbers, read against the alpha-power-law
+paper (Sakurai & Newton, IEEE JSSC 25(2) 584-594, 1990):
 
-    alpha   log-log slope of the saturation current against gate overdrive
-    V_D0    the drain saturation voltage at V_GS = V_DD, taken as the intersection of
-            the origin tangent with the saturation level - which is exactly the
-            breakpoint of their piecewise model, I_D = I_D0 * min(1, V_DS/V_D0)
+    V_TH, alpha   Appendix A: V_TH is chosen so that log I_sat against log(V_GS - V_TH) is a
+                  straight line; alpha is its slope
+    V_D0          the paper gives no procedure. Taken as the breakpoint that best fits its
+                  piecewise model, I_D = I_D0 * min(1, V_DS/V_D0), to the full-drive output
+                  curve - the "effective resistance" line of the paper's Fig. 4
+
+(Until 2026-10-01 this script took V_TH at 2 % of peak current and V_D0 from the origin
+tangent, and called both "Appendix A". The tangent reads 25-40 % lower than the fit.)
 
 Both are dimensionless once divided by V_DD, and both are what the stage law's drain
 factor is trying to be. `p` in h(u) IS alpha, so this measures that too.
@@ -116,12 +120,24 @@ def parse_sw0(p: Path, n_outer: int):
     return [(float(b[0]), b[1::2], b[2::2]) for b in v.reshape(n_outer, -1)]
 
 
-def extract(blocks, vdd: float, kind: str):
-    """alpha from the saturation current vs overdrive; V_D0 from the origin tangent.
+def extract(blocks, vdd: float, kind: str, full: bool = False):
+    """(V_D0, alpha, V_TH, vgs, isat, curves); with full=True also the origin-tangent V_D0.
+
+    V_TH and alpha follow Appendix A of the paper (its first method): V_TH is the value
+    that makes log I_sat against log(V_GS - V_TH) most nearly a straight line, and alpha is
+    that line's slope. I_sat is read at |V_DS| = V_DD.
+
+    V_D0 is NOT covered by Appendix A - the paper only says the four parameters are "easily
+    obtained from the measured data". Here it is the breakpoint that best fits the paper's
+    own piecewise model, I/I_D0 = min(1, V_DS/V_D0), to the output curve at full gate drive
+    (least squares over 0..V_DD). That matches the paper's Fig. 4, where the triode line is
+    an effective resistance lying under the measured curve. The origin-tangent intersection
+    used until 2026-10-01 is steeper than that line and reads 25-40 % lower; it is still
+    returned with full=True because the 09-28 findings quote it.
 
     For the PMOS the deck holds the source at V_DD and sweeps the node voltages, so
-    |V_GS| = V_DD - v_gate and |V_DS| = V_DD - v_drain; both are flipped here so the
-    two device types are read identically.
+    |V_GS| = V_DD - v_gate and |V_DS| = V_DD - v_drain; both are flipped here so the two
+    device types are read identically.
     """
     curves, vgs = [], []
     for v_out, v_in, probe in blocks:
@@ -135,18 +151,31 @@ def extract(blocks, vdd: float, kind: str):
     curves = [curves[i] for i in order]
     isat = np.array([y[-1] for _, y in curves])          # at |V_DS| = V_DD
 
-    # V_D0 at full gate drive: where the origin tangent meets the saturation level.
-    # That is exactly the breakpoint of Sakurai-Newton's piecewise model.
+    # Appendix A: the V_TH that linearises the log-log plot; alpha is the slope
+    best = (-1.0, float("nan"), float("nan"))
+    for vth in np.arange(0.05, 0.5 * vdd, 0.005):
+        m = (vgs > vth + 0.15) & (isat > 0)
+        if m.sum() < 6:
+            continue
+        lx, ly = np.log(vgs[m] - vth), np.log(isat[m])
+        c = np.polyfit(lx, ly, 1)
+        r2 = 1.0 - np.sum((ly - np.polyval(c, lx)) ** 2) / np.sum((ly - ly.mean()) ** 2)
+        if r2 > best[0]:
+            best = (r2, float(vth), float(c[0]))
+    _, vth, alpha = best
+
+    # V_D0: least-squares breakpoint of the paper's piecewise model at full gate drive
     x, y = curves[-1]
+    yn = y / y[-1]
+    cand = np.linspace(0.05, 1.0, 951) * vdd
+    vd0 = float(cand[np.argmin([np.mean((np.minimum(1.0, x / v) - yn) ** 2) for v in cand])])
+
+    if not full:
+        return vd0, alpha, vth, vgs, isat, curves
     n0 = max(3, int(0.02 * len(x)))
     g0 = np.polyfit(x[:n0], y[:n0], 1)[0]
-    vd0 = float(y[-1] / g0) if g0 > 0 else float("nan")
-
-    # alpha: log-log slope of I_sat against overdrive, over the top of the drive range
-    vth = float(np.interp(0.02 * isat.max(), isat, vgs))
-    m = (vgs > vth + 0.3 * (vdd - vth)) & (isat > 0)
-    alpha = float(np.polyfit(np.log(vgs[m] - vth), np.log(isat[m]), 1)[0]) if m.sum() > 3 else float("nan")
-    return vd0, alpha, vth, vgs, isat, curves
+    vd0_tangent = float(y[-1] / g0) if g0 > 0 else float("nan")
+    return vd0, alpha, vth, vgs, isat, curves, vd0_tangent
 
 
 def main() -> int:
@@ -156,9 +185,9 @@ def main() -> int:
     rows, fig = [], plt.figure(figsize=(11, 4.2))
     for name, buf, card, model, w, l_, vdd, kind in DEVICES:
         sw = run(OUT / model, deck(card, model, w, l_, vdd, kind))
-        vd0, alpha, vth, vgs, isat, curves = extract(parse_sw0(sw, N_OUTER), vdd, kind)
+        vd0, alpha, vth, vgs, isat, curves, vd0_tan = extract(parse_sw0(sw, N_OUTER), vdd, kind, full=True)
         print(f"  {name:<22}{vdd:>5.1f}{l_ * 1e9:>7.0f}n{vth:>7.3f}{vd0:>8.3f}{vd0 / vdd:>10.3f}{alpha:>8.2f}")
-        rows.append((name, vdd, l_, vth, vd0, vd0 / vdd, alpha))
+        rows.append((name, vdd, l_, vth, vd0, vd0 / vdd, alpha, vd0_tan / vdd))
         ax = fig.add_subplot(1, 2, 1)
         x, y = curves[-1]
         ax.plot(x / vdd, y * 1e3, label=f"{name}  V_D0/VDD={vd0 / vdd:.2f}")
@@ -168,17 +197,17 @@ def main() -> int:
     for ax, xl, yl, t in ((fig.axes[0], "|V_DS| / V_DD", "|I_D| (mA)", "output curve at full gate drive"),
                           (fig.axes[1], "gate overdrive (V)", "|I_sat| (mA)", "saturation current vs overdrive")):
         ax.set_xlabel(xl), ax.set_ylabel(yl), ax.set_title(t), ax.grid(alpha=0.3), ax.legend(fontsize=7)
-    fig.suptitle("Sakurai-Newton Appendix A extraction on the predriver devices as drawn",
+    fig.suptitle("alpha-power-law parameters of the predriver devices as drawn",
                  fontweight="bold")
     fig.tight_layout()
     fig.savefig(OUT / "alpha_extract.png", dpi=150)
 
     print(f"\n  {'device':<22}{'measured V_D0/VDD':>19}{'Level-1 1-Vth/VDD':>20}{'x_lin today':>13}")
-    for name, vdd, l_, vth, vd0, frac, alpha in rows:
+    for name, vdd, l_, vth, vd0, frac, alpha, tan in rows:
         print(f"  {name:<22}{frac:>19.3f}{1 - vth / vdd:>20.3f}{0.45:>13.2f}")
     (OUT / "results.csv").write_text(
-        "device,vdd,L_m,vth_extracted,vd0,vd0_over_vdd,alpha\n"
-        + "\n".join(f"{n},{v},{l_},{t:.4f},{d:.4f},{f:.4f},{a:.3f}" for n, v, l_, t, d, f, a in rows) + "\n",
+        "device,vdd,L_m,vth_extracted,vd0,vd0_over_vdd,alpha,vd0_tangent_over_vdd\n"
+        + "\n".join(f"{n},{v},{l_},{t:.4f},{d:.4f},{f:.4f},{a:.3f},{tn:.4f}" for n, v, l_, t, d, f, a, tn in rows) + "\n",
         encoding="utf-8")
     print(f"\n  wrote {OUT / 'results.csv'}")
     return 0

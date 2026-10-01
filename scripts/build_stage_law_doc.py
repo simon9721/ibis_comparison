@@ -85,18 +85,25 @@ def build(pkg: Package, d) -> dict:
         card = "hspice.mod (BSIM3v3)" if "ex2" in r["device"] else "HL18G-S3.7S"
         dev_rows.append([r["device"], card, f"{float(r['L_m']) * 1e9:.0f} nm", f"{float(r['vdd']):.1f} V",
                          f"{float(r['vd0_over_vdd']):.3f}", f"{float(r['alpha']):.2f}"])
+    al = [float(r["alpha"]) for r in d["dev"]]
+    x0 = [float(r["vd0_over_vdd"]) for r in d["dev"]]
+    rng = {"a": f"{min(al):.2f}–{max(al):.2f}", "x": f"{min(x0):.2f}–{max(x0):.2f}"}
+    out["rng"] = rng
     out["after_eq7"] = (
         para("The device model (2)–(5) was checked against the transistors actually used in the predrivers "
              "of two test buffers, simulated in HSPICE from their model cards at their drawn dimensions. "
-             "Following the extraction procedure of [1, App. A], $V_{D0}$ is taken where the tangent of the "
-             "output curve at the origin meets the saturation level, and $\\alpha$ from the log-log slope of the "
-             "saturation current against gate drive. Fig. 1 shows the result and Table II lists the two "
-             "normalized parameters. The measured $\\alpha$ lies between 1.1 and 1.4 for all four devices, "
-             "well below the long-channel value of 2 [2], and the saturation voltage is 0.23–0.42 of the supply.")
+             "$V_{TH}$ and $\\alpha$ are extracted as in [1, App. A]: $V_{TH}$ is the value for which the "
+             "saturation current is a straight line against $V_{GS} - V_{TH}$ on logarithmic axes, and "
+             "$\\alpha$ is the slope of that line. Reference [1] gives no procedure for $V_{D0}$; it is taken "
+             "here as the breakpoint that best fits the piecewise form (6) to the output curve at full gate "
+             "drive. Fig. 1 shows the result and Table II lists the two normalized parameters. The measured "
+             f"$\\alpha$ is {rng['a']}, between the short-channel limit of 1 and the long-channel value of 2 "
+             f"[2], and the saturation voltage is {rng['x']} of the supply, comparable to the 0.5–0.55 "
+             "used in [1].")
         + pkg.figure(FIG / "fig_device.png",
                      "Fig. 1. HSPICE characteristics of the predriver devices of test buffers ex2 and inv_chain, at "
                      "their drawn dimensions. (a) Output curves at full gate drive, normalized; the legend gives "
-                     "$x_0 = V_{D0}/V_{DD}$. (b) Output curves of one device at five gate drives (solid) against the "
+                     "the fitted $x_0 = V_{D0}/V_{DD}$. (b) Output curves of one device at five gate drives (solid) against the "
                      "α-power law (2) with the extracted $\\alpha$ and $V_{D0}$ (dashed; dots mark the saturation "
                      "voltage $V'_{D0}$ of (4)). (c) Saturation current against gate drive; the slope is $\\alpha$.")
         + table(["Device", "Model card", "Drawn length", "$V_{DD}$", "$x_0 = V_{D0}/V_{DD}$", "$\\alpha$"],
@@ -112,9 +119,13 @@ def build(pkg: Package, d) -> dict:
                    "(c) Response of one stage to an input step: a constant-slope ramp while $1-v > x_{lin}$, then an "
                    "exponential approach to the rail.")
         + para("The value used throughout is $x_{lin} = 0.45$, held fixed rather than fitted (Section II-J explains "
-               "why it cannot be fitted from the file). It is close to the upper end of the measured $x_0$ of "
-               "Table II (0.23–0.42), and the default $p = 1$ is close to the lower end of the measured "
-               "$\\alpha$ (1.11–1.39)."))
+               f"why it cannot be fitted from the file). It lies within the measured $x_0$ of Table II ({rng['x']}). "
+               f"The default $p = 1$ is the lower limit of the measured $\\alpha$ ({rng['a']}).")
+        + para("As a check that (19) is the model of [1] and not merely similar to it, one stage with $p = \\alpha$ "
+               "was driven by a linear input ramp and its delay compared with the closed-form delay of [1, eq. (5)]. "
+               "The two agree within 4 ps for input ramps of 0.05 to 0.8 ns (stage delays of 0.24 to 0.35 ns), "
+               "with the opposing device either present or switched off; they separate only for ramps slower "
+               "than the range of validity stated in [1]."))
 
     # =================================================================================
     t = []
@@ -277,7 +288,7 @@ def build(pkg: Package, d) -> dict:
            "in $C_{comp}$ and map shape, at residuals of 0.0202 and 0.0233. *The exponent:* at full swing each stage input dwells at "
            "the rail, where (17) does not depend on $p$; in fits of the individual probed stages every $p$ between 1 and 2 "
            f"reaches a residual of 0.002–0.007. *The saturation boundary:* if $x_{{lin}}$ is left free in (26) it settles at "
-           f"{float(ex['x_lin']):.3f} on ex2 and {float(iv['x_lin']):.3f} on inv_chain, about half the measured "
+           f"{float(ex['x_lin']):.3f} on ex2 and {float(iv['x_lin']):.3f} on inv_chain, less than half the measured "
            "$x_0$ of Table II, and replacing (18) by the drive-dependent boundary of (15) changes the residual by "
            "about 1 % on ex2 and not at all on inv_chain. The file cannot distinguish these alternatives, which is "
            "why $x_{lin}$ and $p$ are fixed in Table III rather than fitted."))
@@ -458,13 +469,18 @@ def build_tail(pkg: Package, d, t):
            "of pulses, low-going pulses (examined so far only on io_buf), other loads and other corners are outside "
            "it. The map-shape grid and the band rule (27) were chosen on these same twelve buffers.",
            "FirstParagraph"))
+    A(para("One limit is inherited from the device model. Reference [1] states that the α-power law does not "
+           "reproduce the region near and below threshold, and its delay analysis neglects the opposing device, "
+           "which is justified for fast inputs [3]. A truncated pulse holds the stages near $v_t$ with both "
+           "devices conducting, which is outside the regime for which [1] validated the model. Equation (19) "
+           "keeps both devices, but its accuracy there rests on the tests of this section and not on [1]."))
 
     # ---------------- M. approximations ----------------------------------------------------
     A(heading("M. Summary of approximations"))
     A(table(["Label", "Approximation", "Introduced at", "What it removes", "Evidence"],
             [["A0", "One $V_{TH}$, $\\alpha$, $V_{D0}$ for both devices of a stage", "(13)–(14)",
-              "Per-device parameters", "Table II: the N and P devices differ ($x_0$ 0.23 against 0.40 on inv_chain)"],
-             ["A1", "$p$ in place of $\\alpha$, with $p = 1$", "(17)", "The measured $\\alpha$ (1.11–1.39)",
+              "Per-device parameters", "As in [1, Sec. VI]. Table II: the N and P devices differ ($x_0$ 0.34 against 0.57 on inv_chain)"],
+             ["A1", "$p$ in place of $\\alpha$, with $p = 1$", "(17)", "The measured $\\alpha$ (Table II)",
               "Not identifiable from the file (Section II-J)"],
              ["A2", "$x_0 g^{\\alpha/2} \\to x_{lin}$, with $x_{lin} = 0.45$", "(18)",
               "Drive dependence of the saturation boundary",
@@ -505,13 +521,17 @@ def build_tail(pkg: Package, d, t):
            "Apr. 1990.", "FirstParagraph"))
     A(para("[2] H. Shichman and D. A. Hodges, “Modeling and simulation of insulated-gate field-effect "
            "transistor switching circuits,” IEEE J. Solid-State Circuits, vol. SC-3, 1968."))
+    A(para("[3] N. Hedenstierna and K. O. Jeppson, “CMOS circuit speed and buffer optimization,” IEEE "
+           "Trans. Computer-Aided Design, vol. CAD-6, no. 2, pp. 270–280, Mar. 1987."))
 
     A(heading("Remarks for the manuscript"))
     A(para("*Sources.* Every statement in Sections II-F to II-M was checked against the code and result files of "
-           "the project; the builder script of this document lists the file behind each. Reference [2] is given as "
-           "it appears in the bibliography of Leventhal and Green, *Semiconductor Modeling* (Springer, 2006); its "
-           "issue and page numbers were not available for checking and are omitted. A third reference of the earlier "
-           "draft (Hedenstierna and Jeppson) was not cited in the text and could not be checked, and was removed.",
+           "the project; the builder script of this document lists the file behind each. Reference [1] was read "
+           "in full: equations (2)–(5) here are its (2)–(4), the straight-line triode region of (6) "
+           "is its own, the single-stage response of Fig. 2(c) is its Appendix B, and approximation A0 is its "
+           "Section VI. Reference [3] is given as it appears in the reference list of [1]. Reference [2] is "
+           "given as it appears in the bibliography of Leventhal and Green, *Semiconductor Modeling* (Springer, "
+           "2006); its issue and page numbers were not available for checking and are omitted.",
            "FirstParagraph"))
     A(para("*Regenerated numbers.* Table VI was regenerated for this document. The earlier committed table had been "
            "produced with an explicit-Euler integrator that was later replaced (Section II-G); ex2 (Table V) is "
