@@ -103,3 +103,22 @@ and 0.0078-0.0084 on inv_chain (1.08x). The slight preference is not for the mea
 either - on ex2 the shape nearest the probed map, (0.6, 0.6), fits worst. The stage threshold
 compensates (it runs to its 0.7 bound as the map starts earlier). So the file cannot choose
 the map shape; it has to come from the stressed measurement, or from outside knowledge.
+
+## Sections H, I and K rewritten: the map, the fit through it, the stressed run (2026-10-02)
+
+The three things that were not coming across, each now with a figure drawn from real fits:
+
+- **What the map M(g) is** (H, `fig_map`): a curve of K_u against the gate, measurable where the
+  gate can be probed; the formula is a two-number description of that measured curve, its
+  parameters empirical. A symbol table gives every value. The file cannot give the map because it
+  has K_u against time and no gate; the three candidate shapes are built-in constants and the
+  least well founded element of the method.
+- **How the fit works** (I, `fig_ambiguity`): a map is assumed first, then the stage law is fitted
+  through it. The fit succeeds whichever map is assumed (six shapes: residual within 11 % / 8 %).
+  Two real fits on ex2 that the file cannot tell apart give K_u peaks of 0.51 and 0 for an 810 ps
+  pulse.
+- **Why and how the stressed run is used** (K, `fig_stress_use`): the nine candidates fitted to
+  the same file give pad peaks of 0.01-1.28 V against 0.77 V measured; calibration puts them all on
+  the peak; selection takes the waveform; the selected model is checked at five widths. The
+  pre-calibration runs are re-simulated from the stored `calib/it00` subcircuits and cached in
+  `before_calibration/*.npz`.

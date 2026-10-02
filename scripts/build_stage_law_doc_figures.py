@@ -259,6 +259,181 @@ def fig_chain():
         save(fig, "fig_chain")
 
 
+# ------------------------------------------------------------------ 4a. what the map is
+SHAPES = ((0.50, 0.70), (0.40, 0.60), (0.40, 0.90))          # the three candidates of the method
+
+
+def fig_map():
+    """The map, measured where the gate can be probed (ex2), and the three shapes the method
+    offers when it cannot. Left: at each instant of a full transition the probed gate and the
+    file's K_u are read together. Middle: plotting one against the other gives the map, with
+    the two-parameter formula fitted to it. Right: the candidate shapes."""
+    import build_0917_deck_figures as f17
+    import build_0924_deck_figures as b24
+    import spicelab as sl
+    folder, node, gname, widths, _y, _s = b24.DEV["ex2"]
+    tf, gfull, _ts, _gs = f17._norm_pair("ex2", widths[0], node)
+    raw = sl.parse_ngspice_raw(f17.CASC / folder / "shipped" / "full" / "run.raw")
+    t_m, ku_m = sl.time_ns(raw) - 5.0, sl.signal(raw, "v(x1.ku)")
+    g_end = float(tf[np.argmax(np.asarray(gfull) >= 0.995)]) + 0.25
+    tt = np.linspace(0.2, g_end, 400)
+    ku_t, g_t = np.interp(tt, t_m, ku_m), np.interp(tt, tf, gfull)
+    marks = (0.95, 1.10, 1.22, 1.35, 1.55)
+    cmap = plt.get_cmap("viridis")
+    cols = [cmap(0.08 + 0.84 * i / 4) for i in range(5)]
+    gg = np.linspace(0, 1, 400)
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(1, 3, figsize=(W, 2.55), gridspec_kw={"wspace": 0.36})
+        a = ax[0]
+        a.plot(tt, g_t, color=TEAL, lw=1.8, label="probed gate $g(t)$")
+        a.plot(tt, ku_t, color=K_, lw=1.8, label="$K_u(t)$ of the file")
+        for m, c in zip(marks, cols):
+            ki, gi = float(np.interp(m, tt, ku_t)), float(np.interp(m, tt, g_t))
+            a.plot([m, m], [gi, ki], color=c, lw=0.9, ls=":")
+            a.plot(m, gi, "s", color=c, ms=4.5, mec="white", mew=0.5, zorder=5)
+            a.plot(m, ki, "o", color=c, ms=4.5, mec="white", mew=0.5, zorder=5)
+        a.set_xlim(0.2, g_end); a.set_ylim(-0.12, 1.3)
+        a.set_xlabel("time (ns)"); a.set_ylabel("normalized")
+        a.set_title("(a) with a probe", fontsize=8.3)
+        a.legend(frameon=False, loc="upper left", fontsize=6.6)
+        b = ax[1]
+        order = np.argsort(g_t)
+        b.plot(g_t[order], ku_t[order], color=K_, lw=1.8, label="measured map")
+        b.plot(gg, prior(gg, 0.57, 0.64), color=RED, lw=1.4, ls="--", label="formula, (0.57, 0.64)")
+        for m, c in zip(marks, cols):
+            b.plot(float(np.interp(m, tt, g_t)), float(np.interp(m, tt, ku_t)), "o", color=c, ms=4.5,
+                   mec="white", mew=0.5, zorder=5)
+        b.set_xlim(-0.02, 1.02); b.set_ylim(-0.12, 1.3)
+        b.set_xlabel("gate $g$"); b.set_ylabel("$K_u$")
+        b.set_title("(b) the measured map", fontsize=8.3)
+        b.legend(frameon=False, loc="upper left", fontsize=6.6)
+        c = ax[2]
+        c.plot(g_t[order], ku_t[order], color="#BBBBBB", lw=1.2, label="measured (ex2)")
+        for (v, a_), col, ls in zip(SHAPES, (TEAL, BLUE, RED), ("-", "--", "-.")):
+            c.plot(gg, prior(gg, v, a_), color=col, lw=1.5, ls=ls, label=f"({v:.2f}, {a_:.2f})")
+        c.set_xlim(-0.02, 1.02); c.set_ylim(-0.12, 1.3)
+        c.set_xlabel("gate $g$"); c.set_ylabel("$M(g)$")
+        c.set_title("(c) candidate shapes", fontsize=8.3)
+        c.legend(frameon=False, loc="upper left", fontsize=6.6, title="$(v_{t,map},\\ a)$", title_fontsize=6.6)
+        save(fig, "fig_map")
+
+
+# ------------------------------------------------------------------ 5b. the ambiguity
+def fig_ambiguity():
+    """Two different assumed maps, each with the stage law fitted through it to the same file
+    K_u(t) (ex2, K = 3; results/stage_law_doc_2026-10-01/shape_from_file). The fitted gates
+    differ, the full-swing K_u(t) does not - and under a short pulse the two models separate."""
+    import json
+    sf = ROOT / "results" / "stage_law_doc_2026-10-01" / "shape_from_file"
+    d = np.load(sf / "target_ex2.npz")
+    u_full, target = d["u"], d["target"]
+    t = np.arange(4.0, 21.0, cl.DT) - 5.025
+    u_cut = ((t >= 0) & (t < 0.81)).astype(float)
+    cases = []
+    for (v, a_), col, name in (((0.6, 0.6), BLUE, "late map"), ((0.4, 0.6), RED, "early map")):
+        r = json.loads((sf / f"shape_ex2_{v:g}_{a_:g}.json").read_text())
+        g_full = chain_stages(u_full, r["s_up"], r["s_dn"], r["vt"], 0.45, 3)[-1]
+        g_cut = chain_stages(u_cut, r["s_up"], r["s_dn"], r["vt"], 0.45, 3)[-1]
+        cases.append((v, a_, col, name, r, g_full, g_cut))
+    gg = np.linspace(0, 1, 400)
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(2, 2, figsize=(W, 4.4), gridspec_kw={"wspace": 0.26, "hspace": 0.5})
+        for v, a_, col, name, r, g_full, g_cut in cases:
+            lab = f"{name} ({v:g}, {a_:g})"
+            ax[0][0].plot(gg, prior(gg, v, a_), color=col, lw=1.8, label=lab)
+            ax[0][1].plot(t, g_full, color=col, lw=1.8, label=f"gate fitted through the {name}")
+            ax[1][0].plot(t, prior(g_full, v, a_), color=col, lw=1.6, label=f"{name}, rms {r['rms']:.4f}")
+            ku = prior(g_cut, v, a_)
+            ax[1][1].plot(t, ku, color=col, lw=1.8, label=f"{name}: peak {ku.max():.2f}")
+        ax[1][0].plot(t, target, color=K_, lw=3.2, alpha=0.35, zorder=1, label="file $K_u(t)$")
+        ax[0][0].set_xlabel("gate $g$"); ax[0][0].set_ylabel("$M(g)$")
+        ax[0][0].set_title("(a) two assumed maps", fontsize=8.5)
+        ax[0][1].set_xlabel("time (ns)"); ax[0][1].set_ylabel("gate $g(t)$")
+        ax[0][1].set_title("(b) the gate the fit produces for each", fontsize=8.5)
+        ax[1][0].set_xlabel("time (ns)"); ax[1][0].set_ylabel("$K_u$")
+        ax[1][0].set_title("(c) full transition: both match the file", fontsize=8.5)
+        ax[1][1].set_xlabel("time (ns)"); ax[1][1].set_ylabel("$K_u$")
+        ax[1][1].set_title("(d) 810 ps pulse: they separate", fontsize=8.5)
+        for a in (ax[0][1], ax[1][0], ax[1][1]):
+            a.set_xlim(0, 3.0); a.set_ylim(-0.05, 1.12)
+        ax[0][0].set_ylim(-0.05, 1.12)
+        ax[0][0].legend(frameon=False, loc="upper left", fontsize=6.8)
+        ax[0][1].legend(frameon=False, loc="upper left", fontsize=6.4)
+        ax[1][0].legend(frameon=False, loc="lower right", fontsize=6.8)
+        ax[1][1].legend(frameon=False, loc="upper right", fontsize=6.8)
+        save(fig, "fig_ambiguity")
+
+
+# ------------------------------------------------------------------ 7b. the stressed run, used
+def fig_stress_use():
+    """How the one stressed measurement is used, on ex2's nine candidates (three stage counts
+    x three map shapes, each fitted to the file). (a) the measurement. (b) the candidates as
+    fitted to the file, before the measurement is used: re-run here from the stored
+    pre-calibration subcircuits (calib/it00). (c) after the threshold of each is calibrated on
+    the peak. (d) the selected candidate at all five widths."""
+    import build_0917_deck_figures as f17
+    import build_0924_deck_figures as b24
+    import gate_ramp_prototype as gp
+    gp.VARIANT_NAME = "ex2"
+    w = 0.810
+    t_si, si, _ = f17.transistor_pad("ex2", 810)
+    t_si = t_si - 5.0
+    peak = float(si[(t_si >= w - 0.3) & (t_si <= w + 2.6)].max())
+    cache = ROOT / "results" / "stage_law_doc_2026-10-01" / "before_calibration"
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(2, 2, figsize=(W, 4.5), gridspec_kw={"wspace": 0.24, "hspace": 0.5})
+        a = ax[0][0]
+        a.plot(t_si, si, color=K_, lw=2.2)
+        a.plot(t_si[int(np.argmax(si))], peak, "o", color=TEAL, ms=6, zorder=5)
+        a.annotate(f"peak {peak:.2f} V", (1.62, peak + 0.03), fontsize=7.6, color=TEAL)
+        a.annotate("", (w, -0.22), (0, -0.22), arrowprops=dict(arrowstyle="<|-|>", color="#555555", lw=1))
+        a.text(w + 0.08, -0.22, "810 ps input pulse", va="center", fontsize=7)
+        a.set_title("(a) the stressed measurement", fontsize=8.5)
+
+        b, c = ax[0][1], ax[1][0]
+        peaks0 = []
+        for (k, sh), folder in b24.CAND.items():
+            pick = (k, sh) == b24.PICK
+            npz = cache / f"K{k}_{sh}.npz"
+            if not npz.exists():
+                cache.mkdir(parents=True, exist_ok=True)
+                r = gp.run_ours(cache / f"K{k}_{sh}", (folder / "calib" / "it00" / "driver.sub").read_text(encoding="utf-8"),
+                                3.3, w)
+                np.savez(npz, t=np.asarray(r["t"]) - 5.0, pad=np.asarray(r["pad"]))
+            z = np.load(npz)
+            peaks0.append(float(z["pad"].max()))
+            kw = dict(color=TEAL if pick else GREY, lw=1.9 if pick else 0.9, zorder=4 if pick else 2)
+            b.plot(z["t"], z["pad"], **kw)
+            t1, _ku, pad = b24._cand(folder, "d810")
+            c.plot(t1, pad, label="selected candidate" if pick else None, **kw)
+        for q in (b, c):
+            q.plot(t_si, si, color=K_, lw=2.2, zorder=5, label="measurement" if q is c else None)
+            q.axhline(peak, color=TEAL, lw=0.8, ls="--")
+        b.set_title("(b) nine candidates, as fitted to the file", fontsize=8.5)
+        b.text(0.03, 0.95, f"peaks {min(peaks0):.2f}–{max(peaks0):.2f} V", transform=b.transAxes, fontsize=7.2, va="top")
+        c.axvspan(w - 0.3, w + 1.5, color="#EEF2F3", zorder=0)
+        c.plot([], [], color=GREY, lw=0.9, label="other eight")
+        c.set_title("(c) after calibrating $v_t$ on the peak", fontsize=8.5)
+        c.legend(frameon=False, loc="upper right", fontsize=6.6)
+
+        d = ax[1][1]
+        folder = b24.CAND[b24.PICK]
+        for i, wp in enumerate(b24.DEV["ex2"][3]):
+            ts, s_, _ = f17.transistor_pad("ex2", wp)
+            d.plot(ts - 5.0, s_, color=K_, lw=1.8, label="transistor" if i == 0 else None)
+            t1, _ku, pad = b24._cand(folder, f"d{wp}")
+            d.plot(t1, pad, color=TEAL, lw=1.2, ls="--", label="selected model" if i == 0 else None)
+        d.set_title("(d) check: the selected model at five widths", fontsize=8.5)
+        d.legend(frameon=False, loc="upper right", fontsize=6.6)
+        for q in (a, b, c, d):
+            q.set_xlim(0.2, 3.0); q.set_xlabel("time (ns)"); q.set_ylabel("pad voltage (V)")
+        a.set_xlim(-0.2, 3.0)
+        for q in (a, b, c):
+            q.set_ylim(-0.4, max(1.5, max(peaks0) * 1.12))
+        save(fig, "fig_stress_use")
+    return min(peaks0), max(peaks0), peak
+
+
 # ------------------------------------------------------------------ 4b. gate -> map -> Ku
 def fig_gate_to_ku():
     """The whole construction on ex2 (K = 3): the stage law gives g(t); the map turns each
@@ -557,7 +732,8 @@ def fig_pad_summary():
     return devs, nat, t1, dead
 
 
-ALL = (fig_device, fig_stage_law, fig_blocks, fig_chain, fig_gate_to_ku, fig_ku_fit, fig_rms_vs_k,
+ALL = (fig_device, fig_stage_law, fig_blocks, fig_chain, fig_map, fig_gate_to_ku, fig_ku_fit,
+       fig_ambiguity, fig_stress_use, fig_rms_vs_k,
        fig_calibration, fig_gate_verify, fig_pad_waveforms, fig_pad_summary)
 
 if __name__ == "__main__":
