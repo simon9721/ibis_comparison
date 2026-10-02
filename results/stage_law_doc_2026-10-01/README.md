@@ -122,3 +122,18 @@ The three things that were not coming across, each now with a figure drawn from 
   the peak; selection takes the waveform; the selected model is checked at five widths. The
   pre-calibration runs are re-simulated from the stored `calib/it00` subcircuits and cached in
   `before_calibration/*.npz`.
+
+## Is the file-only model's internal gate the real gate? (2026-10-02) - close, not identical
+
+`gate_internal_check.py` compares `v(x1.gup)` of the selected file-only build with the probed
+gate (ex2 n4, inv_chain vout7), which the method never sees.
+
+| | peak of the stressed gate, model minus real | timing | waveform rms |
+|---|---|---|---|
+| ex2 (5 widths) | -0.05 ... -0.03 | model leads by 56-74 ps | 0.06-0.08 |
+| inv_chain (5 widths) | -0.08 ... -0.01 | model leads by 12-20 ps | 0.04-0.06 |
+
+Full swing: rms 0.033 and 0.041, model leading by 40 and 22 ps. The model's gate has the
+right height and shape and is slightly early and slightly low; its return is faster than the
+real gate's on ex2. So the internals resemble the transistor's, although only the pad was
+ever fitted - but they are not the same waveform.
