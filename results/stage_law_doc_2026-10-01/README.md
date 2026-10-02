@@ -77,3 +77,20 @@ Two corrections came out of it, both to the device extraction, not to the law:
 Also added: a limits paragraph (the paper says the model fails near threshold and neglects the
 opposing device - the regime a truncated pulse lives in), and reference [3] restored with the
 details the paper's own reference list confirms.
+
+## Section H rebuilt around the gate-to-Ku construction (2026-10-02)
+
+The stage law gives only the gate; `K_u` comes from a second, separate relation (the map).
+Section H now says so and shows it: the separability assumption `I(V_pad, g) = K_u(g) I_PU(V_pad)`,
+a hand-worked single-stage table (Table V), and Fig. 5 (`fig_gate_to_ku`), which traces the same
+six instants from `g(t)` through the map to `K_u(t)`, for a full transition (where the result is
+compared with the file - that comparison is the fit) and for an 810 ps pulse (where the gate
+turns back and only part of the map is read).
+
+Two statements corrected at the same time:
+
+- `x_lin = 0.45` is **not** "fixed throughout": it is fixed on ten of the twelve buffers and was
+  fitted to the file on inv_chain and io_buf. Section E now gives how the value was chosen.
+- The method is not built from the IBIS file alone. Table IV lists every input and its origin:
+  the file, the fit, one stressed measurement, and four built-in constants chosen during
+  development with transistor-level information.

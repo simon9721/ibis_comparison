@@ -259,6 +259,75 @@ def fig_chain():
         save(fig, "fig_chain")
 
 
+# ------------------------------------------------------------------ 4b. gate -> map -> Ku
+def fig_gate_to_ku():
+    """The whole construction on ex2 (K = 3): the stage law gives g(t); the map turns each
+    value of g into a conducting fraction; the result is the model's K_u(t). The same sample
+    instants are marked in all three panels. Top row: full transition, against the file's own
+    K_u(t) - this comparison is the fit. Bottom row: an 810 ps pulse - the gate turns back and
+    the map is only read over part of its range."""
+    import device_taper_ku as dku
+    p = EX2
+    vtm, a_ = p["shape"]
+    grid, u_full, target = dku.shipped_ku("ex2", dku.BUFFERS["ex2"]["cc"])
+    t = grid - (5.0 + 0.025)                                  # input edge mid-point at t = 0
+    g_full = chain_stages(u_full, p["s_up"], p["s_dn"], p["vt_fit"], p["x_lin"], p["K"])[-1]
+    u_cut = ((t >= 0) & (t < 0.81)).astype(float)
+    g_cut = chain_stages(u_cut, p["s_up"], p["s_dn"], p["vt_cal"], p["x_lin"], p["K"])[-1]
+    gg = np.linspace(0, 1, 500)
+    cmap = plt.get_cmap("viridis")
+
+    def dots(ax, xs, ys, n):
+        for i, (x, y) in enumerate(zip(xs, ys)):
+            ax.plot(x, y, "o", ms=5.5, color=cmap(0.08 + 0.84 * i / max(1, n - 1)), mec="white", mew=0.7, zorder=6)
+
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(2, 3, figsize=(W, 4.7), gridspec_kw={"wspace": 0.42, "hspace": 0.55})
+        rows = (("full transition", g_full, (0.85, 1.12, 1.22, 1.36, 1.6, 2.2), True),
+                ("810 ps input pulse", g_cut, (0.95, 1.12, 1.25, 1.37, 1.5, 1.62), False))
+        for r, (name, g, ts, full) in enumerate(rows):
+            ku = prior(g, vtm, a_)
+            gi = np.interp(ts, t, g)
+            ki = prior(gi, vtm, a_)
+            a, b, c = ax[r]
+            # (1) the stage law's output: the gate
+            a.plot(t, g, color=TEAL, lw=2.0)
+            a.axhline(vtm, color=GREY, lw=0.7, ls=":")
+            a.text(2.95, vtm + 0.03, "$v_{t,map}$", fontsize=7, ha="right", color="#555555")
+            dots(a, ts, gi, len(ts))
+            a.set_xlim(0, 3.0); a.set_ylim(-0.05, 1.12)
+            a.set_xlabel("time (ns)"); a.set_ylabel("gate $g = G_{UP}$")
+            a.set_title(("(a)" if full else "(d)") + f" stage law: $g(t)$, {name}", fontsize=8.2)
+            # (2) the map, read at those gate values
+            b.plot(gg, prior(gg, vtm, a_), color="#BBBBBB" if not full else RED, lw=1.3 if not full else 2.0)
+            if not full:
+                m = gg <= g.max()
+                b.plot(gg[m], prior(gg[m], vtm, a_), color=RED, lw=2.4)
+                b.axvline(g.max(), color=GREY, lw=0.7, ls=":")
+                b.text(0.02, 0.86, f"gate turns back at {g.max():.2f};" + chr(10) + "above it the map is not read",
+                       fontsize=6.2, color="#555555")
+            b.axvline(vtm, color=GREY, lw=0.7, ls=":")
+            dots(b, gi, ki, len(ts))
+            b.set_xlim(0, 1.02); b.set_ylim(-0.05, 1.12)
+            b.set_xlabel("gate $g$"); b.set_ylabel("$K_u = M(g)$")
+            b.set_title(("(b)" if full else "(e)") + " the map $M(g)$", fontsize=8.2)
+            # (3) the result
+            if full:
+                c.plot(t, target, color=K_, lw=2.6, label="IBIS file")
+                rms = float(np.sqrt(np.mean((ku - target) ** 2)))
+                c.plot(t, ku, color=RED, lw=1.7, label=f"model, rms {rms:.3f}")
+            else:
+                c.plot(t, prior(g_full, vtm, a_), color="#CCCCCC", lw=1.2, label="full transition")
+                c.plot(t, ku, color=RED, lw=2.0, label=f"model, peak {ku.max():.2f}")
+            dots(c, ts, ki, len(ts))
+            c.set_xlim(0, 4.6); c.set_ylim(-0.05, 1.12)
+            c.set_xlabel("time (ns)"); c.set_ylabel("$K_u$")
+            c.set_title(("(c)" if full else "(f)") + " result: $K_u(t)$", fontsize=8.2)
+            c.legend(frameon=False, loc="center right", fontsize=6.4, handlelength=1.3, borderaxespad=0.2)
+        save(fig, "fig_gate_to_ku")
+
+
+
 # ------------------------------------------------------------------ 5. the Ku-domain fit
 def fig_ku_fit():
     import device_taper_ku as dku
@@ -488,7 +557,7 @@ def fig_pad_summary():
     return devs, nat, t1, dead
 
 
-ALL = (fig_device, fig_stage_law, fig_blocks, fig_chain, fig_ku_fit, fig_rms_vs_k,
+ALL = (fig_device, fig_stage_law, fig_blocks, fig_chain, fig_gate_to_ku, fig_ku_fit, fig_rms_vs_k,
        fig_calibration, fig_gate_verify, fig_pad_waveforms, fig_pad_summary)
 
 if __name__ == "__main__":
