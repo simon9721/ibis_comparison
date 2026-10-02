@@ -94,3 +94,12 @@ Two statements corrected at the same time:
 - The method is not built from the IBIS file alone. Table IV lists every input and its origin:
   the file, the fit, one stressed measurement, and four built-in constants chosen during
   development with transistor-level information.
+
+## Quick test: can the map shape be chosen from the file? (2026-10-02) - no
+
+`shape_from_file.py` fits the stage law through six map shapes to the file's `K_u(t)`
+(eq. 26, `x_lin` = 0.45). The residual is flat across shapes: 0.0214-0.0238 on ex2 (1.11x)
+and 0.0078-0.0084 on inv_chain (1.08x). The slight preference is not for the measured shape
+either - on ex2 the shape nearest the probed map, (0.6, 0.6), fits worst. The stage threshold
+compensates (it runs to its 0.7 bound as the map starts earlier). So the file cannot choose
+the map shape; it has to come from the stressed measurement, or from outside knowledge.
