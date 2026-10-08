@@ -137,3 +137,14 @@ Full swing: rms 0.033 and 0.041, model leading by 40 and 22 ps. The model's gate
 right height and shape and is slightly early and slightly low; its return is faster than the
 real gate's on ex2. So the internals resemble the transistor's, although only the pad was
 ever fitted - but they are not the same waveform.
+
+## Section B made self-contained; the internal-gate check added to L (2026-10-08)
+
+- The clip in (5) is declared ours (lower bound = the paper's cutoff row, upper bound = a
+  numerical guard for node overshoot in the chain); it does not appear in [1].
+- The `min` form (6) is derived instead of asserted: factor `I'_D0` out of the paper's triode
+  row, and in each conducting row the multiplier is the smaller of 1 and `V_DS/V'_D0`. The
+  paper has no single-expression form; this one is ours.
+- Section L gains "2) The model's internal gate against the transistor's" (Table XI, Fig. 12,
+  from `gate_internal_check.py`): the file-only model's gate is 0.03-0.08 low and 12-74 ps
+  early against the probed gate, with a faster return on ex2.

@@ -661,6 +661,51 @@ def fig_gate_verify():
         save(fig, "fig_gate_verify")
 
 
+# ------------------------------------------------------------------ 8b. the model's gate vs the real one
+def fig_gate_internal():
+    """The selected file-only model's internal gate G_UP against the probed transistor gate,
+    which the method never sees (results/stage_law_doc_2026-10-01/gate_internal_check.py).
+    Returns the peak table for the document."""
+    import gate_ramp_prototype  # noqa: F401  (binds pybis2spice before the deck modules touch sys.path)
+    import build_0924_deck_figures as b24
+    import spicelab as sl
+    gate = {"ex2": "v(xdut.n4)", "inv_chain": "v(xdut.vout7)"}
+    rows = []
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(2, 3, figsize=(W, 3.8), gridspec_kw={"hspace": 0.5, "wspace": 0.1})
+        for i, dev in enumerate(("ex2", "inv_chain")):
+            folder = b24._pick_build(dev)
+            grid, runs = cl.load(dev)
+            widths = sorted(k for k in runs if k != "full")
+            for j, (key, which) in enumerate([("full", "full"), (widths[0], f"d{widths[0]}"), (widths[-1], f"d{widths[-1]}")]):
+                raw = sl.parse_ngspice_raw(folder / which / "run.raw")
+                mod = np.interp(grid, sl.time_ns(raw), sl.signal(raw, "v(x1.gup)"))
+                real = runs[key][gate[dev]]
+                a = ax[i][j]
+                a.plot(grid - 5.0, real, color=K_, lw=2.4, label="transistor gate (probed)")
+                a.plot(grid - 5.0, mod, color=TEAL, lw=1.5, label="model gate $G_{UP}$ (file-only build)")
+                xmax = {"ex2": 4.0, "inv_chain": 1.0}[dev]
+                a.set_xlim(-0.05 * xmax, xmax); a.set_ylim(-0.1, 1.15)
+                a.set_title(("(a) " if (i, j) == (0, 0) else "(b) " if (i, j) == (1, 0) else "")
+                            + f"{dev}, {'full transition' if key == 'full' else str(key) + ' ps'}", fontsize=9)
+                if j:
+                    a.set_yticklabels([])
+                if i:
+                    a.set_xlabel("time from the input edge (ns)" if j == 1 else "")
+            ax[i][0].set_ylabel("gate, normalised")
+            for W_ in widths:
+                raw = sl.parse_ngspice_raw(folder / f"d{W_}" / "run.raw")
+                mod = np.interp(grid, sl.time_ns(raw), sl.signal(raw, "v(x1.gup)"))
+                real = runs[W_][gate[dev]]
+                win = (grid >= 4.9) & (grid <= 5.0 + W_ / 1e3 + 2.5)
+                rows.append(dict(device=dev, width_ps=W_, real=float(real[win].max()), model=float(mod[win].max()),
+                                 rms=float(np.sqrt(np.mean((mod[win] - real[win]) ** 2)))))
+        fig.legend(*ax[0][0].get_legend_handles_labels(), frameon=False, loc="lower center", ncol=2,
+                   fontsize=7.4, bbox_to_anchor=(0.5, -0.04))
+        save(fig, "fig_gate_internal")
+    return rows
+
+
 # ------------------------------------------------------------------ 9, 10. the pad
 def fig_pad_waveforms():
     import build_0917_deck_figures as f17
@@ -733,7 +778,7 @@ def fig_pad_summary():
 
 
 ALL = (fig_device, fig_stage_law, fig_blocks, fig_chain, fig_map, fig_gate_to_ku, fig_ku_fit,
-       fig_ambiguity, fig_stress_use, fig_rms_vs_k,
+       fig_ambiguity, fig_stress_use, fig_gate_internal, fig_rms_vs_k,
        fig_calibration, fig_gate_verify, fig_pad_waveforms, fig_pad_summary)
 
 if __name__ == "__main__":

@@ -67,6 +67,7 @@ def data():
     for p in (DOC / "shape_from_file").glob("shape_*.json"):
         r = json.loads(p.read_text())
         d["shapes"][(r["dev"], r["vt_map"], r["a"])] = r
+    d["gate_int"] = figs.fig_gate_internal()
     d["stress"] = figs.fig_stress_use()                     # (lowest, highest candidate peak, measured)
     devs, nat, t1, dead = figs.fig_pad_summary()
     d["pad"] = list(zip(devs, nat, t1, dead))
@@ -96,6 +97,14 @@ def build(pkg: Package, d) -> dict:
     x0 = [float(r["vd0_over_vdd"]) for r in d["dev"]]
     rng = {"a": f"{min(al):.2f}–{max(al):.2f}", "x": f"{min(x0):.2f}–{max(x0):.2f}"}
     out["rng"] = rng
+    out["min_form"] = (
+        para("Equation (2) has no single-expression form in [1]; the one used here is ours, and it follows from "
+             "factoring $I'_{D0}$ out of the triode row. The two conducting rows then read", "FirstParagraph")
+        + equation("I_D = I'_{D0} \\cdot \\frac{V_{DS}}{V'_{D0}}~~(V_{DS} < V'_{D0}),\\quad I_D = I'_{D0} \\cdot 1~~(V_{DS} \\ge V'_{D0})")
+        + para("In the first row the ratio $V_{DS}/V'_{D0}$ is below 1 and in the second it is 1 or above, so in "
+               "each row the multiplier of $I'_{D0}$ is whichever of 1 and $V_{DS}/V'_{D0}$ is the smaller. The two "
+               "rows meet at $V_{DS} = V'_{D0}$, where both give $I'_{D0}$, and the current is continuous. The "
+               "conducting part of (2) is therefore", "FirstParagraph"))
     out["after_eq7"] = (
         para("The device model (2)–(5) was checked against the transistors actually used in the predrivers "
              "of two test buffers, simulated in HSPICE from their model cards at their drawn dimensions. "
@@ -586,7 +595,34 @@ def build_tail(pkg: Package, d, t):
            "against 0.853). This statement covers high-going pulses of those widths; the pull-down path of io_buf "
            "under much shorter low-going pulses (163–322 ps) is not linear."))
 
-    A(heading("2) Pad level: the complete method on twelve buffers", 3))
+    A(heading("2) The model's internal gate against the transistor's", 3))
+    A(para("The file-only model is judged at the pad; its internal gate $G_{UP}$ is never fitted to anything "
+           "and the method never observes a gate. On the two buffers whose gate was probed, the gate of the "
+           "selected file-only build can nevertheless be compared with the real one (Fig. 12, Table XI).",
+           "FirstParagraph"))
+    _gi = d["gate_int"]
+    _rows = []
+    for _dev in ("ex2", "inv_chain"):
+        _r = [r for r in _gi if r["device"] == _dev]
+        _rows.append([_dev] + [f"{r['model'] - r['real']:+.3f}" for r in _r]
+                     + [f"{min(r['rms'] for r in _r):.2f}\u2013{max(r['rms'] for r in _r):.2f}"])
+    _w = sorted({r["width_ps"] for r in _gi if r["device"] == "ex2"})
+    _wi = sorted({r["width_ps"] for r in _gi if r["device"] == "inv_chain"})
+    A(table(["Buffer", "Narrowest", "", "", "", "Widest pulse", "Waveform rms"],
+            _rows, [1600, 1200, 1200, 1200, 1200, 1300, 1900],
+            "Table XI: Peak of the model's internal gate minus the peak of the probed gate, at the five "
+            f"stressed widths (ex2: {_w[0]}\u2013{_w[-1]} ps; inv_chain: {_wi[0]}\u2013{_wi[-1]} ps)"))
+    A(pkg.figure(FIG / "fig_gate_internal.png",
+                 "Fig. 12. The internal gate of the selected file-only model against the probed gate of the "
+                 "transistor netlist, at full swing and at the narrowest and widest stressed pulse. (a) ex2. "
+                 "(b) inv_chain. The model was fitted to the IBIS file and one pad waveform only.", width_in=6.2))
+    A(para("The model's gate has the height and shape of the real one at every width, although nothing in the "
+           "procedure aimed at the gate: its stressed peak is 0.03\u20130.05 low on ex2 and 0.01\u20130.08 low on "
+           "inv_chain, and it leads the real gate by 56\u201374 ps on ex2 and 12\u201320 ps on inv_chain. It is not "
+           "the same waveform: on ex2 it returns to zero faster than the real gate, and the map absorbs the "
+           "difference at the pad. The structure of (19) therefore produces an internal gate that resembles the "
+           "transistor's, while its numbers remain effective parameters and the internals remain approximate."))
+    A(heading("3) Pad level: the complete method on twelve buffers", 3))
     A(para("The complete procedure of Table III was applied to twelve test buffers: ex2, inv_chain and io_buf, and "
            "nine variants of the first two. For each buffer the model was built from its IBIS file and from one transistor-level pad waveform "
            "at the pulse width giving about 50 % of the settled swing; $C_{comp}$ was taken from the file, reduced "
@@ -597,7 +633,7 @@ def build_tail(pkg: Package, d, t):
            "entirely held out. HSPICE's native IBIS element with the same file is given for comparison.",
            "FirstParagraph"))
     A(pkg.figure(FIG / "fig_pad_waveforms.png",
-                 "Fig. 12. Pad voltage for the narrowest stressed pulse of three buffers: transistor-level reference, "
+                 "Fig. 13. Pad voltage for the narrowest stressed pulse of three buffers: transistor-level reference, "
                  "HSPICE native IBIS, and the proposed model built from the IBIS file and one stressed measurement. "
                  "The percentages are peak errors against the reference. Time is measured from the input edge.",
                  width_in=6.3))
@@ -609,9 +645,9 @@ def build_tail(pkg: Package, d, t):
     t1s = [x[2] for x in d["pad"]]
     A(table(["Buffer", "Netlist $K$", "Selected $K$", "Selected map shape", "Proposed: worst peak error (%)",
              "Native IBIS: worst peak error (%)"], rows, [1700, 1100, 1200, 1700, 2000, 1900],
-            "Table XI: Pad-level result on the twelve test buffers (worst of five stressed pulse widths)"))
+            "Table XII: Pad-level result on the twelve test buffers (worst of five stressed pulse widths)"))
     A(pkg.figure(FIG / "fig_pad_summary.png",
-                 "Fig. 13. Worst stressed peak error at the pad for the twelve test buffers.", width_in=6.3))
+                 "Fig. 14. Worst stressed peak error at the pad for the twelve test buffers.", width_in=6.3))
     live = [x[1] for x in d["pad"] if not x[3]]
     A(para(f"The proposed model is within 10 % on all twelve buffers (range {min(t1s):.1f}–{max(t1s):.1f} %, "
            f"mean {sum(t1s) / len(t1s):.1f} %). On the seven buffers for which the native IBIS element produced a "
@@ -620,7 +656,7 @@ def build_tail(pkg: Package, d, t):
            "reported. The selected stage count equals the netlist count on eleven buffers (inv_chain selects 6 "
            "against 7)."))
 
-    A(heading("3) Limits of the evidence", 3))
+    A(heading("4) Limits of the evidence", 3))
     A(para("The gate-level test establishes that the structure of (19) extrapolates from full swing to truncated "
            "pulses when it is fitted to the true gate; it does not by itself establish the accuracy of the "
            "file-only procedure, in which the gate is never observed. That is what the pad-level test addresses, "
@@ -650,7 +686,7 @@ def build_tail(pkg: Package, d, t):
               "Free fit fails (Section II-J); $K$ selected by (29)"],
              ["A4", "Map shape taken from a grid of three", "(22), (26)", "Trade-off between gate and map",
               "Selected by (29); grid chosen on the test buffers"]],
-            [650, 2700, 1300, 2150, 2800], "Table XII: Approximations of the model", size=16))
+            [650, 2700, 1300, 2150, 2800], "Table XIII: Approximations of the model", size=16))
     A(para("Everything else in (19) is inherited from (1) and (2)–(5): the threshold, the constant-current "
            "ramp, the straight-line resistive tail and the two-device structure. Equation (24) is the existing "
            "converter's and is unchanged."))
@@ -701,7 +737,7 @@ def build_tail(pkg: Package, d, t):
            "the gate (mean peak error 0.077 to 0.016) but is neutral on ex2 and cannot be identified in the $K_u$ "
            "domain, so it has not been adopted; fixing $x_{lin}$ per buffer from a measured $x_0$ (Table II) is "
            "untested at the pad. (2) The pad-level score includes the calibration width. (3) Pulse trains, "
-           "low-going pulses and other loads and corners are not covered by Table XI."))
+           "low-going pulses and other loads and corners are not covered by Table XII."))
     return t
 
 
@@ -738,6 +774,26 @@ def main() -> int:
         for j, new in enumerate(frag(xml), 1):
             body.insert(pos + j, new)
 
+    # (5): the clip is ours. Rewrite the end of the paragraph that explains it.
+    for k in body:
+        for tnode in k.iter(f"{{{W}}}t"):
+            if tnode.text and "The lower clip in (5)" in tnode.text:
+                tnode.text = tnode.text[:tnode.text.index("The lower clip in (5)")] + (
+                    "The clip is our notation and does not appear in [1]: its lower bound is the cutoff row "
+                    "of (2) written into the drive, and its upper bound is a numerical guard for the chain of "
+                    "Section II-G, in which a stage output may overshoot its rail by a few percent for a few "
+                    "time steps. In the paper's own setting the gate never exceeds the supply and the upper "
+                    "bound is never reached.")
+                run = tnode.getparent()
+                for sib in list(run.itersiblings()):
+                    run.getparent().remove(sib)
+                break
+    # (6): derive the min form instead of asserting it
+    el = next(k for k in body if text(k).startswith("Because (2) is piecewise linear"))
+    pos = list(body).index(el)
+    body.remove(el)
+    for j, new in enumerate(frag(ins["min_form"])):
+        body.insert(pos + j, new)
     insert_after("Equation (7) is the device model", ins["after_eq7"])
     insert_after("Comparing (19) with (15) term by term", ins["after_eq19"])
     for new in frag("".join(tail)):
