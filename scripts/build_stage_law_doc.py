@@ -157,6 +157,28 @@ def build(pkg: Package, d) -> dict:
                "output device starts to conduct in the map. $\\alpha$ is the device's velocity-saturation index, "
                "$p$ its stand-in in the stage law (fixed at 1), and $a$ the curvature of the map. Table I at the "
                "end collects every symbol."))
+    out["a1a2"] = (
+        para("*A1 (gate exponent).* In (15) the gate factor is $g(u)^{\\alpha}$ with the measured device "
+             "exponent $\\alpha$, 1.10\u20131.63 for the devices of Table III. The model keeps the form but treats "
+             "the exponent as a model parameter $p$:", "FirstParagraph")
+        + equation("h(x) \\triangleq g(x)^{p} = \\clip\\left(\\frac{x - v_t}{1 - v_t},~0,~1\\right)^{p}", 17)
+        + para("The symbol $h$ marks nothing more than that the exponent is no longer the device's. A "
+               "full-swing waveform cannot set $p$: the stage input dwells near $g = 1$, where $g^{p} = 1$ for "
+               "every $p$, and only the brief passage through intermediate drives depends on it "
+               "(Section II-J). In this work $p = 1$ is adopted, so (17) reduces to $h(x) = g(x)$. That is the "
+               "approximation: A1 drops the measured exponent and makes the drive current linear in the gate "
+               "above threshold, the short-channel limit of [1]. The parameter $p$ is kept in the formula only "
+               "so that the exponent can be restored if a measurement supplies it.", "FirstParagraph")
+        + para("*A2 (fixed saturation boundary).* In (15) the boundary between the constant-current ramp and "
+               "the resistive tail is $x_0 g^{\\alpha/2}$: it equals $x_0$ at full drive and shrinks when the "
+               "gate is only partly on. The model replaces it by a constant that does not depend on the gate:",
+               "FirstParagraph")
+        + equation("r(x) \\triangleq \\min\\left(1,~\\frac{x}{x_{lin}}\\right)", 18)
+        + para("For a known device the natural value is the full-drive boundary, $x_{lin} = x_0$, and at "
+               "$g = 1$ (18) then coincides with the boundary in (15); the two differ only under partial drive. "
+               "The model, however, never knows the device, so the constant is given its own name: $x_{lin}$ "
+               "is an effective number, set to 0.45 in this work for the reasons given after Fig. 3, and the "
+               "measured $x_0$ of Table III (0.34\u20130.57) is only a check on it.", "FirstParagraph"))
     out["after_eq7"] = (
         para("The device model (2)–(5) was checked against the transistors actually used in the predrivers "
              "of two test buffers, simulated in HSPICE from their model cards at their drawn dimensions. "
@@ -790,7 +812,7 @@ def build_tail(pkg: Package, d, t):
             [["$u$, $v$", "Normalized stage input and output, 0 → 1", "(8)"],
              ["$v_t$", "$V_{TH}/V_{DD}$; in the fitted model, the effective stage threshold", "(9)"],
              ["$x_0$", "$V_{D0}/V_{DD}$, saturation boundary at full drive", "(9)"],
-             ["$x_{lin}$", "Fixed value replacing $x_0 g^{\\alpha/2}$", "(18)"],
+             ["$x_{lin}$", "Effective constant replacing the drive-dependent boundary $x_0 g^{\\alpha/2}$; 0.45 unless fitted", "(18)"],
              ["$g(x)$", "Normalized gate drive with cutoff", "(11)"],
              ["$h(x)$", "Gate factor, $g^{p}$", "(17)"],
              ["$r(x)$", "Drain factor, $\\min(1, x/x_{lin})$", "(18)"],
@@ -889,6 +911,16 @@ def main() -> int:
         body.insert(pos + j, new)
     insert_after("Equation (7) is the device model", ins["after_eq7"])
     insert_after("Comparing (19) with (15) term by term", ins["after_eq19"])
+    # Section E: A1 and A2 rewritten (from "A1 (gate exponent)" up to "Applying (17) and (18)")
+    a1 = next(k for k in body if text(k).startswith("A1 (gate exponent)"))
+    end = next(k for k in body if text(k).startswith("Applying (17) and (18)"))
+    kids = list(body)
+    i0, i1 = kids.index(a1), kids.index(end)
+    assert 4 <= i1 - i0 <= 8, (i0, i1)
+    for k in kids[i0:i1]:
+        body.remove(k)
+    for j, new in enumerate(frag(ins["a1a2"])):
+        body.insert(i0 + j, new)
 
     def set_text(el, new):
         for r in list(el):

@@ -177,3 +177,15 @@ all in `build_stage_law_doc.py` (figures in `build_stage_law_doc_figures.py`):
 
 Rendered through Word: 26 pages, 16 figures, 14 tables. Delivered as
 `\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_derivation_v2.docx`.
+
+## Section E: what A1 and A2 actually do (2026-10-09)
+
+The kept draft text defined h(x) = g(x)^p as if it were a new function and wrote
+"x_lin = x_0" into (18), which contradicted the paragraph setting x_lin = 0.45. Rewritten:
+
+- A1: the exponent is no longer the device's alpha but a parameter p; with the adopted p = 1,
+  h = g, so the approximation is dropping the measured exponent (1.10-1.63) and making the
+  drive current linear in the gate above threshold. p stays in the formula only as a hook.
+- A2: the boundary x_0 g^(alpha/2) is replaced by a constant that does not depend on the gate.
+  It would equal x_0 for a known device, but the model never knows the device, which is why the
+  constant has its own name; "x_lin = x_0" removed from (18). Table I entry updated.
