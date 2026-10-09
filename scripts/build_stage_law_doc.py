@@ -67,6 +67,7 @@ def data():
     for p in (DOC / "shape_from_file").glob("shape_*.json"):
         r = json.loads(p.read_text())
         d["shapes"][(r["dev"], r["vt_map"], r["a"])] = r
+    d["knobs"] = figs.fig_fit_knobs()
     d["gate_int"] = figs.fig_gate_internal()
     d["stress"] = figs.fig_stress_use()                     # (lowest, highest candidate peak, measured)
     devs, nat, t1, dead = figs.fig_pad_summary()
@@ -105,6 +106,57 @@ def build(pkg: Package, d) -> dict:
                "each row the multiplier of $I'_{D0}$ is whichever of 1 and $V_{DS}/V'_{D0}$ is the smaller. The two "
                "rows meet at $V_{DS} = V'_{D0}$, where both give $I'_{D0}$, and the current is continuous. The "
                "conducting part of (2) is therefore", "FirstParagraph"))
+    out["prelim"] = (
+        heading("Preliminaries: the problem, the idea and the terms")
+        + para("*What an IBIS file contains.* An IBIS file describes an output buffer from its pins. For the "
+               "driver it holds three things: I–V tables, which give the current the output transistors deliver "
+               "against pad voltage with the pull-up fully on (and likewise the pull-down); V–T waveforms, which "
+               "give the pad voltage against time for one complete rising and one complete falling transition "
+               "into a stated load; and the die capacitance $C_{comp}$ with the package parasitics. The standard "
+               "way to simulate from such a file is to solve, from the V–T waveforms, two time-varying "
+               "coefficients $K_u(t)$ and $K_d(t)$, the fraction of the pull-up and of the pull-down table that is "
+               "conducting at each instant, such that $K_u I_{PU} + K_d I_{PD}$ reproduces the recorded waveforms. "
+               "In simulation the coefficients are then replayed against time from the input edge. This is what "
+               "the document calls the existing converter, and “the file's $K_u(t)$” means these "
+               "coefficients.", "FirstParagraph")
+        + para("*The problem.* Those coefficients describe complete transitions, and that is what the file "
+               "records (Fig. 1(a)). When the input pulse is shorter than the buffer's own delay and edge, the "
+               "transition is cut short: in Fig. 1(b) an 810 ps pulse drives ex2's pad to 0.77 V of its 1.55 V "
+               "swing, and the model replayed from the file overshoots the peak by 71 %. On the twelve test "
+               "buffers of this work the error of such a model is 20–100 % (Table XIII). Physically the "
+               "pulse is interrupted inside the predriver, the chain of inverters between the input pin and the "
+               "output transistors, while it is still travelling: the gate of the output transistor turns back "
+               "partway, and a coefficient replayed against time has no way to represent that.")
+        + pkg.figure(FIG / "fig_problem.png",
+                     "Fig. 1. The problem, on test buffer ex2. (a) A complete transition into the test load: the "
+                     "situation an IBIS file records. (b) An input pulse of 810 ps, shorter than the buffer's delay "
+                     "and edge: the transistor-level pad voltage against HSPICE's native IBIS model of the same "
+                     "file, which replays the file's coefficients against time.", width_in=6.2)
+        + para("*The idea.* Model the predriver as a chain of stages whose output is the gate of the output "
+               "transistor; convert that gate into $K_u$ and $K_d$ through a static map, so that the fractions "
+               "follow the gate rather than the clock; fit the chain's rates to the $K_u(t)$ that the file already "
+               "contains; and use one measured short pulse to settle what the file cannot. Sections II-A to II-E "
+               "derive the stage law from the transistor. Sections II-F to II-M build the buffer model from it, "
+               "fit it, and verify it at the gate and at the pad.")
+        + table(["Term", "Meaning"],
+                [["the file", "the IBIS file of the buffer being modeled"],
+                 ["the existing converter; native model", "the IBIS-to-SPICE converter this work extends, which replays the file's $K_u(t)$, $K_d(t)$ against time; HSPICE's own IBIS element does the same"],
+                 ["pad; die node", "the buffer's output pin; the node inside the package where the output transistors and $C_{comp}$ connect"],
+                 ["complete (full) transition; settled swing", "an input edge the buffer finishes before the next one; the pad voltage it reaches"],
+                 ["stressed pulse; depth", "an input pulse too short for the transition to complete; the fraction of the settled swing the pad reaches (the tests use about 50–90 %)"],
+                 ["predriver; stage", "the chain of inverters between the input pin and the output transistors; one inverter of it"],
+                 ["output device; gate", "the pull-up (or pull-down) transistor that drives the pad; its gate node, written $g$ or $G_{UP}$ on a 0-to-1 scale"],
+                 ["$K_u$, $K_d$; conducting fraction", "the multiplier on the pull-up (pull-down) I–V table at a given instant"],
+                 ["the map $M$", "the fixed curve giving $K_u$ as a function of the gate"],
+                 ["candidate", "one complete model: a stage count, a map shape and the stage numbers fitted for them"],
+                 ["probed", "read from an internal node of the transistor netlist, which only the development tests can do"]],
+                [3000, 6600], "Table II: Terms used throughout")
+        + para("Three thresholds and three exponents appear and should not be confused. $V_{TH}$ is the device "
+               "threshold of Section II-B; $v_t$ is the stage threshold, defined from $V_{TH}$ in (9) but treated "
+               "from Section II-I onward as an effective, fitted number; $v_{t,map}$ is the gate level at which the "
+               "output device starts to conduct in the map. $\\alpha$ is the device's velocity-saturation index, "
+               "$p$ its stand-in in the stage law (fixed at 1), and $a$ the curvature of the map. Table I at the "
+               "end collects every symbol."))
     out["after_eq7"] = (
         para("The device model (2)–(5) was checked against the transistors actually used in the predrivers "
              "of two test buffers, simulated in HSPICE from their model cards at their drawn dimensions. "
@@ -112,24 +164,24 @@ def build(pkg: Package, d) -> dict:
              "saturation current is a straight line against $V_{GS} - V_{TH}$ on logarithmic axes, and "
              "$\\alpha$ is the slope of that line. Reference [1] gives no procedure for $V_{D0}$; it is taken "
              "here as the breakpoint that best fits the piecewise form (6) to the output curve at full gate "
-             "drive. Fig. 1 shows the result and Table II lists the two normalized parameters. The measured "
+             "drive. Fig. 2 shows the result and Table III lists the two normalized parameters. The measured "
              f"$\\alpha$ is {rng['a']}, between the short-channel limit of 1 and the long-channel value of 2 "
              f"[2], and the saturation voltage is {rng['x']} of the supply, comparable to the 0.5–0.55 "
              "used in [1].")
         + pkg.figure(FIG / "fig_device.png",
-                     "Fig. 1. HSPICE characteristics of the predriver devices of test buffers ex2 and inv_chain, at "
+                     "Fig. 2. HSPICE characteristics of the predriver devices of test buffers ex2 and inv_chain, at "
                      "their drawn dimensions. (a) Output curves at full gate drive, normalized; the legend gives "
                      "the fitted $x_0 = V_{D0}/V_{DD}$. (b) Output curves of one device at five gate drives (solid) against the "
                      "α-power law (2) with the extracted $\\alpha$ and $V_{D0}$ (dashed; dots mark the saturation "
                      "voltage $V'_{D0}$ of (4)). (c) Saturation current against gate drive; the slope is $\\alpha$.")
         + table(["Device", "Model card", "Drawn length", "$V_{DD}$", "$x_0 = V_{D0}/V_{DD}$", "$\\alpha$"],
                 dev_rows, [2500, 2000, 1300, 900, 1800, 1100],
-                "Table II: Device parameters of (2)–(5) extracted in HSPICE from the predriver transistors"))
+                "Table III: Device parameters of (2)–(5) extracted in HSPICE from the predriver transistors"))
 
     # ---------------- inserted into Section E: the stage law, pictured ---------------
     out["after_eq19"] = (
         pkg.figure(FIG / "fig_stage_law.png",
-                   "Fig. 2. The stage law (19). (a) Gate factor $h(u)$ of (17) for three exponents. (b) Drain factor "
+                   "Fig. 3. The stage law (19). (a) Gate factor $h(u)$ of (17) for three exponents. (b) Drain factor "
                    "of the charging term: the fixed boundary $r(1-v)$ of (18), against the drive-dependent boundary "
                    "of (15) at three gate drives ($\\alpha = 1$, $x_0 = 0.45$); the two coincide at full drive. "
                    "(c) Response of one stage to an input step: a constant-slope ramp while $1-v > x_{lin}$, then an "
@@ -138,7 +190,7 @@ def build(pkg: Package, d) -> dict:
                "from the IBIS file. It was chosen during development from fits of (19) to the individual probed "
                "predriver stages of two test buffers, which gave 0.37–0.47 on ex2 and 0.52–0.63 on "
                "inv_chain. Later evidence agrees with it: fitted to the probed gate with $x_{lin}$ free, the chain "
-               f"gives 0.41 on ex2 and 0.48 on inv_chain; the measured $x_0$ of Table II is {rng['x']}; and [1] "
+               f"gives 0.41 on ex2 and 0.48 on inv_chain; the measured $x_0$ of Table III is {rng['x']}; and [1] "
                "uses 0.5–0.55. In the pad-level tests of Section II-L it is fixed at 0.45 on ten of the "
                "twelve buffers; on inv_chain and io_buf it was instead fitted to the file together with the other "
                "stage parameters. Section II-J shows why the file constrains it only weakly. The default $p = 1$ is "
@@ -156,7 +208,8 @@ def build(pkg: Package, d) -> dict:
     # ---------------- F. overview --------------------------------------------------
     A(heading("F. From the stage law to a buffer model: overview"))
     A(para("Equation (19) describes one predriver stage. Sections II-G to II-L turn it into a model of a "
-           "complete output buffer and verify it. The argument has six steps, one per section:", "FirstParagraph"))
+           "complete output buffer and verify it. The argument has six parts, one per section; the numbered *steps* "
+           "of the procedure are those of Table IV:", "FirstParagraph"))
     A(para("(i) $K$ stages in cascade generate the trajectory of the output device's gate (Section II-G); "
            "(ii) a static map converts that gate trajectory into the conducting fractions $K_u$ and $K_d$, which "
            "scale the I–V tables of the IBIS file exactly as in the existing converter (Section II-H); "
@@ -164,9 +217,9 @@ def build(pkg: Package, d) -> dict:
            "(iv) that fit is shown to leave the stage count, the stage threshold and the map shape undetermined "
            "(Section II-J); (v) one stressed pad measurement calibrates the threshold and selects among a small "
            "set of candidates (Section II-K); (vi) the model is verified at the internal gate node and at the pad "
-           "(Section II-L). Fig. 3 shows the signal path and Table III the procedure."))
+           "(Section II-L). Fig. 4 shows the signal path and Table IV the procedure."))
     A(pkg.figure(FIG / "fig_blocks.png",
-                 "Fig. 3. Signal path of the model. The blocks added by the proposed method replace the way the "
+                 "Fig. 4. Signal path of the model. The blocks added by the proposed method replace the way the "
                  "conducting fractions $K_u(t)$ and $K_d(t)$ are generated; the I–V tables, $C_{comp}$ and the "
                  "package elements are those of the IBIS file and are unchanged. Numbers in parentheses are equation "
                  "numbers.", width_in=6.3))
@@ -178,7 +231,7 @@ def build(pkg: Package, d) -> dict:
              ["3", "$v_t$, for each candidate", "peak of one stressed pad waveform", "(28)"],
              ["4", "Stage count $K$ and map shape", "the same stressed pad waveform, whole shape", "(29)"]],
             [700, 4300, 3300, 1300],
-            "Table III: The procedure. $p = 1$ is fixed; $x_{lin} = 0.45$ is fixed on ten of the twelve test "
+            "Table IV: The procedure. $p = 1$ is fixed; $x_{lin} = 0.45$ is fixed on ten of the twelve test "
             "buffers and fitted in step 1 on the other two."))
     A(table(["Input", "Origin"],
             [["I–V tables, $C_{comp}$, package elements, full-swing $K_u(t)$ and $K_d(t)$", "the IBIS file"],
@@ -187,7 +240,7 @@ def build(pkg: Package, d) -> dict:
              ["$x_{lin} = 0.45$, $p = 1$, the three candidate map shapes, the band rule (27)",
               "built-in constants, chosen during development on the twelve test buffers with "
               "transistor-level information"]],
-            [5200, 4400], "Table IV: Inputs of the model and their origin"))
+            [5200, 4400], "Table V: Inputs of the model and their origin"))
     A(para("Applying the method to a new buffer therefore needs no transistor-level information, but the "
            "method is not derived from the IBIS file alone: it uses one measurement, and four built-in constants "
            "whose values were chosen with knowledge of the test buffers' transistors. Whether those constants suit "
@@ -208,16 +261,16 @@ def build(pkg: Package, d) -> dict:
            "node, which is the case for ex2 and inv_chain and their variants. Where the netlist has separate "
            "pull-up and pull-down predriver paths, as in io_buf, a second chain with its own stage count and "
            "parameters is fitted for $G_{DN}$.", "FirstParagraph"))
-    A(para("Fig. 4 shows what the chain does. For a full transition every stage completes its swing and the chain "
+    A(para("Fig. 5 shows what the chain does. For a full transition every stage completes its swing and the chain "
            "contributes only a delay and an edge shape. For a pulse shorter than the chain's own delay, the input "
            "reverses while the later stages are still rising: each stage turns back before reaching its rail, and "
-           "the gate reaches only part of its swing (0.74 in Fig. 4(b)). Because a stage delivers no current until "
+           "the gate reaches only part of its swing (0.74 in Fig. 5(b)). Because a stage delivers no current until "
            "its input passes $v_t$, a pulse loses amplitude at every stage and, once its peak falls below $v_t$, it "
            "is not passed on at all. This is why the stage count is a first-order parameter of the model rather "
            "than a refinement. The abrupt cutoff is a property of the hard threshold in (17); in a transistor "
            "chain the loss is gradual."))
     A(pkg.figure(FIG / "fig_chain.png",
-                 "Fig. 4. One chain, two inputs (ex2: $K = 3$, $s_{up} = 2.19$/ns, $s_{dn} = 2.12$/ns, $v_t = 0.487$, "
+                 "Fig. 5. One chain, two inputs (ex2: $K = 3$, $s_{up} = 2.19$/ns, $s_{dn} = 2.12$/ns, $v_t = 0.487$, "
                  "$x_{lin} = 0.45$). Top: the stage nodes of (19)–(21). Bottom: the conducting fraction obtained "
                  "from the gate through the map (22), normalized. (a) Full transition. (b) An 810 ps input pulse: "
                  "the gate turns back at 0.74 of its swing and $K_u$ reaches 0.56.", width_in=6.0))
@@ -247,12 +300,12 @@ def build(pkg: Package, d) -> dict:
            "of the table conducts when the gate is at level $g$. It is a curve against the gate, not against time.",
            "FirstParagraph"))
     A(para("Where the gate node can be probed, this curve can be measured, and no formula is needed. At each "
-           "instant of a full transition the gate level and the file's $K_u$ are read together (Fig. 5(a)); "
-           "plotting one against the other gives $K_u$ as a function of the gate (Fig. 5(b)). On the three "
+           "instant of a full transition the gate level and the file's $K_u$ are read together (Fig. 6(a)); "
+           "plotting one against the other gives $K_u$ as a function of the gate (Fig. 6(b)). On the three "
            "buffers where this was done the curve traced while the gate rises coincides with the one traced "
            "while it falls, within 0.07–0.11, so $K_u$ does depend on the gate alone, without memory."))
     A(pkg.figure(FIG / "fig_map.png",
-                 "Fig. 5. The map. (a) With the gate node of ex2 probed, the gate level (squares) and the file's "
+                 "Fig. 6. The map. (a) With the gate node of ex2 probed, the gate level (squares) and the file's "
                  "$K_u$ (circles) are read at the same instants of a full transition. (b) Plotting $K_u$ against "
                  "the gate gives the measured map; the dashed line is the formula (22) fitted to it, with "
                  "$(v_{t,map}, a) = (0.57, 0.64)$. (c) The three shapes offered by the method when the gate cannot "
@@ -269,7 +322,7 @@ def build(pkg: Package, d) -> dict:
               "0.6, 0.7 or 0.9 in the candidates; 0.60–0.78 measured"],
              ["$g_s$", "Gate level at which $M$ reaches 1", "1 in all results reported here"],
              ["$k_{off}, k_{on}, d_{off}, d_{on}$", "Settled levels of the file's $K_u$ and $K_d$", "close to 0 and 1"]],
-            [2300, 4600, 2700], "Table V: The symbols of the map (22)–(23)"))
+            [2300, 4600, 2700], "Table VI: The symbols of the map (22)–(23)"))
     A(para("Read from the inside out, $M$ does three things. Subtracting $v_{t,map}$ sets where the curve starts: "
            "below that gate level nothing conducts. Dividing by $g_s - v_{t,map}$ rescales the remainder so that "
            "it runs from 0 at the start to 1 at $g = g_s$; the clip keeps it there. The exponent $a$ bends the "
@@ -282,21 +335,21 @@ def build(pkg: Package, d) -> dict:
            "the output device, and no derivation of their values is offered. They are also distinct from the "
            "stage parameters $v_t$ and $p$ of (17), which describe the predriver. The formula follows the main "
            "rise of the measured map of ex2 within about 0.06 and does not reproduce its slow foot between "
-           "$g = 0.4$ and $0.57$ (Fig. 5(b))."))
+           "$g = 0.4$ and $0.57$ (Fig. 6(b))."))
     A(heading("3) Why the file does not contain the map", 3))
     A(para("The file gives $K_u$ against time. The map is $K_u$ against the gate. Converting one into the other "
-           "requires the gate against time, as in Fig. 5(a), and that is the one waveform an IBIS file does not "
+           "requires the gate against time, as in Fig. 6(a), and that is the one waveform an IBIS file does not "
            "have. The shape of the file's $K_u(t)$ is the shape of the map stretched by how fast the gate moved, "
            "and the two cannot be separated without the gate.", "FirstParagraph"))
     A(para("The method therefore does not obtain the map from the file. It offers three fixed shapes "
-           "(Fig. 5(c)) and leaves the choice among them to the stressed measurement (Section II-K). The three "
-           "are built-in constants (Table IV): (0.50, 0.70) lies near the middle of the three measured maps; "
+           "(Fig. 6(c)) and leaves the choice among them to the stressed measurement (Section II-K). The three "
+           "are built-in constants (Table V): (0.50, 0.70) lies near the middle of the three measured maps; "
            "(0.40, 0.60) and (0.40, 0.90) were retained from an earlier search scored on the same twelve test "
            "buffers. Their generality is untested, and this is the least well founded element of the method."))
     A(heading("4) From the gate waveform to the conducting fraction", 3))
     A(para("With a map chosen, the model's $K_u(t)$ is obtained by evaluating the two relations one after the "
-           "other: (19)–(21) give $G_{UP}(t)$, and (22) is applied to each of its values. Table VI does this "
-           "for a single stage after an input step; Fig. 6 does it for the fitted three-stage chain of ex2.",
+           "other: (19)–(21) give $G_{UP}(t)$, and (22) is applied to each of its values. Table VII does this "
+           "for a single stage after an input step; Fig. 7 does it for the fitted three-stage chain of ex2.",
            "FirstParagraph"))
     import numpy as _np
     import current_limited_stage_model as _cl
@@ -309,20 +362,20 @@ def build(pkg: Package, d) -> dict:
         _rows.append([f"{_tt:.2f}", f"{_gi:.2f}", "0 (gate below $v_{t,map}$)" if _ki == 0 else f"{_ki:.2f}"])
     A(table(["Time after the input step (ns)", "Gate $g$, from the stage law (19)", "$M(g)$, from the map (22)"],
             _rows, [3200, 3200, 3200],
-            "Table VI: Worked example: one stage ($s_{up} = 2$ per ns, $x_{lin} = 0.45$) read through the map "
+            "Table VII: Worked example: one stage ($s_{up} = 2$ per ns, $x_{lin} = 0.45$) read through the map "
             "($v_{t,map} = 0.57$, $a = 0.64$)"))
     A(para("The gate rises as a ramp of 2 per ns until it is within $x_{lin}$ of its rail and then approaches it "
            "exponentially. Nothing conducts until the gate passes 0.57, 0.29 ns after the step; the conducting "
            "fraction then rises quickly, because the map is steep just above its threshold.", "FirstParagraph"))
     A(pkg.figure(FIG / "fig_gate_to_ku.png",
-                 "Fig. 6. Construction of the conducting fraction on ex2 ($K = 3$, map shape (0.57, 0.64)). Left: the "
+                 "Fig. 7. Construction of the conducting fraction on ex2 ($K = 3$, map shape (0.57, 0.64)). Left: the "
                  "gate trajectory given by the stage law. Middle: the map (22); the dots are the gate values of the "
                  "left panel at six instants. Right: the resulting $K_u(t)$, normalized, with the same instants "
                  "marked. (a)–(c) Full transition, with the parameters of the fit (26); in (c) the model is "
                  "compared with the $K_u(t)$ of the IBIS file, and this comparison is the fit of Section II-I. "
                  "(d)–(f) An 810 ps input pulse, after calibration: the gate turns back at 0.74, the map is read "
                  "only up to that level, and $K_u$ reaches 0.56.", width_in=6.3))
-    A(para("The top row of Fig. 6 is the situation the file records. The gate sweeps its full range, the whole "
+    A(para("The top row of Fig. 7 is the situation the file records. The gate sweeps its full range, the whole "
            "map is read, and the result in (c) can be compared with the file. The bottom row is the situation "
            "the file does not record. The input is cut short, the gate turns back before reaching its rail, and "
            "only the lower part of the map is read. The conducting fraction in (f) rises to 0.56 and returns to "
@@ -342,7 +395,7 @@ def build(pkg: Package, d) -> dict:
     # ---------------- I. fitting ---------------------------------------------------------
     A(heading("I. Step 1: fitting the stage law through an assumed map"))
     A(para("The stage parameters are found by fitting, and the order of operations matters. First a map shape "
-           "is assumed, one of the three of Fig. 5(c); its two numbers are then frozen. Second, the stage "
+           "is assumed, one of the three of Fig. 6(c); its two numbers are then frozen. Second, the stage "
            "parameters, which set how fast the gate moves, are adjusted until the model's $K_u(t) = M(G_{UP}(t))$ "
            "lies on the $K_u(t)$ of the file. The map is an input to this fit and not a result of it.",
            "FirstParagraph"))
@@ -363,22 +416,62 @@ def build(pkg: Package, d) -> dict:
            "target is zero wherever $K_d$ turns on (an onset 250 ps early was observed on an open-drain test "
            "buffer).", "FirstParagraph"))
     A(pkg.figure(FIG / "fig_ku_fit.png",
-                 "Fig. 7. Result of the fit (26) with $x_{lin} = 0.45$: the file's normalized $K_u(t)$, the fitted "
+                 "Fig. 8. Result of the fit (26) with $x_{lin} = 0.45$: the file's normalized $K_u(t)$, the fitted "
                  "model, and the model's gate trajectory, which the file does not contain. (a) ex2, $K = 3$, map "
                  "shape (0.57, 0.64). (b) inv_chain, $K = 7$, map shape (0.49, 0.60).", width_in=6.0))
     A(para("*Example.* For ex2 with $K = 3$, map shape (0.57, 0.64) and $x_{lin} = 0.45$, (26) gives "
-           "$s_{up} = 2.190$/ns, $s_{dn} = 2.124$/ns and $v_t = 0.528$ at a residual of 0.023 (Fig. 7(a)). Three "
+           "$s_{up} = 2.190$/ns, $s_{dn} = 2.124$/ns and $v_t = 0.528$ at a residual of 0.023 (Fig. 8(a)). Three "
            "numbers are fitted, to a curve that the file already contains; no stressed data is used in this step."))
+    A(heading("What the fit actually does", 3))
+    A(para("*Where the information is.* The target of (26) spans 17 ns but is flat for almost all of it: zero "
+           "until the gate reaches the map's threshold, one once the output device is fully on, and the same "
+           "again on the way down. Everything the fit can learn is in the two edges, each about 0.7 ns wide on ex2 "
+           "(Fig. 9). The residual is an rms over the whole window, so a residual of 0.023 is a mismatch that is "
+           "accumulated almost entirely within those two edges.", "FirstParagraph"))
+    A(para("*What each number does.* Fig. 9(a)–(c) varies one fitted number at a time around the fitted "
+           "values. $s_{up}$ is the charging rate of every stage: a larger value brings the rising edge earlier and "
+           "makes it steeper, a smaller one delays and flattens it. $s_{dn}$ does the same for the falling edge. "
+           "$v_t$ is the level a stage's input must reach before the stage starts: at fixed rates it moves the "
+           "edge later or earlier without changing its steepness, because the delay between stages is the time "
+           "each stage's output takes to reach $v_t$. The three numbers therefore have distinct, visible jobs: "
+           "two slopes and one delay."))
+    _k = d["knobs"]
+    A(para("*How the search proceeds.* The minimization starts from a guess, computes the residual, moves the "
+           "three numbers in the direction that lowers it, and repeats, 800 times from each of three starting "
+           "points; the best end point is kept. Fig. 9(d) shows the same thing one number at a time, which the "
+           f"real search does not do but which shows what each number buys: from a first guess (residual "
+           f"{_k['first guess']:.3f}) adjusting $s_{{up}}$ fixes the rising edge ({_k['$s_{up}$ adjusted']:.3f}), "
+           f"adjusting $s_{{dn}}$ fixes the falling edge ({_k['$s_{dn}$ adjusted']:.3f}), and adjusting $v_t$ "
+           f"places the edges in time ({_k['$v_t$ adjusted: the fit']:.3f})."))
+    A(pkg.figure(FIG / "fig_fit_knobs.png",
+                 "Fig. 9. The fit (26) seen as three knobs, on ex2 ($K = 3$, map shape (0.57, 0.64), "
+                 "$x_{lin} = 0.45$). (a)–(c) The model's $K_u(t)$ as $s_{up}$, $s_{dn}$ and $v_t$ are varied "
+                 "one at a time around the fitted values, against the file's $K_u(t)$; (b) shows the falling edge "
+                 "at 10 ns. (d) A fit built one number at a time from a poor first guess; the real minimization "
+                 "moves all three together.", width_in=6.2))
+    A(para("*Why one stage is not enough.* With a single stage, one number sets both the delay and the edge: "
+           "$K_u$ starts when the gate passes $v_{t,map}$, at about $v_{t,map}/s_{up}$ after the input, and the "
+           "edge takes about $(1 - v_{t,map})/s_{up}$. On ex2 the file's $K_u(t)$ starts 1.1 ns after the input "
+           "edge and rises in 0.66 ns, which no single value of $s_{up}$ can give: the one-stage fit has a "
+           "residual of 0.083 against 0.023 for three stages (Table IX). With several identical stages the delay "
+           "is spent in the first stages and the edge belongs to the last, so delay and edge are set separately. "
+           "This is the reason for the chain, and it is also why the stage count cannot be read from the fit: "
+           "beyond the minimum number, more stages redistribute the same delay (Section II-J)."))
+    A(para("*What the fit decides and what it leaves open.* The fit fixes the two rates and, for the assumed "
+           "map and stage count, a threshold. It does not decide the map, the stage count or, as the next "
+           "subsection shows, even the threshold in any absolute sense: each of those can be changed and "
+           "compensated by the others without the file noticing."))
+
     A(heading("The fit succeeds whichever map is assumed", 3))
     A(para("A good fit does not show that the assumed map was right. If the map is made to start earlier, the "
            "fit delays the gate to compensate, and the composition $M(G_{UP}(t))$ still lands on the file's curve. "
-           "Table VII gives the residual of (26) on ex2 and inv_chain for six different shapes.", "FirstParagraph"))
+           "Table VIII gives the residual of (26) on ex2 and inv_chain for six different shapes.", "FirstParagraph"))
     _hdr = ["Map shape $(v_{t,map}, a)$"] + [f"({v:g}, {a_:g})" for v, a_ in d["shape_order"]]
     _tr = []
     for _dev in ("ex2", "inv_chain"):
         _tr.append([_dev] + [f"{d['shapes'][(_dev, v, a_)]['rms']:.4f}" for v, a_ in d["shape_order"]])
     A(table(_hdr, _tr, [2400] + [1200] * 6,
-            "Table VII: Residual of the fit (26) for six assumed map shapes ($x_{lin} = 0.45$; $K = 3$ for ex2, 7 for inv_chain)"))
+            "Table VIII: Residual of the fit (26) for six assumed map shapes ($x_{lin} = 0.45$; $K = 3$ for ex2, 7 for inv_chain)"))
     _e = [d["shapes"][("ex2", v, a_)]["rms"] for v, a_ in d["shape_order"]]
     _i = [d["shapes"][("inv_chain", v, a_)]["rms"] for v, a_ in d["shape_order"]]
     A(para(f"The residual varies by {100 * (max(_e) / min(_e) - 1):.0f} % on ex2 and "
@@ -387,12 +480,12 @@ def build(pkg: Package, d) -> dict:
            "largest residual. The file cannot choose the map.", "FirstParagraph"))
     _la, _ea = d["shapes"][("ex2", 0.6, 0.6)], d["shapes"][("ex2", 0.4, 0.6)]
     A(pkg.figure(FIG / "fig_ambiguity.png",
-                 "Fig. 8. Two assumed maps on ex2 ($K = 3$), each with the stage law fitted through it to the same "
+                 "Fig. 10. Two assumed maps on ex2 ($K = 3$), each with the stage law fitted through it to the same "
                  "file. (a) The two maps. (b) The gate trajectory the fit produces for each: the earlier map is "
                  "paired with a later gate. (c) Full transition: both reproduce the file's $K_u(t)$. (d) The same "
                  "two models driven by an 810 ps pulse, before any calibration: one passes the pulse, the other "
                  "extinguishes it.", width_in=6.2))
-    A(para("Fig. 8 shows what this means. Through the later-starting map (0.6, 0.6) the fit gives "
+    A(para("Fig. 10 shows what this means. Through the later-starting map (0.6, 0.6) the fit gives "
            f"$v_t = {_la['vt']:.3f}$; through the earlier-starting map (0.4, 0.6) it gives $v_t = {_ea['vt']:.3f}$, "
            "a gate that leaves later. For a full transition the two models are indistinguishable (residuals "
            f"{_la['rms']:.4f} and {_ea['rms']:.4f}). Driven by an 810 ps pulse they are not: the first delivers a "
@@ -404,7 +497,7 @@ def build(pkg: Package, d) -> dict:
     ex, iv = d["ku"][("ex2", "linear_const")], d["ku"][("inv_chain", "linear_const")]
     # ---------------- J. identifiability ---------------------------------------------------
     A(heading("J. What the file cannot determine"))
-    A(para("The fit (26) determines the rates well and the structure poorly. Table VIII and Fig. 9 give its "
+    A(para("The fit (26) determines the rates well and the structure poorly. Table IX and Fig. 11 give its "
            "residual as a function of the stage count for three of the twelve test buffers, each $K$ fitted "
            "independently. The transistor netlists of the test buffers are available, so the true stage count "
            "is known.", "FirstParagraph"))
@@ -415,9 +508,9 @@ def build(pkg: Package, d) -> dict:
         r = d["rms"][key]
         rws.append([name] + [f"{float(x):.4f}"[1:] for x in r["rms_by_K"].split()] + [r["netlist_K"]])
     A(table(hdr, rws, [1500] + [720] * 10 + [800],
-            "Table VIII: Residual of the fit (26) in the $K_u$ domain against the stage count $K$", size=16))
+            "Table IX: Residual of the fit (26) in the $K_u$ domain against the stage count $K$", size=16))
     A(pkg.figure(FIG / "fig_rms_vs_k.png",
-                 "Fig. 9. Residual of (26) against stage count for the thirteen predriver chains of the twelve test "
+                 "Fig. 11. Residual of (26) against stage count for the thirteen predriver chains of the twelve test "
                  "buffers (io_buf has two). Circles mark the netlist stage count; the thick segments mark the band "
                  "(27).", width_in=5.6))
     A(para("Two features are evident. First, $K = 1$ fails on ex2 and inv_chain: a single stage cannot produce "
@@ -433,9 +526,9 @@ def build(pkg: Package, d) -> dict:
            "the rail, where (17) does not depend on $p$; in fits of the individual probed stages every $p$ between 1 and 2 "
            f"reaches a residual of 0.002–0.007. *The saturation boundary:* if $x_{{lin}}$ is left free in (26) it settles at "
            f"{float(ex['x_lin']):.3f} on ex2 and {float(iv['x_lin']):.3f} on inv_chain, less than half the measured "
-           "$x_0$ of Table II, and replacing (18) by the drive-dependent boundary of (15) changes the residual by "
+           "$x_0$ of Table III, and replacing (18) by the drive-dependent boundary of (15) changes the residual by "
            "about 1 % on ex2 and not at all on inv_chain. The file cannot distinguish these alternatives, which is "
-           "why $x_{lin}$ and $p$ are normally held fixed (Table IV) rather than fitted."))
+           "why $x_{lin}$ and $p$ are normally held fixed (Table V) rather than fitted."))
     A(para("A fit with every stage free is worse than uninformative. On ex2 with $K = 2$ and all eight "
            "parameters free, the full-swing residual against the probed gate falls to 0.0046, below the 0.0066 of "
            "the identical-stage fit with the correct $K = 3$; it achieves this with one very slow stage and one "
@@ -459,18 +552,18 @@ def build(pkg: Package, d) -> dict:
            "each stage passes on. The candidates therefore agree on a full transition and disagree on a short "
            "pulse, and one measured short pulse can tell them apart.", "FirstParagraph"))
     _lo, _hi, _pk = d["stress"]
-    A(para("Fig. 10(b) shows how large the disagreement is. For ex2, the nine candidates of step 2, each fitted "
+    A(para("Fig. 12(b) shows how large the disagreement is. For ex2, the nine candidates of step 2, each fitted "
            "to the same file, were driven by the same 810 ps pulse. Their pad peaks range from "
            f"{_lo:.2f} to {_hi:.2f} V; the measured peak is {_pk:.2f} V. Some overshoot it by more than half, "
            "others extinguish the pulse altogether. The file alone gives no means of knowing which is right."))
     A(heading("2) What is measured", 3))
-    A(para("The measurement is the pad voltage for one short input pulse into a known load (Fig. 10(a)). Nothing "
+    A(para("The measurement is the pad voltage for one short input pulse into a known load (Fig. 12(a)). Nothing "
            "inside the buffer is observed. In the tests below the pulse is the one that reaches about 50 % of the "
            "buffer's settled swing into a 50 Ω, 2 pF load, and the measurement is a transistor-level "
            "simulation of the buffer; for a user of the method it would be a bench measurement or a simulation "
            "supplied by the vendor.", "FirstParagraph"))
     A(heading("3) How it is used", 3))
-    A(para("*Candidates (step 2).* The band (27) supplies three stage counts and Fig. 5(c) three map shapes. "
+    A(para("*Candidates (step 2).* The band (27) supplies three stage counts and Fig. 6(c) three map shapes. "
            "Each of the nine combinations has its own fit (26).", "FirstParagraph"))
     A(para("*Calibration of the threshold (step 3).* The stage threshold $v_t$ decides how much of a short pulse "
            "survives each stage, and so sets the height of the model's pad pulse; it is also the parameter the "
@@ -483,18 +576,18 @@ def build(pkg: Package, d) -> dict:
            "together within $[0.5, 2]$ instead. The threshold is used, and not the rates, because the rates were "
            "fitted to reproduce the full swing and moving them degrades it, whereas $v_t$ changes when each stage "
            "hands over without changing how fast it runs. After this step every candidate reproduces the measured "
-           "peak (Fig. 10(c)).", "FirstParagraph"))
+           "peak (Fig. 12(c)).", "FirstParagraph"))
     A(para("*Selection of the stage count and map shape (step 4).* Because calibration has forced the peak to "
            "match, the peak can no longer distinguish the candidates. They still differ in the rest of the "
-           "waveform, in when the pulse arrives and how it returns: in Fig. 10(c) the nine pulses arrive between "
+           "waveform, in when the pulse arrives and how it returns: in Fig. 12(c) the nine pulses arrive between "
            "0.11 ns early and 0.30 ns late. The candidate is chosen by the waveform error over the pulse and its "
            "return,"))
     A(equation("(K, v_{t,map}, a)^{\\star} = \\arg \\min~\\rms_{t \\in [t_f - 0.3~\\text{ns},~t_f + 1.5~\\text{ns}]} \\left[ V_{pad}^{model}(t) - V_{pad}^{meas}(t) \\right]", 29))
-    A(para("where $t_f$ is the falling edge of the input pulse (the shaded interval of Fig. 10(c)). The window "
+    A(para("where $t_f$ is the falling edge of the input pulse (the shaded interval of Fig. 12(c)). The window "
            "was chosen once and was not tuned. On ex2 the selected candidate ($K = 3$, shape (0.5, 0.7)) arrives "
            "7 ps early.", "FirstParagraph"))
     A(pkg.figure(FIG / "fig_stress_use.png",
-                 "Fig. 10. Use of the stressed measurement on ex2. (a) The measurement: pad voltage for an 810 ps "
+                 "Fig. 12. Use of the stressed measurement on ex2. (a) The measurement: pad voltage for an 810 ps "
                  "input pulse. (b) The nine candidates as fitted to the IBIS file, driven by the same pulse, before "
                  "the measurement is used; the dashed line is the measured peak. (c) After the threshold of each "
                  "candidate is calibrated on the peak (28): all reach the measured peak and differ elsewhere; the "
@@ -511,7 +604,7 @@ def build(pkg: Package, d) -> dict:
            "FirstParagraph"))
     A(para("The measurement can only choose among the candidates it is offered. If the true map is unlike all "
            "three shapes, or the true stage count lies outside the band, it selects the least wrong candidate, "
-           "not the right one. Fig. 10(d) and Section II-L test the outcome at pulse widths other than the one "
+           "not the right one. Fig. 12(d) and Section II-L test the outcome at pulse widths other than the one "
            "used here."))
 
     # ---------------- L. verification ------------------------------------------------------
@@ -536,14 +629,14 @@ def build(pkg: Package, d) -> dict:
              ["Stage law, $K$ = 3"] + [f3(v) for v in peaks(e, 3)],
              ["Stage law, $K$ = 2"] + [f3(v) for v in peaks(e, 2)],
              ["Linear superposition"] + [f3(v) for v in peaks(e, 3, "lin_max")]],
-            [3100] + [1300] * 5, "Table IX: Peak of the stressed gate, ex2 (fitted at full swing only)"))
+            [3100] + [1300] * 5, "Table X: Peak of the stressed gate, ex2 (fitted at full swing only)"))
     r3 = [r for r in e if int(r["K"]) == 3]
     worst3 = max(abs(float(r["pred_max"]) - float(r["meas_max"])) for r in r3)
     lin0 = float(r3[0]["lin_max"]) - float(r3[0]["meas_max"])
     k2 = peaks(e, 2)
     A(para(f"On ex2 the stage law with the netlist stage count is within {worst3:.2f} of the measured peak at "
-           f"every width, where linear superposition is off by {lin0:.2f} at the narrowest pulse (Table IX, "
-           f"Fig. 11(a)). The waveform error at the narrowest pulse is {float(r3[0]['rms']):.3f} for the stage law, "
+           f"every width, where linear superposition is off by {lin0:.2f} at the narrowest pulse (Table X, "
+           f"Fig. 13(a)). The waveform error at the narrowest pulse is {float(r3[0]['rms']):.3f} for the stage law, "
            f"from a full-swing fit residual of {float(r3[0]['full_rms']):.4f}. The stage count matters as Section "
            f"II-J predicts: $K = 2$ gives {min(k2):.2f}–{max(k2):.2f}, far below the measurement."))
     iv_rows = d["inv"]
@@ -554,10 +647,10 @@ def build(pkg: Package, d) -> dict:
             + [[f"Stage law, $K$ = {k}"] + [f3(v) for v in peaks(iv_rows, k)]
                + [f"{float(next(r for r in iv_rows if int(r['K']) == k)['full_rms']):.4f}"] for k in (7, 5, 3, 9) if k in have]
             + [["Linear superposition"] + [f3(v) for v in peaks(iv_rows, 7, "lin_max")] + [""]],
-            [2700] + [1050] * 5 + [1650], "Table X: Peak of the stressed gate, inv_chain (fitted at full swing only)"))
+            [2700] + [1050] * 5 + [1650], "Table XI: Peak of the stressed gate, inv_chain (fitted at full swing only)"))
     out["inv_table_done"] = have
     A(pkg.figure(FIG / "fig_gate_verify.png",
-                 "Fig. 11. Stressed gate of the transistor netlist against the stage law fitted at full swing only, "
+                 "Fig. 13. Stressed gate of the transistor netlist against the stage law fitted at full swing only, "
                  "and against linear superposition, at the narrowest, middle and widest of the five pulse widths. "
                  "(a) ex2. (b) inv_chain.", width_in=6.2))
     return out, t
@@ -572,7 +665,7 @@ def build_tail(pkg: Package, d, t):
     def swallowed(K):
         return sum(1 for v in peaks(iv, K) if v < 0.05)
 
-    txt = (f"On inv_chain (Table X, Fig. 11(b)) the stage law with the netlist stage count follows the measurement "
+    txt = (f"On inv_chain (Table XI, Fig. 13(b)) the stage law with the netlist stage count follows the measurement "
            f"at the three widest pulses (within {max(abs(x) for x in err7[2:]):.2f}) and undershoots at the two "
            f"narrowest, by {abs(err7[0]):.2f} at 104 ps. This is the partial-drive regime in which approximation A2 "
            "is active (Section II-M).")
@@ -598,7 +691,7 @@ def build_tail(pkg: Package, d, t):
     A(heading("2) The model's internal gate against the transistor's", 3))
     A(para("The file-only model is judged at the pad; its internal gate $G_{UP}$ is never fitted to anything "
            "and the method never observes a gate. On the two buffers whose gate was probed, the gate of the "
-           "selected file-only build can nevertheless be compared with the real one (Fig. 12, Table XI).",
+           "selected file-only build can nevertheless be compared with the real one (Fig. 14, Table XII).",
            "FirstParagraph"))
     _gi = d["gate_int"]
     _rows = []
@@ -608,12 +701,12 @@ def build_tail(pkg: Package, d, t):
                      + [f"{min(r['rms'] for r in _r):.2f}\u2013{max(r['rms'] for r in _r):.2f}"])
     _w = sorted({r["width_ps"] for r in _gi if r["device"] == "ex2"})
     _wi = sorted({r["width_ps"] for r in _gi if r["device"] == "inv_chain"})
-    A(table(["Buffer", "Narrowest", "", "", "", "Widest pulse", "Waveform rms"],
-            _rows, [1600, 1200, 1200, 1200, 1200, 1300, 1900],
-            "Table XI: Peak of the model's internal gate minus the peak of the probed gate, at the five "
+    A(table(["Buffer", "narrowest", "2nd", "3rd", "4th", "widest", "Waveform rms"],
+            _rows, [1500, 1400, 1100, 1100, 1100, 1400, 2000],
+            "Table XII: Peak of the model's internal gate minus the peak of the probed gate, at the five "
             f"stressed widths (ex2: {_w[0]}\u2013{_w[-1]} ps; inv_chain: {_wi[0]}\u2013{_wi[-1]} ps)"))
     A(pkg.figure(FIG / "fig_gate_internal.png",
-                 "Fig. 12. The internal gate of the selected file-only model against the probed gate of the "
+                 "Fig. 14. The internal gate of the selected file-only model against the probed gate of the "
                  "transistor netlist, at full swing and at the narrowest and widest stressed pulse. (a) ex2. "
                  "(b) inv_chain. The model was fitted to the IBIS file and one pad waveform only.", width_in=6.2))
     A(para("The model's gate has the height and shape of the real one at every width, although nothing in the "
@@ -623,7 +716,7 @@ def build_tail(pkg: Package, d, t):
            "difference at the pad. The structure of (19) therefore produces an internal gate that resembles the "
            "transistor's, while its numbers remain effective parameters and the internals remain approximate."))
     A(heading("3) Pad level: the complete method on twelve buffers", 3))
-    A(para("The complete procedure of Table III was applied to twelve test buffers: ex2, inv_chain and io_buf, and "
+    A(para("The complete procedure of Table IV was applied to twelve test buffers: ex2, inv_chain and io_buf, and "
            "nine variants of the first two. For each buffer the model was built from its IBIS file and from one transistor-level pad waveform "
            "at the pulse width giving about 50 % of the settled swing; $C_{comp}$ was taken from the file, reduced "
            "where the declared value implied a conducting fraction above unity. The model was then simulated at five "
@@ -633,7 +726,7 @@ def build_tail(pkg: Package, d, t):
            "entirely held out. HSPICE's native IBIS element with the same file is given for comparison.",
            "FirstParagraph"))
     A(pkg.figure(FIG / "fig_pad_waveforms.png",
-                 "Fig. 13. Pad voltage for the narrowest stressed pulse of three buffers: transistor-level reference, "
+                 "Fig. 15. Pad voltage for the narrowest stressed pulse of three buffers: transistor-level reference, "
                  "HSPICE native IBIS, and the proposed model built from the IBIS file and one stressed measurement. "
                  "The percentages are peak errors against the reference. Time is measured from the input edge.",
                  width_in=6.3))
@@ -645,9 +738,9 @@ def build_tail(pkg: Package, d, t):
     t1s = [x[2] for x in d["pad"]]
     A(table(["Buffer", "Netlist $K$", "Selected $K$", "Selected map shape", "Proposed: worst peak error (%)",
              "Native IBIS: worst peak error (%)"], rows, [1700, 1100, 1200, 1700, 2000, 1900],
-            "Table XII: Pad-level result on the twelve test buffers (worst of five stressed pulse widths)"))
+            "Table XIII: Pad-level result on the twelve test buffers (worst of five stressed pulse widths)"))
     A(pkg.figure(FIG / "fig_pad_summary.png",
-                 "Fig. 14. Worst stressed peak error at the pad for the twelve test buffers.", width_in=6.3))
+                 "Fig. 16. Worst stressed peak error at the pad for the twelve test buffers.", width_in=6.3))
     live = [x[1] for x in d["pad"] if not x[3]]
     A(para(f"The proposed model is within 10 % on all twelve buffers (range {min(t1s):.1f}–{max(t1s):.1f} %, "
            f"mean {sum(t1s) / len(t1s):.1f} %). On the seven buffers for which the native IBIS element produced a "
@@ -676,17 +769,17 @@ def build_tail(pkg: Package, d, t):
     A(heading("M. Summary of approximations"))
     A(table(["Label", "Approximation", "Introduced at", "What it removes", "Evidence"],
             [["A0", "One $V_{TH}$, $\\alpha$, $V_{D0}$ for both devices of a stage", "(13)–(14)",
-              "Per-device parameters", "As in [1, Sec. VI]. Table II: the N and P devices differ ($x_0$ 0.34 against 0.57 on inv_chain)"],
-             ["A1", "$p$ in place of $\\alpha$, with $p = 1$", "(17)", "The measured $\\alpha$ (Table II)",
+              "Per-device parameters", "As in [1, Sec. VI]. Table III: the N and P devices differ ($x_0$ 0.34 against 0.57 on inv_chain)"],
+             ["A1", "$p$ in place of $\\alpha$, with $p = 1$", "(17)", "The measured $\\alpha$ (Table III)",
               "Not identifiable from the file (Section II-J)"],
              ["A2", "$x_0 g^{\\alpha/2} \\to x_{lin}$, with $x_{lin} = 0.45$", "(18)",
               "Drive dependence of the saturation boundary",
-              "Not identifiable from the file (Section II-J); candidate cause of the inv_chain undershoot in Table X"],
+              "Not identifiable from the file (Section II-J); candidate cause of the inv_chain undershoot in Table XI"],
              ["A3", "$K$ identical normalized stages", "(20)", "$4(K - 1)$ free parameters",
               "Free fit fails (Section II-J); $K$ selected by (29)"],
              ["A4", "Map shape taken from a grid of three", "(22), (26)", "Trade-off between gate and map",
               "Selected by (29); grid chosen on the test buffers"]],
-            [650, 2700, 1300, 2150, 2800], "Table XIII: Approximations of the model", size=16))
+            [650, 2700, 1300, 2150, 2800], "Table XIV: Approximations of the model", size=16))
     A(para("Everything else in (19) is inherited from (1) and (2)–(5): the threshold, the constant-current "
            "ramp, the straight-line resistive tail and the two-device structure. Equation (24) is the existing "
            "converter's and is unchanged."))
@@ -725,19 +818,19 @@ def build_tail(pkg: Package, d, t):
     A(para("*Sources.* Every statement in Sections II-F to II-M was checked against the code and result files of "
            "the project; the builder script of this document lists the file behind each. Reference [1] was read "
            "in full: equations (2)–(5) here are its (2)–(4), the straight-line triode region of (6) "
-           "is its own, the single-stage response of Fig. 2(c) is its Appendix B, and approximation A0 is its "
+           "is its own, the single-stage response of Fig. 3(c) is its Appendix B, and approximation A0 is its "
            "Section VI. Reference [3] is given as it appears in the reference list of [1]. Reference [2] is "
            "given as it appears in the bibliography of Leventhal and Green, *Semiconductor Modeling* (Springer, "
            "2006); its issue and page numbers were not available for checking and are omitted.",
            "FirstParagraph"))
-    A(para("*Regenerated numbers.* Table X was regenerated for this document. The earlier committed table had been "
-           "produced with an explicit-Euler integrator that was later replaced (Section II-G); ex2 (Table IX) is "
+    A(para("*Regenerated numbers.* Table XI was regenerated for this document. The earlier committed table had been "
+           "produced with an explicit-Euler integrator that was later replaced (Section II-G); ex2 (Table X) is "
            "unaffected to the third decimal for $K = 3$."))
     A(para("*Open points.* (1) A drive-dependent boundary (15) in place of A2 reduces the inv_chain undershoot at "
            "the gate (mean peak error 0.077 to 0.016) but is neutral on ex2 and cannot be identified in the $K_u$ "
-           "domain, so it has not been adopted; fixing $x_{lin}$ per buffer from a measured $x_0$ (Table II) is "
+           "domain, so it has not been adopted; fixing $x_{lin}$ per buffer from a measured $x_0$ (Table III) is "
            "untested at the pad. (2) The pad-level score includes the calibration width. (3) Pulse trains, "
-           "low-going pulses and other loads and corners are not covered by Table XII."))
+           "low-going pulses and other loads and corners are not covered by Table XIII."))
     return t
 
 
@@ -796,16 +889,60 @@ def main() -> int:
         body.insert(pos + j, new)
     insert_after("Equation (7) is the device model", ins["after_eq7"])
     insert_after("Comparing (19) with (15) term by term", ins["after_eq19"])
+
+    def set_text(el, new):
+        for r in list(el):
+            if etree.QName(r).localname != "pPr":
+                el.remove(r)
+        for new_el in frag(f"<w:p>{new}</w:p>"):
+            for child in list(new_el):
+                if etree.QName(child).localname != "pPr":
+                    el.append(child)
+
+    from stage_law_docx import inline
+    for k in body:
+        st = k.find(f"{{{W}}}pPr/{{{W}}}pStyle")
+        sid = st.get(f"{{{W}}}val") if st is not None else ""
+        if sid == "Title":
+            set_text(k, inline("A Stage-Law Model of the IBIS Predriver: Derivation, Fitting and Verification"))
+        elif sid == "Date":
+            set_text(k, inline("October 9, 2026"))
+        elif sid == "Heading1" and text(k).startswith("II. Stage Model Derivation"):
+            set_text(k, inline("II. The Stage-Law Buffer Model"))
+        elif text(k).startswith("This section derives the stage law"):
+            set_text(k, inline(
+                "This section presents the stage law, the model of the predriver used in this work, derived from "
+                "the \u03b1-power law MOSFET model [1], and the buffer model built on it. The preliminaries state "
+                "the problem and the terms; Sections II-A to II-E derive the law; Sections II-F to II-M build the "
+                "buffer model, fit it to an IBIS file and one measurement, and verify it. Equations are numbered "
+                "consecutively, the approximations are summarized in Section II-M, and notation is collected in "
+                "Table I."))
+    head_a = next(k for k in body if text(k).startswith("A. Node dynamics"))
+    for new in frag(ins["prelim"]):
+        head_a.addprevious(new)
+    # Section C: why u is measured downward, and that v_t changes meaning later
+    for tnode in body.iter(f"{{{W}}}t"):
+        if tnode.text and "fully turns on the working (pull-up) device" in tnode.text:
+            tnode.text = tnode.text.replace(
+                "fully turns on the working (pull-up) device",
+                "fully turns on the working (pull-up) device: for a rising output the pull-up PMOS does the "
+                "work, and it is driven harder as the input falls, so $u$ counts how far the input has come "
+                "down from the supply".replace("$u$", "u"))
+            break
+    # the equation number is a delimiter object, so itertext gives "...x0...9" without the parentheses
+    eq9 = next(k for k in body if "x0" in text(k).replace(" ", "") and text(k).rstrip().endswith("9"))
+    pos = list(body).index(eq9)
+    for j, new in enumerate(frag(para(
+            "A note on $v_t$, because the symbol changes meaning. In (9) it is the device threshold as a fraction "
+            "of the supply, 0.14\u20130.33 for the devices of Table III. From Section II-I onward it is the "
+            "threshold of a modeled stage, fitted to the file and then calibrated, and its fitted values "
+            "(0.03\u20130.53 across the test buffers) are not device thresholds. The same symbol is kept because "
+            "it plays the same role in (19).", "FirstParagraph")), 1):
+        body.insert(pos + j, new)
     for new in frag("".join(tail)):
         sect.addprevious(new)
 
-    # the intro pointed at the old section letter for the approximations
-    n = 0
-    for tnode in body.iter(f"{{{W}}}t"):
-        if tnode.text and "Section II-G" in tnode.text and "isolated" in tnode.text:
-            tnode.text = tnode.text.replace("Section II-G", "Section II-M")
-            n += 1
-    assert n == 1, n
+    # (the intro paragraph is rewritten above, so the old 'Section II-G' pointer is gone with it)
     tree.write(str(doc_xml), xml_declaration=True, encoding="UTF-8", standalone=True)
     pkg.finish(OUT)
     print(f"wrote {OUT}  ({OUT.stat().st_size / 1024:.0f} kB, {len(pkg.images)} figures)")

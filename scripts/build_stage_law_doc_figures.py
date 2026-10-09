@@ -69,6 +69,99 @@ def prior(g, vt, a, gs=1.0):
     return np.clip((np.asarray(g, float) - vt) / (gs - vt), 0.0, 1.0) ** a
 
 
+# ------------------------------------------------------------------ 0. the problem
+def fig_problem():
+    """What goes wrong. (a) ex2's pad for a complete transition - the situation an IBIS file
+    records. (b) The same buffer for an 810 ps input pulse: the transistor against HSPICE's
+    native IBIS model of the same file."""
+    import gate_ramp_prototype  # noqa: F401
+    import build_0917_deck_figures as f17
+    import build_0924_deck_figures as b24
+    import predriver_stage_probe as psp
+    full = psp.parse_tr0(cl.ST / "ex2" / "full" / "run.tr0")
+    tf = np.asarray(full["time"], float) * 1e9 - 5.0
+    sig = psp.signals(full, ["v(in_dig)", "v(pad_sp)"])
+    t_si, si, _ = f17.transistor_pad("ex2", 810)
+    t_si = t_si - 5.0
+    d = f17.read(f17.MATRIX / "delay_cmd" / "waveforms" / "ex2_short_high_w810ps.csv")
+    x = d["time_ns"] - 5.0
+    e_nat, _ = b24._peak_err(x, d["hspice_pad"], t_si, si, 0.81)
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(1, 2, figsize=(W, 2.5), gridspec_kw={"wspace": 0.28})
+        a = ax[0]
+        a.plot(tf, sig["v(in_dig)"], color=GREY, lw=1.0, label="input pin")
+        a.plot(tf, sig["v(pad_sp)"], color=K_, lw=2.2, label="pad, transistor netlist")
+        a.set_xlim(-0.5, 6); a.set_ylim(-0.3, 3.6)
+        a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("voltage (V)")
+        a.set_title("(a) a complete transition: what the file records", fontsize=8.5)
+        a.legend(frameon=False, loc="lower right", fontsize=7)
+        b = ax[1]
+        b.plot(t_si, si, color=K_, lw=2.2, label="pad, transistor netlist")
+        b.plot(x, d["hspice_pad"], color=BLUE, lw=1.6, ls=(0, (1.4, 1.4)), label=f"native IBIS model ({e_nat:+.0f} % on the peak)")
+        b.annotate("", (0.81, -0.22), (0, -0.22), arrowprops=dict(arrowstyle="<|-|>", color="#555555", lw=1))
+        b.text(0.4, -0.3, "810 ps input pulse", ha="center", va="top", fontsize=7)
+        b.set_xlim(-0.5, 3.0); b.set_ylim(-0.5, 2.0)
+        b.set_xlabel("time from the input edge (ns)")
+        b.set_title("(b) a short pulse: the file's model fails", fontsize=8.5)
+        b.legend(frameon=False, loc="upper left", fontsize=7)
+        save(fig, "fig_problem")
+
+
+# ------------------------------------------------------------------ 5c. the fit, seen as knobs
+def fig_fit_knobs():
+    """What each fitted number does to the model's K_u(t), against the file's curve (ex2,
+    K = 3, map (0.57, 0.64), x_lin = 0.45), and how a fit progresses from a first guess."""
+    sf = ROOT / "results" / "stage_law_doc_2026-10-01" / "shape_from_file"
+    d = np.load(sf / "target_ex2.npz")
+    u, target = d["u"], d["target"]
+    t = np.arange(4.0, 21.0, cl.DT) - 5.025
+    p = EX2
+    base = (p["s_up"], p["s_dn"], p["vt_fit"], p["x_lin"])
+
+    def ku(s_up, s_dn, vt, xl=0.45):
+        return prior(chain_stages(u, s_up, s_dn, vt, xl, 3)[-1], *p["shape"])
+
+    def rms(y):
+        return float(np.sqrt(np.mean((y - target) ** 2)))
+
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(2, 2, figsize=(W, 4.6), gridspec_kw={"wspace": 0.22, "hspace": 0.55})
+        panels = ((ax[0][0], "s_up", (1.1, 2.19, 4.4), (0, 3.0), "(a) $s_{up}$ sets the rising edge"),
+                  (ax[0][1], "s_dn", (1.06, 2.12, 4.2), (10.0, 13.0), "(b) $s_{dn}$ sets the falling edge"),
+                  (ax[1][0], "vt", (0.30, 0.528, 0.65), (0, 3.0), "(c) $v_t$ sets the delay between stages"))
+        shades = ("#9CC8C6", TEAL, "#0B5F5C")
+        for a, name, vals, xr, title in panels:
+            a.plot(t, target, color=K_, lw=3.0, alpha=0.35, label="file $K_u(t)$")
+            for v, c in zip(vals, shades):
+                s_up, s_dn, vt = base[0], base[1], base[2]
+                if name == "s_up":
+                    s_up = v
+                elif name == "s_dn":
+                    s_dn = v
+                else:
+                    vt = v
+                y = ku(s_up, s_dn, vt)
+                lab = {"s_up": f"$s_{{up}}$ = {v:g}/ns", "s_dn": f"$s_{{dn}}$ = {v:g}/ns", "vt": f"$v_t$ = {v:g}"}[name]
+                a.plot(t, y, color=c, lw=1.5, label=f"{lab}  (rms {rms(y):.3f})")
+            a.set_xlim(*xr); a.set_ylim(-0.05, 1.12)
+            a.set_title(title, fontsize=8.5)
+            a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("$K_u$")
+            a.legend(frameon=False, fontsize=6.4, loc="center right" if name != "s_dn" else "center left")
+        a = ax[1][1]
+        a.plot(t, target, color=K_, lw=3.0, alpha=0.35, label="file $K_u(t)$")
+        steps = ((8.0, 8.0, 0.40, "first guess"), (2.19, 8.0, 0.40, "$s_{up}$ adjusted"), (2.19, 2.12, 0.40, "$s_{dn}$ adjusted"),
+                 (2.19, 2.12, 0.528, "$v_t$ adjusted: the fit"))
+        for (s_up, s_dn, vt, lab), c in zip(steps, ("#BBBBBB", "#888888", "#4FB3AF", RED)):
+            y = ku(s_up, s_dn, vt)
+            a.plot(t, y, color=c, lw=1.5 if lab.endswith("fit") else 1.2, label=f"{lab}  (rms {rms(y):.3f})")
+        a.set_xlim(0, 3.0); a.set_ylim(-0.05, 1.12)
+        a.set_title("(d) a fit, one number at a time", fontsize=8.5)
+        a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("$K_u$")
+        a.legend(frameon=False, fontsize=6.4, loc="center right")
+        save(fig, "fig_fit_knobs")
+    return {lab: rms(ku(s_up, s_dn, vt)) for s_up, s_dn, vt, lab in steps}
+
+
 # ------------------------------------------------------------------ 1. the device
 def fig_device():
     import device_alpha_extract as dae
@@ -777,7 +870,7 @@ def fig_pad_summary():
     return devs, nat, t1, dead
 
 
-ALL = (fig_device, fig_stage_law, fig_blocks, fig_chain, fig_map, fig_gate_to_ku, fig_ku_fit,
+ALL = (fig_problem, fig_fit_knobs, fig_device, fig_stage_law, fig_blocks, fig_chain, fig_map, fig_gate_to_ku, fig_ku_fit,
        fig_ambiguity, fig_stress_use, fig_gate_internal, fig_rms_vs_k,
        fig_calibration, fig_gate_verify, fig_pad_waveforms, fig_pad_summary)
 

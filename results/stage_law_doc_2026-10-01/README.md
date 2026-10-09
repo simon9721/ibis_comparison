@@ -148,3 +148,32 @@ ever fitted - but they are not the same waveform.
 - Section L gains "2) The model's internal gate against the transistor's" (Table XI, Fig. 12,
   from `gate_internal_check.py`): the file-only model's gate is 0.03-0.08 low and 12-74 ps
   early against the probed gate, with a faster return on ex2.
+
+## Read-through for a first-time reader; the fit walked through (2026-10-09)
+
+A read of the whole document as someone with minimum background would read it. Five changes,
+all in `build_stage_law_doc.py` (figures in `build_stage_law_doc_figures.py`):
+
+- **Opening page.** "Preliminaries: the problem, the idea and the terms" before Section A: what
+  an IBIS file contains and what the existing converter does with it; the problem, with
+  `fig_problem` (Fig. 1: ex2's complete transition against an 810 ps pulse, native IBIS +71 %
+  on the peak); the idea in one paragraph; Table II of the terms used throughout; and a
+  warning that three thresholds (V_TH, v_t, v_t,map) and three exponents (alpha, p, a) appear.
+  Title and date updated; the Section II intro now points to the preliminaries.
+- **Symbols that change meaning.** Section C: why u is measured downward from the supply (the
+  pull-up PMOS is driven harder as the input falls); a note after (9) that v_t is a device
+  threshold there (0.14-0.33) and an effective fitted number from Section I onward (0.03-0.53).
+- **"What the fit actually does"** (Section I, `fig_fit_knobs`, Fig. 9): where the information
+  is (the two edges, about 0.7 ns each of a 17 ns window); what each of the three numbers does,
+  one varied at a time around the ex2 fit (s_up: rising edge; s_dn: falling edge; v_t: the
+  delay); how the search proceeds, and a fit built one number at a time from a poor first guess
+  (rms 0.296 -> 0.201 -> 0.060 -> 0.023); why one stage is not enough (one-stage residual 0.083
+  against 0.023, because one rate cannot give both a 1.1 ns delay and a 0.66 ns edge); what the
+  fit decides and what it leaves open. Figures 1-16 and Tables II-XIV renumbered.
+- **Parts and steps.** Section F now has "six parts", and "steps" is reserved for the numbered
+  procedure of Table IV.
+- **Table XII header** names the five stressed widths (narrowest ... widest) instead of blank
+  columns.
+
+Rendered through Word: 26 pages, 16 figures, 14 tables. Delivered as
+`\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_derivation_v2.docx`.
