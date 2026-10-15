@@ -189,3 +189,56 @@ The kept draft text defined h(x) = g(x)^p as if it were a new function and wrote
 - A2: the boundary x_0 g^(alpha/2) is replaced by a constant that does not depend on the gate.
   It would equal x_0 for a known device, but the model never knows the device, which is why the
   constant has its own name; "x_lin = x_0" removed from (18). Table I entry updated.
+
+## Sections F onward rewritten for a first-time reader; the fit walked through (2026-10-15)
+
+Everything after the stage law (19) was rebuilt around one through-line, with seven new
+figures and four new tables, all from stored results. Figures 1-23, Tables I-XVIII and the
+section letters are now numbered by a registry in the builder, so cross-references cannot
+drift. The letters moved: F road map, G chain, H map, I target (new), J fit, K what the file
+cannot determine, L the stressed measurement, M the procedure end to end on ex2 (new),
+N verification, O approximations.
+
+- **F, the road map.** The pieces (signal path), what is known / assumed / fitted, the five
+  steps one paragraph each with `fig_workflow` (file / assumed / fitted / measured colour-coded),
+  and a note that the fit figures use ex2's measured map and C_comp while the procedure uses
+  the file-only settings (2.64 pF, three candidate shapes).
+- **G, the chain.** A bucket-and-pour paragraph with the handover times of the fitted ex2 chain
+  (0.24, 0.66 ns; gate reaches the map threshold at 1.11 ns against 1.07 ns for the file's
+  Ku(t) leaving zero).
+- **I, the target** (new section, `fig_target`): the file's I-V tables and V-T waveforms, the
+  converter's two-fixture balance equation and its solved Ku(t), Kd(t), the existing model's
+  full-swing Ku against that solution (rms 0.015 after alignment), and the normalised target
+  (25) with the chain input.
+- **J, the fit**, in eight parts: the question (Table VIII: status of every quantity in step 1);
+  the score (`fig_fit_score`: the gap for a poor trial, 0.296, and for the fit, 0.023, and the
+  difference over the window); the knobs (Fig. 11); how the minimum is found (`fig_fit_search`
+  from `fit_search.py`: the residual landscape over (s_up, v_t) and (s_up, s_dn) and the three
+  Nelder-Mead runs - only the start at 2/ns reaches 0.0233, the start at 8/ns stops at 0.066 on
+  the v_t bound and the start at 30/ns at 0.22 with s_dn = 52/ns, so the three starts are not
+  decoration; the runs took 100, 132 and 142 evaluations, not 800 iterations); why several
+  stages (`fig_one_vs_chain`: the best K = 1 fit, 0.083, cannot be both late and steep; the
+  three-stage handovers); the result on ex2 and inv_chain; the result on all twelve buffers
+  with the file-only settings (`fig_fit_all`, Table IX, `fit_all.csv`: residuals 0.006-0.033,
+  7 of 12 fitted v_t on the 0.7 bound and lowered by calibration, io_buf calibrated through the
+  rate scale x1.10); the six-shape ambiguity; what the fit leaves open.
+- **K** opens in plain words (two edges fix two rates and one delay).
+- **L** gains `fig_calib_mech` from `calib_iterations.py`: the peak error against v_t from a
+  dense ngspice sweep (+40 % at 0, +59 % near 0.25, -97 % at 0.7), the ten bisection iterations
+  numbered, the brackets, and four pad waveforms; the re-run reproduces the stored v_t = 0.632.
+- **M, the ledger** (new): Table XII (ex2 through steps 0-4: declared 5.0 pF -> 2.64 pF by the
+  overshoot knee, residual vs K, band {3, 4, 5}, measured peak 0.77 V, candidate peaks 0.01-1.28
+  V before calibration, all within 2.5 % after, rms (29) 56-400 mV, selected K = 3 (0.5, 0.7)
+  at 56 mV, worst 8.3 %) and Table XIII (the nine candidates with their fitted numbers, fit
+  residual, peak before, v_t after, peak error, rms, lag, worst over five widths; `ledger_ex2.csv`).
+  The K = 4 and 5 builds would have scored 2.3-3.5 %, so the selector costs 6 points on ex2.
+- The selected candidates in Table IX / Fig. 15 are those of the waveform-rms selector (29),
+  the same as the pad table (ex2_weak K3 (0.5, 0.7), io_buf K1 (0.5, 0.7)); step8_picks.csv
+  holds the timing selector's picks, which differ on those two.
+- Open point (4) added: two of three starts stop in side minima; more starts or a global stage
+  untried.
+
+Rendered through Word: 36 pages, 515 equations, 23 figures, 18 tables. Delivered as
+`\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_derivation_v2.docx`. The raws of
+`calib_iterations/` and `before_calibration/` are compressed in place (`compress_raws.py`).
+A manim animation of the same flow is in `results/stage_law_flow_animation_2026-10-15/`.
