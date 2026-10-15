@@ -242,3 +242,33 @@ Rendered through Word: 36 pages, 515 equations, 23 figures, 18 tables. Delivered
 `\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_derivation_v2.docx`. The raws of
 `calib_iterations/` and `before_calibration/` are compressed in place (`compress_raws.py`).
 A manim animation of the same flow is in `results/stage_law_flow_animation_2026-10-15/`.
+
+## Paper layout: stage_law_paper_v3.docx (2026-10-15)
+
+Reviewed the 36-page v2 as a referee and rebuilt it as a paper. The findings that drove it:
+it read as a chapter (no abstract, no introduction with contributions, no conclusion; the
+problem statement inside a "Preliminaries" block; limitations stated four times); 23 figures
+and 18 tables with much of the evidence shown twice (rms against K as table and figure; the
+pad result as table, bar chart and waveforms; gate verification as two tables, a figure and an
+internal-gate table and figure; the fit as six figures); the running example switching between
+the probed-map setting and the file-only setting without one clear statement; captions
+carrying explanation that belongs in the text.
+
+v3 is IEEE-style: Abstract; I Introduction (the problem, the idea, four contributions, the
+test set, organization, Table I notation); II The Stage Law (the kept derivation A-E with the
+device table, the v_t note and A1/A2); III The Buffer Model (signal path, chain, map, pad
+current); IV Identification from the File and One Measurement (overview with the workflow and
+procedure table, step 0 the target, step 1 the fit with the knobs and the search, what the file
+cannot determine, steps 2-4 with the calibration and the selection, ex2 end to end);
+V Verification (gate level, pad level, limits of the evidence); VI Discussion (approximations
+and limits, open points); VII Conclusion; References. 24 pages, 16 figures, 9 tables, 363
+equation objects. Dropped from v2: the device I-V figure (Table II keeps its numbers), the
+residual-pictured, one-vs-chain, ku-fit, twelve-panel fit and internal-gate figures, the bar
+chart, the terms table, the worked-example table, the fit-status table, the rms-vs-K table, the
+ledger's step table, the two separate gate tables (merged into one) and the "Remarks for the
+manuscript" (this README holds them). `fig_target` and `fig_calib_mech` were cut to two panels.
+Tables keep their caption and header with the first row (a header is never orphaned).
+
+The builder (`scripts/build_stage_law_doc.py`) now writes v3 only; v2 stays committed as the
+chapter-style version and is not rebuilt. Delivered as
+`\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v3.docx`.

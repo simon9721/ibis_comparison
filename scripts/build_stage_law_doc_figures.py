@@ -1063,8 +1063,8 @@ def fig_workflow():
 
 # ------------------------------------------------------------------ I. the target
 def fig_target():
-    """Where the fit's target comes from: ex2's IBIS tables and waveforms, the converter's solved
-    Ku(t), Kd(t), the shipped model's full-swing Ku against that solution, and the normalised
+    """Where the fit's target comes from: ex2's two-fixture V-T waveforms, the converter's solved
+    Ku(t), Kd(t), the existing model's full-swing Ku against that solution, and the normalised
     target (25). Returns the alignment shift and the rms between solution and model."""
     import gate_ramp_prototype as gp
     from pybis2spice import pybis2spice as pb
@@ -1073,12 +1073,11 @@ def fig_target():
     ib = base / "input_ccomp.ibs"
     m, c = gp.ibis_names(ib)
     dm = pb.DataModel(pb.get_ibis_model_ecdtools(str(ib)), model_name=m, component_name=c)
-    vdd = float(dm.v_range[0])
     kr = pb.solve_k_params_output(dm, 1, "Rising")
     kf = pb.solve_k_params_output(dm, 1, "Falling")
     raw = sl.parse_ngspice_raw(base / "shipped" / "full" / "run.raw")
     tf = sl.time_ns(raw)
-    kb, kdb = sl.signal(raw, "v(x1.kugate_base)"), sl.signal(raw, "v(x1.kdgate_base)")
+    kb = sl.signal(raw, "v(x1.kugate_base)")
     grid, u, target, t_on = shipped_target("ex2", base / "shipped" / "full" / "run.raw")
 
     def t50(t, y):
@@ -1095,43 +1094,28 @@ def fig_target():
     ov = (tau_r + shift_r >= 4.0) & (tau_r + shift_r <= 12.5)
     rms_r = float(np.sqrt(np.mean((np.interp(tau_r[ov] + shift_r, tf, kb) - ku_r[ov]) ** 2)))
     with plt.rc_context(RC):
-        fig, ax = plt.subplots(2, 2, figsize=(W, 4.6), gridspec_kw={"wspace": 0.3, "hspace": 0.55})
-        a = ax[0][0]
-        v = np.linspace(-0.5, vdd + 1.0, 400)
-        ipu = np.interp(vdd - v, dm.iv_pullup[:, 0], dm.iv_pullup[:, 1]) * 1e3   # table voltage = V_DD - V_pad
-        ipd = np.interp(v, dm.iv_pulldown[:, 0], dm.iv_pulldown[:, 1]) * 1e3
-        a.plot(v, -ipu, color=TEAL, lw=1.7, label="pull-up table $I_{PU}$ (fully on)")
-        a.plot(v, ipd, color=BLUE, lw=1.7, label="pull-down table $I_{PD}$ (fully on)")
-        a.axhline(0, color="#999999", lw=0.6)
-        a.set_xlim(-0.5, vdd + 1.0); a.set_xlabel("pad voltage (V)"); a.set_ylabel("current (mA)")
-        a.set_title("(a) the I–V tables", fontsize=8.5)
-        a.legend(frameon=False, fontsize=6.6, loc="upper right")
-        b = ax[0][1]
+        fig, ax = plt.subplots(1, 2, figsize=(W, 2.5), gridspec_kw={"wspace": 0.28, "width_ratios": (0.85, 1.15)})
+        b = ax[0]
         for i, (wf, lab) in enumerate(zip(dm.vt_rising, ("rising, fixture 0 V", "rising, fixture 3.3 V"))):
             b.plot(wf.data[:, 0] * 1e9, wf.data[:, 1], color=(TEAL, "#0B5F5C")[i], lw=1.5, label=lab)
         for i, (wf, lab) in enumerate(zip(dm.vt_falling, ("falling, fixture 0 V", "falling, fixture 3.3 V"))):
             b.plot(wf.data[:, 0] * 1e9, wf.data[:, 1], color=(BLUE, "#143E63")[i], lw=1.5, ls="--", label=lab)
         b.set_xlim(0, 8); b.set_xlabel("table time (ns)"); b.set_ylabel("pad voltage (V)")
-        b.set_title("(b) the V–T waveforms (50 Ω fixtures)", fontsize=8.5)
-        b.legend(frameon=False, fontsize=6.4, loc="center right")
-        c = ax[1][0]
-        c.plot(tau_r + shift_r - 5.0, ku_r, color=K_, lw=2.4, alpha=0.35, label="$K_u$ solved from (b), rising")
-        c.plot(tau_r + shift_r - 5.0, kd_r, color=K_, lw=2.4, alpha=0.35, ls="--", label="$K_d$ solved, rising")
-        c.plot(tau_f + shift_f - 5.0, ku_f, color=K_, lw=2.4, alpha=0.35)
-        c.plot(tf - 5.0, kb, color=TEAL, lw=1.3, label="existing model, $K_u$ (full-swing run)")
-        c.plot(tf - 5.0, kdb, color=BLUE, lw=1.0, ls="--", label="existing model, $K_d$")
-        c.set_xlim(-1, 16); c.set_ylim(-0.1, 1.15); c.set_xlabel("time from the input edge (ns)"); c.set_ylabel("conducting fraction")
-        c.set_title(f"(c) $K_u(t)$, $K_d(t)$: solution and model (rms {rms_r:.3f})", fontsize=8.5)
-        c.legend(frameon=False, fontsize=6.2, loc="center right")
-        d = ax[1][1]
-        d.plot(grid - 5.0, u, color=GREY, lw=1.0, label="chain input $u_1(t)$ (20)")
-        d.plot(grid - 5.0, target, color=K_, lw=2.2, label="target $\\hat{K}_u(t)$ (25)")
+        b.set_title("(a) the file's V–T waveforms (50 Ω fixtures)", fontsize=8.5)
+        b.legend(frameon=False, fontsize=6.2, loc="center", bbox_to_anchor=(0.66, 0.7))
+        c = ax[1]
+        c.plot(tau_r + shift_r - 5.0, ku_r, color="#9A9A9A", lw=3.2, label="$K_u$ solved from (a)")
+        c.plot(tau_r + shift_r - 5.0, kd_r, color="#9A9A9A", lw=3.2, ls="--", label="$K_d$ solved from (a)")
+        c.plot(tau_f + shift_f - 5.0, ku_f, color="#9A9A9A", lw=3.2)
+        c.plot(tf - 5.0, kb, color=TEAL, lw=1.2, label="existing model, $K_u$")
+        c.plot(grid - 5.0, u, color="#BBBBBB", lw=1.0, label="chain input $u_1(t)$ (20)")
+        c.plot(grid - 5.0, target, color=K_, lw=1.6, label="target $\\hat{K}_u(t)$ (25)")
         for x, lab in ((4.5 - 5.0, "$t_{rest}$"), (12.0 - 5.0, "$t_{on}$")):
-            d.axvline(x, color=RED, lw=0.8, ls=":")
-            d.text(x + 0.15, 0.86, lab, color=RED, fontsize=7)
-        d.set_xlim(-1, 16); d.set_ylim(-0.1, 1.15); d.set_xlabel("time from the input edge (ns)"); d.set_ylabel("normalised")
-        d.set_title("(d) what the fit is given", fontsize=8.5)
-        d.legend(frameon=False, fontsize=6.6, loc="center")
+            c.axvline(x, color=RED, lw=0.8, ls=":")
+            c.text(x + 0.15, 0.86, lab, color=RED, fontsize=7)
+        c.set_xlim(-1, 16); c.set_ylim(-0.12, 1.15); c.set_xlabel("time from the input edge (ns)"); c.set_ylabel("conducting fraction")
+        c.set_title(f"(b) solution, existing model (rms {rms_r:.3f}) and target", fontsize=8.5)
+        c.legend(frameon=False, fontsize=6.2, loc="center right")
         save(fig, "fig_target")
     return dict(shift_r=shift_r, shift_f=shift_f, rms_r=rms_r, n_iv=len(dm.iv_pullup), n_vt=len(dm.vt_rising[0].data),
                 t_vt=float(dm.vt_rising[0].data[-1, 0] * 1e9), rfix=float(dm.vt_rising[0].r_fix),
@@ -1311,13 +1295,12 @@ def fig_fit_all():
 # ------------------------------------------------------------------ L. how the calibration finds vt
 def fig_calib_mech():
     """The threshold calibration (28) on ex2's selected candidate: the peak error against v_t (dense
-    sweep, from calib_iterations.py), the ten bisection iterates, and the pad waveforms."""
+    sweep, from calib_iterations.py) with the ten bisection iterates, and the pad waveforms."""
     z = np.load(DOCDIR / "calib_iterations" / "ex2.npz", allow_pickle=True)
     names, vt, err, t, pads = [str(s) for s in z["names"]], z["vt"], z["err"], z["t"] - 5.0, z["pads"]
     t_si, si = z["t_si"] - 5.0, z["si"]
     its = [i for i, n in enumerate(names) if n.startswith("it")]
     order = np.argsort(vt)
-    # the brackets of the bisection (calibrate_pad): it03..it09 test the midpoint of [lo, hi]
     lo, hi, brackets = 0.0, 0.7, []
     for i in its[3:]:
         mid = 0.5 * (lo + hi)
@@ -1330,9 +1313,9 @@ def fig_calib_mech():
     w = 0.810
     peak = float(si[(t_si >= w - 0.3) & (t_si <= w + 2.6)].max())
     with plt.rc_context(RC):
-        fig, ax = plt.subplots(1, 3, figsize=(W, 2.5), gridspec_kw={"wspace": 0.5, "width_ratios": (1.2, 0.75, 1.2)})
+        fig, ax = plt.subplots(1, 2, figsize=(W, 2.5), gridspec_kw={"wspace": 0.32})
         a = ax[0]
-        a.plot(vt[order], err[order], "-", color=GREY, lw=1.1, label="peak error $e(v_t)$")
+        a.plot(vt[order], err[order], "-", color=GREY, lw=1.1)
         a.axhline(0, color="#999999", lw=0.6)
         for i in its:
             n = int(names[i][2:])
@@ -1346,19 +1329,8 @@ def fig_calib_mech():
         a.text(vt_final - 0.015, -85, f"$v_t$ = {vt_final:.3f}", ha="right", fontsize=6.8, color=RED)
         a.set_xlim(-0.03, 0.73); a.set_ylim(-105, 75)
         a.set_xlabel("stage threshold $v_t$"); a.set_ylabel("peak error (%)")
-        a.set_title("(a) the peak error against $v_t$", fontsize=8.5)
-        b = ax[1]
-        for j, (n, l, h, mid, e) in enumerate(brackets):
-            b.plot([l, h], [n, n], color="#BBBBBB", lw=5, solid_capstyle="butt")
-            b.plot(mid, n, "o", color=TEAL, ms=4, zorder=4)
-            b.text(mid, n - 0.42, f"{e:+.0f} %", ha="center", va="bottom", fontsize=6.0, color="#444444")
-        b.plot([lo, hi], [10, 10], color=RED, lw=5, solid_capstyle="butt")
-        b.text(0.5 * (lo + hi), 10 - 0.42, f"kept: {vt_final:.3f}", ha="center", va="bottom", fontsize=6.0, color=RED)
-        b.set_ylim(10.8, 2.0); b.set_xlim(-0.03, 0.76)
-        b.set_yticks(range(3, 11)); b.set_yticklabels([str(k) for k in range(3, 10)] + ["end"])
-        b.set_xlabel("interval tested"); b.set_ylabel("iteration")
-        b.set_title("(b) bisection", fontsize=8.5)
-        c = ax[2]
+        a.set_title("(a) peak error against $v_t$; iterations numbered", fontsize=8.5)
+        c = ax[1]
         c.plot(t_si, si, color=K_, lw=2.4, label="measured")
         c.axhline(peak, color=K_, lw=0.7, ls="--")
         for n, col in ((1, "#E0B09A"), (3, ORANGE), (5, "#4FB3AF"), (9, TEAL)):
@@ -1366,7 +1338,7 @@ def fig_calib_mech():
             c.plot(t, pads[i], color=col, lw=1.2, label=f"iteration {n}: $v_t$ = {vt[i]:.2f} ({err[i]:+.0f} %)")
         c.set_xlim(0.2, 3.0); c.set_ylim(-0.4, 1.55)
         c.set_xlabel("time from the input edge (ns)"); c.set_ylabel("pad voltage (V)")
-        c.set_title("(c) the pad waveform as $v_t$ is bisected", fontsize=8.5)
+        c.set_title("(b) the pad waveform as $v_t$ is bisected", fontsize=8.5)
         c.legend(frameon=False, fontsize=6.0, loc="upper left")
         save(fig, "fig_calib_mech")
     return dict(vt_final=vt_final, brackets=brackets, err0=float(err[its[0]]), vt0=float(vt[its[0]]),

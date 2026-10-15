@@ -186,17 +186,23 @@ def equation(latex: str, number: int | None = None) -> str:
 def table(header: list[str], rows: list[list[str]], widths: list[int], caption: str | None = None,
           size: int = 18) -> str:
     """widths in twentieths of a point (dxa); they should sum to about 9600."""
-    def cell(text, w, head=False):
+    def cell(text, w, head=False, keep=True):
         runs = inline(f"**{text}**" if head and "$" not in text and text else text, size=size)
         if text.startswith("$") and text.endswith("$"):
             runs += _text_run("\u200b", size=size)      # keeps a math-only cell inline, left-aligned
+        # keepNext on the caption and the header row only: a header is never left alone at the foot of
+        # a page, a long table may still split (its header repeats, w:tblHeader), and Word is not
+        # tempted to move a whole table to the next page
         return (f'<w:tc><w:tcPr><w:tcW w:w="{w}" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:pStyle w:val="Compact"/>'
-                f'<w:jc w:val="left"/></w:pPr>{runs}</w:p></w:tc>')
+                f'{"<w:keepNext/>" if keep else ""}<w:jc w:val="left"/></w:pPr>{runs}</w:p></w:tc>')
 
     grid = "".join(f'<w:gridCol w:w="{w}"/>' for w in widths)
-    head = "<w:tr><w:trPr><w:tblHeader/></w:trPr>" + "".join(cell(h, w, True) for h, w in zip(header, widths)) + "</w:tr>"
-    body = "".join("<w:tr>" + "".join(cell(c, w) for c, w in zip(r, widths)) + "</w:tr>" for r in rows)
-    cap = para(caption, "TableCaption") if caption else ""
+    head = ("<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>"
+            + "".join(cell(h, w, True) for h, w in zip(header, widths)) + "</w:tr>")
+    body = "".join("<w:tr><w:trPr><w:cantSplit/></w:trPr>"
+                   + "".join(cell(c, w, keep=False) for c, w in zip(r, widths)) + "</w:tr>"
+                   for i, r in enumerate(rows))
+    cap = para(caption, "TableCaption", keep_next=True) if caption else ""
     return (cap + f'<w:tbl><w:tblPr><w:tblStyle w:val="Table"/><w:tblW w:type="dxa" w:w="{sum(widths)}"/>'
             '<w:tblBorders><w:top w:val="single" w:sz="6" w:space="0" w:color="000000"/>'
             '<w:bottom w:val="single" w:sz="6" w:space="0" w:color="000000"/></w:tblBorders>'
