@@ -98,3 +98,7 @@ results/archive/*/
 
 # PowerPoint lock files, written while a deck is open
 ~$*
+
+# manim's working tree for the stage-law flow animation (partial movie files, typeset SVGs);
+# the rendered mp4 and the data file at the folder root are tracked
+results/stage_law_flow_animation_2026-10-15/media/
