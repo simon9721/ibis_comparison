@@ -272,3 +272,43 @@ Tables keep their caption and header with the first row (a header is never orpha
 The builder (`scripts/build_stage_law_doc.py`) now writes v3 only; v2 stays committed as the
 chapter-style version and is not rebuilt. Delivered as
 `\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v3.docx`.
+
+## IEEE two-column layout: stage_law_paper_v4_ieee.docx (2026-10-15)
+
+The same paper as v3 set in IEEE Transactions form, built by the same builder: US Letter with
+the IEEE margins, two 3.5 in columns, Times New Roman 10 pt justified with a first-line indent,
+the abstract and index terms in bold 9 pt at the head of the first column, small-capital
+centred section heads, italic subsection heads, 8 pt captions, tables and references, equation
+numbers at the right. The title block spans the page; "Author names and affiliations" is a
+placeholder. 17 pages, 16 figures, 9 tables, 376 equation objects; every page but the last is
+full to within 0.3 in.
+
+How the layout is made, because Word has no float mechanism of its own:
+
+- **Wide figures and tables** (all 16 figures and Tables IV-IX) are one-column sections between
+  two continuous section breaks, the IEEE Word template's own method: the text above is balanced
+  across the columns, the block spans the page, the text below resumes in two columns. Tables
+  I-III stay in the column. Floating text boxes were tried first and abandoned: Word stacks
+  top-anchored boxes but will not keep a bottom-anchored one clear of a top-anchored one, and a
+  box drags its anchor paragraph to the next page when it does not fit.
+- **Placement** is decided by `scripts/stage_law_doc_layout.py`, with Word's own pagination as
+  the oracle: the paper is built with the first k-1 blocks placed, exported to PDF through Word,
+  the page and height of every paragraph read back, and the k-th block anchored before the first
+  paragraph, on or after the page of its first mention, under which it fits once the text above
+  is balanced. Three rules: no block under a remnant of one to five lines (balancing would smear
+  it across both columns), figures keep their numbering order on the page and so do tables, and
+  an anchor in front of a paragraph moves in front of the heading above it. 22 Word renders,
+  about 13 minutes; the result is `layout_plan.json` (block -> the paragraph it precedes), which
+  the builder reads, so a rebuild without the pass keeps the layout. Registration order is
+  asserted against the numbering so the two cannot drift apart again (Fig. 14 had been placed
+  above Fig. 13, and Table V above Table IV, before that rule).
+- **Equations** wider than a column are set in two or three lines at 9 pt, each line its own
+  paragraph (Word lays several math objects of one paragraph out on a single line), kept
+  together with keep-with-next; a paragraph that introduces a display equation keeps with it,
+  so no lead-in is stranded at the foot of a column.
+- Known limit of the greedy pass: a block can land a page or two after its mention when the
+  blocks ahead of it in numbering order fill the nearer pages (Fig. 14, mentioned on page 12,
+  sits on page 14).
+
+Delivered as `\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v4_ieee.docx`.
+The builder now writes v4; v2 (chapter) and v3 (single column) stay as committed.

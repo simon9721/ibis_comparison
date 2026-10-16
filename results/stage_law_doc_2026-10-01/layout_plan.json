@@ -1,0 +1,68 @@
+{
+ "problem": {
+  "before": "Each transistor is described by the \u03b1-po"
+ },
+ "stage_law": {
+  "before": "For a falling output, (8) becomes"
+ },
+ "blocks": {
+  "before": "The complement in (21) corresponds to an"
+ },
+ "chain": {
+  "before": "The file does not contain the map. It gi"
+ },
+ "map": {
+  "before": "Fig. 6 shows the two relations evaluated"
+ },
+ "gate_to_ku": {
+  "before": "IV. Identification from the File and One"
+ },
+ "workflow": {
+  "before": "ex2 is the running example, in two setti"
+ },
+ "target": {
+  "before": "How the minimum is found. The residual i"
+ },
+ "fit_knobs": {
+  "before": "How the minimum is found. The residual i"
+ },
+ "fit_search": {
+  "before": "Why several stages. With a single stage,"
+ },
+ "fit_all": {
+  "before": "The threshold, the exponent, the boundar"
+ },
+ "shapes": {
+  "before": "The threshold, the exponent, the boundar"
+ },
+ "ambiguity": {
+  "before": "The threshold, the exponent, the boundar"
+ },
+ "rms_vs_k": {
+  "before": "On the twelve test buffers the band cont"
+ },
+ "stress_use": {
+  "before": "Three things can be read off Table VI. T"
+ },
+ "calib_mech": {
+  "before": "The file-only model's internal gate, whi"
+ },
+ "ledger": {
+  "before": "Three things can be read off Table VI. T"
+ },
+ "gate": {
+  "before": "On ex2 the stage law with the netlist st"
+ },
+ "gate_verify": {
+  "before": "The proposed model is within 10 % on all"
+ },
+ "pad": {
+  "before": "The proposed model is within 10 % on all"
+ },
+ "pad_waveforms": {
+  "before": "Table IX collects the approximations. Ev"
+ },
+ "approx": {
+  "before": "Three points are open. A drive-dependent"
+ }
+}

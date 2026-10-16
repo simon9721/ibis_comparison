@@ -27,8 +27,9 @@ text cannot drift from the order in which the objects appear.
 
     py -3.14 scripts/build_stage_law_doc.py
 
-Output: results/stage_law_doc_2026-10-01/stage_law_paper_v3.docx
-(the earlier chapter-style stage_law_derivation_v2.docx is kept as committed and is not rebuilt).
+Output: results/stage_law_doc_2026-10-01/stage_law_paper_v4_ieee.docx, IEEE Transactions layout (Letter,
+two 3.5 in columns, Times 10 pt, double-column floating figures and wide tables). The earlier
+stage_law_derivation_v2.docx (chapter) and stage_law_paper_v3.docx (single column) stay as committed.
 """
 from __future__ import annotations
 
@@ -41,12 +42,13 @@ from lxml import etree
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
-from stage_law_docx import Package, equation, heading, para, table  # noqa: E402
+from stage_law_docx import (Package, equation, heading, ieee_caption, ieee_sect_pr, ieee_styles, para,  # noqa: E402
+                            section_break, table, table_height_pt)
 
 DOC = ROOT / "results" / "stage_law_doc_2026-10-01"
 FIG = DOC / "figures"
 SRC = DOC / "source" / "stage_law_derivation_original.docx"
-OUT = DOC / "stage_law_paper_v3.docx"
+OUT = DOC / "stage_law_paper_v4_ieee.docx"
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
 
@@ -122,11 +124,80 @@ def S(key: str, sub: str | None = None) -> str:
     return f"Section {SEC[key]}" + (f"-{sub}" if sub else "")
 
 
+COL = 5000                    # dxa: one IEEE column (3.5 in) less the cell padding
+FIG_WIDTH = {"chain": 5.4, "gate_to_ku": 5.8, "fit_knobs": 5.4, "ambiguity": 5.2, "stress_use": 5.4,
+             "gate_verify": 5.8, "fit_search": 6.4, "map": 6.4}     # inches; the rest span the text width
+PAGE = 10300                  # dxa: a double-column (floating) table
+
+
+def scaled(widths: list[int], total: int) -> list[int]:
+    f = total / sum(widths)
+    return [int(w * f) for w in widths]
+
+
+def tab_col(key: str, title: str, header, rows, widths, size=16) -> str:
+    """A table in the column, with its IEEE caption above."""
+    return table(header, rows, scaled(widths, COL), size=size, caption_xml=ieee_caption(T(key).upper(), title))
+
+
+FLOATS: list[dict] = []       # the double-column floats, placed at assembly time from the layout plan
+_M = "http://schemas.openxmlformats.org/officeDocument/2006/math"
+_T: list[str] = []            # the block list of build_sections, for the mention paragraph of a wide table
+
+
+def plain_prefix(xml_or_el, n: int = 40) -> str:
+    """The first `n` characters of a paragraph's plain text before its first equation object, or ""
+    if that is too short to identify the paragraph in a rendered page."""
+    if isinstance(xml_or_el, str) and not xml_or_el.strip():     # a registered float leaves "" in the block list
+        return ""
+    el = etree.fromstring(f"<root {Package.NS}>{xml_or_el}</root>")[0] if isinstance(xml_or_el, str) else xml_or_el
+    if etree.QName(el).localname != "p":
+        return ""
+    out = []
+    for child in el:
+        tag = etree.QName(child).localname
+        if tag in ("oMath", "oMathPara"):
+            break
+        if tag == "r":                                   # direct text only: not a text box inside a drawing
+            out += [t.text or "" for t in child.findall(f"{{{W}}}t")]
+    s = " ".join("".join(out).split())
+    return s[:n] if len(s) >= 20 else ""
+
+
+def register_float(key: str, xml: str, after: str, pkg: Package) -> str:
+    order = FIGS if key in FIGS else TABS
+    prev = [f["key"] for f in FLOATS if (f["key"] in FIGS) == (key in FIGS)]
+    assert not prev or order.index(prev[-1]) < order.index(key), f"{key} registered out of numbering order, after {prev[-1]}"
+    FLOATS.append(dict(key=key, xml=xml, after=after[:40], height=pkg.float_heights.get(key, 3.0)))
+    return ""
+
+
+def last_prefix(t: list[str]) -> str:
+    for blk in reversed(t):
+        p = plain_prefix(blk)
+        if p:
+            return p
+    return ""
+
+
+def tab_wide(pkg: Package, key: str, title: str, header, rows, widths, size=16, valign="auto",
+             width=PAGE, jc=None) -> str:
+    """A table spanning both columns: registered for placement, anchored after the last text
+    paragraph written so far unless the layout plan says otherwise."""
+    w = scaled(widths, width)
+    xml = pkg.table_span(ieee_caption(T(key).upper(), title), table(header, rows, w, size=size, spacer=False, jc=jc),
+                         table_height_pt(header, rows, w, size), key=key)
+    return register_float(key, xml, last_prefix(_T), pkg)
+
+
 # ----------------------------------------------------------------------------- front matter and inserts
 def build_inserts(pkg: Package, d) -> dict:
     """The abstract and introduction (before Section II) and the short inserts into Sections II-A to II-E."""
     out = {}
-    fig = lambda key, caption, width_in=6.2: pkg.figure(FIG / f"fig_{key}.png", f"{F(key)}. {caption}", width_in=width_in)  # noqa: E731
+    def fig(key, caption, width_in=7.1, valign="auto", after=""):
+        xml = pkg.figure_span(FIG / f"fig_{key}.png", f"{F(key)}. {caption}", width_in=width_in, key=key)
+        return register_float(key, xml, after, pkg)
+
     t1s = [x[2] for x in d["pad"]]
     live = [x[1] for x in d["pad"] if not x[3]]
     al = [float(r["alpha"]) for r in d["dev"]]
@@ -135,8 +206,7 @@ def build_inserts(pkg: Package, d) -> dict:
     out["rng"] = rng
 
     out["front"] = (
-        heading("Abstract")
-        + para("An IBIS model describes an output buffer by the I–V tables of its output devices and by the pad "
+        para("*Abstract*—An IBIS model describes an output buffer by the I–V tables of its output devices and by the pad "
                "voltage of complete transitions, from which the conducting fractions $K_u(t)$ and $K_d(t)$ of the "
                "two devices are solved and replayed against time. When an input pulse is shorter than the buffer's "
                "own delay, the predriver interrupts the transition and the replay fails: on twelve test buffers "
@@ -150,7 +220,9 @@ def build_inserts(pkg: Package, d) -> dict:
                "on its shape. Built from the file and that one measurement, the model reproduces the stressed pad "
                f"peak within 10 % (mean {sum(t1s) / len(t1s):.1f} %) on the twelve buffers at five pulse widths. "
                "The method relies on four built-in constants chosen on the test buffers, and was tested on single "
-               "pulses into one load; both limits are stated.", "FirstParagraph")
+               "pulses into one load; both limits are stated.", "Abstract")
+        + para("*Index Terms*—IBIS, I/O buffer modeling, predriver, short pulses, α-power law, behavioral "
+               "modeling, signal integrity.", "Abstract")
         + heading(f"{SEC['intro']}. Introduction", 1)
         + para("An IBIS model describes an output buffer from its pins: the I–V tables of the pull-up and the "
                "pull-down device, the pad voltage of one complete rising and one complete falling transition "
@@ -170,7 +242,8 @@ def build_inserts(pkg: Package, d) -> dict:
                f"{min(live):.0f}–{max(live):.0f} % ({S('verify')}).")
         + fig("problem", "The problem, on test buffer ex2. (a) A complete transition into the test load, the "
                          "situation an IBIS file records. (b) An 810 ps input pulse: the transistor-level pad voltage "
-                         "against HSPICE's native IBIS model of the same file.", 6.2)
+                         "against HSPICE's native IBIS model of the same file.", 7.1, "auto",
+             after="The coefficients describe complete transitions")
         + para("This paper replaces the replay by a model of the predriver. Each inverter of the predriver is "
                "modeled by a stage law derived from the α-power MOSFET model [1]; $K$ identical stages drive the "
                "gate of the output device, and a static map turns the gate into $K_u$. The fractions then follow "
@@ -198,7 +271,7 @@ def build_inserts(pkg: Package, d) -> dict:
                f"the identification procedure step by step, with ex2 as the running example. {S('verify')} verifies "
                f"the model at the gate and at the pad, and {S('disc')} collects the approximations and limits. "
                f"{T('notation')} lists the notation.")
-        + table(["Symbol", "Definition", "Where"],
+        + tab_col("notation", "Notation", ["Symbol", "Definition", "Where"],
                 [["$u$, $v$", "Normalized stage input and output, 0 → 1", "(8)"],
                  ["$v_t$", "Stage threshold: $V_{TH}/V_{DD}$ in the derivation, an effective fitted number in the model", "(9), (17)"],
                  ["$x_0$, $x_{lin}$", "Saturation boundary at full drive, $V_{D0}/V_{DD}$; the effective constant that replaces it (0.45)", "(9), (18)"],
@@ -210,7 +283,7 @@ def build_inserts(pkg: Package, d) -> dict:
                  ["$M$, $(v_{t,map}, a)$", "The map from the gate to the conducting fraction, and its shape", "(22)"],
                  ["$K_u$, $K_d$; $\\hat{K}_u$", "Conducting fractions of the output devices; $K_u$ normalized between its settled levels", "(22), (25)"],
                  ["$e(v_t)$", "Relative error of the model's pad peak against the measured peak", "(28)"]],
-                [2200, 5900, 1500], f"{T('notation')}: Notation"))
+                [1350, 2800, 850]))
 
     # ---- Section II lead (replaces the original intro paragraph)
     out["law_lead"] = ("A predriver stage is a CMOS inverter driving the gate of the next. This section derives, from "
@@ -222,7 +295,7 @@ def build_inserts(pkg: Package, d) -> dict:
     out["min_form"] = (
         para("Equation (2) has no single-expression form in [1]; the one used here follows from factoring $I'_{D0}$ "
              "out of the triode row, so that the two conducting rows read", "FirstParagraph")
-        + equation("I_D = I'_{D0} \\cdot \\frac{V_{DS}}{V'_{D0}}~~(V_{DS} < V'_{D0}),\\quad I_D = I'_{D0} \\cdot 1~~(V_{DS} \\ge V'_{D0})")
+        + equation("I_D = I'_{D0} \\cdot \\frac{V_{DS}}{V'_{D0}}~~(V_{DS} < V'_{D0}), \\\\ I_D = I'_{D0} \\cdot 1~~(V_{DS} \\ge V'_{D0})", size=18)
         + para("In each row the multiplier of $I'_{D0}$ is the smaller of 1 and $V_{DS}/V'_{D0}$, and the rows meet "
                "at $V_{DS} = V'_{D0}$. The conducting part of (2) is therefore", "FirstParagraph"))
     dev_rows = []
@@ -237,9 +310,11 @@ def build_inserts(pkg: Package, d) -> dict:
              f"fits the piecewise form (6) to the output curve at full gate drive. {T('device')} lists the result: "
              f"$\\alpha$ is {rng['a']}, between the short-channel limit of 1 and the long-channel value of 2 [2], "
              f"and the saturation voltage is {rng['x']} of the supply, comparable to the 0.5–0.55 used in [1].")
-        + table(["Device", "Model card", "Drawn length", "$V_{DD}$", "$x_0 = V_{D0}/V_{DD}$", "$\\alpha$"],
-                dev_rows, [2500, 2000, 1300, 900, 1800, 1100],
-                f"{T('device')}: Device parameters of (2)–(5) extracted in HSPICE from the predriver transistors"))
+        + tab_col("device", "Device parameters of (2)–(5), extracted in HSPICE from the predriver transistors "
+                            "(ex2: the BSIM3v3 card hspice.mod; inv_chain: HL18G-S3.7S)",
+                  ["Device", "$L$", "$V_{DD}$", "$x_0 = V_{D0}/V_{DD}$", "$\\alpha$"],
+                  [[r[0].replace(" predriver", ""), r[2], r[3], r[4], r[5]] for r in dev_rows],
+                  [1500, 750, 750, 1250, 750]))
 
     # ---- Section II-C: the two meanings of v_t
     out["vt_note"] = para(
@@ -275,7 +350,8 @@ def build_inserts(pkg: Package, d) -> dict:
         fig("stage_law", "The stage law (19). (a) Gate factor $h(u)$ of (17) for three exponents. (b) Drain factor "
                          "of the charging term: the fixed boundary of (18) against the drive-dependent boundary of "
                          "(15) at three gate drives ($\\alpha = 1$, $x_0 = 0.45$). (c) One stage's response to an "
-                         "input step: a constant-slope ramp, then an exponential approach to the rail.")
+                         "input step: a constant-slope ramp, then an exponential approach to the rail.",
+            after="Comparing (19) with (15) term by term:")
         + para("The value $x_{lin} = 0.45$ is a built-in constant of the method, not a quantity read from the IBIS "
                "file. It was chosen during development from fits of (19) to the individual probed predriver stages "
                "of two test buffers (0.37–0.47 on ex2, 0.52–0.63 on inv_chain); fitted to the probed gate with "
@@ -292,7 +368,14 @@ def build_inserts(pkg: Package, d) -> dict:
 def build_sections(pkg: Package, d) -> list[str]:
     t: list[str] = []
     A = t.append
-    fig = lambda key, caption, width_in=6.2: pkg.figure(FIG / f"fig_{key}.png", f"{F(key)}. {caption}", width_in=width_in)  # noqa: E731
+    global _T
+    _T = t
+
+    def fig(key, caption, width_in=None, valign="auto"):
+        xml = pkg.figure_span(FIG / f"fig_{key}.png", f"{F(key)}. {caption}",
+                              width_in=width_in or FIG_WIDTH.get(key, 7.1), key=key)
+        return register_float(key, xml, last_prefix(t), pkg)
+
     ti, se, ov, fa, cb, lg, land = (d["target_info"], d["search"], d["one_vs"], d["fa"], d["calib"], d["ledger"], d["land"])
     hand = ov["hand"]
     k1, k3 = ov["k1"], ov["k3"]
@@ -311,7 +394,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            "method replaces only how $K_u(t)$ and $K_d(t)$ are generated.", "FirstParagraph"))
     A(fig("blocks", "Signal path of the model. The teal blocks replace the way $K_u(t)$ and $K_d(t)$ are generated; "
                     "the I–V tables, $C_{comp}$ and the package are those of the IBIS file. Numbers in parentheses "
-                    "are equation numbers.", 6.3))
+                    "are equation numbers."))
     A(heading("B. The chain"))
     A(para("The predriver is modeled as $K$ stages, each obeying (19) with one shared parameter set "
            "$\\{s_{up}, s_{dn}, v_t, x_{lin}, p\\}$ (approximation A3, identical normalized stages). Because (8) "
@@ -319,7 +402,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            "output is the next stage's input. The first stage is driven by a comparator on the input pin at half "
            "the supply, and the output of the last stage is the gate of the output pull-up device, with the "
            "pull-down gate its complement:", "FirstParagraph"))
-    A(equation("u_1(t) = 1~\\text{if}~V_{in}(t) > V_{DD}/2,~\\text{else}~0;\\quad u_{k+1}(t) = v_k(t),\\quad k = 1,\\ldots,K-1", 20))
+    A(equation("u_1(t) = 1~\\text{if}~V_{in}(t) > V_{DD}/2,~\\text{else}~0; \\\\ u_{k+1}(t) = v_k(t),\\quad k = 1,\\ldots,K-1", 20, size=18))
     A(equation("G_{UP}(t) \\triangleq v_K(t),\\quad G_{DN}(t) \\triangleq 1 - G_{UP}(t)", 21))
     A(para("The complement in (21) corresponds to an output stage whose two devices are driven from one predriver "
            "node, the case for ex2 and inv_chain and their variants. Where the netlist has separate pull-up and "
@@ -343,7 +426,7 @@ def build_sections(pkg: Package, d) -> list[str]:
     A(fig("chain", "One chain, two inputs (ex2: $K = 3$, $s_{up} = 2.19$/ns, $s_{dn} = 2.12$/ns, $v_t = 0.487$, "
                    "$x_{lin} = 0.45$). Top: the stage nodes of (19)–(21). Bottom: the conducting fraction obtained "
                    "from the gate through the map (22). (a) Full transition. (b) An 810 ps input pulse: the gate "
-                   "turns back at 0.74 of its swing and $K_u$ reaches 0.56.", 6.0))
+                   "turns back at 0.74 of its swing and $K_u$ reaches 0.56."))
     A(heading("C. The map: from the gate to the conducting fraction"))
     A(para("The stage law produces the gate trajectory $G_{UP}(t)$ and nothing else. An IBIS-based model needs "
            "at each instant the fraction $K_u$ of the pull-up table that is conducting. A second relation, "
@@ -356,7 +439,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            "On the three buffers where this was done, the curve traced while the gate rises coincides with the one "
            "traced while it falls within 0.07–0.11, so $K_u$ depends on the gate alone. The curve is described by "
            "a two-parameter formula scaled between the settled off and on levels of the file's own $K_u$ and $K_d$:"))
-    A(equation("K_u(t) = k_{off} + (k_{on} - k_{off})~M(G_{UP}(t)),\\quad M(g) \\triangleq \\clip\\left( \\frac{g - v_{t,map}}{g_s - v_{t,map}}, 0, 1 \\right)^{a}", 22))
+    A(equation("K_u(t) = k_{off} + (k_{on} - k_{off})~M(G_{UP}(t)), \\\\ M(g) \\triangleq \\clip\\left( \\frac{g - v_{t,map}}{g_s - v_{t,map}}, 0, 1 \\right)^{a}", 22, size=18))
     A(equation("K_d(t) = d_{off} + (d_{on} - d_{off})~M(G_{DN}(t))", 23))
     A(para("$v_{t,map}$ is the gate level at which the output device starts to conduct, $a$ bends the curve between "
            "that point and $g_s = 1$ where the table is fully on (below 1, the curve rises steeply and then "
@@ -375,7 +458,7 @@ def build_sections(pkg: Package, d) -> list[str]:
     A(fig("map", "The map. (a) With the gate of ex2 probed, the gate level (squares) and the file's $K_u$ (circles) "
                  "are read at the same instants of a full transition. (b) $K_u$ against the gate: the measured map, "
                  "and the formula (22) fitted to it, $(v_{t,map}, a) = (0.57, 0.64)$. (c) The three shapes offered "
-                 "when the gate cannot be probed, with the measured map of ex2 for reference.", 6.4))
+                 "when the gate cannot be probed, with the measured map of ex2 for reference."))
     A(para(f"{F('gate_to_ku')} shows the two relations evaluated one after the other on ex2: (19)–(21) give the gate, "
            "and (22) is applied to each of its values. For a full transition (top row) the gate sweeps its full "
            "range, the whole map is read, and the result can be compared with the file; this comparison is the fit "
@@ -385,10 +468,10 @@ def build_sections(pkg: Package, d) -> list[str]:
     A(fig("gate_to_ku", "From the gate to the conducting fraction on ex2 ($K = 3$, map (0.57, 0.64)). Left: the gate "
                         "from the stage law. Middle: the map (22), with the gate values at six instants. Right: the "
                         "resulting $K_u(t)$. (a)–(c) Full transition, against the file's $K_u(t)$. (d)–(f) An 810 ps "
-                        "pulse after calibration.", 6.3))
+                        "pulse after calibration."))
     A(heading("D. The pad current"))
     A(para("The current delivered to the die node is that of the existing model,", "FirstParagraph"))
-    A(equation("I_{die}(t) = K_u(t)~I_{PU}(V_{die}) + K_d(t)~I_{PD}(V_{die}) + I_{PC}(V_{die}) + I_{GC}(V_{die})", 24))
+    A(equation("I_{die}(t) = K_u(t)~I_{PU}(V_{die}) + K_d(t)~I_{PD}(V_{die}) \\\\ + I_{PC}(V_{die}) + I_{GC}(V_{die})", 24, size=18))
     A(para("where $I_{PU}$, $I_{PD}$ are the pull-up and pull-down tables of the file, held at their end values "
            "outside the tabulated range, and $I_{PC}$, $I_{GC}$ are the clamp tables, present only when the file "
            "contains them (io_buf does; ex2 and inv_chain do not). $C_{comp}$ loads the die node and the package "
@@ -408,16 +491,15 @@ def build_sections(pkg: Package, d) -> list[str]:
            "(steps 3 and 4). Applying the method to a new buffer therefore needs no transistor-level information, "
            "but the method is not derived from the file alone.", "FirstParagraph"))
     A(fig("workflow", "The procedure as a flow. Grey: from the IBIS file. Orange: assumed, built into the method. "
-                      "Teal: fitted or computed. Red: the one measurement.", 6.3))
-    A(table(["Step", "What is determined", "Data used", "Eq."],
-            [["0", "I–V tables, $C_{comp}$, full-swing $K_u(t)$ and $K_d(t)$; the normalized target", "IBIS file, existing converter", "(24), (25)"],
-             ["1", "$s_{up}$, $s_{dn}$ and an initial $v_t$, for each candidate stage count and map shape", "full-swing $K_u(t)$ of the file", "(26)"],
-             ["2", "Candidate set: three stage counts × three map shapes", "fit residuals of step 1", "(27)"],
-             ["3", "$v_t$, for each candidate", "peak of one stressed pad waveform", "(28)"],
-             ["4", "Stage count $K$ and map shape", "the same waveform, whole shape", "(29)"]],
-            [700, 4300, 3300, 1300],
-            f"{T('procedure')}: The procedure. $p = 1$ is fixed; $x_{{lin}} = 0.45$ is fixed on ten of the twelve test "
-            "buffers and fitted in step 1 on the other two."))
+                      "Teal: fitted or computed. Red: the one measurement."))
+    A(tab_col("procedure", "The procedure ($p = 1$ fixed; $x_{lin} = 0.45$ fixed on ten of the twelve buffers, fitted on two)",
+              ["Step", "What is determined", "Data used", "Eq."],
+              [["0", "I–V tables, $C_{comp}$, full-swing $K_u(t)$, $K_d(t)$; the normalized target", "IBIS file, existing converter", "(24)–(25)"],
+               ["1", "$s_{up}$, $s_{dn}$, initial $v_t$, per candidate stage count and map shape", "full-swing $K_u(t)$ of the file", "(26)"],
+               ["2", "Candidates: three stage counts × three map shapes", "fit residuals of step 1", "(27)"],
+               ["3", "$v_t$, for each candidate", "peak of one stressed pad waveform", "(28)"],
+               ["4", "Stage count $K$ and map shape", "the same waveform, whole shape", "(29)"]],
+              [480, 2300, 1520, 700]))
     A(para("ex2 is the running example, in two settings. The figures that explain the fit use the map shape and "
            "$C_{comp}$ measured on its netlist, (0.57, 0.64) and 1.7 pF, so that the model's gate can be compared "
            f"with the probed gate; the procedure's own numbers for ex2, in {S('ident', 'F')} and {S('verify')}, use "
@@ -429,7 +511,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            "complete transition. The existing converter obtains it from the two fixtures: at each instant of the "
            "rising transition the current into the die node must balance in both, with $V_i(t)$ the pad voltage "
            "recorded in fixture $i$,", "FirstParagraph"))
-    A(equation("K_u(t)~I_{PU}(V_i(t)) + K_d(t)~I_{PD}(V_i(t)) = \\frac{V_{fix,i} - V_i(t)}{R_{fix}} - C_{comp}\\frac{dV_i}{dt},\\quad i = 1, 2"))
+    A(equation("K_u(t)~I_{PU}(V_i(t)) + K_d(t)~I_{PD}(V_i(t)) \\\\ = \\frac{V_{fix,i} - V_i(t)}{R_{fix}} - C_{comp}\\frac{dV_i}{dt},\\quad i = 1, 2", size=18))
     A(para("(the clamp currents join the right-hand side when the file has them). Two equations in two unknowns "
            f"are solved at every sample, for the rising and for the falling transition ({F('target')}). This is the "
            "standard two-waveform solution and is not part of the proposed method. The existing circuit model "
@@ -437,7 +519,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            f"the solved $K_u(t)$ within {ti['rms_r']:.3f} rms on ex2 once aligned on the input edge. The target is "
            "that node, normalized between its settled off level at $t_{rest}$ and its settled on level at $t_{on}$:",
            "FirstParagraph"))
-    A(equation("\\hat{K}_u(t) = \\clip\\left( \\frac{K_u(t) - K_u(t_{rest})}{K_u(t_{on}) - K_u(t_{rest})}, 0, 1 \\right),\\quad t_{rest} = 4.5~\\text{ns},~t_{on} = 12~\\text{ns}", 25))
+    A(equation("\\hat{K}_u(t) = \\clip\\left( \\frac{K_u(t) - K_u(t_{rest})}{K_u(t_{on}) - K_u(t_{rest})}, 0, 1 \\right), \\\\ t_{rest} = 4.5~\\text{ns},\\quad t_{on} = 12~\\text{ns}", 25, size=18))
     A(para("with the input edge at 5 ns, sampled every 2 ps from 4 to 21 ns. During the fit the chain receives the "
            "same 10 ns pulse as an ideal step at the mid-point of the input edge, (20), so that the rising edge of "
            "the target constrains $s_{up}$ and the falling edge $s_{dn}$. Nothing in this curve says how many stages "
@@ -445,14 +527,14 @@ def build_sections(pkg: Package, d) -> list[str]:
     A(fig("target", "The target on ex2 (1.7 pF). (a) The file's V–T waveforms: one rising and one falling transition, "
                     "each recorded into two fixtures. (b) $K_u(t)$, $K_d(t)$ solved from (a) by the existing converter "
                     "(grey), the existing circuit model's $K_u$ through a 10 ns pulse (teal), and the normalized "
-                    "target (25) with the chain input (20).", 6.3))
+                    "target (25) with the chain input (20)."))
 
     A(heading("C. Step 1: fitting the stage law through an assumed map"))
     A(para("For an assumed stage count $K$ and an assumed map shape, one of the three of "
            f"{F('map')}(c), the stage parameters minimize the root-mean-square mismatch between the model's "
            "conducting fraction and the target:", "FirstParagraph"))
-    A(equation("\\{ s_{up}, s_{dn}, v_t \\}^{\\star} = \\arg \\min~\\rms_t \\left[ M(v_K(t)) - \\hat{K}_u^{file}(t) \\right],\\quad x_{lin},~p~\\text{fixed}", 26))
-    A(para("with $0 \\le v_t \\le 0.7$. The map is an input to the fit and not a result of it. The residual is "
+    A(equation("\\{ s_{up}, s_{dn}, v_t \\}^{\\star} = \\arg \\min~R,\\quad x_{lin},~p~\\text{fixed} \\\\ R = \\rms_t \\left[ M(v_K(t)) - \\hat{K}_u^{file}(t) \\right]", 26, size=18))
+    A(para("with $0 \\le v_t \\le 0.7$; $R$ is the residual. The map is an input to the fit and not a result of it. The residual is "
            "accumulated almost entirely within the two edges of the target, each about 0.7 ns wide on ex2, because "
            "the curve is flat at 0 or 1 elsewhere; a residual of 0.023 means that, averaged over the window, the "
            "model is 2.3 % of the full swing away from the file, most of it a small timing and shape difference at "
@@ -511,12 +593,12 @@ def build_sections(pkg: Package, d) -> list[str]:
         cal = f"{r['vt_cal']:.3f}" if abs(r["rate_scale"] - 1) < 1e-3 else f"rates × {r['rate_scale']:.2f}"
         _fa_rows.append([r["dev"], f"{r['cc']:g}", str(r["K"]), f"({r['shape'][0]:g}, {r['shape'][1]:g})",
                          f"{r['s_up']:.2f}", f"{r['s_dn']:.2f}", f"{r['vt_fit']:.3f}", f"{r['rms']:.4f}", cal])
-    A(table(["Buffer", "$C_{comp}$ (pF)", "$K$", "Map shape", "$s_{up}$ (/ns)", "$s_{dn}$ (/ns)", "$v_t$ fitted",
-             "Residual", "$v_t$ calibrated"], _fa_rows, [1500, 1000, 600, 1200, 1050, 1050, 1000, 1000, 1200],
-            f"{T('fit_all')}: The fit (26) on the twelve test buffers with the file-only settings, for the selected "
-            "stage count and map shape; $x_{lin}$ = 0.45 except "
-            + " and ".join(f"{r['dev']} ({r['x_lin']:.2f})" for r in fa if abs(r["x_lin"] - 0.45) > 1e-6)
-            + ", where it was fitted. Last column: after step 3.", size=16))
+    A(tab_wide(pkg, "fit_all", "The fit (26) on the twelve test buffers with the file-only settings, for the selected "
+               "stage count and map shape ($x_{lin}$ = 0.45 except "
+               + " and ".join(f"{r['dev']} ({r['x_lin']:.2f})" for r in fa if abs(r["x_lin"] - 0.45) > 1e-6)
+               + ", fitted; last column: after step 3)",
+               ["Buffer", "$C_{comp}$ (pF)", "$K$", "Map shape", "$s_{up}$ (/ns)", "$s_{dn}$ (/ns)", "$v_t$ fitted",
+                "Residual", "$v_t$ calibrated"], _fa_rows, [1500, 1000, 600, 1200, 1050, 1050, 1000, 1000, 1200]))
 
     A(heading("D. What the file cannot determine"))
     A(para("A complete transition is two edges. Two edges fix two rates and one delay, and the fit has exactly "
@@ -540,8 +622,9 @@ def build_sections(pkg: Package, d) -> list[str]:
            "delivers a conducting fraction of 0.51, the second none at all, because its higher threshold "
            "extinguishes the pulse inside the chain. Two models that the file cannot tell apart give opposite "
            "answers for the short pulse."))
-    A(table(_hdr, _tr, [2400] + [1200] * 6,
-            f"{T('shapes')}: Residual of the fit (26) for six assumed map shapes ($x_{{lin}} = 0.45$; $K = 3$ for ex2, 7 for inv_chain)"))
+    _hdr = ["Shape $(v_{t,map}, a)$"] + [f"({v:g}, {a_:g})" for v, a_ in d["shape_order"]]
+    A(tab_wide(pkg, "shapes", "Residual of (26) for six assumed map shapes; $K = 3$ for ex2, 7 for inv_chain",
+               _hdr, _tr, [1300] + [950] * 6, size=16, width=7000, jc="center"))
     A(fig("ambiguity", "Two assumed maps on ex2 ($K = 3$), each with the stage law fitted through it to the same "
                        "file. (a) The maps. (b) The gate each fit produces. (c) Full transition: both reproduce the "
                        "file. (d) An 810 ps pulse, before calibration: one passes it, the other extinguishes it."))
@@ -558,7 +641,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            "pull-up has a distinct minimum.", "FirstParagraph"))
     A(fig("rms_vs_k", "Residual of (26) against stage count for the thirteen predriver chains of the twelve test "
                       "buffers (io_buf has two). Circles mark the netlist stage count; the thick segments mark the "
-                      "band (27).", 5.6))
+                      "band (27)."))
     A(para("*The threshold, the exponent, the boundary.* The fitted $v_t$ of ex2 is 0.029 in one fitting pass "
            "($K = 6$) and 0.528 in another ($K = 3$) that differs in $C_{comp}$ and map shape, at residuals of 0.0202 "
            "and 0.0233. At full swing each stage input dwells at the rail, where (17) does not depend on $p$: in "
@@ -572,7 +655,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            "such a chain extinguishes short pulses (stressed gate peak 0.228 where 0.758 is measured). Sharing one "
            "parameter set (A3) removes this solution and leaves $K$ as the single structural unknown. The procedure "
            "therefore keeps a band of stage counts instead of a point estimate:", "FirstParagraph"))
-    A(equation("\\text{band} = \\text{the~three~smallest}~K~\\text{with}~\\rms(K) \\le 1.25~\\min_{K'}~\\rms(K')", 27))
+    A(equation("\\text{band} = \\text{the~three~smallest}~K \\\\ \\text{with}~\\rms(K) \\le 1.25~\\min_{K'}~\\rms(K')", 27, size=18))
     A(para("On the twelve test buffers the band contains the netlist stage count in every case. The tolerance and "
            "the band width were chosen on these same buffers, so this is a property of the rule as tuned and not "
            "an independent validation.", "FirstParagraph"))
@@ -588,6 +671,10 @@ def build_sections(pkg: Package, d) -> list[str]:
            f"({F('stress_use')}(a)); nothing inside the buffer is observed. In the tests below it is the pulse that "
            "reaches about 50 % of the settled swing into 50 Ω and 2 pF, taken from a transistor-level simulation; "
            "for a user it would be a bench measurement or a waveform supplied by the vendor.", "FirstParagraph"))
+    A(fig("stress_use", "Use of the stressed measurement on ex2. (a) The measurement: pad voltage for an 810 ps "
+                        "pulse. (b) The nine candidates as fitted to the file, driven by the same pulse; dashed: the "
+                        "measured peak. (c) After calibration of each threshold on the peak; shaded: the window of (29); "
+                        f"teal: the selected candidate. (d) The selected model at the five widths of {S('verify')}."))
     A(para("*Calibration (step 3).* The stage threshold decides how much of a short pulse survives each stage and "
            "so sets the height of the model's pad pulse; it is also the parameter the file determines worst. For "
            "each candidate, with $\\hat{V}$ the measured peak, the peak error", "FirstParagraph"))
@@ -610,7 +697,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            f"({F('stress_use')}(c)), so the peak can no longer distinguish them. They still differ in when the pulse "
            "arrives and how it returns, between 0.11 ns early and 0.30 ns late on ex2. The candidate is chosen by "
            "the waveform error over the pulse and its return,", "FirstParagraph"))
-    A(equation("(K, v_{t,map}, a)^{\\star} = \\arg \\min~\\rms_{t \\in [t_f - 0.3~\\text{ns},~t_f + 1.5~\\text{ns}]} \\left[ V_{pad}^{model}(t) - V_{pad}^{meas}(t) \\right]", 29))
+    A(equation("(K, v_{t,map}, a)^{\\star} = \\arg \\min~E_W \\\\ E_W = \\rms_{t \\in W} \\left[ V_{pad}^{model}(t) - V_{pad}^{meas}(t) \\right] \\\\ W = [t_f - 0.3~\\text{ns},~t_f + 1.5~\\text{ns}]", 29, size=18))
     A(para(f"where $t_f$ is the falling edge of the input pulse (the shaded interval of {F('stress_use')}(c)); the "
            "window was chosen once and not tuned. One waveform is thus used for two decisions, read from two "
            "features of it: the threshold from its height, the stage count and map shape from its shape. Selecting "
@@ -620,11 +707,6 @@ def build_sections(pkg: Package, d) -> list[str]:
            "arriving 155–300 ps late. The measurement can only choose among the candidates it is offered: if the "
            "true map is unlike all three shapes, or the true stage count lies outside the band, it selects the "
            "least wrong candidate.", "FirstParagraph"))
-    A(fig("stress_use", "Use of the stressed measurement on ex2. (a) The measurement: pad voltage for an 810 ps "
-                        "pulse. (b) The nine candidates as fitted to the file, driven by the same pulse; dashed: the "
-                        "measured peak. (c) After calibration of each threshold on the peak; shaded: the window of (29); "
-                        f"teal: the selected candidate. (d) The selected model at the five widths of {S('verify')}."))
-
     A(heading("F. The procedure end to end on ex2"))
     _cands = lg["cands"]
     _selr = next(r for r in _cands if r["selected"])
@@ -649,13 +731,12 @@ def build_sections(pkg: Package, d) -> list[str]:
         _cr.append([str(r["K"]), f"({r['shape'][0]:g}, {r['shape'][1]:g})", f"{r['vt_fit']:.3f}", f"{r['rms']:.4f}",
                     f"{r['peak0']:.2f}", f"{r['vt_cal']:.3f}", f"{r['peak_err']:+.1f}", f"{r['pad_rms']:.0f}",
                     f"{r['lag']:+.0f}", f"{r['worst']:.1f}", "selected" if r["selected"] else ""])
-    A(table(["$K$", "Shape", "$v_t$ fit", "Residual (26)", "Peak before (V)", "$v_t$ cal.", "Peak err. (%)",
-             "rms (29) (mV)", "Lag (ps)", "Worst (%)", ""], _cr,
-            [500, 1000, 850, 1050, 1050, 850, 1000, 1050, 800, 900, 900],
-            f"{T('ledger')}: The nine candidates of ex2 through steps 2–4 (file-only settings). Columns 3–4: the fit "
-            f"(26). Peak before: the pad peak of the candidate as fitted, 810 ps pulse (measured {lg['peak']:.2f} V). "
-            "$v_t$ cal., peak error, rms (29) and lag: after calibration, at the calibration width. Worst: peak "
-            "error over the five stressed widths, not available to the procedure.", size=15))
+    A(tab_wide(pkg, "ledger", "The nine candidates of ex2 through steps 2–4, file-only settings (columns 3–4: the fit (26); "
+               f"peak before: as fitted, 810 ps pulse, measured {lg['peak']:.2f} V; $v_t$ cal., peak error, rms (29), lag: "
+               "after calibration, at the calibration width; worst: over the five stressed widths, not available to the procedure)",
+               ["$K$", "Shape", "$v_t$ fit", "Residual (26)", "Peak before (V)", "$v_t$ cal.", "Peak err. (%)",
+                "rms (29) (mV)", "Lag (ps)", "Worst (%)", ""], _cr,
+               [500, 1000, 850, 1050, 1050, 850, 1000, 1050, 800, 900, 900], size=15))
     A(para(f"Three things can be read off {T('ledger')}. The fit residuals of the nine candidates lie within "
            f"{100 * (max(r['rms'] for r in _cands) / min(r['rms'] for r in _cands) - 1):.0f} % of each other, so the "
            "file does not rank them; their peaks before calibration do. After calibration every candidate matches "
@@ -692,10 +773,10 @@ def build_sections(pkg: Package, d) -> list[str]:
     rows.append(["inv_chain, linear superposition"] + [f3(v) for v in peaks(iv_rows, 7, "lin_max")] + [""])
     wid_e = [r["width_ps"] for r in e if int(r["K"]) == 3]
     wid_i = [r["width_ps"] for r in iv_rows if int(r["K"]) == 7]
-    A(table(["Buffer, model", "narrowest", "2nd", "3rd", "4th", "widest", "Full-swing residual"], rows,
-            [2700, 1150, 900, 900, 900, 1050, 1700],
-            f"{T('gate')}: Peak of the stressed gate, measured against the stage law fitted at full swing only, and "
-            f"against linear superposition (pulse widths ex2 {wid_e[0]}–{wid_e[-1]} ps, inv_chain {wid_i[0]}–{wid_i[-1]} ps)"))
+    A(tab_wide(pkg, "gate", "Peak of the stressed gate: measured, the stage law fitted at full swing only, and linear "
+               f"superposition (pulse widths ex2 {wid_e[0]}–{wid_e[-1]} ps, inv_chain {wid_i[0]}–{wid_i[-1]} ps)",
+               ["Buffer, model", "narrowest", "2nd", "3rd", "4th", "widest", "Full-swing residual"], rows,
+               [2700, 1150, 900, 900, 900, 1050, 1700]))
     r3 = [r for r in e if int(r["K"]) == 3]
     worst3 = max(abs(float(r["pred_max"]) - float(r["meas_max"])) for r in r3)
     lin0 = float(r3[0]["lin_max"]) - float(r3[0]["meas_max"])
@@ -745,9 +826,9 @@ def build_sections(pkg: Package, d) -> list[str]:
                      "no valid run" if dead else f"{nat:.1f}"])
     t1s = [x[2] for x in d["pad"]]
     live = [x[1] for x in d["pad"] if not x[3]]
-    A(table(["Buffer", "Netlist $K$", "Selected $K$", "Selected map shape", "Proposed: worst peak error (%)",
-             "Native IBIS: worst peak error (%)"], rows, [1700, 1100, 1200, 1700, 2000, 1900],
-            f"{T('pad')}: Pad-level result on the twelve test buffers (worst of five stressed pulse widths)"))
+    A(tab_wide(pkg, "pad", "Pad-level result on the twelve test buffers (worst of five stressed pulse widths)",
+               ["Buffer", "Netlist $K$", "Selected $K$", "Selected map shape", "Proposed: worst peak error (%)",
+                "Native IBIS: worst peak error (%)"], rows, [1700, 1100, 1200, 1700, 2000, 1900]))
     A(para(f"The proposed model is within 10 % on all twelve buffers (range {min(t1s):.1f}–{max(t1s):.1f} %, mean "
            f"{sum(t1s) / len(t1s):.1f} %; {T('pad')}, {F('pad_waveforms')}). On the seven buffers for which the native "
            f"element produced a valid run its worst peak error is {min(live):.0f}–{max(live):.0f} %; on the five ex2 "
@@ -756,7 +837,7 @@ def build_sections(pkg: Package, d) -> list[str]:
            "FirstParagraph"))
     A(fig("pad_waveforms", "Pad voltage for the narrowest stressed pulse of three buffers: transistor-level reference, "
                            "HSPICE native IBIS, and the proposed model built from the file and one stressed measurement. "
-                           "Percentages are peak errors against the reference.", 6.3))
+                           "Percentages are peak errors against the reference."))
     A(heading("C. Limits of the evidence"))
     A(para("The gate-level test establishes that the structure of (19) extrapolates from full swing to truncated "
            "pulses when fitted to the true gate; the pad-level test establishes the accuracy of the file-only "
@@ -768,7 +849,7 @@ def build_sections(pkg: Package, d) -> list[str]:
 
     # ================================================================ VI. discussion
     A(heading(f"{SEC['disc']}. Discussion: Approximations and Limits", 1))
-    A(table(["Label", "Approximation", "Introduced at", "What it removes", "Evidence"],
+    A(tab_wide(pkg, "approx", "Approximations of the model", ["Label", "Approximation", "Introduced at", "What it removes", "Evidence"],
             [["A0", "One $V_{TH}$, $\\alpha$, $V_{D0}$ for both devices of a stage", "(13)–(14)",
               "Per-device parameters", f"As in [1, Sec. VI]. {T('device')}: the N and P devices differ ($x_0$ 0.34 against 0.57 on inv_chain)"],
              ["A1", "$p$ in place of $\\alpha$, with $p = 1$", "(17)", f"The measured $\\alpha$ ({T('device')})",
@@ -780,7 +861,7 @@ def build_sections(pkg: Package, d) -> list[str]:
               f"Free fit fails ({S('ident', 'D')}); $K$ selected by (29)"],
              ["A4", "Map shape taken from a grid of three", "(22), (26)", "Trade-off between gate and map",
               "Selected by (29); grid chosen on the test buffers"]],
-            [650, 2700, 1300, 2150, 2800], f"{T('approx')}: Approximations of the model", size=16))
+            [650, 2700, 1300, 2150, 2800]))
     A(para(f"{T('approx')} collects the approximations. Everything else in (19) is inherited from (1) and (2)–(5): "
            "the threshold, the constant-current ramp, the straight-line resistive tail and the two-device "
            "structure; (24) is the existing model's. Two limits deserve emphasis. First, the method has four "
@@ -815,19 +896,47 @@ def build_sections(pkg: Package, d) -> list[str]:
     # ================================================================ references
     A(heading("References", 1))
     A(para("[1] T. Sakurai and A. R. Newton, “Alpha-power law MOSFET model and its applications to CMOS "
-           "inverter delay and other formulas,” IEEE J. Solid-State Circuits, vol. 25, no. 2, pp. 584–594, "
-           "Apr. 1990.", "FirstParagraph"))
+           "inverter delay and other formulas,” *IEEE J. Solid-State Circuits*, vol. 25, no. 2, pp. 584–594, "
+           "Apr. 1990.", "Bibliography"))
     A(para("[2] H. Shichman and D. A. Hodges, “Modeling and simulation of insulated-gate field-effect "
-           "transistor switching circuits,” IEEE J. Solid-State Circuits, vol. SC-3, 1968."))
-    A(para("[3] N. Hedenstierna and K. O. Jeppson, “CMOS circuit speed and buffer optimization,” IEEE "
-           "Trans. Computer-Aided Design, vol. CAD-6, no. 2, pp. 270–280, Mar. 1987."))
+           "transistor switching circuits,” *IEEE J. Solid-State Circuits*, vol. SC-3, 1968.", "Bibliography"))
+    A(para("[3] N. Hedenstierna and K. O. Jeppson, “CMOS circuit speed and buffer optimization,” *IEEE "
+           "Trans. Computer-Aided Design*, vol. CAD-6, no. 2, pp. 270–280, Mar. 1987.", "Bibliography"))
     return t
 
 
 # ----------------------------------------------------------------------------- assembly
-def main() -> int:
+PLAN = DOC / "layout_plan.json"
+
+
+def load_data():
+    """The document's data, cached between layout iterations (STAGE_LAW_FAST=1 reuses the cache)."""
+    import os
+    import pickle
+    cache = DOC / "_build_data.pkl"
+    if os.environ.get("STAGE_LAW_FAST") and cache.exists():
+        return pickle.loads(cache.read_bytes())
     d = data()
+    cache.write_bytes(pickle.dumps(d))
+    return d
+
+
+def main(d=None, plan: dict | None = None, out_path: Path | None = None, limit: int | None = None):
+    """Build the paper. `plan` maps a float key to {"before": prefix} or {"after": prefix}, the plain-text
+    prefix of the paragraph it is anchored to (scripts/stage_law_doc_layout.py writes it); without a plan,
+    or for a key it lacks, the float is anchored after the paragraph that first mentions it. Returns the
+    float registry and the ordered paragraph prefixes of the built document."""
+    import json
+    if d is None:
+        d = load_data()
+    if plan is None:
+        plan = json.loads(PLAN.read_text(encoding="utf-8")) if PLAN.exists() else {}
+    out_path = out_path or OUT
+    FLOATS.clear()
+    Package._boxes = 0
     pkg = Package(SRC, DOC / "_build")
+    pkg.float_heights = {}
+    ieee_styles(pkg.dir / "word" / "styles.xml")
     doc_xml = pkg.dir / "word" / "document.xml"
     tree = etree.parse(str(doc_xml))
     body = tree.getroot().find(f"{{{W}}}body")
@@ -845,6 +954,10 @@ def main() -> int:
     assert etree.QName(sect).localname == "sectPr"
     for k in kids[i_f:-1]:
         body.remove(k)
+    # the page: Letter, IEEE margins, two columns
+    new_sect = etree.fromstring(f"<root {Package.NS}>{ieee_sect_pr(2, continuous=True)}</root>")[0]
+    body.replace(sect, new_sect)
+    sect = new_sect
 
     def frag(xml: str):
         return list(etree.fromstring(f"<root {Package.NS}>{xml}</root>"))
@@ -909,7 +1022,10 @@ def main() -> int:
         if sid == "Title":
             set_text(k, inline("A Stage-Law Model of the IBIS Predriver for Short and Stressed Pulses"))
         elif sid == "Date":
-            set_text(k, inline("October 15, 2026"))
+            set_text(k, inline("Author names and affiliations"))
+            # the title block spans the page: end a one-column section after it
+            for new in frag(section_break(1)):
+                k.addnext(new)
         elif sid == "Heading1" and text(k).startswith("II. Stage Model Derivation"):
             set_text(k, inline(f"{SEC['law']}. The Stage Law"))
         elif text(k).startswith("This section derives the stage law"):
@@ -919,6 +1035,16 @@ def main() -> int:
                                        and k.find(f"{{{W}}}pPr/{{{W}}}pStyle").get(f"{{{W}}}val") == "Heading1"))
     for new in frag(ins["front"]):
         head_ii.addprevious(new)
+    # equations of the kept derivation that are too wide for a column: (10) and (15), two lines each
+    for ends, has, latex, num in (
+            ("10", "GS", "|V_{GS,P}| = u\\,V_{DD},\\quad |V_{DS,P}| = (1 - v)\\,V_{DD} \\\\ V_{GS,N} = (1 - u)\\,V_{DD},\\quad V_{DS,N} = v\\,V_{DD}", 10),
+            ("15", "min", "\\frac{dv}{dt} = s_{up}\\,g(u)^{\\alpha}\\min\\left(1, \\frac{1 - v}{x_0\\,g(u)^{\\alpha/2}}\\right) \\\\ \\quad - s_{dn}\\,g(1 - u)^{\\alpha}\\min\\left(1, \\frac{v}{x_0\\,g(1 - u)^{\\alpha/2}}\\right)", 15)):
+        el = next(k for k in body if text(k).rstrip().endswith(ends) and has in text(k).replace(" ", "")
+                  and k.find(f"{{{W}}}pPr/{{{W}}}pStyle") is not None)
+        news = frag(equation(latex, num, size=18))
+        body.replace(el, news[0])
+        for extra in news[1:]:
+            news[0].addnext(extra) if extra is news[1] else news[-2].addnext(extra)
     # Section II-C: why u is measured downward, and that v_t changes meaning later
     for tnode in body.iter(f"{{{W}}}t"):
         if tnode.text and "fully turns on the working (pull-up) device" in tnode.text:
@@ -934,6 +1060,60 @@ def main() -> int:
         body.insert(pos + j, new)
     for new in frag("".join(tail)):
         sect.addprevious(new)
+    # IEEE subsection heads in title case
+    small = {"a", "an", "and", "the", "of", "to", "from", "for", "on", "in", "with", "by", "at", "or", "against"}
+    for k in body:
+        st = k.find(f"{{{W}}}pPr/{{{W}}}pStyle")
+        if st is not None and st.get(f"{{{W}}}val") == "Heading2":
+            for tnode in k.iter(f"{{{W}}}t"):
+                if tnode.text:
+                    words = tnode.text.split(" ")
+                    out = []
+                    for i, w in enumerate(words):
+                        first = i == 0 or words[i - 1].endswith(":")
+                        out.append(w if (not first and w.lower() in small) or not w else w[0].upper() + w[1:])
+                    tnode.text = " ".join(out)
+
+    # a paragraph followed by a display equation keeps with it (page and column breaks alike)
+    kids = list(body)
+    for a, b in zip(kids, kids[1:]):
+        if (etree.QName(a).localname == "p" and etree.QName(b).localname == "p"
+                and b.find(f".//{{{_M}}}oMathPara") is not None):
+            ppr = a.find(f"{{{W}}}pPr")
+            if ppr is None:
+                ppr = etree.Element(f"{{{W}}}pPr")
+                a.insert(0, ppr)
+            if ppr.find(f"{{{W}}}keepNext") is None:
+                kn = etree.Element(f"{{{W}}}keepNext")
+                st = ppr.find(f"{{{W}}}pStyle")
+                st.addnext(kn) if st is not None else ppr.insert(0, kn)
+
+    def style_of(el) -> str:
+        st = el.find(f"{{{W}}}pPr/{{{W}}}pStyle")
+        return st.get(f"{{{W}}}val") if st is not None else ""
+
+    # the double-column floats, each anchored where the plan says (default: after its mention)
+    paras = [k for k in body if etree.QName(k).localname == "p"]
+    prefixes = [plain_prefix(k) for k in paras]
+    inserted = []                                       # the blocks' own paragraphs: never anchors
+    for f in FLOATS[:limit]:
+        spec = plan.get(f["key"]) or {"after": f["after"]}
+        how, pre = next(iter(spec.items()))
+        if pre not in prefixes:
+            how, pre = "after", f["after"]
+        anchor = paras[prefixes.index(pre)]
+        if how == "before":                                 # a heading stays with its first paragraph
+            prev = anchor.getprevious()
+            while prev is not None and etree.QName(prev).localname == "p" and style_of(prev).startswith("Heading"):
+                anchor, prev = prev, prev.getprevious()
+        cur = anchor
+        for new in frag(f["xml"]):
+            inserted.append(new)
+            if how == "before":
+                anchor.addprevious(new)
+            else:
+                cur.addnext(new)
+                cur = new
 
     # no stale pointers: every section reference must name a section that exists
     import re
@@ -941,10 +1121,11 @@ def main() -> int:
     bad = [r for r in refs if r.split()[1].split("-")[0] not in SEC.values()]
     assert not bad, bad
     tree.write(str(doc_xml), xml_declaration=True, encoding="UTF-8", standalone=True)
-    pkg.finish(OUT)
-    print(f"wrote {OUT}  ({OUT.stat().st_size / 1024:.0f} kB, {len(pkg.images)} figures); section refs: {refs}")
-    return 0
+    pkg.finish(out_path)
+    print(f"wrote {out_path}  ({out_path.stat().st_size / 1024:.0f} kB, {len(pkg.images)} figures); section refs: {refs}")
+    return ([dict(key=f["key"], after=f["after"], height=f["height"]) for f in FLOATS],
+            ["" if k in inserted else plain_prefix(k) for k in body if etree.QName(k).localname == "p"])
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()
