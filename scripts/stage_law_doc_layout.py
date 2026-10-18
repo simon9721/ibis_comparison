@@ -15,7 +15,9 @@ mention, under which it fits. Three rules shape the choice:
     - the room under a paragraph accounts for the column balancing: a break before a paragraph
       at height y in column 2 pulls the columns level at about half the text above it;
     - a block is not put under a remnant of one to five text lines, which balancing would smear
-      across both columns; it goes under no text at all, or under at least six lines;
+      across both columns; it goes under no text at all, or under at least six lines, and under
+      at least twelve when the remnant holds a display equation (balancing ignores keep-with-next
+      and split equation (20) between the columns at six);
     - figures keep their numbering order on the page, and so do tables: a block is never
       anchored before the anchor of the previous block of its kind.
 
@@ -29,6 +31,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -44,6 +47,8 @@ TEXT_H_IN = PAGE_H_IN - TOP_IN - BOTTOM_IN
 COL_SPLIT_IN = LEFT_IN + 3.6          # lines starting right of this are in column 2
 MARGIN_IN = 0.25                       # kept free under a block
 MIN_LINES_ABOVE = 6                    # a remnant shorter than this is not balanced above a block
+MIN_LINES_ABOVE_EQ = 12                # ... and shorter than this when it holds a display equation
+_EQ_NUM = re.compile(r"\(\d{1,2}\)\s*$")   # an equation line ends with its number
 TEXT_PT = 9.5                          # body text is 10 pt; captions and tables are 8 pt
 
 
@@ -128,9 +133,10 @@ def block_extents(pages, placed):
 
 
 def room_under(pages, blocks, page, col, y):
-    """(room in inches, text lines above) for a block inserted before a paragraph at (col, y) of
-    `page`: the room left once the text above it is balanced across the two columns, and how many
-    body-text lines in column 1 stand between the nearest block above and the paragraph."""
+    """(room in inches, text lines above, remnant holds an equation) for a block inserted before a
+    paragraph at (col, y) of `page`: the room left once the text above it is balanced across the
+    two columns, how many body-text lines in column 1 stand between the nearest block above and
+    the paragraph, and whether a display equation stands among them."""
     lines = pages[page - 1]["lines"]
     above_blocks = [b for t, b in blocks.get(page, []) if b <= y + 0.05]
     if above_blocks:
@@ -139,12 +145,13 @@ def room_under(pages, blocks, page, col, y):
         s = min((l["y"] for l in lines if l["col"] == 1), default=0.0)
     else:
         s = 0.0
-    n_above = sum(1 for l in lines if l["col"] == 1 and l["size"] >= TEXT_PT and s - 0.02 < l["y"] < y - 0.02)
-    if col == 2:
-        n_above += sum(1 for l in lines if l["col"] == 2 and l["size"] >= TEXT_PT and l["y"] < y - 0.02)
+    rem = [l for l in lines if (l["col"] == 1 and s - 0.02 < l["y"] < y - 0.02)
+           or (col == 2 and l["col"] == 2 and l["y"] < y - 0.02)]
+    n_above = sum(1 for l in rem if l["size"] >= TEXT_PT)
+    has_eq = any(_EQ_NUM.search(l["text"]) for l in rem)
     before = (y - s) if col == 1 else (TEXT_H_IN - s) + (y - s)
     room = TEXT_H_IN - (s + max(before, 0.0) / 2) - MARGIN_IN
-    return room, n_above
+    return room, n_above, has_eq
 
 
 def main() -> int:
@@ -194,8 +201,8 @@ def main() -> int:
                 continue
             if pg > mention + 3:
                 break
-            room, n_above = room_under(pages, blocks, pg, col, y)
-            if 0 < n_above < MIN_LINES_ABOVE:
+            room, n_above, has_eq = room_under(pages, blocks, pg, col, y)
+            if 0 < n_above < (MIN_LINES_ABOVE_EQ if has_eq else MIN_LINES_ABOVE):
                 continue
             if room >= f["height"]:
                 choice, why = (j, pg, col, y), f"room {room:.1f}, {n_above} lines above"

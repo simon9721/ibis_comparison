@@ -112,7 +112,7 @@ def fig_problem():
         b.text(0.4, -0.3, "810 ps input pulse", ha="center", va="top", fontsize=7)
         b.set_xlim(-0.5, 3.0); b.set_ylim(-0.5, 2.0)
         b.set_xlabel("time from the input edge (ns)")
-        b.set_title("(b) a short pulse: the file's model fails", fontsize=8.5)
+        b.set_title("(b) a short pulse: the native IBIS model fails", fontsize=8.5)
         b.legend(frameon=False, loc="upper left", fontsize=7)
         save(fig, "fig_problem")
 
@@ -264,9 +264,10 @@ def fig_stage_law():
 
 # ------------------------------------------------------------------ 3. the signal path
 def fig_blocks():
+    """(a) The buffer as an IBIS file describes it; (b) the model's signal path, aligned under it."""
     with plt.rc_context(RC):
-        fig, a = plt.subplots(figsize=(W, 2.5))
-        a.set_xlim(0, 100); a.set_ylim(0, 40); a.axis("off")
+        fig, a = plt.subplots(figsize=(W, 3.8))
+        a.set_xlim(0, 100); a.set_ylim(0, 66); a.axis("off")
 
         def box(x, y, w, h, text, fc="#F1F3F4", ec="#555555", fs=7.6, bold=False):
             a.add_patch(mpatches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.25,rounding_size=0.8",
@@ -280,6 +281,31 @@ def fig_blocks():
                 a.text((x0 + x1) / 2, max(y0, y1) + dy, text, ha="center", va="bottom", fontsize=7.4)
 
         new, old = "#DDF1F0", "#F1F3F4"
+        # (a) the buffer
+        a.text(0.5, 64.3, "(a) the buffer", fontsize=8.5, fontweight="bold", va="center")
+        a.text(1.0, 52, "input\npin", fontsize=7.4, va="center", ha="left")
+        arrow(7.0, 52, 10, 52)
+        for i, x in enumerate((10, 20.5)):
+            box(x, 47, 8.5, 10, f"inverter\n{i + 1}", fc=old)
+            arrow(x + 8.5, 52, x + 10.5, 52)
+        a.text(33.2, 52, "…", fontsize=11, ha="center", va="center")
+        arrow(35, 52, 37, 52)
+        box(37, 47, 8.5, 10, "inverter\n$K$", fc=old)
+        arrow(45.5, 52, 50, 52, "gate")
+        box(50, 44.5, 16, 15, "output stage\npull-up device\npull-down device", fc=old)
+        arrow(66, 52, 71, 52, "die")
+        box(71, 47, 8.5, 10, "$C_{comp}$", fc=old)
+        arrow(79.5, 52, 83.5, 52)
+        box(83.5, 47, 9.5, 10, "package\n$R$, $L$, $C$", fc=old)
+        arrow(93, 52, 98.5, 52)
+        a.text(96, 54.2, "pad", fontsize=8.5, ha="center")
+        a.plot([10, 45.5], [60.2, 60.2], color="#555555", lw=1.2)
+        a.text(27.7, 61.2, "predriver: nothing in the file describes it", ha="center", fontsize=7.4, color="#555555")
+        a.plot([50, 93], [43.0, 43.0], color="#555555", lw=1.2)
+        a.text(71.5, 42.0, "in the file: I–V tables, V–T waveforms of complete transitions, $C_{comp}$, package",
+               ha="center", va="top", fontsize=7.4, color="#555555")
+        # (b) the model
+        a.text(0.5, 38.3, "(b) the model", fontsize=8.5, fontweight="bold", va="center")
         a.text(1.5, 26, "$V_{in}$", fontsize=8.5, va="center")
         arrow(5.2, 26, 8.5, 26)
         box(8.5, 21, 13.5, 10, "comparator\nat $V_{DD}/2$\n(20)", fc=new, ec=TEAL, fs=7.0)
@@ -303,8 +329,8 @@ def fig_blocks():
         a.text(60.4, 17.5, "$1-G_{UP}$", fontsize=7.2, ha="right")
         arrow(76, 15, 81, 15, "$K_d$")
         # braces
-        a.plot([10, 76], [35.5, 35.5], color=TEAL, lw=1.2)
-        a.text(43, 36.5, "added by the proposed method: fitted to the file, one stressed run to calibrate",
+        a.plot([10, 76], [34.5, 34.5], color=TEAL, lw=1.2)
+        a.text(43, 35.5, "added by the proposed method: fitted to the file, one stressed run to calibrate",
                ha="center", fontsize=7.6, color=TEAL)
         a.plot([81, 93], [9.5, 9.5], color="#666666", lw=1.2)
         a.text(87, 8.3, "from the IBIS file,\nunchanged", ha="center", va="top", fontsize=7.4, color="#555555")
@@ -1093,16 +1119,26 @@ def fig_target():
     shift_f = t50(tf[sel_f], -kb[sel_f]) - t50(tau_f, -ku_f)
     ov = (tau_r + shift_r >= 4.0) & (tau_r + shift_r <= 12.5)
     rms_r = float(np.sqrt(np.mean((np.interp(tau_r[ov] + shift_r, tf, kb) - ku_r[ov]) ** 2)))
+    # the C_comp estimate from the file (scripts/ccomp_from_file.py, results/ccomp_from_file_2026-09-22)
+    CCF = ROOT / "results" / "ccomp_from_file_2026-09-22"
+    cc_rows = [r for r in csv.DictReader((CCF / "ccomp_curves.csv").open()) if r["buffer"] == "ex2"]
+    cc = np.array([float(r["c_comp_pF"]) for r in cc_rows])
+    mk = np.array([float(r["max_ku"]) for r in cc_rows])
+    info = next(r for r in csv.DictReader((CCF / "ccomp_from_file.csv").open()) if r["buffer"] == "ex2")
+    cc_declared, cc_loop, cc_knee = float(info["declared_pF"]), float(info["loop_pF"]), float(info["knee_ku_pF"])
+    ku_at_declared = float(np.interp(cc_declared, cc, mk))
+    msk = (mk >= 1.05) & (mk <= 1.35)
+    pa, pb = np.polyfit(cc[msk], mk[msk], 1)
     with plt.rc_context(RC):
-        fig, ax = plt.subplots(1, 2, figsize=(W, 2.5), gridspec_kw={"wspace": 0.28, "width_ratios": (0.85, 1.15)})
+        fig, ax = plt.subplots(1, 3, figsize=(W, 2.6), gridspec_kw={"wspace": 0.4, "width_ratios": (0.8, 1.2, 0.8)})
         b = ax[0]
         for i, (wf, lab) in enumerate(zip(dm.vt_rising, ("rising, fixture 0 V", "rising, fixture 3.3 V"))):
             b.plot(wf.data[:, 0] * 1e9, wf.data[:, 1], color=(TEAL, "#0B5F5C")[i], lw=1.5, label=lab)
         for i, (wf, lab) in enumerate(zip(dm.vt_falling, ("falling, fixture 0 V", "falling, fixture 3.3 V"))):
             b.plot(wf.data[:, 0] * 1e9, wf.data[:, 1], color=(BLUE, "#143E63")[i], lw=1.5, ls="--", label=lab)
         b.set_xlim(0, 8); b.set_xlabel("table time (ns)"); b.set_ylabel("pad voltage (V)")
-        b.set_title("(a) the file's V–T waveforms (50 Ω fixtures)", fontsize=8.5)
-        b.legend(frameon=False, fontsize=6.2, loc="center", bbox_to_anchor=(0.66, 0.7))
+        b.set_title("(a) the file's V–T waveforms", fontsize=7.6)
+        b.legend(frameon=False, fontsize=5.8, loc="center", bbox_to_anchor=(0.6, 0.62))
         c = ax[1]
         c.plot(tau_r + shift_r - 5.0, ku_r, color="#9A9A9A", lw=3.2, label="$K_u$ solved from (a)")
         c.plot(tau_r + shift_r - 5.0, kd_r, color="#9A9A9A", lw=3.2, ls="--", label="$K_d$ solved from (a)")
@@ -1114,12 +1150,29 @@ def fig_target():
             c.axvline(x, color=RED, lw=0.8, ls=":")
             c.text(x + 0.15, 0.86, lab, color=RED, fontsize=7)
         c.set_xlim(-1, 16); c.set_ylim(-0.12, 1.15); c.set_xlabel("time from the input edge (ns)"); c.set_ylabel("conducting fraction")
-        c.set_title(f"(b) solution, existing model (rms {rms_r:.3f}) and target", fontsize=8.5)
+        c.set_title("(b) solution, existing model, target", fontsize=7.6)
         c.legend(frameon=False, fontsize=6.2, loc="center right")
+        e = ax[2]
+        e.plot(cc, mk, color=TEAL, lw=1.6, label="peak of solved $K_u$")
+        xx = np.linspace(cc_knee, (1.38 - pb) / pa, 20)
+        e.plot(xx, pa * xx + pb, color=K_, lw=0.8, ls="--", label="rising branch, extrapolated")
+        e.axhline(1.0, color="#888888", lw=0.7)
+        e.plot([cc_declared], [ku_at_declared], "o", color=RED, ms=4)
+        e.text(cc_declared - 0.12, ku_at_declared + 0.012, f"declared\n{cc_declared:.1f} pF: {ku_at_declared:.2f}",
+               ha="right", va="bottom", fontsize=6.4, color=RED)
+        e.plot([cc_knee], [1.0], "o", color=K_, ms=4)
+        e.text(cc_knee + 0.15, 0.99, f"estimate\n{cc_knee:.2f} pF", ha="left", va="top", fontsize=6.4)
+        e.axvline(cc_loop, color=GREY, lw=0.8, ls=":")
+        e.text(cc_loop + 0.1, 1.17, f"netlist\n{cc_loop:.2f} pF", ha="left", va="top", fontsize=6.4, color="#555555")
+        e.set_xlim(0, 6); e.set_ylim(0.93, 1.36)
+        e.set_xlabel("assumed $C_{comp}$ (pF)"); e.set_ylabel("peak of solved $K_u$")
+        e.set_title("(c) $C_{comp}$ from the file", fontsize=7.6)
+        e.legend(frameon=False, fontsize=6.0, loc="upper left")
         save(fig, "fig_target")
     return dict(shift_r=shift_r, shift_f=shift_f, rms_r=rms_r, n_iv=len(dm.iv_pullup), n_vt=len(dm.vt_rising[0].data),
                 t_vt=float(dm.vt_rising[0].data[-1, 0] * 1e9), rfix=float(dm.vt_rising[0].r_fix),
-                vfix=[float(w.v_fix[0]) for w in dm.vt_rising], ku_max=float(ku_r.max()), kd_max=float(kd_r.max()))
+                vfix=[float(w.v_fix[0]) for w in dm.vt_rising], ku_max=float(ku_r.max()), kd_max=float(kd_r.max()),
+                cc_declared=cc_declared, cc_loop=cc_loop, cc_knee=cc_knee, ku_at_declared=ku_at_declared)
 
 
 # ------------------------------------------------------------------ J. the residual, pictured

@@ -1,68 +1,68 @@
 {
  "problem": {
-  "before": "Each transistor is described by the \u03b1-po"
+  "before": "Section II derives the stage law. Sectio"
  },
  "stage_law": {
-  "before": "For a falling output, (8) becomes"
+  "before": "In words, a stage is a bucket: it fills "
  },
  "blocks": {
-  "before": "The complement in (21) corresponds to an"
+  "before": "Where the gate node can be probed the cu"
  },
  "chain": {
-  "before": "The file does not contain the map. It gi"
+  "before": "Where the gate node can be probed the cu"
  },
  "map": {
   "before": "Fig. 6 shows the two relations evaluated"
  },
  "gate_to_ku": {
-  "before": "IV. Identification from the File and One"
- },
- "workflow": {
   "before": "ex2 is the running example, in two setti"
  },
+ "workflow": {
+  "before": "B. Step 0: The Target"
+ },
  "target": {
-  "before": "How the minimum is found. The residual i"
+  "before": "C. Step 1: Fitting the Stage Law Through"
  },
  "fit_knobs": {
-  "before": "How the minimum is found. The residual i"
+  "before": "The map. Table V gives the residual of ("
  },
  "fit_search": {
-  "before": "Why several stages. With a single stage,"
+  "before": "E. Steps 2\u20134: The Single Stressed Measur"
  },
  "fit_all": {
-  "before": "The threshold, the exponent, the boundar"
+  "before": "The map. Table V gives the residual of ("
  },
  "shapes": {
-  "before": "The threshold, the exponent, the boundar"
- },
- "ambiguity": {
-  "before": "The threshold, the exponent, the boundar"
- },
- "rms_vs_k": {
   "before": "On the twelve test buffers the band cont"
  },
+ "ambiguity": {
+  "before": "Calibration (step 3). The stage threshol"
+ },
+ "rms_vs_k": {
+  "before": "Calibration (step 3). The stage threshol"
+ },
  "stress_use": {
-  "before": "Three things can be read off Table VI. T"
+  "before": "F. The Procedure End to End on Ex2"
  },
  "calib_mech": {
-  "before": "The file-only model's internal gate, whi"
+  "before": "Two claims are verified separately: that"
  },
  "ledger": {
-  "before": "Three things can be read off Table VI. T"
+  "before": "A. Gate Level: The Stage Law Extrapolate"
  },
  "gate": {
-  "before": "On ex2 the stage law with the netlist st"
+  "before": "The file-only model's internal gate, whi"
  },
  "gate_verify": {
-  "before": "The proposed model is within 10 % on all"
+  "before": "The file-only model's internal gate, whi"
  },
  "pad": {
-  "before": "The proposed model is within 10 % on all"
+  "before": "C. Limits of the Evidence"
  },
  "pad_waveforms": {
-  "before": "Table IX collects the approximations. Ev"
+  "before": "C. Limits of the Evidence"
  },
  "approx": {
-  "before": "Three points are open. A drive-dependent"
+  "before": "Several points are open. A drive-depende"
  }
 }

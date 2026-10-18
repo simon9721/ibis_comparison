@@ -312,3 +312,58 @@ How the layout is made, because Word has no float mechanism of its own:
 
 Delivered as `\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v4_ieee.docx`.
 The builder now writes v4; v2 (chapter) and v3 (single column) stay as committed.
+
+## Cold read answered: stage_law_paper_v5_ieee.docx (2026-10-18)
+
+v4 was read as someone who knows IBIS and inverters and nothing of this project. Every point
+that read found is answered in v5, built by the same builder (`scripts/build_stage_law_doc.py`),
+in text, with one new study and two changed figures:
+
+- **Undefined terms.** A "Terms used throughout" paragraph closes the introduction: settled swing,
+  stressed, depth, the five test widths (and why io_buf's are 1505-2354 ps), calibration width,
+  probed, file-only, handover. Rates are "swings per ns" with the swing defined (Table I and the
+  kept Section II-D sentence). The nine variants are each described in one clause.
+- **One name per thing.** The converter (software), the existing model (the subcircuit it writes
+  today) and the native element (HSPICE's built-in, the baseline) are named once in the
+  introduction and used consistently; "existing converter", "existing circuit model" and "the
+  file's model" are gone (Fig. 1's panel title included).
+- **C_comp.** Section IV-B gains the estimate: why a too-large value inflates the solved K_u, the
+  knee rule (rising branch over 1.05-1.35 extrapolated to 1), 2.64 pF on ex2 against 5.0 declared
+  and 1.70 measured on the netlist, applied to every buffer upward or downward. Fig. 8 gains panel
+  (c) with that curve; Table IV's C_comp column reads "declared -> used"; Table III's step 0 and the
+  IV-A overview say C_comp is re-estimated, not read; Table I lists it.
+- **The two ex2 settings** are named, the probed-map setting (1.7 pF, map (0.57, 0.64): Figs. 4,
+  6, 8-12, Table V) and the file-only setting (2.64 pF, grid shapes: Tables IV, VI, Figs. 13-14,
+  Section V-B); every caption carries its setting, and the paragraph that introduces them gives the
+  numbers that differ (one-stage residual 0.083 / 0.092, fitted threshold 0.528 / 0.700). The
+  "0.029 (K = 6)" sentence is replaced by the probed-map, file-only K = 3 and file-only K = 5
+  thresholds from the data.
+- **Decisions the file does not make** are stated as inputs: the calibration width (shorten the
+  pulse until the pad peak is half the settled swing), the one-chain / two-chain structure (made
+  from the netlists here; listed as an open point with the x_lin fitted-or-fixed inconsistency).
+- **Selector against score.** The garbled "selecting on the peak" sentence is rewritten (52.3 /
+  51.7 / 217.3 mV with what each means); the ledger paragraph says the K = 4-5 candidates score
+  2.3-3.5 % on the peak but arrive 97-300 ps late, which (29) penalizes and the peak score does not;
+  lag is defined (positive = late) in the text and Table VI's caption, which is shortened.
+- **Smaller gaps.** The existing model's two retained details (5 ps lag, the time-indexed residual
+  table of up to 0.1) are described; why the target is the model's internal node; the pull-down map
+  has the same shape; the comparator and the input edges; what the user receives (a subcircuit of
+  behavioral sources, run in ngspice only) and what the procedure costs (about ninety ngspice runs
+  per buffer); the gate-domain fit of V-A named as a third setting, with linear superposition
+  spelled out; the band (27) moved next to the stage-count paragraph it belongs to.
+- **The physical buffer.** Fig. 3 gains panel (a), the buffer as the file describes it (predriver,
+  output stage, die node, package), aligned over the model's signal path.
+- **"No valid run."** Section V-B explains the native failure on the ex2 variants (HSPICE's
+  two-waveform solver on 2.7 ps tables with sub-mV pre-edge ripple) and reports the rerun of
+  `results/native_revived_variants_2026-10-18`: with the V-T tables resampled onto 300 rows and
+  nothing else changed, native runs on ex2_base, ex2_nomiller and ex2_slowpre (worst 64 / 65 / 35 %,
+  starred in Table VIII) and still not on ex2_skewp and ex2_weak. The abstract's "where it produces
+  a waveform at all" therefore stays.
+
+Layout: the pass gained one rule, no block under a remnant that holds a display equation unless
+it is at least twelve lines (column balancing ignores keep-with-next and had split (20) between
+the columns). Rendered through Word: 18 pages (v4: 17), 16 figures, 9 tables; every page but page 5 (1.1 in short
+under Fig. 2) and the last is full to within 0.5 in, and every block lands within two pages of its
+mention (Figs. 3, 11, 13 and 14 two pages after, where a run of blocks fills the nearer pages) Delivered as
+`\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v5_ieee.docx`. The builder now
+writes v5; v2, v3 and v4 stay as committed.
