@@ -27,14 +27,17 @@ text cannot drift from the order in which the objects appear.
 
     py -3.14 scripts/build_stage_law_doc.py
 
-Output: results/stage_law_doc_2026-10-01/stage_law_paper_v5_ieee.docx, IEEE Transactions layout (Letter,
-two 3.5 in columns, Times 10 pt, double-column floating figures and wide tables). The earlier
-stage_law_derivation_v2.docx (chapter), stage_law_paper_v3.docx (single column) and
-stage_law_paper_v4_ieee.docx (first IEEE layout) stay as committed.
+Output: results/stage_law_doc_2026-10-01/stage_law_paper_v6_ieee.docx, IEEE Transactions layout (Letter,
+two 3.5 in columns, Times 10 pt, double-column floating figures and wide tables, in-column figures),
+and stage_law_paper_v6_draft.md, a markdown rendering of the same body for review. References are
+numbered by first citation (REFS, C()); the kept derivation's literal [1]-[3] are renumbered with
+them. The earlier stage_law_derivation_v2.docx (chapter), stage_law_paper_v3.docx (single column),
+v4 and v5 (IEEE layout) stay as committed.
 """
 from __future__ import annotations
 
 import csv
+import re
 import sys
 from pathlib import Path
 
@@ -45,11 +48,12 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 from stage_law_docx import (Package, equation, heading, ieee_caption, ieee_sect_pr, ieee_styles, para,  # noqa: E402
                             section_break, table, table_height_pt)
+from stage_law_doc_markdown import markdown_of_body  # noqa: E402
 
 DOC = ROOT / "results" / "stage_law_doc_2026-10-01"
 FIG = DOC / "figures"
 SRC = DOC / "source" / "stage_law_derivation_original.docx"
-OUT = DOC / "stage_law_paper_v5_ieee.docx"
+OUT = DOC / "stage_law_paper_v6_ieee.docx"
 W = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
 
 
@@ -82,17 +86,23 @@ def data():
         d["shapes"][(r["dev"], r["vt_map"], r["a"])] = r
     d["knobs"] = figs.fig_fit_knobs()
     d["stress"] = figs.fig_stress_use()                     # (lowest, highest candidate peak, measured)
-    devs, nat, t1, dead = figs.fig_pad_summary()
     # native on the five ex2 variants, revived by resampling the V-T tables (native_revived_variants.py)
-    rev = ROOT / "results" / "native_revived_variants_2026-10-18" / "native_revived.csv"
+    NAT = ROOT / "results" / "native_revived_variants_2026-10-18"
     revived: dict[str, float] = {}
-    if rev.exists():
-        for r in rows_of(rev):
+    rows_rs = None
+    if (NAT / "native_revived.csv").exists():
+        for r in rows_of(NAT / "native_revived.csv"):
+            rows_rs = int(r["rows_after"])
             if r["status"] == "ok" and r["valid"] == "1":
                 revived[r["variant"]] = max(revived.get(r["variant"], 0.0), abs(float(r["peak_err_pct"])))
+    d["rows_rs"] = rows_rs
+    d["diag"] = rows_of(NAT / "diagnose" / "diagnose.csv") if (NAT / "diagnose" / "diagnose.csv").exists() else []
+    devs, nat, t1, dead = figs.fig_pad_summary(revived)     # revived buffers come back alive, with their value
     # (buffer, native worst peak error, proposed worst peak error, native has no valid run, native revived)
-    d["pad"] = [(dev, revived.get(dev, n) if dd else n, t, dd and dev not in revived, dd and dev in revived)
-                for dev, n, t, dd in zip(devs, nat, t1, dead)]
+    d["pad"] = [(dev, n, t, dd, dev in revived) for dev, n, t, dd in zip(devs, nat, t1, dead)]
+    d["replay"] = figs.fig_replay_fails()
+    figs.fig_stage()
+    d["natfail"] = figs.fig_native_fail()
     d["cc_declared"] = {r["buffer"]: float(r["declared_pF"])
                         for r in rows_of(ROOT / "results/ccomp_from_file_2026-09-22/ccomp_from_file.csv")}
     import gate_ramp_prototype as gp
@@ -122,8 +132,10 @@ def f3(v):
 
 
 # ----------------------------------------------------------------------------- numbering
-FIGS = ["problem", "stage_law", "blocks", "chain", "map", "gate_to_ku", "workflow", "target", "fit_knobs",
-        "fit_search", "ambiguity", "rms_vs_k", "stress_use", "calib_mech", "gate_verify", "pad_waveforms"]
+FIGS = ["replay_fails", "stage", "device", "stage_law", "blocks", "chain", "map", "gate_to_ku", "workflow", "target",
+        "fit_knobs", "fit_search", "ambiguity", "rms_vs_k", "stress_use", "calib_mech", "gate_verify",
+        "pad_summary", "pad_waveforms", "native_fail"]
+COL_FIGS = {"stage": 3.2, "native_fail": 3.2}          # in-column figures and their width (in)
 TABS = ["notation", "device", "procedure", "fit_all", "shapes", "ledger", "gate", "pad", "approx"]
 ROMAN = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"]
 SEC = dict(intro="I", law="II", model="III", ident="IV", verify="V", disc="VI", concl="VII")
@@ -141,9 +153,47 @@ def S(key: str, sub: str | None = None) -> str:
     return f"Section {SEC[key]}" + (f"-{sub}" if sub else "")
 
 
+# References, each verified against the source (the manual texts in hspice_manuals/, the publishers'
+# pages, 2026-10-19). Numbered at assembly in order of first citation; C() writes a placeholder.
+REFS = {
+    "sakurai": "T. Sakurai and A. R. Newton, “Alpha-power law MOSFET model and its applications to CMOS inverter "
+               "delay and other formulas,” *IEEE J. Solid-State Circuits*, vol. 25, no. 2, pp. 584–594, Apr. 1990.",
+    "shichman": "H. Shichman and D. A. Hodges, “Modeling and simulation of insulated-gate field-effect transistor "
+                "switching circuits,” *IEEE J. Solid-State Circuits*, vol. SC-3, 1968.",
+    "hedenstierna": "N. Hedenstierna and K. O. Jeppson, “CMOS circuit speed and buffer optimization,” *IEEE Trans. "
+                    "Computer-Aided Design*, vol. CAD-6, no. 2, pp. 270–280, Mar. 1987.",
+    "ibis": "IBIS Open Forum, *I/O Buffer Information Specification (IBIS), Version 7.1*, Dec. 2021. [Online]. "
+            "Available: https://ibis.org/ver7.1/",
+    "cookbook": "IBIS Open Forum, *IBIS Modeling Cookbook for IBIS Version 4.0*, Sep. 2005. [Online]. Available: "
+                "https://ibis.org/cookbook/",
+    "wang": "Y. Wang and H. N. Tan, “The development of analog SPICE behavioral model based on IBIS model,” in "
+            "*Proc. 9th Great Lakes Symp. VLSI*, 1999, pp. 101–104.",
+    "hspice": "Synopsys, *PrimeSim HSPICE User Guide: Signal Integrity Modeling and Analysis*, Version T-2022.06, "
+              "Jun. 2022, ch. 8.",
+    "stievano": "I. S. Stievano, I. A. Maio, and F. G. Canavero, “Mπlog: Macromodeling via parametric identification "
+                "of logic gates,” *IEEE Trans. Adv. Packag.*, vol. 27, no. 1, pp. 15–23, Feb. 2004.",
+    "leventhal": "R. Leventhal and L. Green, *Semiconductor Modeling: For Simulating Signal, Power, and Electromagnetic "
+                 "Integrity*. New York, NY, USA: Springer, 2006.",
+    "hairer": "E. Hairer, S. P. Nørsett, and G. Wanner, *Solving Ordinary Differential Equations I: Nonstiff Problems*, "
+              "2nd ed. Berlin, Germany: Springer, 1993.",
+    "ngspice": "H. Vogt, G. Atkinson, D. Warning, and P. Nenzi, *Ngspice User’s Manual, Version 46*, Mar. 2026. "
+               "[Online]. Available: https://ngspice.sourceforge.io/docs/",
+    "nelder": "J. A. Nelder and R. Mead, “A simplex method for function minimization,” *Comput. J.*, vol. 7, no. 4, "
+              "pp. 308–313, 1965.",
+}
+
+
+def C(*keys: str, suffix: str | None = None) -> str:
+    """An inline citation: a placeholder that main() numbers by first appearance in the document."""
+    for k in keys:
+        assert k in REFS, k
+    return "⟦cite:" + ",".join(keys) + (f"|{suffix}" if suffix else "") + "⟧"
+
+
 COL = 5000                    # dxa: one IEEE column (3.5 in) less the cell padding
-FIG_WIDTH = {"chain": 5.4, "gate_to_ku": 5.8, "fit_knobs": 5.4, "ambiguity": 5.2, "stress_use": 5.4,
-             "gate_verify": 5.8, "fit_search": 6.4, "map": 6.4}     # inches; the rest span the text width
+FIG_WIDTH = {"chain": 5.4, "gate_to_ku": 5.4, "fit_knobs": 5.0, "ambiguity": 4.8, "stress_use": 5.0,
+             "gate_verify": 5.0, "fit_search": 6.0, "map": 6.4, "rms_vs_k": 5.0, "workflow": 6.4,
+             "calib_mech": 5.6, "pad_summary": 5.6, "pad_waveforms": 5.4}     # inches; the rest span the text width
 PAGE = 10300                  # dxa: a double-column (floating) table
 
 
@@ -170,6 +220,9 @@ def plain_prefix(xml_or_el, n: int = 40) -> str:
     el = etree.fromstring(f"<root {Package.NS}>{xml_or_el}</root>")[0] if isinstance(xml_or_el, str) else xml_or_el
     if etree.QName(el).localname != "p":
         return ""
+    st = el.find(f"{{{W}}}pPr/{{{W}}}pStyle")
+    if st is not None and st.get(f"{{{W}}}val") in ("ImageCaption", "CaptionedFigure", "TableCaption"):
+        return ""                                         # a caption or a picture never anchors a float
     out = []
     for child in el:
         tag = etree.QName(child).localname
@@ -181,12 +234,27 @@ def plain_prefix(xml_or_el, n: int = 40) -> str:
     return s[:n] if len(s) >= 20 else ""
 
 
+SEEN: dict[str, list[str]] = {"fig": [], "tab": []}      # figures and tables in the order they are written
+
+
+def note_order(key: str) -> None:
+    """Every figure and table, wide or in the column, must be written in numbering order."""
+    kind, order = ("fig", FIGS) if key in FIGS else ("tab", TABS)
+    seen = SEEN[kind]
+    assert not seen or order.index(seen[-1]) < order.index(key), f"{key} written out of numbering order, after {seen[-1]}"
+    seen.append(key)
+
+
 def register_float(key: str, xml: str, after: str, pkg: Package) -> str:
-    order = FIGS if key in FIGS else TABS
-    prev = [f["key"] for f in FLOATS if (f["key"] in FIGS) == (key in FIGS)]
-    assert not prev or order.index(prev[-1]) < order.index(key), f"{key} registered out of numbering order, after {prev[-1]}"
+    note_order(key)
     FLOATS.append(dict(key=key, xml=xml, after=after[:40], height=pkg.float_heights.get(key, 3.0)))
     return ""
+
+
+def fig_col(pkg: Package, key: str, caption: str) -> str:
+    """An in-column figure: picture and caption in the text flow, numbered with the others."""
+    note_order(key)
+    return pkg.figure(FIG / f"fig_{key}.png", f"{F(key)}. {caption}", width_in=COL_FIGS[key])
 
 
 def last_prefix(t: list[str]) -> str:
@@ -223,6 +291,7 @@ def build_inserts(pkg: Package, d) -> dict:
     x0 = [float(r["vd0_over_vdd"]) for r in d["dev"]]
     rng = {"a": f"{min(al):.2f}–{max(al):.2f}", "x": f"{min(x0):.2f}–{max(x0):.2f}"}
     out["rng"] = rng
+    rp = d["replay"]
 
     out["front"] = (
         para("*Abstract*—An IBIS model describes an output buffer by the I–V tables of its output devices and by the pad "
@@ -243,30 +312,41 @@ def build_inserts(pkg: Package, d) -> dict:
         + para("*Index Terms*—IBIS, I/O buffer modeling, predriver, short pulses, α-power law, behavioral "
                "modeling, signal integrity.", "Abstract")
         + heading(f"{SEC['intro']}. Introduction", 1)
-        + para("An IBIS model describes an output buffer from its pins: the I–V tables of the pull-up and the "
-               "pull-down device, the pad voltage of one complete rising and one complete falling transition "
-               "recorded into two fixtures, the die capacitance $C_{comp}$ and the package. A simulator solves the "
-               "two waveforms, instant by instant, for the conducting fractions $K_u(t)$ and $K_d(t)$, the "
-               "multipliers on the two tables that reproduce the recorded pad voltage, and then replays them "
-               "against time from the input edge. The IBIS-to-SPICE converter this work extends (the *converter* "
-               "below) does this and writes the result as a SPICE subcircuit, the *existing model*; HSPICE's built-in "
-               "IBIS element (the *native element*) does the same inside the simulator and is the baseline of this "
-               "paper. The proposed model is a subcircuit written by the same converter.",
+        + para(f"An IBIS model {C('ibis')} describes an output buffer from its pins: the I–V tables of the pull-up and "
+               "the pull-down device, the pad voltage of one complete rising and one complete falling transition "
+               f"recorded into two fixtures {C('cookbook')}, the die capacitance $C_{{comp}}$ and the package. A "
+               "simulator solves the two waveforms, instant by instant, for the conducting fractions $K_u(t)$ and "
+               "$K_d(t)$, the multipliers on the two tables that reproduce the recorded pad voltage "
+               f"{C('wang')}, and then replays them against time from the input edge. The IBIS-to-SPICE converter "
+               "this work extends (the *converter* below) does this and writes the result as a SPICE subcircuit, "
+               "the *existing model*. HSPICE's built-in IBIS element (the *native element*) derives its pull-up and "
+               f"pull-down scaling coefficients from two V–T waveforms in the same way {C('hspice')} and is the "
+               f"baseline of this paper; {S('ident', 'B')} lays its coefficient over the two-fixture solution. The "
+               "proposed model is a subcircuit written by the same converter.",
                "FirstParagraph")
         + para("The coefficients describe complete transitions, which is all the file records. When an input "
                "pulse is shorter than the buffer's own delay and edge, the transition is interrupted inside the "
                "predriver, the chain of inverters between the input pin and the output devices: the gate of the "
                "output device turns back before it reaches its rail, and a coefficient replayed against time has "
-               f"no representation of that. {F('problem')} shows the consequence on test buffer ex2. An 810 ps pulse "
-               "drives the pad to 0.77 V of its 1.55 V swing, and the native IBIS element overshoots the peak by "
-               f"71 %. Across the twelve test buffers of this work its worst stressed peak error is "
-               f"{min(live):.0f}–{max(live):.0f} % ({S('verify')}).")
-        + fig("problem", "The problem, on test buffer ex2. (a) A complete transition into the test load, the "
-                         "situation an IBIS file records. (b) An 810 ps input pulse: the transistor-level pad voltage "
-                         "against HSPICE's native IBIS model of the same file.", 7.1, "auto",
+               f"no representation of that. {F('replay_fails')} shows this on test buffer ex2, whose netlist can be probed. "
+               f"Under a complete transition ({F('replay_fails')}(a)) the gate of the output device reaches its rail and "
+               f"the replayed coefficient is the right one. For an 810 ps pulse ({F('replay_fails')}(b)) the gate turns "
+               f"back at {rp['gate_peak']:.2f} of its swing; the conducting fraction solved from the transistor's own "
+               f"fixture runs peaks at {rp['ku_si_peak']:.2f} and returns, while the native element replays the "
+               f"coefficient of the complete transition up to {rp['ku_nat_peak']:.2f} ({F('replay_fails')}(c)), and its pad "
+               f"overshoots the measured peak by {rp['native_peak_err']:.0f} % ({F('replay_fails')}(d)). Across the twelve "
+               f"test buffers of this work its worst stressed peak error is {min(live):.0f}–{max(live):.0f} % "
+               f"({S('verify')}).")
+        + fig("replay_fails", "Where the replay fails, on test buffer ex2 at transistor level (the gate of the output device "
+                        "is probed for this figure only). (a) A complete transition: input pin, gate and pad, "
+                        f"normalized; the gate reaches its rail. (b) An 810 ps input pulse: the gate turns back at "
+                        f"{rp['gate_peak']:.2f}. (c) The conducting fraction $K_u$ solved from the transistor's own two "
+                        "fixture runs, against the native element's replayed coefficient; the solution is undefined "
+                        "within about 90 ps of the reversal, where the two fixtures are not in the same state. (d) The "
+                        "pad: transistor against the native element. Time is counted from the input edge.", 7.1, "auto",
              after="The coefficients describe complete transitions")
         + para("This paper replaces the replay by a model of the predriver. Each inverter of the predriver is "
-               "modeled by a stage law derived from the α-power MOSFET model [1]; $K$ identical stages drive the "
+               f"modeled by a stage law derived from the α-power MOSFET model {C('sakurai')}; $K$ identical stages drive the "
                "gate of the output device, and a static map turns the gate into $K_u$. The fractions then follow "
                "the gate rather than the clock: for a short pulse the gate turns back partway, and the model's "
                "$K_u$ does the same. The stage rates are fitted to the $K_u(t)$ that the file already contains, so "
@@ -275,20 +355,38 @@ def build_inserts(pkg: Package, d) -> dict:
                "the map and the stage threshold. One measured pad waveform for a short pulse settles them.",
                "FirstParagraph")
         + para("The contributions are: (1) the stage law, a three-parameter normalized law of one predriver stage "
-               "derived from [1], and the evidence that it extrapolates from a complete transition to truncated "
+               f"derived from {C('sakurai')}, and the evidence that it extrapolates from a complete transition to truncated "
                "pulses; (2) an identification result, that the IBIS file determines the stage rates and leaves the "
                "stage count, the map shape and the threshold undetermined, shown in numbers; (3) a procedure that "
                "builds the model from the file and one stressed pad waveform, using the waveform's peak to "
                "calibrate the threshold and its shape to select among nine candidates; (4) verification at the pad "
                "on twelve test buffers, within 10 % of the transistor-level reference at five pulse widths, against "
                f"{min(live):.0f}–{max(live):.0f} % for the native element.")
+        + para("Behavioral models of I/O buffers that go beyond the IBIS tables exist. Macromodels identified from "
+               f"the buffer's port waveforms, such as Mπlog {C('stievano')}, represent the buffer as a black box and "
+               "offer improved accuracy and numerical efficiency, but they are built from the buffer's transient "
+               "responses rather than from the "
+               f"IBIS file. Conversions of IBIS files into SPICE behavioral models {C('wang')} and the simulators' own "
+               f"IBIS elements {C('hspice')} keep the file as the only input and replay its coefficients against "
+               "time, which is the mechanism that fails here. This paper keeps the file as the primary input and "
+               "inserts a model of the predriver between the input pin and the coefficients.")
+        + para(f"The rest of the paper follows the construction of the model. {S('law')} derives the stage law from "
+               f"the α-power MOSFET model {C('sakurai')}, because everything that follows rests on it. {S('model')} "
+               "assembles the buffer model: the chain of stages, the map from the gate to the conducting fraction, "
+               f"and the pad current. {S('ident')} asks what the IBIS file determines and what it cannot, and gives "
+               f"the identification procedure step by step, with ex2 as the running example. {S('verify')} verifies "
+               "the model, first at the gate, where the stage law is tested on its own, then at the pad on twelve "
+               f"buffers against the transistor-level reference and the native element. {S('disc')} collects the "
+               f"approximations and limits, and {S('concl')} concludes.")
+        + heading("A. Terms and Test Set")
         + para("The test set is three buffers whose transistor netlists are available, ex2 (3.3 V, three "
                "predriver inverters), inv_chain (1.8 V, seven) and io_buf (3.3 V, separate pull-up and pull-down "
                "paths with one and three predriver stages), and nine variants of the first two, each changing one "
                "property of the silicon: ex2_base and inv_base8 are the two buffers rebuilt through the variant "
                "generator; ex2_weak and inv_weak halve the device widths (ex2: the output stage; inv_chain: every "
                "stage); ex2_skewp and inv_skewp halve the pull-up PMOS only; ex2_slowpre halves the predriver "
-               "widths; ex2_nomiller removes the gate-to-drain capacitances of the output stage; inv_stage4 has "
+               "widths; ex2_nomiller removes the gate-to-drain capacitances of the output stage, the feedthrough "
+               f"that puts the small bump before the edge of a V–T curve {C('leventhal', suffix='p. 64')}; inv_stage4 has "
                "three predriver inverters instead of seven. The input edge is 50 ps on the three base buffers and "
                "1 ps on the variants. Transistor-level HSPICE simulation is the reference, the model runs in "
                "ngspice, and the native element is the baseline. The method is not derived from the file alone: "
@@ -307,10 +405,7 @@ def build_inserts(pkg: Package, d) -> dict:
                "method never does this, and probed data appear only in tests of the method and in the figures that "
                "explain it. *File-only* describes what the method itself uses: the IBIS file, one pad waveform and "
                "the built-in constants. In the chain, a *handover* is the instant at which a stage's output crosses "
-               "the threshold of the stage after it, which then starts to move.")
-        + para(f"{S('law')} derives the stage law. {S('model')} builds the buffer model on it. {S('ident')} gives "
-               f"the identification procedure step by step, with ex2 as the running example. {S('verify')} verifies "
-               f"the model at the gate and at the pad, and {S('disc')} collects the approximations and limits. "
+               "the threshold of the stage after it, which then starts to move. "
                f"{T('notation')} lists the notation.")
         + tab_col("notation", "Notation", ["Symbol", "Definition", "Where"],
                 [["$u$, $v$", "Normalized stage input and output, 0 → 1", "(8)"],
@@ -327,15 +422,23 @@ def build_inserts(pkg: Package, d) -> dict:
                  ["$C_{comp}$", "Die capacitance: declared in the file, re-estimated from the file's own waveforms", f"(24), {S('ident', 'B').split()[1]}"]],
                 [1300, 2750, 950]))
 
+    # ---- Section II-A: the stage, drawn (an in-column figure after the paragraph that explains (1))
+    out["stage_fig"] = (
+        para(f"{F('stage')} draws the stage with these quantities: the two devices, the node, the load, the "
+             f"currents, and the normalized variables defined in {S('law', 'C')}.")
+        + fig_col(pkg, "stage", "One predriver stage: a CMOS inverter whose output node $V_o$ drives the lumped "
+                                "capacitance $C$ and the gate of the next stage. $I_P$ and $I_N$ are the device "
+                                "currents of (1); $u$ and $v$ are the normalized input and output of (8)."))
+
     # ---- Section II lead (replaces the original intro paragraph)
     out["law_lead"] = ("A predriver stage is a CMOS inverter driving the gate of the next. This section derives, from "
-                       "the α-power law MOSFET model [1], a normalized law for its output with three parameters per "
+                       f"the α-power law MOSFET model {C('sakurai')}, a normalized law for its output with three parameters per "
                        "stage, (19). Equations are numbered consecutively. A reader willing to take (19) on trust may "
                        f"go to {S('model')}.")
 
     # ---- Section II-B: the min form, derived; the device check
     out["min_form"] = (
-        para("Equation (2) has no single-expression form in [1]; the one used here follows from factoring $I'_{D0}$ "
+        para(f"Equation (2) has no single-expression form in {C('sakurai')}; the one used here follows from factoring $I'_{{D0}}$ "
              "out of the triode row, so that the two conducting rows read", "FirstParagraph")
         + equation("I_D = I'_{D0} \\cdot \\frac{V_{DS}}{V'_{D0}}~~(V_{DS} < V'_{D0}), \\\\ I_D = I'_{D0} \\cdot 1~~(V_{DS} \\ge V'_{D0})", size=18)
         + para("In each row the multiplier of $I'_{D0}$ is the smaller of 1 and $V_{DS}/V'_{D0}$, and the rows meet "
@@ -348,15 +451,21 @@ def build_inserts(pkg: Package, d) -> dict:
     out["after_eq7"] = (
         para("The device model (2)–(5) was checked against the transistors of the predrivers of two test buffers, "
              "simulated in HSPICE from their model cards at their drawn dimensions. $V_{TH}$ and $\\alpha$ are "
-             "extracted as in [1, App. A]; $V_{D0}$, for which [1] gives no procedure, is the breakpoint that best "
-             f"fits the piecewise form (6) to the output curve at full gate drive. {T('device')} lists the result: "
-             f"$\\alpha$ is {rng['a']}, between the short-channel limit of 1 and the long-channel value of 2 [2], "
-             f"and the saturation voltage is {rng['x']} of the supply, comparable to the 0.5–0.55 used in [1].")
+             f"extracted as in {C('sakurai', suffix='App. A')}; $V_{{D0}}$, for which {C('sakurai')} gives no procedure, "
+             "is the breakpoint that best fits the piecewise form (6) to the output curve at full gate drive. "
+             f"{T('device')} lists the result and {F('device')} shows the curves with the fit: $\\alpha$ is {rng['a']}, "
+             f"between the short-channel limit of 1 and the long-channel value of 2 {C('shichman')}, and the "
+             f"saturation voltage is {rng['x']} of the supply, comparable to the 0.5–0.55 used in {C('sakurai')}.")
         + tab_col("device", "Device parameters of (2)–(5), extracted in HSPICE from the predriver transistors "
                             "(ex2: the BSIM3v3 card hspice.mod; inv_chain: HL18G-S3.7S)",
                   ["Device", "$L$", "$V_{DD}$", "$x_0 = V_{D0}/V_{DD}$", "$\\alpha$"],
                   [[r[0].replace(" predriver", ""), r[2], r[3], r[4], r[5]] for r in dev_rows],
-                  [1500, 750, 750, 1250, 750]))
+                  [1500, 750, 750, 1250, 750])
+        + fig("device", "The device model (2)–(5) against HSPICE on the predriver transistors. (a) Output current at "
+                        "full gate drive against $V_{DS}$, both normalized, with the breakpoint $x_0$ of each device. "
+                        "(b) inv_chain NMOS: HSPICE output curves at five gate drives and the piecewise model (2). "
+                        "(c) Saturation current against gate drive on log scales; the slope is $\\alpha$.", 7.1, "auto",
+              after="The device model (2)–(5) was checked aga"))
 
     # ---- Section II-C: the two meanings of v_t
     out["vt_note"] = para(
@@ -375,7 +484,7 @@ def build_inserts(pkg: Package, d) -> dict:
         + para("A full-swing waveform cannot set $p$: the stage input dwells near $g = 1$, where $g^{p} = 1$ for every "
                f"$p$ ({S('ident', 'D')}). In this work $p = 1$ is adopted, so (17) reduces to $h(x) = g(x)$: A1 drops "
                "the measured exponent and makes the drive current linear in the gate above threshold, the "
-               "short-channel limit of [1]. The parameter $p$ is kept in the formula only so that the exponent can "
+               f"short-channel limit of {C('sakurai')}. The parameter $p$ is kept in the formula only so that the exponent can "
                "be restored if a measurement supplies it.", "FirstParagraph")
         + para("*A2 (fixed saturation boundary).* In (15) the boundary between the constant-current ramp and the "
                "resistive tail is $x_0 g^{\\alpha/2}$: it equals $x_0$ at full drive and shrinks when the gate is only "
@@ -398,10 +507,10 @@ def build_inserts(pkg: Package, d) -> dict:
                "file. It was chosen during development from fits of (19) to the individual probed predriver stages "
                "of two test buffers (0.37–0.47 on ex2, 0.52–0.63 on inv_chain); fitted to the probed gate with "
                f"$x_{{lin}}$ free, the chain gives 0.41 and 0.48, the measured $x_0$ of {T('device')} is {rng['x']}, "
-               f"and [1] uses 0.5–0.55. In the pad-level tests of {S('verify')} it is fixed at 0.45 on ten of the "
+               f"and {C('sakurai')} uses 0.5–0.55. In the pad-level tests of {S('verify')} it is fixed at 0.45 on ten of the "
                f"twelve buffers and fitted on inv_chain and io_buf; {S('ident', 'D')} shows why the file constrains "
-               "it only weakly. As a check that (19) is the model of [1] and not merely similar to it, one stage with "
-               "$p = \\alpha$ driven by a linear input ramp reproduces the closed-form delay of [1, eq. (5)] within "
+               f"it only weakly. As a check that (19) is the model of {C('sakurai')} and not merely similar to it, one stage with "
+               f"$p = \\alpha$ driven by a linear input ramp reproduces the closed-form delay of {C('sakurai', suffix='eq. (5)')} within "
                "4 ps for input ramps of 0.05 to 0.8 ns.", "FirstParagraph"))
     return out
 
@@ -475,8 +584,8 @@ def build_sections(pkg: Package, d) -> list[str]:
            "no current until its input passes $v_t$, a pulse loses amplitude at every stage and is extinguished "
            "once its peak falls below $v_t$. The abrupt cutoff is a property of the hard threshold in (17); in a "
            "transistor chain the loss is gradual. For the fits below, (19)–(21) are integrated with Heun's method "
-           "at 1 ps steps, which agrees with the ngspice circuit model where explicit Euler at 2 ps did not; in the "
-           "circuit model each stage is a behavioral current source charging a capacitor."))
+           f"{C('hairer')} at 1 ps steps, which agrees with the ngspice {C('ngspice')} circuit model where explicit Euler "
+           "at 2 ps did not; in the circuit model each stage is a behavioral current source charging a capacitor."))
     A(fig("chain", "One chain, two inputs (ex2, probed-map setting: $K = 3$, $s_{up} = 2.19$/ns, $s_{dn} = 2.12$/ns, $v_t = 0.487$, "
                    "$x_{lin} = 0.45$). Top: the stage nodes of (19)–(21). Bottom: the conducting fraction obtained "
                    "from the gate through the map (22). (a) Full transition. (b) An 810 ps input pulse: the gate "
@@ -580,13 +689,14 @@ def build_sections(pkg: Package, d) -> list[str]:
 
     A(heading("B. Step 0: the target"))
     A(para("The only curve the stage law is ever fitted to is the file's own conducting fraction through one "
-           "complete transition. The converter obtains it from the two fixtures: at each instant of the "
+           f"complete transition. The converter obtains it from the two fixtures the specification prescribes "
+           f"{C('ibis', 'cookbook')}: at each instant of the "
            "rising transition the current into the die node must balance in both, with $V_i(t)$ the pad voltage "
            "recorded in fixture $i$,", "FirstParagraph"))
     A(equation("K_u(t)~I_{PU}(V_i(t)) + K_d(t)~I_{PD}(V_i(t)) \\\\ = \\frac{V_{fix,i} - V_i(t)}{R_{fix}} - C_{comp}\\frac{dV_i}{dt},\\quad i = 1, 2", size=18))
     A(para("(the clamp currents join the right-hand side when the file has them). Two equations in two unknowns "
            f"are solved at every sample, for the rising and for the falling transition ({F('target')}(a), (b)). This "
-           "is the standard two-waveform solution and is not part of the proposed method.", "FirstParagraph"))
+           f"is the standard two-waveform solution {C('wang')} and is not part of the proposed method.", "FirstParagraph"))
     A(para("*The die capacitance.* The right-hand side subtracts the displacement current of $C_{comp}$, so the solved "
            "fractions depend on the value assumed for it, and a value that is too large books capacitor current as "
            "device current: the solved $K_u$ then exceeds 1, which asks the pull-up device for more current than "
@@ -598,6 +708,10 @@ def build_sections(pkg: Package, d) -> list[str]:
            f"on every buffer, upward or downward ({T('fit_all')}, second column). A measurement on the netlist, "
            f"which the method never uses, gives {ti['cc_loop']:.2f} pF for ex2; the probed-map setting uses that "
            "value."))
+    A(para(f"The native element derives its own coefficients from the same two waveforms {C('hspice')} and exposes "
+           "them through its xv_pu and xv_pd outputs. Read through them during the same 10 ns transition, its $K_u$ "
+           f"follows the solved curve within {ti['nat_rms']:.3f} rms ({F('target')}(b)), which is what {S('intro')} "
+           "means by the same replay inside the simulator."))
     A(para("The existing model reproduces the solution: driven through one 10 ns input pulse, its internal node "
            f"carrying the table value follows the solved $K_u(t)$ within {ti['rms_r']:.3f} rms on ex2 once aligned "
            "on the input edge. The target is read from that node rather than from the solved curve directly, so "
@@ -611,9 +725,10 @@ def build_sections(pkg: Package, d) -> list[str]:
            "the target constrains $s_{up}$ and the falling edge $s_{dn}$. Nothing in this curve says how many stages "
            f"produced it or where their thresholds lie; that is the subject of {S('ident', 'D')}.", "FirstParagraph"))
     A(fig("target", "The target on ex2 (probed-map setting, 1.7 pF). (a) The file's V–T waveforms: one rising and "
-                    "one falling transition, each recorded into two fixtures. (b) $K_u(t)$, $K_d(t)$ solved from (a) "
-                    "by the converter (grey), the existing model's $K_u$ through a 10 ns pulse (teal), and the "
-                    "normalized target (25) with the chain input (20). (c) The estimate of $C_{comp}$ from the file: "
+                    "one falling transition, each recorded into two fixtures (inset: the fixture, pad, $R_{fix}$, "
+                    "$V_{fix}$). (b) $K_u(t)$, $K_d(t)$ solved from (a) by the converter (grey), the existing model's "
+                    "$K_u$ through a 10 ns pulse (teal), the native element's own coefficient through the same pulse "
+                    "(blue, dotted), and the normalized target (25) with the chain input (20). (c) The estimate of $C_{comp}$ from the file: "
                     "the peak of the solved $K_u$ against the assumed $C_{comp}$, with the declared value, the "
                     "estimate (the rising branch extrapolated to 1) and the value measured on the netlist."))
 
@@ -640,7 +755,7 @@ def build_sections(pkg: Package, d) -> list[str]:
                        "The model's $K_u(t)$ as $s_{up}$, $s_{dn}$ and $v_t$ are varied one at a time around the "
                        "fitted values; (b) is the falling edge at 10 ns. (d) A fit built one number at a time."))
     A(para("*How the minimum is found.* The residual is not differentiable (the chain is a simulation with "
-           "thresholds and clips), so (26) is minimized by Nelder–Mead: a simplex of four trial points that is "
+           f"thresholds and clips), so (26) is minimized by Nelder–Mead {C('nelder')}: a simplex of four trial points that is "
            "reflected away from its worst corner, extended when that helps, contracted when it does not, and shrunk "
            "towards its best corner when nothing helps. The rates are searched on a logarithmic scale, $v_t$ "
            "linearly within its bounds; the search stops when the simplex has collapsed or after 800 iterations, "
@@ -859,7 +974,9 @@ def build_sections(pkg: Package, d) -> list[str]:
     A(heading(f"{SEC['verify']}. Verification", 1))
     A(para("Two claims are verified separately: that the stage law, fitted to a complete transition only, "
            "predicts how the gate responds to a truncated pulse; and that the complete method, built from the file "
-           "and one measurement, reproduces the pad voltage of stressed pulses.", "FirstParagraph"))
+           "and one measurement, reproduces the pad voltage of stressed pulses. Both compare the model with the "
+           "transistor-level netlist from which the IBIS file was extracted, the golden-waveform check of "
+           f"{C('leventhal')}.", "FirstParagraph"))
     A(heading("A. Gate level: the stage law extrapolates from full swing to truncated pulses"))
     A(para("This test uses the internal gate node of the transistor netlist (n4 of ex2, vout7 of inv_chain) and is "
            "therefore not available to a user of the method; its purpose is to test (19). $K$ identical stages are "
@@ -941,31 +1058,54 @@ def build_sections(pkg: Package, d) -> list[str]:
     starred = [x for x in d["pad"] if x[4]]
     dead_ = [x for x in d["pad"] if x[3]]
     A(tab_wide(pkg, "pad", "Pad-level result on the twelve test buffers (worst of five stressed pulse widths, file-only setting"
-               + ("; *: native with its V–T tables resampled onto 300 rows, see text)" if starred else ")"),
+               + (f"; *: native with its V–T tables resampled onto {d['rows_rs']} rows, see text)" if starred else ")"),
                ["Buffer", "Netlist $K$", "Selected $K$", "Selected map shape", "Proposed: worst peak error (%)",
                 "Native IBIS: worst peak error (%)"], rows, [1700, 1100, 1200, 1700, 2000, 1900]))
     _nat = (f"The native element's worst peak error is {min(live):.0f}–{max(live):.0f} % on "
             + (f"the {len(live)} buffers for which it produced a valid run. " if dead_ else "the twelve buffers. "))
-    _nat += ("On the five ex2 variants it produced no waveform with the files as generated: their V–T tables are "
-             "sampled at 2.7 ps and carry 0.2–0.4 mV rms of ripple before the edge, and HSPICE's two-waveform solver, "
-             "ill-conditioned there because both fixture currents are microamps, latches $K_u$ near zero and never "
-             "recovers. The proposed model's own solution of the same files is unaffected, so the failure is the "
-             "simulator's and not the files'. ")
-    if starred:
-        _nat += (f"The starred entries of {T('pad')} are native runs on these files with every V–T table resampled "
-                 "onto 300 rows over its own span (8.9 ps on ex2_base) and nothing else changed, the one "
-                 "post-processing found to make the solver run; the native element then fails on the variants as "
-                 "it does on ex2, by replaying coefficients of a complete transition against a pulse that "
-                 "interrupts it. ")
-    if any(x[3] for x in d["pad"]) and starred:
-        _nat += "Where the entry still reads no valid run, the resampled file did not run either. "
     A(para(f"The proposed model is within 10 % on all twelve buffers (range {min(t1s):.1f}–{max(t1s):.1f} %, mean "
-           f"{sum(t1s) / len(t1s):.1f} %; {T('pad')}, {F('pad_waveforms')}). " + _nat
+           f"{sum(t1s) / len(t1s):.1f} %; {T('pad')}, {F('pad_summary')}, {F('pad_waveforms')}). " + _nat
            + "The selected stage count equals the netlist count on eleven buffers (inv_chain selects 6 against 7).",
            "FirstParagraph"))
+    A(fig("pad_summary", "Worst stressed peak error over the five test widths on the twelve buffers: HSPICE's native "
+                         "IBIS element against the proposed model built from the file and one stressed measurement. "
+                         "Starred: native with its V–T tables resampled, as described in the text."))
     A(fig("pad_waveforms", "Pad voltage for the narrowest stressed pulse of three buffers: transistor-level reference, "
                            "HSPICE native IBIS, and the proposed model built from the file and one stressed measurement. "
                            "Percentages are peak errors against the reference."))
+    _dg = d["diag"]
+    _flat = [abs(float(r["peak_err_pct"])) for r in _dg if r["recipe"] == "flat300" and r["pulse"] != "10 ns" and r["valid"] == "1"]
+    _rows = [abs(float(r["peak_err_pct"])) for r in _dg if r["recipe"] in ("rows100", "rows200") and r["pulse"] != "10 ns" and r["valid"] == "1"]
+    _nf = d["natfail"]
+    if starred and _flat and _rows:
+        A(para(f"*The native element on the variant files.* On the five ex2 variants the native element produced no "
+               f"waveform with the files as generated; the starred entries of {T('pad')} and {F('pad_summary')} come "
+               f"from the same files with every V–T table resampled onto {d['rows_rs']} rows ({_nf['step_rs']:.0f} ps on "
+               f"ex2_base) and nothing else changed. {F('native_fail')} shows the cause. The variant files sample their "
+               f"tables at 2.2–2.7 ps, three times finer than the shipped ex2 file, and the resampled table is the same "
+               f"waveform ({F('native_fail')}(a)); before the edge the variant file and the shipped file both carry "
+               f"about {_nf['ripple_as_mV']:.1f} mV rms of ripple about their trend. The element's two-waveform solver "
+               f"{C('hspice')} latches $K_u$ near {_nf['ku_dead_max']:.1f} when the reversal of a short pulse lands in "
+               f"that lead-in and never recovers, without a warning ({F('native_fail')}(b)). Four observations locate "
+               "the fault: every as-generated file runs under a 10 ns pulse; holding the first 300 ps of every table "
+               "flat revives every variant; adding 0.3 mV rms of noise to the first nanosecond of the shipped ex2 "
+               "tables resampled at 2.7 ps kills the element on the shipped file, where 0.1 mV does not and the same "
+               "0.3 mV at 300 rows does not; and the converter's own solution of the same files is unaffected. The "
+               "solver fails on sub-millivolt sample-to-sample variation when the samples are closer than a few "
+               "picoseconds, which is not a property of the buffers or of the files' electrical content. The revived "
+               "score depends on the edit (the flat lead-in, "
+               "which also removes the feedthrough dip that precedes the edge, gives "
+               f"{min(_flat):.0f}–{max(_flat):.0f} % on the three variants tested; 100 or 200 rows "
+               f"{min(_rows):.0f}–{max(_rows):.0f} %), so {T('pad')} uses the least invasive edit, and the native "
+               "element then fails on the variants as it does on the shipped ex2, by replaying the coefficients of a "
+               "complete transition against a pulse that interrupts it. What the solver does with the ripple is not "
+               "visible from outside; the runs above characterize it and nothing more is claimed."))
+        A(fig_col(pkg, "native_fail", "Why the native element has no valid run on the variant files, on ex2_base. (a) The "
+                                      f"lead-in of the rising V–T table into the 0 V fixture: as generated ({_nf['step_as']:.1f} ps), "
+                                      f"resampled onto {d['rows_rs']} rows ({_nf['step_rs']:.0f} ps) and, for comparison, the "
+                                      "shipped ex2 table (8 ps). (b) The element's $K_u$ under the 812 ps pulse on the "
+                                      "as-generated and on the resampled file, against the $K_u$ solved from the "
+                                      "transistor's own fixture runs (undefined within about 90 ps of the reversal)."))
     A(heading("C. Limits of the evidence"))
     A(para("The gate-level test establishes that the structure of (19) extrapolates from full swing to truncated "
            "pulses when fitted to the true gate; the pad-level test establishes the accuracy of the file-only "
@@ -979,7 +1119,7 @@ def build_sections(pkg: Package, d) -> list[str]:
     A(heading(f"{SEC['disc']}. Discussion: Approximations and Limits", 1))
     A(tab_wide(pkg, "approx", "Approximations of the model", ["Label", "Approximation", "Introduced at", "What it removes", "Evidence"],
             [["A0", "One $V_{TH}$, $\\alpha$, $V_{D0}$ for both devices of a stage", "(13)–(14)",
-              "Per-device parameters", f"As in [1, Sec. VI]. {T('device')}: the N and P devices differ ($x_0$ 0.34 against 0.57 on inv_chain)"],
+              "Per-device parameters", f"As in {C('sakurai', suffix='Sec. VI')}. {T('device')}: the N and P devices differ ($x_0$ 0.34 against 0.57 on inv_chain)"],
              ["A1", "$p$ in place of $\\alpha$, with $p = 1$", "(17)", f"The measured $\\alpha$ ({T('device')})",
               f"Not identifiable from the file ({S('ident', 'D')})"],
              ["A2", "$x_0 g^{\\alpha/2} \\to x_{lin}$, with $x_{lin} = 0.45$", "(18)",
@@ -996,10 +1136,10 @@ def build_sections(pkg: Package, d) -> list[str]:
            "built-in constants, $x_{lin}$, $p$, the three map shapes and the band rule, whose values were chosen with "
            "transistor-level knowledge of the twelve test buffers; whether they suit buffers outside the set has not "
            "been tested, and the map shapes are the least well founded element. Second, one limit is inherited "
-           "from the device model: [1] states that the α-power law does not reproduce the region near and below "
-           "threshold, and its delay analysis neglects the opposing device, justified for fast inputs [3]; a "
+           f"from the device model: {C('sakurai')} states that the α-power law does not reproduce the region near and below "
+           f"threshold, and its delay analysis neglects the opposing device, justified for fast inputs {C('hedenstierna')}; a "
            "truncated pulse holds the stages near $v_t$ with both devices conducting, outside the regime for which "
-           f"[1] validated the model, so the accuracy of (19) there rests on the tests of {S('verify')} and not on [1].",
+           f"{C('sakurai')} validated the model, so the accuracy of (19) there rests on the tests of {S('verify')} and not on {C('sakurai')}.",
            "FirstParagraph"))
     A(para("Several points are open. A drive-dependent boundary (15) in place of A2 reduces the inv_chain undershoot "
            "at the gate (mean peak error 0.077 to 0.016) but is neutral on ex2 and cannot be identified in the $K_u$ "
@@ -1025,13 +1165,7 @@ def build_sections(pkg: Package, d) -> list[str]:
 
     # ================================================================ references
     A(heading("References", 1))
-    A(para("[1] T. Sakurai and A. R. Newton, “Alpha-power law MOSFET model and its applications to CMOS "
-           "inverter delay and other formulas,” *IEEE J. Solid-State Circuits*, vol. 25, no. 2, pp. 584–594, "
-           "Apr. 1990.", "Bibliography"))
-    A(para("[2] H. Shichman and D. A. Hodges, “Modeling and simulation of insulated-gate field-effect "
-           "transistor switching circuits,” *IEEE J. Solid-State Circuits*, vol. SC-3, 1968.", "Bibliography"))
-    A(para("[3] N. Hedenstierna and K. O. Jeppson, “CMOS circuit speed and buffer optimization,” *IEEE "
-           "Trans. Computer-Aided Design*, vol. CAD-6, no. 2, pp. 270–280, Mar. 1987.", "Bibliography"))
+    A(para("⟦reflist⟧", "Bibliography"))                 # replaced at assembly by the numbered list
     return t
 
 
@@ -1063,6 +1197,8 @@ def main(d=None, plan: dict | None = None, out_path: Path | None = None, limit: 
         plan = json.loads(PLAN.read_text(encoding="utf-8")) if PLAN.exists() else {}
     out_path = out_path or OUT
     FLOATS.clear()
+    SEEN["fig"].clear()
+    SEEN["tab"].clear()
     Package._boxes = 0
     pkg = Package(SRC, DOC / "_build")
     pkg.float_heights = {}
@@ -1092,6 +1228,17 @@ def main(d=None, plan: dict | None = None, out_path: Path | None = None, limit: 
     def frag(xml: str):
         return list(etree.fromstring(f"<root {Package.NS}>{xml}</root>"))
 
+    # the kept derivation cites [1] Sakurai, [2] Shichman-Hodges and [3] Hedenstierna-Jeppson literally; they
+    # become placeholders here so that the whole paper is numbered by first citation
+    kept = {"1": "sakurai", "2": "shichman", "3": "hedenstierna"}
+    n_kept = 0
+    for tnode in body.iter(f"{{{W}}}t"):
+        if tnode.text and "[" in tnode.text:
+            tnode.text, n = re.subn(r"\[([123])(?:,\s*([^\]]+))?\]",
+                                    lambda m: C(kept[m.group(1)], suffix=m.group(2)), tnode.text)
+            n_kept += n
+    assert n_kept >= 3, f"only {n_kept} literal citations found in the kept derivation"
+
     ins = build_inserts(pkg, d)
     tail = build_sections(pkg, d)
 
@@ -1117,7 +1264,7 @@ def main(d=None, plan: dict | None = None, out_path: Path | None = None, limit: 
         for tnode in k.iter(f"{{{W}}}t"):
             if tnode.text and "The lower clip in (5)" in tnode.text:
                 tnode.text = tnode.text[:tnode.text.index("The lower clip in (5)")] + (
-                    "The clip is our notation and does not appear in [1]: its lower bound is the cutoff row "
+                    f"The clip is our notation and does not appear in {C('sakurai')}: its lower bound is the cutoff row "
                     "of (2) written into the drive, and its upper bound is a numerical guard for the chain of "
                     f"{S('model', 'B')}, in which a stage output may overshoot its rail by a few percent for a few "
                     "time steps. In the paper's own setting the gate never exceeds the supply and the upper "
@@ -1133,6 +1280,10 @@ def main(d=None, plan: dict | None = None, out_path: Path | None = None, limit: 
     for j, new in enumerate(frag(ins["min_form"])):
         body.insert(pos + j, new)
     insert_after("Equation (7) is the device model", ins["after_eq7"])
+    el = next(k for k in body if text(k).startswith("where") and "pull-up (PMOS) current" in text(k))
+    pos = list(body).index(el)
+    for j, new in enumerate(frag(ins["stage_fig"]), 1):
+        body.insert(pos + j, new)
     insert_after("Comparing (19) with (15) term by term", ins["after_eq19"])
     replace_from_to("A1 (gate exponent)", "Applying (17) and (18)", ins["a1a2"], 4, 8)
 
@@ -1232,31 +1383,77 @@ def main(d=None, plan: dict | None = None, out_path: Path | None = None, limit: 
         st = el.find(f"{{{W}}}pPr/{{{W}}}pStyle")
         return st.get(f"{{{W}}}val") if st is not None else ""
 
+    # citations: numbered by first appearance in the document (the floats in their mention order);
+    # the reference list follows that order
+    order: list[str] = []
+
+    def cite_text(m):
+        keys, suffix = m.group(1).split(","), m.group(2)
+        nums = []
+        for k in keys:
+            if k not in order:
+                order.append(k)
+            nums.append(order.index(k) + 1)
+        if suffix:
+            return f"[{nums[0]}, {suffix}]"
+        nums.sort()
+        if len(nums) >= 3 and nums == list(range(nums[0], nums[-1] + 1)):
+            return f"[{nums[0]}]–[{nums[-1]}]"
+        return ", ".join(f"[{n}]" for n in nums)
+
+    cite_re = r"⟦cite:([^|⟧]+)(?:\|([^⟧]+))?⟧"
+    for tnode in body.iter(f"{{{W}}}t"):
+        if tnode.text and "⟦cite:" in tnode.text:
+            tnode.text = re.sub(cite_re, cite_text, tnode.text)
+    for f in FLOATS:
+        f["xml"] = re.sub(cite_re, cite_text, f["xml"])
+    ref_par = next(k for k in body if text(k).strip() == "⟦reflist⟧")
+    for i, k in enumerate(order, 1):
+        ref_par.addprevious(frag(para(f"[{i}] {REFS[k]}", "Bibliography"))[0])
+    body.remove(ref_par)
+    unused = sorted(set(REFS) - set(order))
+    assert not unused, f"references never cited: {unused}"
+
     # the double-column floats, each anchored where the plan says (default: after its mention)
-    paras = [k for k in body if etree.QName(k).localname == "p"]
-    prefixes = [plain_prefix(k) for k in paras]
-    inserted = []                                       # the blocks' own paragraphs: never anchors
-    for f in FLOATS[:limit]:
-        spec = plan.get(f["key"]) or {"after": f["after"]}
-        how, pre = next(iter(spec.items()))
-        if pre not in prefixes:
-            how, pre = "after", f["after"]
-        anchor = paras[prefixes.index(pre)]
-        if how == "before":                                 # a heading stays with its first paragraph
-            prev = anchor.getprevious()
-            while prev is not None and etree.QName(prev).localname == "p" and style_of(prev).startswith("Heading"):
-                anchor, prev = prev, prev.getprevious()
-        cur = anchor
-        for new in frag(f["xml"]):
-            inserted.append(new)
-            if how == "before":
-                anchor.addprevious(new)
-            else:
-                cur.addnext(new)
-                cur = new
+    def place_floats(body_el, plan_, limit_):
+        paras = [k for k in body_el if etree.QName(k).localname == "p"]
+        prefixes = [plain_prefix(k) for k in paras]
+        inserted_ = []                                  # the blocks' own paragraphs: never anchors
+        for f in FLOATS[:limit_]:
+            spec = plan_.get(f["key"]) or {"after": f["after"]}
+            how, pre = next(iter(spec.items()))
+            if pre not in prefixes:
+                how, pre = "after", f["after"]
+            anchor = paras[prefixes.index(pre)]
+            if how == "before":                         # a heading stays with its first paragraph
+                prev = anchor.getprevious()
+                while prev is not None and etree.QName(prev).localname == "p" and style_of(prev).startswith("Heading"):
+                    anchor, prev = prev, prev.getprevious()
+            cur = anchor
+            while how == "after" and cur.getnext() is not None and cur.getnext() in inserted_:
+                cur = cur.getnext()                     # a second float after the same paragraph follows the first
+            for new in frag(f["xml"]):
+                inserted_.append(new)
+                if how == "before":
+                    anchor.addprevious(new)
+                else:
+                    cur.addnext(new)
+                    cur = new
+        return inserted_
+
+    # the markdown preview: the same body, every float right after its first mention
+    if out_path == OUT:
+        import copy
+        md_body = copy.deepcopy(body)
+        place_floats(md_body, {}, None)
+        images = {rid: f"figures/{png.name}" for rid, png in pkg.images}
+        md_path = out_path.with_name(out_path.stem.replace("_ieee", "") + "_draft.md")
+        md_path.write_text(markdown_of_body(md_body, images), encoding="utf-8")
+        print(f"wrote {md_path}")
+
+    inserted = place_floats(body, plan, limit)
 
     # no stale pointers: every section reference must name a section that exists
-    import re
     refs = sorted(set(re.findall(r"Section (?:I|II|III|IV|V|VI|VII)(?:-[A-F])?\b", "".join(text(k) for k in body))))
     bad = [r for r in refs if r.split()[1].split("-")[0] not in SEC.values()]
     assert not bad, bad

@@ -1,68 +1,74 @@
 {
- "problem": {
-  "before": "Section II derives the stage law. Sectio"
+ "replay_fails": {
+  "before": "A. Terms and Test Set"
+ },
+ "device": {
+  "before": "With the PMOS source at"
  },
  "stage_law": {
   "before": "In words, a stage is a bucket: it fills "
  },
  "blocks": {
-  "before": "Where the gate node can be probed the cu"
+  "before": "In words, a stage is a bucket: it fills "
  },
  "chain": {
-  "before": "Where the gate node can be probed the cu"
+  "before": "C. The Map: From the Gate to the Conduct"
  },
  "map": {
-  "before": "Fig. 6 shows the two relations evaluated"
+  "before": "The current delivered to the die node is"
  },
  "gate_to_ku": {
   "before": "ex2 is the running example, in two setti"
  },
  "workflow": {
-  "before": "B. Step 0: The Target"
+  "before": "The existing model reproduces the soluti"
  },
  "target": {
-  "before": "C. Step 1: Fitting the Stage Law Through"
+  "before": "D. What the File Cannot Determine"
  },
  "fit_knobs": {
-  "before": "The map. Table V gives the residual of ("
- },
- "fit_search": {
-  "before": "E. Steps 2\u20134: The Single Stressed Measur"
- },
- "fit_all": {
-  "before": "The map. Table V gives the residual of ("
- },
- "shapes": {
   "before": "On the twelve test buffers the band cont"
  },
+ "fit_search": {
+  "before": "On the twelve test buffers the band cont"
+ },
+ "fit_all": {
+  "before": "E. Steps 2\u20134: The Single Stressed Measur"
+ },
+ "shapes": {
+  "before": "E. Steps 2\u20134: The Single Stressed Measur"
+ },
  "ambiguity": {
-  "before": "Calibration (step 3). The stage threshol"
+  "before": "E. Steps 2\u20134: The Single Stressed Measur"
  },
  "rms_vs_k": {
-  "before": "Calibration (step 3). The stage threshol"
+  "before": "is driven to zero by bisection of"
  },
  "stress_use": {
-  "before": "F. The Procedure End to End on Ex2"
+  "before": "is driven to zero by bisection of"
  },
  "calib_mech": {
-  "before": "Two claims are verified separately: that"
+  "before": "Selection (step 4). After calibration ev"
  },
  "ledger": {
-  "before": "A. Gate Level: The Stage Law Extrapolate"
+  "before": "On ex2 the stage law with the netlist st"
  },
  "gate": {
-  "before": "The file-only model's internal gate, whi"
+  "before": "On ex2 the stage law with the netlist st"
  },
  "gate_verify": {
-  "before": "The file-only model's internal gate, whi"
+  "before": "C. Limits of the Evidence"
  },
  "pad": {
-  "before": "C. Limits of the Evidence"
+  "before": "Several points are open. A drive-depende"
+ },
+ "pad_summary": {
+  "before": "Several points are open. A drive-depende"
  },
  "pad_waveforms": {
-  "before": "C. Limits of the Evidence"
+  "before": "[1] IBIS Open Forum, I/O Buffer Informat"
  },
  "approx": {
-  "before": "Several points are open. A drive-depende"
+  "before": "[1] IBIS Open Forum, I/O Buffer Informat"
  }
 }

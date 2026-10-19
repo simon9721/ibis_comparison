@@ -26,6 +26,15 @@ already in the repository:
     fig_calib_mech    the threshold calibration: peak error vs v_t, bisection, waveforms
                       (calib_iterations.py)
 
+    Added for v6 (2026-10-19):
+    fig_replay_fails  Fig. 1: the probed gate under a complete transition and an 810 ps pulse, the
+                      transistor's own solved K_u against the native element's replayed one, the pad
+    fig_stage         one predriver stage: the inverter, the load, I_P, I_N and the normalized u, v
+    fig_native_fail   why native has no valid run on the variant files: the table lead-in at 2.7 ps
+                      against 200 rows and the shipped 8 ps; native's K_u as generated and resampled
+    fig_target        gains the two-fixture schematic and the native element's own coefficient
+    fig_pad_summary   marks the native bars obtained with resampled tables
+
 The data loaders are the 09-24 deck's (build_0924_deck_figures), reused rather than
 re-derived; only the drawing is new.
 
@@ -115,6 +124,187 @@ def fig_problem():
         b.set_title("(b) a short pulse: the native IBIS model fails", fontsize=8.5)
         b.legend(frameon=False, loc="upper left", fontsize=7)
         save(fig, "fig_problem")
+
+
+# ------------------------------------------------------------------ 1. where the replay fails
+def fig_replay_fails():
+    """Fig. 1 of the paper, on ex2. (a) Complete transition: input, the probed gate of the output
+    device (n4, normalized) and the pad; the gate reaches its rail. (b) An 810 ps pulse: the gate
+    turns back partway. (c) K_u solved from the transistor's own two fixture runs against the native
+    element's replayed coefficient. (d) The pad: transistor against native."""
+    import gate_ramp_prototype  # noqa: F401
+    import build_0917_deck_figures as f17
+    import build_0924_deck_figures as b24
+    import predriver_stage_probe as psp
+    sig = ["v(in_dig)", "v(xdut.n4)", "v(pad_sp)"]
+    full = psp.parse_tr0(cl.ST / "ex2" / "full" / "run.tr0")
+    tf, sf = np.asarray(full["time"], float) * 1e9, psp.signals(full, sig)
+    st = psp.parse_tr0(cl.ST / "ex2" / "w810" / "run.tr0")
+    ts, ss = np.asarray(st["time"], float) * 1e9, psp.signals(st, sig)
+    g_full, g_rest, g_high = psp.normalise(tf, sf["v(xdut.n4)"], tf, sf["v(xdut.n4)"])
+    g_st = (ss["v(xdut.n4)"] - g_rest) / (g_high - g_rest)
+    p_full, p_rest, p_high = psp.normalise(tf, sf["v(pad_sp)"], tf, sf["v(pad_sp)"])
+    p_st = (ss["v(pad_sp)"] - p_rest) / (p_high - p_rest)
+    sup = float(sf["v(in_dig)"].max())
+    d = f17.read(f17.MATRIX / "delay_cmd" / "waveforms" / "ex2_short_high_w810ps.csv")
+    x = d["time_ns"] - 5.0
+    t_si, si, _ = f17.transistor_pad("ex2", 810)
+    t_si = t_si - 5.0
+    e_nat, _ = b24._peak_err(x, d["hspice_pad"], t_si, si, 0.81)
+    win = (ts - 5.0 > 0) & (ts - 5.0 < 3.0)
+    g_peak = float(g_st[win].max())
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(1, 4, figsize=(W, 2.5), gridspec_kw={"wspace": 0.5, "width_ratios": (1.08, 1, 1, 1)})
+        for a, (t, u, g, p) in zip(ax[:2], ((tf, sf["v(in_dig)"], g_full, p_full), (ts, ss["v(in_dig)"], g_st, p_st))):
+            a.plot(t - 5.0, u / sup, color=GREY, lw=1.0, label="input")
+            a.plot(t - 5.0, g, color=TEAL, lw=1.9, label="gate (probed)")
+            a.plot(t - 5.0, p, color=K_, lw=1.5, label="pad")
+            a.set_ylim(-0.1, 1.15)
+        ax[0].set_xlim(-0.5, 4.0); ax[1].set_xlim(-0.5, 3.0); ax[1].set_yticklabels([])
+        ax[0].set_ylabel("normalized")
+        ax[0].set_title("(a) complete transition:\ngate reaches its rail", fontsize=7.6)
+        ax[1].set_title(f"(b) 810 ps pulse:\ngate turns back at {g_peak:.2f}", fontsize=7.6)
+        ax[0].legend(frameon=False, fontsize=5.8, loc="lower right")
+        ax[1].axhline(g_peak, color=TEAL, lw=0.6, ls=":")
+        c = ax[2]
+        c.plot(x, d["silicon_ku"], color=K_, lw=1.6, label="solved from\nthe transistor")
+        c.plot(x, d["hspice_ku"], color=BLUE, lw=1.5, ls=(0, (1.4, 1.4)), label="native,\nreplayed")
+        c.set_xlim(-0.5, 3.0); c.set_ylim(-0.15, 1.35)
+        c.set_ylabel("$K_u$")
+        c.set_title("(c) 810 ps pulse:\n$K_u$ solved and replayed", fontsize=7.6)
+        c.legend(frameon=False, fontsize=5.6, loc="upper right")
+        e = ax[3]
+        e.plot(t_si, si, color=K_, lw=1.6, label="transistor")
+        e.plot(x, d["hspice_pad"], color=BLUE, lw=1.5, ls=(0, (1.4, 1.4)), label=f"native\n({e_nat:+.0f} % peak)")
+        e.set_xlim(-0.5, 3.0); e.set_ylim(-0.3, 1.7)
+        e.set_ylabel("pad (V)")
+        e.set_title("(d) 810 ps pulse:\nthe pad", fontsize=7.6)
+        e.legend(frameon=False, fontsize=5.6, loc="upper right")
+        for a in ax:
+            a.tick_params(labelsize=7)
+            a.set_xlabel("time (ns)", fontsize=8)
+        save(fig, "fig_replay_fails")
+    return dict(gate_peak=g_peak, native_peak_err=e_nat, ku_si_peak=float(d["silicon_ku"][(x > 0) & (x < 3)].max()),
+                ku_nat_peak=float(d["hspice_ku"][(x > 0) & (x < 3)].max()))
+
+
+# ------------------------------------------------------------------ 1b. one stage, drawn
+def fig_stage():
+    """One predriver stage as Section II-A sees it: a CMOS inverter whose output node drives a
+    lumped capacitance; the pull-up current I_P into the node and the pull-down current I_N out of
+    it; the normalized input u and output v."""
+    with plt.rc_context(RC):
+        fig, a = plt.subplots(figsize=(3.3, 2.15))
+        a.set_xlim(0, 100); a.set_ylim(0, 66); a.axis("off")
+        lw = 1.2
+
+        def mos(x, y, pmos):
+            # channel at x, gate plate at x - 4, source/drain stubs to the right; y is the centre
+            a.plot([x, x], [y - 7, y + 7], color=K_, lw=lw)
+            a.plot([x - 4, x - 4], [y - 5, y + 5], color=K_, lw=lw)
+            a.plot([x, x + 8], [y + 6, y + 6], color=K_, lw=lw)
+            a.plot([x, x + 8], [y - 6, y - 6], color=K_, lw=lw)
+            a.plot([x + 8, x + 8], [y + 6, y + 13], color=K_, lw=lw)
+            a.plot([x + 8, x + 8], [y - 13, y - 6], color=K_, lw=lw)
+            if pmos:
+                a.add_patch(mpatches.Circle((x - 6, y), 1.6, fc="white", ec=K_, lw=lw))
+                a.plot([x - 14, x - 8], [y, y], color=K_, lw=lw)
+            else:
+                a.plot([x - 14, x - 4], [y, y], color=K_, lw=lw)
+
+        X, YP, YN = 38, 46, 20
+        mos(X, YP, True); mos(X, YN, False)
+        a.plot([X + 8, X + 8], [YP + 13, 62], color=K_, lw=lw)                  # PMOS source to V_DD
+        a.plot([X + 2, X + 14], [62, 62], color=K_, lw=lw)
+        a.text(X + 8, 64.5, "$V_{DD}$", ha="center", va="bottom", fontsize=8)
+        a.plot([X + 8, X + 8], [4, YN - 13], color=K_, lw=lw)                   # NMOS source to ground
+        a.plot([X + 2, X + 14], [4, 4], color=K_, lw=lw)
+        a.plot([X + 8, X + 8], [YN + 13, YP - 13], color=K_, lw=lw)             # the output node
+        a.plot([X - 14, X - 14], [YN, YP], color=K_, lw=lw)                     # the common gate
+        a.plot([X - 30, X - 14], [33, 33], color=K_, lw=lw)
+        a.text(X - 31, 33, "$V_{in}$", ha="right", va="center", fontsize=8.5)
+        a.text(X - 25, 35.5, "$u = (V_{DD} - V_{in})/V_{DD}$", ha="center", va="bottom", fontsize=6.2, color="#444444")
+        a.plot([X + 8, X + 40], [33, 33], color=K_, lw=lw)                      # to the load and the next stage
+        a.plot(X + 8, 33, "o", ms=3, color=K_)
+        a.text(X + 5.5, 35.5, "$V_o$", ha="right", va="bottom", fontsize=8.5)
+        a.text(X + 25, 35.5, "$v = V_o/V_{DD}$", ha="center", va="bottom", fontsize=6.2, color="#444444")
+        cx = X + 28                                                            # the lumped capacitance
+        a.plot([cx, cx], [33, 24], color=K_, lw=lw)
+        a.plot([cx - 4, cx + 4], [24, 24], color=K_, lw=lw)
+        a.plot([cx - 4, cx + 4], [20.5, 20.5], color=K_, lw=lw)
+        a.plot([cx, cx], [20.5, 4], color=K_, lw=lw)
+        a.plot([X + 2, cx + 6], [4, 4], color=K_, lw=lw)
+        a.text(cx + 5.5, 22.2, "$C$", ha="left", va="center", fontsize=8.5)
+        a.annotate("", (X + 40 + 6, 33), (X + 40, 33), arrowprops=dict(arrowstyle="-|>", color=K_, lw=lw))
+        a.text(X + 47, 33, "next\nstage", ha="left", va="center", fontsize=7)
+        a.annotate("", (X + 8, YP - 10.5), (X + 8, YP - 6), arrowprops=dict(arrowstyle="-|>", color=TEAL, lw=1.6))
+        a.text(X + 10, YP - 8, "$I_P$", color=TEAL, ha="left", va="center", fontsize=8.5)
+        a.annotate("", (X + 8, YN + 6), (X + 8, YN + 10.5), arrowprops=dict(arrowstyle="-|>", color=RED, lw=1.6))
+        a.text(X + 10, YN + 8, "$I_N$", color=RED, ha="left", va="center", fontsize=8.5)
+        a.text(2, 10, "(1): $C\\,dV_o/dt = I_P - I_N$", fontsize=7.0, va="center")
+        save(fig, "fig_stage")
+
+
+# ------------------------------------------------------------------ V-B. why native has no valid run
+def fig_native_fail():
+    """(a) The lead-in of the rising V-T table into the 0 V fixture: ex2_base as generated (2.7 ps),
+    the same table resampled onto 200 rows, and the shipped ex2 table (8 ps), on a millivolt scale.
+    (b) The native element's K_u under the 812 ps pulse, on the as-generated and on the resampled
+    file, against the K_u solved from the transistor's own fixture runs."""
+    import csv as _csv
+    import native_revived_variants as nrv
+    import spicelab as sl
+    camp = ROOT / "results" / "variant_stress_cases_2026-09-04" / "ex2_base" / "depth50_w812ps"
+    rev = ROOT / "results" / "native_revived_variants_2026-10-18" / "ex2_base" / "d50"
+    ship = ROOT / "results" / "gate_cascade_prototype_2026-09-09" / "ex2_c1.7" / "input_ccomp.ibs"
+    t_as, v_as = nrv.first_rising_table((camp / "native" / "input.ibs").read_text(errors="ignore"))
+    t_rs, v_rs = nrv.first_rising_table((rev / "input.ibs").read_text(errors="ignore"))
+    t_sh, v_sh = nrv.first_rising_table(ship.read_text(errors="ignore"))
+    rows = list(_csv.DictReader((camp / "waveforms.csv").open()))
+    t_w = np.array([float(r["time_ns"]) for r in rows]) - 5.0
+    ku_si = np.array([float(r["silicon_ku"]) for r in rows])
+
+    def ku_of(tr0):
+        raw = sl.parse_hspice_tr0(tr0)
+        return sl.time_ns(raw) - 5.0, np.asarray(raw["v(ku)"], float)
+
+    t_dead, ku_dead = ku_of(camp / "native" / "run.tr0")
+    t_live, ku_live = ku_of(rev / "run.tr0")
+    step_as, step_rs = 1e12 * (t_as[1] - t_as[0]), 1e12 * (t_rs[1] - t_rs[0])
+    cc_pf = float(_re.search(r"^C_comp\s+([0-9.]+)", (camp / "native" / "input.ibs").read_text(errors="ignore"), _re.M).group(1))
+
+    lead = 0.30                                        # ns: the pre-edge part the probe implicated
+
+    def ripple_mV(t, v):                               # rms about a 50 ps moving average, before the edge
+        m = t < lead * 1e-9
+        tt, vv = t[m], v[m]
+        base = np.array([vv[np.abs(tt - x) <= 25e-12].mean() for x in tt])
+        return 1e3 * float(np.std(vv - base))
+
+    rip_as, rip_rs, rip_sh = ripple_mV(t_as, v_as), ripple_mV(t_rs, v_rs), ripple_mV(t_sh, v_sh)
+    with plt.rc_context(RC):
+        fig, ax = plt.subplots(2, 1, figsize=(3.3, 3.9), gridspec_kw={"hspace": 0.62})
+        a = ax[0]
+        a.plot(t_as * 1e9, v_as * 1e3, color=TEAL, lw=0.9, label=f"as generated ({step_as:.1f} ps)")
+        a.plot(t_rs * 1e9, v_rs * 1e3, color=ORANGE, lw=0.9, marker="o", ms=2.0, label=f"resampled, {len(t_rs)} rows ({step_rs:.0f} ps)")
+        a.plot(t_sh * 1e9, v_sh * 1e3, color=GREY, lw=1.1, ls="--", label="shipped ex2 file (8 ps)")
+        a.set_xlim(0, 0.6); a.set_ylim(-3, 6)
+        a.set_xlabel("table time (ns)"); a.set_ylabel("pad voltage (mV)")
+        a.set_title("(a) lead-in of the rising V–T table (0 V fixture)", fontsize=8)
+        a.legend(frameon=False, fontsize=5.8, loc="upper left")
+        b = ax[1]
+        b.plot(t_w, ku_si, color=K_, lw=1.6, label="solved from the transistor")
+        b.plot(t_dead, ku_dead, color=TEAL, lw=1.3, label="native, file as generated")
+        b.plot(t_live, ku_live, color=BLUE, lw=1.4, ls=(0, (1.4, 1.4)), label=f"native, {len(t_rs)} rows")
+        b.set_xlim(-0.3, 3.0); b.set_ylim(-0.1, 1.4)
+        b.set_xlabel("time from the input edge (ns)"); b.set_ylabel("$K_u$")
+        b.set_title("(b) ex2_base, 812 ps pulse", fontsize=8)
+        b.legend(frameon=False, fontsize=6, loc="upper right")
+        save(fig, "fig_native_fail")
+    return dict(step_as=step_as, step_rs=step_rs, rows_rs=len(t_rs), ripple_as_mV=rip_as, ripple_rs_mV=rip_rs,
+                ripple_sh_mV=rip_sh, cc_pf=cc_pf,
+                ku_dead_max=float(ku_dead[(t_dead > 0) & (t_dead < 3)].max()),
+                ku_live_max=float(ku_live[(t_live > 0) & (t_live < 3)].max()))
 
 
 # ------------------------------------------------------------------ 5c. the fit, seen as knobs
@@ -871,16 +1061,21 @@ def fig_pad_waveforms():
         save(fig, "fig_pad_waveforms")
 
 
-def fig_pad_summary():
+def fig_pad_summary(revived: dict | None = None):
+    """Worst stressed peak error on the twelve buffers. `revived` maps a buffer on which native had
+    no valid run as generated to its worst error with the V-T tables resampled (starred bars)."""
     import build_0924_deck_figures as b24
     import stage_count_from_file as sc
+    revived = revived or {}
     sel = b24._selector_picks()
-    devs, nat, t1, dead = [], [], [], []
+    devs, nat, t1, dead, star = [], [], [], [], []
     for dev in sc.BUFFERS:
         n, alive = b24._native(dev)
         devs.append(dev)
-        nat.append(n if (n is not None and alive) else np.nan)
-        dead.append(not alive)
+        if not alive and dev in revived:
+            nat.append(revived[dev]); dead.append(False); star.append(True)
+        else:
+            nat.append(n if (n is not None and alive) else np.nan); dead.append(not alive); star.append(False)
         t1.append(float(sel[dev]["rms_pct"]))
     x = np.arange(len(devs))
     with plt.rc_context(RC):
@@ -893,14 +1088,20 @@ def fig_pad_summary():
                 a.bar(i - 0.19, top * 0.93, 0.36, color="none", edgecolor="#AAAAAA", hatch="////", lw=0.8)
         for xi, v in zip(x, t1):
             a.text(xi + 0.19, v + 1.5, f"{v:.1f}", ha="center", fontsize=6.4, color=TEAL)
+        for xi, v, st in zip(x, nat, star):
+            if not np.isnan(v):
+                a.text(xi - 0.19, v + 1.5, f"{v:.0f}" + ("*" if st else ""), ha="center", fontsize=6.4, color=BLUE)
         a.axhline(10, color="#555555", ls="--", lw=0.8)
         a.text(len(devs) - 0.27, 10, "10 %", fontsize=7, color="#555555", ha="left", va="center")
         a.set_xticks(x, devs, rotation=30, ha="right")
         a.set_ylabel("worst stressed peak error (%)")
         a.set_ylim(0, top); a.set_xlim(-0.7, len(devs) - 0.3)
         h, l = a.get_legend_handles_labels()
-        h.append(mpatches.Patch(facecolor="none", edgecolor="#AAAAAA", hatch="////"))
-        l.append("native IBIS: no valid run")
+        if any(dead):
+            h.append(mpatches.Patch(facecolor="none", edgecolor="#AAAAAA", hatch="////"))
+            l.append("native IBIS: no valid run")
+        if any(star):
+            l[0] = "HSPICE native IBIS (*: V–T tables resampled, see text)"
         a.legend(h, l, loc="upper center", ncol=3, frameon=False, bbox_to_anchor=(0.5, 1.16), fontsize=7.4)
         save(fig, "fig_pad_summary")
     return devs, nat, t1, dead
@@ -1129,6 +1330,17 @@ def fig_target():
     ku_at_declared = float(np.interp(cc_declared, cc, mk))
     msk = (mk >= 1.05) & (mk <= 1.35)
     pa, pb = np.polyfit(cc[msk], mk[msk], 1)
+    rfix_ohm = float(dm.vt_rising[0].r_fix)
+    vfix_list = sorted({float(w.v_fix[0]) for w in dm.vt_rising})
+    # the native element's own coefficient through the same transition (native_full_swing.py)
+    nat = DOCDIR / "native_full_swing" / "ex2_c1.7.npz"
+    nat_rms = float("nan")
+    if nat.exists():
+        z = np.load(nat)
+        tn, kun = z["t_ns"], z["ku"]
+        sel_n = tn < 9.0
+        shift_n = t50(tn[sel_n], kun[sel_n]) - t50(tau_r, ku_r)
+        nat_rms = float(np.sqrt(np.mean((np.interp(tau_r[ov] + shift_n, tn, kun) - ku_r[ov]) ** 2)))
     with plt.rc_context(RC):
         fig, ax = plt.subplots(1, 3, figsize=(W, 2.6), gridspec_kw={"wspace": 0.4, "width_ratios": (0.8, 1.2, 0.8)})
         b = ax[0]
@@ -1139,11 +1351,25 @@ def fig_target():
         b.set_xlim(0, 8); b.set_xlabel("table time (ns)"); b.set_ylabel("pad voltage (V)")
         b.set_title("(a) the file's V–T waveforms", fontsize=7.6)
         b.legend(frameon=False, fontsize=5.8, loc="center", bbox_to_anchor=(0.6, 0.62))
+        # the fixture: buffer -> pad -> R_fix -> V_fix, drawn in an inset
+        ins = b.inset_axes([0.3, 0.02, 0.68, 0.24])
+        ins.set_xlim(0, 100); ins.set_ylim(0, 30); ins.axis("off")
+        ins.add_patch(mpatches.Rectangle((2, 8), 22, 14, fc="#F1F3F4", ec="#555555", lw=0.8))
+        ins.text(13, 15, "buffer", ha="center", va="center", fontsize=5.6)
+        ins.plot([24, 40], [15, 15], color=K_, lw=0.8); ins.plot(40, 15, "o", ms=2, color=K_)
+        ins.text(40, 20, "pad", ha="center", va="bottom", fontsize=5.6)
+        zig = np.array([40, 44, 46, 50, 54, 58, 62, 64, 68])
+        ins.plot(zig, [15, 15, 21, 9, 21, 9, 21, 15, 15], color=K_, lw=0.8)
+        ins.text(54, 24, f"$R_{{fix}}$ {rfix_ohm:.0f} Ω", ha="center", va="bottom", fontsize=5.6)
+        ins.plot([68, 80], [15, 15], color=K_, lw=0.8); ins.plot([80, 80], [10, 20], color=K_, lw=1.2)
+        ins.text(83, 15, "$V_{fix}$: " + ", ".join(f"{v:g} V" for v in vfix_list), ha="left", va="center", fontsize=5.6)
         c = ax[1]
         c.plot(tau_r + shift_r - 5.0, ku_r, color="#9A9A9A", lw=3.2, label="$K_u$ solved from (a)")
         c.plot(tau_r + shift_r - 5.0, kd_r, color="#9A9A9A", lw=3.2, ls="--", label="$K_d$ solved from (a)")
         c.plot(tau_f + shift_f - 5.0, ku_f, color="#9A9A9A", lw=3.2)
         c.plot(tf - 5.0, kb, color=TEAL, lw=1.2, label="existing model, $K_u$")
+        if nat.exists():
+            c.plot(tn - 5.0, kun, color=BLUE, lw=1.1, ls=(0, (1.4, 1.4)), label="native element, $K_u$ (xv_pu)")
         c.plot(grid - 5.0, u, color="#BBBBBB", lw=1.0, label="chain input $u_1(t)$ (20)")
         c.plot(grid - 5.0, target, color=K_, lw=1.6, label="target $\\hat{K}_u(t)$ (25)")
         for x, lab in ((4.5 - 5.0, "$t_{rest}$"), (12.0 - 5.0, "$t_{on}$")):
@@ -1172,7 +1398,8 @@ def fig_target():
     return dict(shift_r=shift_r, shift_f=shift_f, rms_r=rms_r, n_iv=len(dm.iv_pullup), n_vt=len(dm.vt_rising[0].data),
                 t_vt=float(dm.vt_rising[0].data[-1, 0] * 1e9), rfix=float(dm.vt_rising[0].r_fix),
                 vfix=[float(w.v_fix[0]) for w in dm.vt_rising], ku_max=float(ku_r.max()), kd_max=float(kd_r.max()),
-                cc_declared=cc_declared, cc_loop=cc_loop, cc_knee=cc_knee, ku_at_declared=ku_at_declared)
+                cc_declared=cc_declared, cc_loop=cc_loop, cc_knee=cc_knee, ku_at_declared=ku_at_declared,
+                nat_rms=nat_rms)
 
 
 # ------------------------------------------------------------------ J. the residual, pictured
@@ -1399,10 +1626,10 @@ def fig_calib_mech():
                 emax=float(err[order].max()), vt_emax=float(vt[order][int(np.argmax(err[order]))]))
 
 
-ALL = (fig_problem, fig_device, fig_stage_law, fig_blocks, fig_workflow, fig_chain, fig_map, fig_gate_to_ku,
-       fig_target, fig_fit_score, fig_fit_knobs, fig_fit_search, fig_one_vs_chain, fig_ku_fit, fig_fit_all,
-       fig_ambiguity, fig_rms_vs_k, fig_stress_use, fig_calib_mech, fig_gate_verify, fig_gate_internal,
-       fig_pad_waveforms, fig_pad_summary, fig_calibration)
+ALL = (fig_problem, fig_replay_fails, fig_stage, fig_device, fig_stage_law, fig_blocks, fig_workflow, fig_chain,
+       fig_map, fig_gate_to_ku, fig_target, fig_fit_score, fig_fit_knobs, fig_fit_search, fig_one_vs_chain,
+       fig_ku_fit, fig_fit_all, fig_ambiguity, fig_rms_vs_k, fig_stress_use, fig_calib_mech, fig_gate_verify,
+       fig_gate_internal, fig_pad_waveforms, fig_pad_summary, fig_native_fail, fig_calibration)
 
 if __name__ == "__main__":
     want = sys.argv[1:]

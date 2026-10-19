@@ -367,3 +367,53 @@ under Fig. 2) and the last is full to within 0.5 in, and every block lands withi
 mention (Figs. 3, 11, 13 and 14 two pages after, where a run of blocks fills the nearer pages) Delivered as
 `\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v5_ieee.docx`. The builder now
 writes v5; v2, v3 and v4 stay as committed.
+
+## v6: the five feedback items (2026-10-19)
+
+`stage_law_paper_v6_ieee.docx`, with `stage_law_paper_v6_draft.md`, a markdown rendering of the
+same body (text, linearized equations, pipe tables, every figure right after its first mention)
+that the builder writes for review without Word (`scripts/stage_law_doc_markdown.py`). The five
+items of `v5_feedbacks.md`, which also tracks the work:
+
+1. **"No valid run" of the native element: diagnosed and resolved.**
+   `results/native_revived_variants_2026-10-18` (`--diagnose`): every as-generated variant file
+   runs under a 10 ns pulse; a flat 300 ps lead-in and 100 or 200 rows revive every variant at the
+   stressed widths; 300 rows was too fine for the two 2.2 ns tables (ex2_skewp, ex2_weak); the
+   revived score depends on the edit by up to nine points (flat lead-in 43-56 %, resampling
+   52-64 %). Table VIII now carries all twelve native numbers, five starred (200 rows: ex2_base
+   62.1, nomiller 64.2, skewp 51.8, slowpre 34.1, weak 60.5 %). Section V-B gives the mechanism as
+   characterized (the 09-11 noise-injection experiments, the flat lead-in, the full-swing runs,
+   the converter's own clean solve) and says what is not visible; Fig. 20 shows the lead-in at
+   2.7 ps against 200 rows and the shipped 8 ps, and the latched K_u.
+2. **Source for the native-element claim.** The HSPICE SI User Guide T-2022.06, ch. 8, is cited
+   ("PU and PD scaling coefficients derived from the two VT waveforms"; the `xv_pu` / `xv_pd`
+   outputs), and the claim is rephrased to what it supports. `native_full_swing.py` probes the
+   element's coefficient through `xv_pu` on ex2's 1.7 pF file; Fig. 10(b) lays it over the
+   two-fixture solution, 0.003 rms.
+3. **IEEE citations.** Twelve references, each verified against the publisher's page or the
+   local manual text, numbered by first citation through a registry in the builder (`REFS`,
+   `C()`); the kept derivation's literal [1]-[3] are converted and renumbered by the build.
+   Added: IBIS 7.1, the IBIS Cookbook 4.0, Wang and Tan 1999 (the two-waveform SPICE
+   conversion), the HSPICE guide, Stievano, Maio and Canavero 2004 (Mπlog, related work),
+   Leventhal and Green 2006 (the Miller bump, golden waveforms), Hairer, Nørsett and Wanner
+   (Heun), the ngspice-46 manual, Nelder and Mead 1965.
+4. **Figures.** Fig. 1 is new (`fig_replay_fails`): the probed ex2 gate under a complete
+   transition and under an 810 ps pulse, the transistor's own solved K_u against the native
+   element's replayed one, and the pad. Fig. 2 (`fig_stage`, in column) draws one stage with
+   I_P, I_N, u and v. Fig. 3 (`fig_device`) returns with the alpha-power fit. Fig. 10 gains the
+   fixture inset and the native coefficient. Fig. 18 (`fig_pad_summary`) is the twelve-buffer
+   bar chart with the revived native bars starred. Fig. 20 (`fig_native_fail`, in column) is the
+   native failure. The builder places in-column figures in the text flow (`fig_col`), figures and
+   tables are checked for numbering order whether wide or in column, and captions never anchor a
+   float.
+5. **Sequence.** The introduction is now problem (Fig. 1), idea, contributions, related work,
+   the organization paragraph (one sentence per section, and why the order), then I-A "Terms and
+   Test Set" with Table I.
+
+Rendered through Word: 19 pages (v5: 18), 20 figures, 9 tables, 12 references; every page full to within
+0.8 in. The layout pass places 24 wide blocks; the two in-column figures (Figs. 2 and 20) flow with the
+text. Blocks land within three pages of their first mention (Fig. 19, the pad waveforms, is the
+furthest, because Section V-B mentions four figures and a table on one page). Wide figures are set at
+4.8-7.1 in so that the dense stretch from Section IV-C to V-B fits. Delivered as
+`\\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v6_ieee.docx` with the markdown
+preview beside it. The builder now writes v6; v2, v3, v4 and v5 stay as committed.
