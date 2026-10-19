@@ -76,7 +76,7 @@ The current work. The chain is fitted to the IBIS file's Ku(t) (track 1) or to a
 
 | folder | what it is | write-up | written by |
 |---|---|---|---|
-| `native_revived_variants_2026-10-18` | HSPICE native IBIS on the ex2 variants, V-T tables resampled onto 300 rows | FINDINGS.md | `scripts/native_revived_variants.py` |
+| `native_revived_variants_2026-10-18` | HSPICE native IBIS on the ex2 variants, V-T tables resampled onto 200 rows | FINDINGS.md | `scripts/native_revived_variants.py` |
 | `native_dead_probe_2026-09-11` | Why HSPICE native IBIS is "dead" on the regenerated variant files | FINDINGS.md | `scripts/native_dead_probe.py` |
 | `native_st_vs_solved_2026-09-07` | Is native's St_pu(t) the same curve as the offline two-fixture solve? | README.md (generated) | `scripts/native_st_vs_solved_k.py` |
 
@@ -135,7 +135,7 @@ Read by many scripts; regenerate rather than edit.
 | folder | what it is | write-up | written by |
 |---|---|---|---|
 | `stage_law_flow_animation_2026-10-15` | The stage-law flow, animated with manim (Community v0.22), as a companion to | README.md | `scripts/stage_law_flow_animation_data.py` |
-| `stage_law_doc_2026-10-01` | Stage-law derivation document | README.md | `scripts/build_stage_law_doc_figures.py` |
+| `stage_law_doc_2026-10-01` | Stage-law derivation document | README.md stage_law_paper_v6_draft.md | `scripts/build_stage_law_doc_figures.py` |
 | `device_taper_2026-09-28` | Can the device's own taper replace `x_lin = 0.45`? | FINDINGS.md PLAN.md | `scripts/device_alpha_extract.py`, `scripts/device_taper_ku.py` |
 | `model_provenance_2026-09-25` | What in the stage law has a source, and what does not | FINDINGS.md | `scripts/build_0924_deck.py`, `scripts/device_alpha_extract.py` |
 

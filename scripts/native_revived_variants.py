@@ -1,18 +1,25 @@
 #!/usr/bin/env python3
-"""HSPICE native IBIS on the five ex2 variants, with their V-T tables resampled onto 300 rows.
+"""HSPICE native IBIS on the five ex2 variants, with their V-T tables resampled onto 200 rows.
 
 Question: what is the native element's stressed peak error on the ex2 variants, for which the
 09-04 campaign (results/variant_stress_cases_2026-09-04) recorded no valid run at any depth?
 results/native_dead_probe_2026-09-11 found the cause, HSPICE's two-waveform solver latching
 Ku ~ 0 on the sub-millivolt pre-edge ripple of tables sampled at 2.7 ps, and the cure, sampling
 at 5 ps or coarser. This reruns native on every stressed case of the five variants with the
-case's own IBIS file, its [Rising Waveform] / [Falling Waveform] tables resampled onto 300 rows
-over their own span (8.9 ps on ex2_base: the 09-11 probe's verified reviver, `coarse300`, which
-still runs today) and nothing else changed, in the campaign's own deck (run.sp copied as is).
-Two finer grids were tried first on 2026-10-18 and left ex2_base dead at every depth: 500 rows
-(5.4 ps) and an 8.0 ps grid (335 rows); the probe's 300-row file itself is alive in the same deck,
-so the solver's sensitivity is not a plain sampling threshold and the 300-row recipe is used as
-verified. Each run is scored exactly as the cascade sweep scored native (gate_ramp_prototype.score
+case's own IBIS file, its [Rising Waveform] / [Falling Waveform] tables resampled onto 200 rows
+over their own span (11-13 ps; the shipped ex2 file native runs on is sampled at 8 ps) and nothing
+else changed, in the campaign's own deck (run.sp copied as is).
+
+How 200 rows was chosen (--diagnose, 2026-10-19, diagnose/diagnose.csv): 300 rows revived
+ex2_base, ex2_nomiller and ex2_slowpre but not ex2_skewp and ex2_weak, whose tables span 2.2-2.3 ns
+instead of 2.7 (7.4-7.7 ps per row); 500 rows and an 8.0 ps grid left even ex2_base dead. The
+matrix on the 50 % case of ex2_skewp, ex2_weak and ex2_base: every as-generated file runs under a
+10 ns pulse; holding the first 300 or 500 ps of every table flat revives all three; 100 and 200
+rows revive all three; 300 rows only ex2_base; 400 rows none; a 13 ps moving average on the first
+nanosecond only ex2_base. So the death is the pre-edge ripple under a reversal that lands in the
+lead-in, and the revived score depends on the edit by up to nine points (flat lead-in 43-56 %,
+resampling 52-64 %, smoothing 63 % on ex2_base), because the flat lead-in also removes the real
+feedthrough dip before the edge. 200 rows is the least invasive edit that revives every variant. Each run is scored exactly as the cascade sweep scored native (gate_ramp_prototype.score
 against the campaign's transistor run: pad peak error in [t_rev - 0.1, t_rev + 3.0] ns), and the
 validity rule is cross_device_stress_metrics' (Ku above 0.3, Kd below 0.9, pad peak above 0.3 of
 the transistor's).
@@ -23,7 +30,15 @@ Output: results/native_revived_variants_2026-10-18/
                                    the resampling fidelity, and the as-generated result
     FINDINGS.md
 
-    py -3.14 scripts/native_revived_variants.py [--rows 300] [--only ex2_base]
+    py -3.14 scripts/native_revived_variants.py [--rows 200] [--only ex2_base]
+    py -3.14 scripts/native_revived_variants.py --diagnose [--only ex2_skewp]
+
+--diagnose (2026-10-19): on ex2_skewp and ex2_weak, which the 300-row recipe did not revive, and on
+ex2_base as the control, run the 50 % case under a matrix of table edits (as is; flat lead-in of 300
+or 500 ps; 13 ps moving average on the first nanosecond; 100, 200, 300, 400 rows; 300 rows plus the
+flat lead-in) and, for the as-generated and 300-row files, a 10 ns full-swing pulse in the same deck.
+A flat lead-in removes the pre-edge ripple exactly, so if it does not revive a file the cause is not
+the ripple. Output: diagnose/<variant>/<recipe>/ and diagnose.csv, summarized in FINDINGS.md.
 """
 from __future__ import annotations
 
@@ -46,9 +61,140 @@ import spicelab as sl  # noqa: E402
 from spice_tool_paths import default_hspice  # noqa: E402
 
 VARIANTS = ("ex2_base", "ex2_nomiller", "ex2_skewp", "ex2_slowpre", "ex2_weak")
-ROWS = 300
+ROWS = 200
 OUT = ROOT / "results" / "native_revived_variants_2026-10-18"
 _NUM = re.compile(r"^\s*[-+0-9.eE]+[a-zA-Z]*\s+[-+0-9.eE]")
+
+
+def _edit_tables(text: str, fn):
+    """Apply fn(t_s, v[:, 3]) -> v to every V-T table and rewrite it in the probe's format."""
+    out, i, lines = [], 0, text.splitlines()
+    while i < len(lines):
+        line = lines[i]
+        out.append(line)
+        if line.strip() in ("[Rising Waveform]", "[Falling Waveform]"):
+            i += 1
+            while i < len(lines) and not _NUM.match(lines[i]):
+                out.append(lines[i]); i += 1
+            t, v = [], []
+            while i < len(lines) and _NUM.match(lines[i]):
+                parts = lines[i].split()
+                t.append(ndp._num(parts[0])); v.append([ndp._num(x) for x in parts[1:4]])
+                i += 1
+            t, v = np.array(t), fn(np.array(t), np.array(v))
+            for k in range(len(t)):
+                out.append(f"{t[k]:.6e}s\t" + "\t".join(f"{x:.6f}V" for x in v[k]))
+            continue
+        i += 1
+    return "\n".join(out) + "\n"
+
+
+def flat_lead_in(text: str, until_ps: float) -> str:
+    """Hold every table at its first value for t < until_ps (the 09-11 probe's 'flat first N ps')."""
+    def fn(t, v):
+        v = v.copy()
+        v[t < until_ps * 1e-12] = v[0]
+        return v
+    return _edit_tables(text, fn)
+
+
+def smooth_lead_in(text: str, window_ps: float, until_ns: float) -> str:
+    """Moving average of width window_ps on the samples with t < until_ns (the probe's '13 ps
+    moving average, t < 1 ns only')."""
+    def fn(t, v):
+        v = v.copy()
+        half = window_ps * 1e-12 / 2
+        for k in np.where(t < until_ns * 1e-9)[0]:
+            m = np.abs(t - t[k]) <= half
+            v[k] = v[m].mean(axis=0)
+        return v
+    return _edit_tables(text, fn)
+
+
+def full_swing_deck(deck: str) -> str:
+    """The campaign's deck with its input pulse replaced by a 10 ns one (5 to 15 ns)."""
+    out = []
+    for line in deck.splitlines():
+        if line.startswith("Vin "):
+            sup = line.split("5.001n")[1].split()[0]
+            line = f"Vin in_dig 0 PWL(0n 0  5n 0  5.001n {sup}  15n {sup}  15.001n 0  22n 0)"
+        out.append(line)
+    return "\n".join(out) + "\n"
+
+
+RECIPES = {
+    "asis": lambda s: s,
+    "flat300": lambda s: flat_lead_in(s, 300),
+    "flat500": lambda s: flat_lead_in(s, 500),
+    "smooth13": lambda s: smooth_lead_in(s, 13, 1.0),
+    "rows100": lambda s: ndp.resample_tables(s, None, 100),
+    "rows200": lambda s: ndp.resample_tables(s, None, 200),
+    "rows300": lambda s: ndp.resample_tables(s, None, 300),
+    "rows400": lambda s: ndp.resample_tables(s, None, 400),
+    "rows300_flat300": lambda s: flat_lead_in(ndp.resample_tables(s, None, 300), 300),
+}
+FULL_SWING_RECIPES = ("asis", "rows300", "flat300")
+
+
+def run_case(d: Path, ibis_text: str, deck: str):
+    """Run the deck in d; (t, pad, ku, kd) or None."""
+    d.mkdir(parents=True, exist_ok=True)
+    (d / "input.ibs").write_text(ibis_text, encoding="utf-8")
+    (d / "run.sp").write_text(deck, encoding="utf-8")
+    rc = base.run_process([str(default_hspice()), "-i", "run.sp", "-o", "run"], d, d / "hspice_stdout.log", 900)
+    if rc != 0 or not (d / "run.tr0").exists():
+        return None
+    raw = sl.parse_hspice_tr0(d / "run.tr0")
+    return (sl.time_ns(raw),) + tuple(np.asarray(raw[k], float) for k in ("v(pad)", "v(ku)", "v(kd)"))
+
+
+def diagnose(only: str | None) -> int:
+    out_dir = OUT / "diagnose"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    rows = []
+    for var in (only,) if only else ("ex2_skewp", "ex2_weak", "ex2_base"):
+        gp.VARIANT_NAME = var
+        depth, w, case = sorted(gp.cases(var))[0]                 # the 50 % case
+        src = (case / "native" / "input.ibs").read_text(errors="ignore")
+        deck = (case / "native" / "run.sp").read_text(encoding="utf-8")
+        t_si, si = gp.tr0_pad(case / "transistor" / "run.tr0")
+        rev = gp.RISE_NS + w
+        g = np.arange(rev - 0.1, rev + 3.0, 0.001)
+        si_pk = float(np.interp(g, t_si, si).max())
+        for name, fn in RECIPES.items():
+            for full in (False, True):
+                if full and name not in FULL_SWING_RECIPES:
+                    continue
+                d = out_dir / var / (name + ("_full10ns" if full else ""))
+                r = run_case(d, fn(src), full_swing_deck(deck) if full else deck)
+                row = dict(variant=var, recipe=name, pulse="10 ns" if full else f"{w * 1000:.0f} ps", status="ok" if r else "hspice failed")
+                if r:
+                    t, pad, ku, kd = r
+                    if full:
+                        m = (t > 5.0) & (t < 16.0)
+                        row.update(pad_max_V=round(float(pad[m].max()), 3), ku_max=round(float(ku[m].max()), 3),
+                                   kd_min=round(float(kd[m].min()), 3), peak_err_pct="",
+                                   valid=int(ku[m].max() > 0.3 and kd[m].min() < 0.9))
+                    else:
+                        pk = gp.score(t_si, si, t, pad, w)[0]
+                        ku_max, kd_min = float(np.interp(g, t, ku).max()), float(np.interp(g, t, kd).min())
+                        nat_pk = float(np.interp(g, t, pad).max())
+                        row.update(pad_max_V=round(nat_pk, 3), ku_max=round(ku_max, 3), kd_min=round(kd_min, 3),
+                                   peak_err_pct=round(pk, 1),
+                                   valid=int(ku_max > 0.3 and kd_min < 0.9 and nat_pk > 0.3 * si_pk))
+                rows.append(row)
+                print(f"  {var:10s} {name:16s} {row['pulse']:>7s}: " + (
+                    f"pad max {row['pad_max_V']:.3f} V, Ku max {row['ku_max']:.2f}, Kd min {row['kd_min']:.2f}, "
+                    f"peak err {row['peak_err_pct']!s:>6} %, valid {row['valid']}" if r else "hspice failed"), flush=True)
+    fields = ["variant", "recipe", "pulse", "status", "pad_max_V", "ku_max", "kd_min", "peak_err_pct", "valid"]
+    mode = "a" if only and (out_dir / "diagnose.csv").exists() else "w"
+    with (out_dir / "diagnose.csv").open(mode, newline="", encoding="utf-8") as fh:
+        wr = csv.DictWriter(fh, fieldnames=fields)
+        if mode == "w":
+            wr.writeheader()
+        for r in rows:
+            wr.writerow({k: r.get(k, "") for k in fields})
+    return 0
 
 
 def first_rising_table(text: str):
@@ -73,8 +219,11 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rows", type=int, default=ROWS, help="rows per V-T table after resampling")
     ap.add_argument("--only", default=None, help="one variant, for a quick check")
+    ap.add_argument("--diagnose", action="store_true", help="the recipe matrix on the 50 %% case (see module docstring)")
     args = ap.parse_args()
     OUT.mkdir(parents=True, exist_ok=True)
+    if args.diagnose:
+        return diagnose(args.only)
     rows = []
     for var in VARIANTS:
         if args.only and var != args.only:
@@ -180,9 +329,28 @@ def write_findings(rows) -> None:
         lines.append(f"| {v} | {worst[v]:.1f} |" if v in worst else f"| {v} | no valid case |")
     lines += ["",
               f"**Reading.** The fault was the simulator's, not the files' content: the same waveforms on {ROWS} rows",
-              "run (where they do; see the validity column). Two finer grids, 500 rows (5.4 ps) and 8.0 ps (335 rows),",
-              "left ex2_base dead at every depth on 2026-10-18 while the probe's own 300-row file ran in the same deck,",
-              "so the sensitivity is not a plain sampling threshold; the 300-row recipe is the one verified.",
+              "run on every variant, and the native element then fails on them as it does on the shipped ex2,",
+              "by replaying the coefficients of a complete transition against a pulse that interrupts it.",
+              "", "## How the recipe was chosen (--diagnose, 2026-10-19)", "",
+              "The 50 % case of ex2_skewp, ex2_weak (dead at 300 rows) and ex2_base (alive at 300), under a",
+              "matrix of table edits, plus a 10 ns full-swing pulse on three of them (`diagnose/diagnose.csv`):", "",
+              "| variant | recipe | pulse | pad max (V) | Ku max | Kd min | peak error (%) | valid |",
+              "|---|---|---|---:|---:|---:|---:|:--:|"]
+    diag = OUT / "diagnose" / "diagnose.csv"
+    if diag.exists():
+        for r in csv.DictReader(diag.open(encoding="utf-8")):
+            lines.append(f"| {r['variant']} | {r['recipe']} | {r['pulse']} | {r['pad_max_V']} | {r['ku_max']} | "
+                         f"{r['kd_min']} | {r['peak_err_pct'] or ''} | {'yes' if r['valid'] == '1' else 'no'} |")
+    lines += ["",
+              "Every as-generated file runs under the 10 ns pulse, so the solver dies only when the reversal of a",
+              "short pulse lands inside the lead-in of the rising table, where the tables carry 0.2-0.4 mV rms of",
+              "ripple at 2.2-2.7 ps spacing. A flat lead-in (300 or 500 ps) revives every variant, so the ripple is",
+              "the cause on all three; 100 and 200 rows revive every variant, 300 rows only ex2_base (its tables",
+              "span 2.7 ns, the others 2.2-2.3 ns, so 300 rows is 7.4-7.7 ps there), 400 rows none, and the 13 ps",
+              "moving average only ex2_base. The revived score depends on the edit: the flat lead-in gives 43-56 %,",
+              "resampling 52-64 %, smoothing 63 % on ex2_base, because the flat lead-in also removes the real",
+              "feedthrough dip that precedes the edge. 200 rows, the least invasive edit that revives all five,",
+              "is the recipe of the table above; 100 rows gives the same numbers within two points.",
               "run, and the native element then fails on the variants as it does on the shipped ex2 (+71 % at",
               "810 ps), by replaying coefficients of a complete transition against a pulse that interrupts it.",
               "Nothing else in the files was touched, so these numbers are comparable with the seven buffers on",
