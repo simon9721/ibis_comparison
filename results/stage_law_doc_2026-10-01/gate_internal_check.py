@@ -5,14 +5,19 @@ The file-only model is judged at the pad. Its internal gate G_UP is never compar
 anything, and a wrong gate paired with a wrong map can still give the right pad. This
 compares the two directly on the buffers whose gate was probed:
 
-    model   v(x1.gup) of the selected file-only build (selector_from_one_run), in ngspice
+    model   v(x1.gup) of the selected file-only build (build_stage_law_doc_figures.pick_build:
+            the uniform x_lin = 0.45 build of stage_law_model_checks where it exists), in ngspice
     real    the probed predriver output (ex2 n4, inv_chain vout7), normalised rest -> settled
             (predriver_stages_2026-09-09, via current_limited_stage_model.load)
 
 at full swing and at the five stressed widths.
 
+Output: gate_internal_check.png and gate_internal_check.csv (buffer, case, real and model
+peak, rms, lag in ps).
+
     py -3.14 results/stage_law_doc_2026-10-01/gate_internal_check.py
 """
+import csv
 import sys
 from pathlib import Path
 
@@ -27,7 +32,7 @@ import matplotlib                                   # noqa: E402
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt                     # noqa: E402
 import gate_ramp_prototype  # noqa: E402,F401  (first: binds pybis2spice before the deck modules add tools/ to the path)
-import build_0924_deck_figures as b24               # noqa: E402
+import build_stage_law_doc_figures as figs          # noqa: E402
 import current_limited_stage_model as cl            # noqa: E402
 import spicelab as sl                               # noqa: E402
 
@@ -42,8 +47,9 @@ def model_gate(folder, which):
 
 def main():
     fig, axes = plt.subplots(2, 4, figsize=(11, 5.2))
+    rows = []
     for r, dev in enumerate(("ex2", "inv_chain")):
-        folder = b24._pick_build(dev)
+        folder = figs.pick_build(dev)
         grid, runs = cl.load(dev)
         widths = sorted(k for k in runs if k != "full")
         print(f"\n=== {dev}: selected file-only build {folder.name}")
@@ -61,6 +67,7 @@ def main():
             lag = float(lags[int(np.argmin(errs))]) * 1e3
             pk_r, pk_m = float(real[win].max()), float(mod[win].max())
             print(f"  {str(key):>8}{pk_r:>11.3f}{pk_m:>12.3f}{pk_m - pk_r:>+8.3f}{rms:>8.3f}{lag:>+10.0f}")
+            rows.append([dev, key, folder.name, f"{pk_r:.4f}", f"{pk_m:.4f}", f"{pk_m - pk_r:+.4f}", f"{rms:.4f}", f"{lag:+.0f}"])
             if j in (0, 1, 3, 5):
                 a = axes[r][(0, 1, 3, 5).index(j)]
                 a.plot(grid - 5.0, real, color="#111111", lw=2.4, label="real gate (probed)")
@@ -73,6 +80,10 @@ def main():
                     a.set_ylabel("gate, normalised"); a.legend(fontsize=7, frameon=False)
     fig.tight_layout()
     fig.savefig(HERE / "gate_internal_check.png", dpi=160)
+    with (HERE / "gate_internal_check.csv").open("w", newline="", encoding="utf-8") as fh:
+        w = csv.writer(fh)
+        w.writerow(["buffer", "case", "build", "real_peak", "model_peak", "diff", "rms", "lag_ps"])
+        w.writerows(rows)
     print(f"\nfigure: {HERE / 'gate_internal_check.png'}")
 
 

@@ -1,0 +1,13 @@
+buffer,case,build,real_peak,model_peak,diff,rms,lag_ps
+ex2,full,ibis_prior_K3_prior0.5_0.7_xlin0.45_calibpad810,1.0000,1.0000,-0.0000,0.0327,-40
+ex2,810,ibis_prior_K3_prior0.5_0.7_xlin0.45_calibpad810,0.7581,0.7050,-0.0531,0.0613,-56
+ex2,830,ibis_prior_K3_prior0.5_0.7_xlin0.45_calibpad810,0.7974,0.7477,-0.0498,0.0659,-60
+ex2,858,ibis_prior_K3_prior0.5_0.7_xlin0.45_calibpad810,0.8379,0.7956,-0.0423,0.0706,-64
+ex2,895,ibis_prior_K3_prior0.5_0.7_xlin0.45_calibpad810,0.8802,0.8446,-0.0356,0.0761,-70
+ex2,975,ibis_prior_K3_prior0.5_0.7_xlin0.45_calibpad810,0.9359,0.9109,-0.0250,0.0827,-74
+inv_chain,full,ibis_prior_K7_prior0.4_0.6_xlin0.45_calibpad104,1.0000,1.0000,-0.0000,0.0179,-10
+inv_chain,104,ibis_prior_K7_prior0.4_0.6_xlin0.45_calibpad104,0.8787,0.7395,-0.1392,0.0224,-4
+inv_chain,106,ibis_prior_K7_prior0.4_0.6_xlin0.45_calibpad104,0.9354,0.8282,-0.1072,0.0225,-4
+inv_chain,111,ibis_prior_K7_prior0.4_0.6_xlin0.45_calibpad104,0.9724,0.9284,-0.0439,0.0211,-6
+inv_chain,119,ibis_prior_K7_prior0.4_0.6_xlin0.45_calibpad104,0.9920,0.9707,-0.0213,0.0280,-8
+inv_chain,135,ibis_prior_K7_prior0.4_0.6_xlin0.45_calibpad104,1.0032,0.9914,-0.0119,0.0359,-10

@@ -127,6 +127,26 @@ def fig_problem():
 
 
 # ------------------------------------------------------------------ 1. where the replay fails
+def settled_swing(dev: str) -> float:
+    """The pad excursion of the transistor's complete transition into the test load, in volts
+    (predriver_stages_2026-09-09/<dev>/full: rest level before the edge, high level after it)."""
+    import predriver_stage_probe as psp
+    full = psp.parse_tr0(cl.ST / dev / "full" / "run.tr0")
+    t, v = np.asarray(full["time"], float) * 1e9, np.asarray(full["v(pad_sp)"], float)
+    _, rest, high = psp.normalise(t, v, t, v)
+    return float(high - rest)
+
+
+def pct_axis(ax, swing: float, label: bool = True):
+    """A right-hand axis reading the pad voltage as a percentage of the settled swing."""
+    sec = ax.secondary_yaxis("right", functions=(lambda v: 100.0 * v / swing, lambda p: p * swing / 100.0))
+    sec.spines["right"].set_visible(True)
+    sec.tick_params(labelsize=6.5, length=2)
+    if label:
+        sec.set_ylabel("% of settled swing", fontsize=7)
+    return sec
+
+
 def fig_replay_fails():
     """Fig. 1 of the paper, on ex2. (a) Complete transition: input, the probed gate of the output
     device (n4, normalized) and the pad; the gate reaches its rail. (b) An 810 ps pulse: the gate
@@ -164,7 +184,7 @@ def fig_replay_fails():
         ax[0].set_ylabel("normalized")
         ax[0].set_title("(a) complete transition:\ngate reaches its rail", fontsize=7.6)
         ax[1].set_title(f"(b) 810 ps pulse:\ngate turns back at {g_peak:.2f}", fontsize=7.6)
-        ax[0].legend(frameon=False, fontsize=5.8, loc="lower right")
+        ax[1].legend(*ax[0].get_legend_handles_labels(), frameon=False, fontsize=5.8, loc="upper right")
         ax[1].axhline(g_peak, color=TEAL, lw=0.6, ls=":")
         c = ax[2]
         c.plot(x, d["silicon_ku"], color=K_, lw=1.6, label="solved from\nthe transistor")
@@ -178,6 +198,7 @@ def fig_replay_fails():
         e.plot(x, d["hspice_pad"], color=BLUE, lw=1.5, ls=(0, (1.4, 1.4)), label=f"native\n({e_nat:+.0f} % peak)")
         e.set_xlim(-0.5, 3.0); e.set_ylim(-0.3, 1.7)
         e.set_ylabel("pad (V)")
+        pct_axis(e, p_high - p_rest)
         e.set_title("(d) 810 ps pulse:\nthe pad", fontsize=7.6)
         e.legend(frameon=False, fontsize=5.6, loc="upper right")
         for a in ax:
@@ -186,6 +207,62 @@ def fig_replay_fails():
         save(fig, "fig_replay_fails")
     return dict(gate_peak=g_peak, native_peak_err=e_nat, ku_si_peak=float(d["silicon_ku"][(x > 0) & (x < 3)].max()),
                 ku_nat_peak=float(d["hspice_ku"][(x > 0) & (x < 3)].max()))
+
+
+# ------------------------------------------------------------------ 2b. the stage law as a signal flow
+def fig_stage_flow(vt: float = 0.3, x_lin: float = 0.45):
+    """Equation (19) drawn as a signal flow: the charging path (gate factor, rate, drain factor),
+    the discharging path, the node as an integrator, and the output fed back into the two drain
+    factors and on to the next stage. Each factor block carries a thumbnail of its curve."""
+    with plt.rc_context(RC):
+        fig, a = plt.subplots(figsize=(3.3, 2.85))
+        a.set_xlim(0, 100); a.set_ylim(-6, 76); a.axis("off")
+        YT, YB, YM = 56, 20, 38                                   # the two paths and the node
+
+        def hinge(x, y, w, h):                                    # h(.) : zero to v_t, then linear to one
+            xs = [x + 1.5, x + 1.5 + (w - 3) * vt, x + w - 1.5]
+            ys = [y + 1.5, y + 1.5, y + h - 1.5]
+            a.plot(xs, ys, color=TEAL, lw=1.2)
+            a.plot([xs[1], xs[1]], [y + 0.6, y + 2.4], color=K_, lw=0.6)
+
+        def taper(x, y, w, h):                                    # r(.) : one, then down to zero within x_lin of the rail
+            xs = [x + 1.5, x + 1.5 + (w - 3) * (1 - x_lin), x + w - 1.5]
+            ys = [y + h - 1.5, y + h - 1.5, y + 1.5]
+            a.plot(xs, ys, color=RED, lw=1.2)
+
+        for y, lab_in, lab_h, lab_s, lab_r, lab_sign in ((YT, "$u$", "$h(u)$", "$s_{up}$", "$r(1-v)$", "+"),
+                                                       (YB, "$1-u$", "$h(1-u)$", "$s_{dn}$", "$r(v)$", "−")):
+            a.text(0.0, y, lab_in, fontsize=7.6, va="center", ha="left")
+            darrow(a, 10.5, y, 14, y)
+            dbox(a, 14, y - 6, 16, 12, "")
+            hinge(14, y - 6, 16, 12)
+            a.text(22, y + 7.0, lab_h, fontsize=7.2, ha="center", va="bottom")
+            darrow(a, 30, y, 35.5, y)
+            a.add_patch(mpatches.Circle((39, y), 3.5, fc="white", ec=K_, lw=0.9))
+            a.text(39, y, "×", fontsize=8, ha="center", va="center")
+            a.text(39, y + 5.0, lab_s, fontsize=7.4, ha="center", va="bottom")
+            darrow(a, 42.5, y, 48, y)
+            dbox(a, 48, y - 6, 16, 12, "")
+            taper(48, y - 6, 16, 12)
+            a.text(56, y + 7.0, lab_r, fontsize=7.2, ha="center", va="bottom")
+            darrow(a, 64, y, 70, y)
+            a.text(72.3, y + (2.6 if y == YT else -2.6), lab_sign, fontsize=9, ha="center", va="center")
+        a.plot([70, 70], [YT, YB], color=K_, lw=0.9)
+        a.add_patch(mpatches.Circle((70, YM), 2.2, fc="white", ec=K_, lw=0.9))
+        a.text(70, YM, "Σ", fontsize=7, ha="center", va="center")
+        darrow(a, 72.2, YM, 77, YM)
+        dbox(a, 77, YM - 6, 13, 12, "$\\int dt$", fs=8)
+        darrow(a, 90, YM, 99, YM)
+        a.text(94.5, YM + 1.8, "$v$", fontsize=8.5, ha="center", va="bottom")
+        a.text(99.5, YM - 3.6, "to the\nnext stage", fontsize=6.2, ha="right", va="top")
+        a.plot([93, 93, 56, 56], [YM, YT + 13, YT + 13, YT + 6], color=K_, lw=0.7, ls="--")
+        a.plot([93, 93, 56, 56], [YM, YB - 13, YB - 13, YB - 6], color=K_, lw=0.7, ls="--")
+        a.text(75, YT + 13.6, "$v$ fed back", fontsize=6.4, ha="center", va="bottom")
+        a.text(22, YT + 12.5, "charging term", fontsize=7, ha="center", va="bottom", color="#333333")
+        a.text(22, YB - 12.5, "discharging term", fontsize=7, ha="center", va="top", color="#333333")
+        a.text(50, -5.5, "$dv/dt = s_{up}\\,h(u)\\,r(1-v) - s_{dn}\\,h(1-u)\\,r(v)$   (19)", fontsize=7.6,
+               ha="center", va="bottom")
+        save(fig, "fig_stage_flow")
 
 
 # ------------------------------------------------------------------ 1b. one stage, drawn
@@ -311,7 +388,7 @@ def fig_native_fail():
 def fig_fit_knobs():
     """What each fitted number does to the model's K_u(t), against the file's curve (ex2,
     K = 3, map (0.57, 0.64), x_lin = 0.45), and how a fit progresses from a first guess."""
-    sf = ROOT / "results" / "stage_law_doc_2026-10-01" / "shape_from_file"
+    sf = ROOT / "results" / "stage_law_doc_2026-10-01" / "shape_fileonly"
     d = np.load(sf / "target_ex2.npz")
     u, target = d["u"], d["target"]
     t = np.arange(4.0, 21.0, cl.DT) - 5.025
@@ -326,9 +403,10 @@ def fig_fit_knobs():
 
     with plt.rc_context(RC):
         fig, ax = plt.subplots(2, 2, figsize=(W, 4.6), gridspec_kw={"wspace": 0.22, "hspace": 0.55})
-        panels = ((ax[0][0], "s_up", (1.1, 2.19, 4.4), (0, 3.0), "(a) $s_{up}$ sets the rising edge"),
-                  (ax[0][1], "s_dn", (1.06, 2.12, 4.2), (10.0, 13.0), "(b) $s_{dn}$ sets the falling edge"),
-                  (ax[1][0], "vt", (0.30, 0.528, 0.65), (0, 3.0), "(c) $v_t$ sets the delay between stages"))
+        su, sd, vt0 = round(base[0], 2), round(base[1], 2), round(base[2], 2)
+        panels = ((ax[0][0], "s_up", (round(su / 2, 2), su, round(su * 2, 2)), (0, 3.0), "(a) $s_{up}$ sets the rising edge"),
+                  (ax[0][1], "s_dn", (round(sd / 2, 2), sd, round(sd * 2, 2)), (10.0, 13.0), "(b) $s_{dn}$ sets the falling edge"),
+                  (ax[1][0], "vt", (0.30, 0.50, vt0), (0, 3.0), "(c) $v_t$ sets the delay between stages"))
         shades = ("#9CC8C6", TEAL, "#0B5F5C")
         for a, name, vals, xr, title in panels:
             a.plot(t, target, color=K_, lw=3.0, alpha=0.35, label="file $K_u(t)$")
@@ -349,8 +427,8 @@ def fig_fit_knobs():
             a.legend(frameon=False, fontsize=6.4, loc="center right" if name != "s_dn" else "center left")
         a = ax[1][1]
         a.plot(t, target, color=K_, lw=3.0, alpha=0.35, label="file $K_u(t)$")
-        steps = ((8.0, 8.0, 0.40, "first guess"), (2.19, 8.0, 0.40, "$s_{up}$ adjusted"), (2.19, 2.12, 0.40, "$s_{dn}$ adjusted"),
-                 (2.19, 2.12, 0.528, "$v_t$ adjusted: the fit"))
+        steps = ((8.0, 8.0, 0.40, "first guess"), (su, 8.0, 0.40, "$s_{up}$ adjusted"), (su, sd, 0.40, "$s_{dn}$ adjusted"),
+                 (su, sd, vt0, "$v_t$ adjusted: the fit"))
         for (s_up, s_dn, vt, lab), c in zip(steps, ("#BBBBBB", "#888888", "#4FB3AF", RED)):
             y = ku(s_up, s_dn, vt)
             a.plot(t, y, color=c, lw=1.5 if lab.endswith("fit") else 1.2, label=f"{lab}  (rms {rms(y):.3f})")
@@ -452,85 +530,90 @@ def fig_stage_law():
         save(fig, "fig_stage_law")
 
 
+# ------------------------------------------------------------------ plain block-diagram helpers
+def dbox(a, x, y, w, h, text, fs=7.2, ls="-", lw=0.9):
+    a.add_patch(mpatches.Rectangle((x, y), w, h, fc="white", ec=K_, lw=lw, ls=ls))
+    a.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fs, linespacing=1.2)
+
+
+def darrow(a, x0, y0, x1, y1, text=None, above=True, fs=7.0, dy=1.3):
+    a.annotate("", (x1, y1), (x0, y0), arrowprops=dict(arrowstyle="-|>", color=K_, lw=0.9, shrinkA=0, shrinkB=0,
+                                                      mutation_scale=8))
+    if text:
+        a.text((x0 + x1) / 2, (y0 + y1) / 2 + (dy if above else -dy), text, ha="center",
+               va="bottom" if above else "top", fontsize=fs)
+
+
 # ------------------------------------------------------------------ 3. the signal path
 def fig_blocks():
-    """(a) The buffer as an IBIS file describes it; (b) the model's signal path, aligned under it."""
+    """(a) The buffer as an IBIS file describes it; (b) the model's signal path, aligned under it.
+    Plain block diagram: rectangles, arrows, signal names and equation numbers."""
     with plt.rc_context(RC):
-        fig, a = plt.subplots(figsize=(W, 3.8))
-        a.set_xlim(0, 100); a.set_ylim(0, 66); a.axis("off")
-
-        def box(x, y, w, h, text, fc="#F1F3F4", ec="#555555", fs=7.6, bold=False):
-            a.add_patch(mpatches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.25,rounding_size=0.8",
-                                                fc=fc, ec=ec, lw=1.1))
-            a.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fs,
-                   fontweight="bold" if bold else "normal")
-
-        def arrow(x0, y0, x1, y1, text=None, dy=1.6):
-            a.annotate("", (x1, y1), (x0, y0), arrowprops=dict(arrowstyle="-|>", color="#444444", lw=1.1))
-            if text:
-                a.text((x0 + x1) / 2, max(y0, y1) + dy, text, ha="center", va="bottom", fontsize=7.4)
-
-        new, old = "#DDF1F0", "#F1F3F4"
+        fig, a = plt.subplots(figsize=(W, 3.75))
+        a.set_xlim(0, 100); a.set_ylim(0, 67); a.axis("off")
         # (a) the buffer
-        a.text(0.5, 64.3, "(a) the buffer", fontsize=8.5, fontweight="bold", va="center")
-        a.text(1.0, 52, "input\npin", fontsize=7.4, va="center", ha="left")
-        arrow(7.0, 52, 10, 52)
+        a.text(0.5, 65.5, "(a) the buffer", fontsize=8.5, va="center")
+        a.text(1.0, 52, "input\npin", fontsize=7.2, va="center", ha="left")
+        darrow(a, 7.0, 52, 10, 52)
         for i, x in enumerate((10, 20.5)):
-            box(x, 47, 8.5, 10, f"inverter\n{i + 1}", fc=old)
-            arrow(x + 8.5, 52, x + 10.5, 52)
+            dbox(a, x, 47, 8.5, 10, f"inverter\n{i + 1}")
+            darrow(a, x + 8.5, 52, x + 10.5, 52)
         a.text(33.2, 52, "…", fontsize=11, ha="center", va="center")
-        arrow(35, 52, 37, 52)
-        box(37, 47, 8.5, 10, "inverter\n$K$", fc=old)
-        arrow(45.5, 52, 50, 52, "gate")
-        box(50, 44.5, 16, 15, "output stage\npull-up device\npull-down device", fc=old)
-        arrow(66, 52, 71, 52, "die")
-        box(71, 47, 8.5, 10, "$C_{comp}$", fc=old)
-        arrow(79.5, 52, 83.5, 52)
-        box(83.5, 47, 9.5, 10, "package\n$R$, $L$, $C$", fc=old)
-        arrow(93, 52, 98.5, 52)
-        a.text(96, 54.2, "pad", fontsize=8.5, ha="center")
-        a.plot([10, 45.5], [60.2, 60.2], color="#555555", lw=1.2)
-        a.text(27.7, 61.2, "predriver: nothing in the file describes it", ha="center", fontsize=7.4, color="#555555")
-        a.plot([50, 93], [43.0, 43.0], color="#555555", lw=1.2)
-        a.text(71.5, 42.0, "in the file: I–V tables, V–T waveforms of complete transitions, $C_{comp}$, package",
-               ha="center", va="top", fontsize=7.4, color="#555555")
+        darrow(a, 35, 52, 37, 52)
+        dbox(a, 37, 47, 8.5, 10, "inverter\n$K$")
+        darrow(a, 45.5, 52, 50, 52, "gate")
+        dbox(a, 50, 44.5, 17, 15, "output stage:\npull-up device,\npull-down device", fs=6.8)
+        darrow(a, 67, 52, 72, 52, "die")
+        dbox(a, 72, 47, 8, 10, "$C_{comp}$")
+        darrow(a, 80, 52, 83.5, 52)
+        dbox(a, 83.5, 47, 9.5, 10, "package\n$R$, $L$, $C$")
+        darrow(a, 93, 52, 98.5, 52)
+        a.text(96, 54.2, "pad", fontsize=8, ha="center")
+        a.plot([10, 45.5], [60.0, 60.0], color=K_, lw=0.7)
+        a.plot([10, 10], [59, 60], color=K_, lw=0.7); a.plot([45.5, 45.5], [59, 60], color=K_, lw=0.7)
+        a.text(27.7, 60.8, "predriver (not described in the file)", ha="center", fontsize=7, color=K_)
+        a.plot([50, 93], [43.0, 43.0], color=K_, lw=0.7)
+        a.plot([50, 50], [43, 44], color=K_, lw=0.7); a.plot([93, 93], [43, 44], color=K_, lw=0.7)
+        a.text(71.5, 42.0, "described in the file: I–V tables, V–T waveforms of complete transitions, $C_{comp}$, package",
+               ha="center", va="top", fontsize=7, color=K_)
         # (b) the model
-        a.text(0.5, 38.3, "(b) the model", fontsize=8.5, fontweight="bold", va="center")
-        a.text(1.5, 26, "$V_{in}$", fontsize=8.5, va="center")
-        arrow(5.2, 26, 8.5, 26)
-        box(8.5, 21, 13.5, 10, "comparator\nat $V_{DD}/2$\n(20)", fc=new, ec=TEAL, fs=7.0)
-        arrow(22, 26, 25, 26, "$u_1$")
+        a.text(0.5, 36.5, "(b) the model", fontsize=8.5, va="center")
+        a.text(1.5, 26, "$V_{in}$", fontsize=8, va="center")
+        darrow(a, 5.2, 26, 8.5, 26)
+        dbox(a, 8.5, 21, 13.5, 10, "comparator\n$V_{DD}/2$, (20)")
+        darrow(a, 22, 26, 25, 26, "$u_1$")
         for i, lab in enumerate(("stage 1", "stage 2")):
-            box(25 + 10.5 * i, 21, 8.5, 10, lab + "\n(19)", fc=new, ec=TEAL)
-            arrow(33.5 + 10.5 * i, 26, 35.5 + 10.5 * i, 26)
+            dbox(a, 25 + 10.5 * i, 21, 8.5, 10, lab + "\n(19)")
+            darrow(a, 33.5 + 10.5 * i, 26, 35.5 + 10.5 * i, 26)
         a.text(48.2, 26, "…", fontsize=11, ha="center", va="center")
-        arrow(50, 26, 52, 26)
-        box(52, 21, 8.5, 10, "stage $K$\n(19)", fc=new, ec=TEAL)
-        arrow(60.5, 26, 66, 26, "$G_{UP}$")
-        box(66, 21, 10, 10, "map $M$\n(22)", fc=new, ec=TEAL)
-        arrow(76, 26, 81, 26, "$K_u$")
-        box(81, 13, 12, 18, "I–V tables\n+ $C_{comp}$\n(24)", fc=old)
-        arrow(93, 22, 98.5, 22)
-        a.text(96, 24.2, "pad", fontsize=8.5, ha="center")
-        # pull-down branch
-        a.plot([63, 63], [26, 15], color="#444444", lw=1.1)
-        arrow(63, 15, 66, 15)
-        box(66, 10, 10, 10, "map $M_d$\n(22)", fc=new, ec=TEAL)
-        a.text(60.4, 17.5, "$1-G_{UP}$", fontsize=7.2, ha="right")
-        arrow(76, 15, 81, 15, "$K_d$")
-        # braces
-        a.plot([10, 76], [34.5, 34.5], color=TEAL, lw=1.2)
-        a.text(43, 35.5, "added by the proposed method: fitted to the file, one stressed run to calibrate",
-               ha="center", fontsize=7.6, color=TEAL)
-        a.plot([81, 93], [9.5, 9.5], color="#666666", lw=1.2)
-        a.text(87, 8.3, "from the IBIS file,\nunchanged", ha="center", va="top", fontsize=7.4, color="#555555")
-        a.text(43, 4.2, "$K$ identical stages share $\\{s_{up}, s_{dn}, v_t, x_{lin}, p\\}$",
-               ha="center", fontsize=7.6, color="#444444")
+        darrow(a, 50, 26, 52, 26)
+        dbox(a, 52, 21, 8.5, 10, "stage $K$\n(19)")
+        darrow(a, 60.5, 26, 66, 26, "$G_{UP}$")
+        dbox(a, 66, 21, 10, 10, "map $M$\n(22)")
+        darrow(a, 76, 26, 81, 26, "$K_u$")
+        dbox(a, 81, 13, 12, 18, "I–V tables,\n$C_{comp}$,\npackage (24)")
+        darrow(a, 93, 22, 98.5, 22)
+        a.text(96, 24.2, "pad", fontsize=8, ha="center")
+        a.plot([63, 63], [26, 15], color=K_, lw=0.9)
+        darrow(a, 63, 15, 66, 15)
+        dbox(a, 66, 10, 10, 10, "map $M$\n(23)")
+        a.text(60.4, 17.5, "$1-G_{UP}$", fontsize=7, ha="right")
+        darrow(a, 76, 15, 81, 15, "$K_d$")
+        a.plot([8.5, 76], [34.0, 34.0], color=K_, lw=0.7)
+        a.plot([8.5, 8.5], [33, 34], color=K_, lw=0.7); a.plot([76, 76], [33, 34], color=K_, lw=0.7)
+        a.text(42, 34.8, "proposed: (19)–(23), identified in Section IV", ha="center", fontsize=7, color=K_)
+        a.plot([81, 93], [9.5, 9.5], color=K_, lw=0.7)
+        a.plot([81, 81], [9.5, 10.5], color=K_, lw=0.7); a.plot([93, 93], [9.5, 10.5], color=K_, lw=0.7)
+        a.text(87, 8.4, "from the file, unchanged", ha="center", va="top", fontsize=7, color=K_)
+        a.text(42, 4.2, "the $K$ stages share one parameter set $\\{s_{up}, s_{dn}, v_t, x_{lin}, p\\}$",
+               ha="center", fontsize=7, color=K_)
         save(fig, "fig_blocks")
 
 
 # ------------------------------------------------------------------ 4. one chain, two inputs
-EX2 = dict(s_up=2.1903, s_dn=2.1238, vt_fit=0.5276, vt_cal=0.487, x_lin=0.45, K=3, shape=(0.57, 0.64))
+# ex2 as the file-only procedure builds it: the selected candidate (K = 3, map (0.5, 0.7), C_comp
+# estimated at 2.64 pF), its fit to the file and its threshold after calibration (ledger_ex2.csv)
+EX2 = dict(s_up=2.5519, s_dn=2.6936, vt_fit=0.6999, vt_cal=0.6316, x_lin=0.45, K=3, shape=(0.5, 0.7), cc=2.64)
 
 
 def chain_stages(u, s_up, s_dn, vt, x_lin, K):
@@ -571,11 +654,15 @@ def fig_chain():
             if j:
                 a.set_yticklabels([]); b.set_yticklabels([])
         ax[0][0].set_ylabel("stage nodes"); ax[1][0].set_ylabel("conducting fraction")
-        ax[0][1].legend(*ax[0][0].get_legend_handles_labels(), frameon=False, loc="upper right", fontsize=7)
+        ax[0][1].legend(*ax[0][0].get_legend_handles_labels(), frameon=False, loc="center right", fontsize=7,
+                        bbox_to_anchor=(1.0, 0.36))
         ax[1][0].legend(frameon=False, loc="lower right")
         ax[0][0].set_xlim(-0.3, 4.2)
         tag(ax[0][0], "(a)", x=0.0); tag(ax[0][1], "(b)", x=0.0)
         save(fig, "fig_chain")
+    st = chain_stages(cases[1][1], p["s_up"], p["s_dn"], p["vt_cal"], p["x_lin"], p["K"])
+    return dict(gate_peak=float(st[-1].max()), ku_peak=float(prior(st[-1], *p["shape"]).max()),
+                node_peaks=[float(v.max()) for v in st])
 
 
 # ------------------------------------------------------------------ 4a. what the map is
@@ -618,7 +705,7 @@ def fig_map():
         b = ax[1]
         order = np.argsort(g_t)
         b.plot(g_t[order], ku_t[order], color=K_, lw=1.8, label="measured map")
-        b.plot(gg, prior(gg, 0.57, 0.64), color=RED, lw=1.4, ls="--", label="formula, (0.57, 0.64)")
+        b.plot(gg, prior(gg, 0.57, 0.64), color=RED, lw=1.4, ls="--", label="formula (22), fitted")
         for m, c in zip(marks, cols):
             b.plot(float(np.interp(m, tt, g_t)), float(np.interp(m, tt, ku_t)), "o", color=c, ms=4.5,
                    mec="white", mew=0.5, zorder=5)
@@ -640,10 +727,10 @@ def fig_map():
 # ------------------------------------------------------------------ 5b. the ambiguity
 def fig_ambiguity():
     """Two different assumed maps, each with the stage law fitted through it to the same file
-    K_u(t) (ex2, K = 3; results/stage_law_doc_2026-10-01/shape_from_file). The fitted gates
+    K_u(t) (ex2, K = 3, file-only setting; results/stage_law_doc_2026-10-01/shape_fileonly). The fitted gates
     differ, the full-swing K_u(t) does not - and under a short pulse the two models separate."""
     import json
-    sf = ROOT / "results" / "stage_law_doc_2026-10-01" / "shape_from_file"
+    sf = ROOT / "results" / "stage_law_doc_2026-10-01" / "shape_fileonly"
     d = np.load(sf / "target_ex2.npz")
     u_full, target = d["u"], d["target"]
     t = np.arange(4.0, 21.0, cl.DT) - 5.025
@@ -681,6 +768,8 @@ def fig_ambiguity():
         ax[1][0].legend(frameon=False, loc="lower right", fontsize=6.8)
         ax[1][1].legend(frameon=False, loc="upper right", fontsize=6.8)
         save(fig, "fig_ambiguity")
+    return {name: dict(vt=r["vt"], rms=r["rms"], peak810=float(prior(g_cut, v, a_).max()))
+            for v, a_, col, name, r, g_full, g_cut in cases}
 
 
 # ------------------------------------------------------------------ 7b. the stressed run, used
@@ -700,7 +789,7 @@ def fig_stress_use():
     peak = float(si[(t_si >= w - 0.3) & (t_si <= w + 2.6)].max())
     cache = ROOT / "results" / "stage_law_doc_2026-10-01" / "before_calibration"
     with plt.rc_context(RC):
-        fig, ax = plt.subplots(2, 2, figsize=(W, 4.5), gridspec_kw={"wspace": 0.24, "hspace": 0.5})
+        fig, ax = plt.subplots(2, 2, figsize=(W, 4.5), gridspec_kw={"wspace": 0.52, "hspace": 0.5})
         a = ax[0][0]
         a.plot(t_si, si, color=K_, lw=2.2)
         a.plot(t_si[int(np.argmax(si))], peak, "o", color=TEAL, ms=6, zorder=5)
@@ -749,6 +838,9 @@ def fig_stress_use():
         a.set_xlim(-0.2, 3.0)
         for q in (a, b, c):
             q.set_ylim(-0.4, max(1.5, max(peaks0) * 1.12))
+        sw = settled_swing("ex2")
+        for q in (a, b, c, d):
+            pct_axis(q, sw, label=True)
         save(fig, "fig_stress_use")
     return min(peaks0), max(peaks0), peak
 
@@ -760,10 +852,10 @@ def fig_gate_to_ku():
     instants are marked in all three panels. Top row: full transition, against the file's own
     K_u(t) - this comparison is the fit. Bottom row: an 810 ps pulse - the gate turns back and
     the map is only read over part of its range."""
-    import device_taper_ku as dku
     p = EX2
     vtm, a_ = p["shape"]
-    grid, u_full, target = dku.shipped_ku("ex2", dku.BUFFERS["ex2"]["cc"])
+    z = np.load(DOCDIR / "shape_fileonly" / "target_ex2.npz")
+    grid, u_full, target = z["grid"], z["u"], z["target"]
     t = grid - (5.0 + 0.025)                                  # input edge mid-point at t = 0
     g_full = chain_stages(u_full, p["s_up"], p["s_dn"], p["vt_fit"], p["x_lin"], p["K"])[-1]
     u_cut = ((t >= 0) & (t < 0.81)).astype(float)
@@ -819,6 +911,8 @@ def fig_gate_to_ku():
             c.set_title(("(c)" if full else "(f)") + " result: $K_u(t)$", fontsize=8.2)
             c.legend(frameon=False, loc="center right", fontsize=6.4, handlelength=1.3, borderaxespad=0.2)
         save(fig, "fig_gate_to_ku")
+    return dict(gate_peak=float(g_cut.max()), ku_peak=float(prior(g_cut, vtm, a_).max()),
+                rms=float(np.sqrt(np.mean((prior(g_full, vtm, a_) - target) ** 2))))
 
 
 
@@ -857,7 +951,7 @@ def band(v):
 
 
 def fig_rms_vs_k():
-    rows = [r for r in csv.DictReader((SC / "step1_summary.csv").open()) if r["pass_"] == "as_track1"]
+    rows = [r for r in csv.DictReader((SC / "step1_summary.csv").open()) if r["pass_"] == "est_knee"]
     show = {("ex2", "pull-up"): (BLUE, "ex2"), ("inv_chain", "pull-up"): (RED, "inv_chain"),
             ("io_buf", "pull-up"): (GREEN, "io_buf pull-up")}
     with plt.rc_context(RC):
@@ -1032,7 +1126,7 @@ def fig_pad_waveforms():
     import build_explainer_figures as bex
     devs = [("ex2", 810), ("inv_chain", 104), ("io_buf", 1505)]
     with plt.rc_context(RC):
-        fig, ax = plt.subplots(1, 3, figsize=(W, 2.5), gridspec_kw={"wspace": 0.3})
+        fig, ax = plt.subplots(1, 3, figsize=(W, 2.5), gridspec_kw={"wspace": 0.62})
         for a, (dev, w_ps) in zip(ax, devs):
             w = w_ps / 1000.0
             span = b24.DEV[dev][5] if dev in b24.DEV else 3.4
@@ -1043,7 +1137,7 @@ def fig_pad_waveforms():
             a.plot(t_si, si, color=K_, lw=2.4, label="transistor-level reference", zorder=5)
             e_nat, _ = b24._peak_err(x, d["hspice_pad"], t_si, si, w)
             a.plot(x, d["hspice_pad"], color=BLUE, lw=1.6, ls=(0, (1.4, 1.4)), label="HSPICE native IBIS")
-            t1 = b24._pick_build(dev)
+            t1 = pick_build(dev)
             tt, _ku, pp = b24._cand(t1, f"d{w_ps}")
             e_t1, _ = b24._peak_err(tt, pp, t_si, si, w)
             a.plot(tt, pp, color=TEAL, lw=1.6, label="proposed (file + one stressed run)")
@@ -1055,6 +1149,7 @@ def fig_pad_waveforms():
             a.set_xlabel("time (ns)")
             a.set_title(f"({'abc'[devs.index((dev, w_ps))]}) {dev}, {w_ps} ps", fontsize=8.5)
             a.grid(alpha=0.25, lw=0.4)
+            pct_axis(a, settled_swing(dev), label=True)
         ax[0].set_ylabel("pad voltage (V)")
         h, l = ax[0].get_legend_handles_labels()
         fig.legend(h, l, loc="lower center", ncol=3, frameon=False, bbox_to_anchor=(0.5, -0.17), fontsize=7.6)
@@ -1067,7 +1162,6 @@ def fig_pad_summary(revived: dict | None = None):
     import build_0924_deck_figures as b24
     import stage_count_from_file as sc
     revived = revived or {}
-    sel = b24._selector_picks()
     devs, nat, t1, dead, star = [], [], [], [], []
     for dev in sc.BUFFERS:
         n, alive = b24._native(dev)
@@ -1076,7 +1170,7 @@ def fig_pad_summary(revived: dict | None = None):
             nat.append(revived[dev]); dead.append(False); star.append(True)
         else:
             nat.append(n if (n is not None and alive) else np.nan); dead.append(not alive); star.append(False)
-        t1.append(float(sel[dev]["rms_pct"]))
+        t1.append(selected(dev)[2])
     x = np.arange(len(devs))
     with plt.rc_context(RC):
         fig, a = plt.subplots(figsize=(W, 2.7))
@@ -1113,6 +1207,58 @@ import re as _re
 DOCDIR = ROOT / "results" / "stage_law_doc_2026-10-01"
 DEVS = ("ex2", "ex2_base", "ex2_slowpre", "ex2_skewp", "ex2_weak", "ex2_nomiller",
         "inv_chain", "inv_base8", "inv_stage4", "inv_skewp", "inv_weak", "io_buf")
+# One rule for x_lin. The selector study (selector_from_one_run_2026-09-23) had x_lin fitted on
+# inv_chain (0.28) and io_buf (0.41) and fixed at 0.45 on the other ten. stage_law_model_checks
+# (results/stage_law_model_checks_2026-10-22) rebuilt every candidate of those two with x_lin =
+# 0.45 and selected by the same rule, the pad rms at the calibration width; those two picks
+# replace the selector's, so that the document describes one method on all twelve buffers.
+CHECKS = ROOT / "results" / "stage_law_model_checks_2026-10-22" / "checks.csv"
+
+
+def uniform_picks() -> dict:
+    """{buffer: checks.csv row} of the candidate selected among the uniform (x_lin = 0.45) builds
+    of each buffer the checks rebuilt."""
+    out = {}
+    if not CHECKS.exists():
+        return out
+    for r in csv.DictReader(CHECKS.open(encoding="utf-8")):
+        if r["check"] != "xlin_uniform":
+            continue
+        dev = r["dev"]
+        if dev not in out or float(r["pad_rms_calib_mV"]) < float(out[dev]["pad_rms_calib_mV"]):
+            out[dev] = r
+    return out
+
+
+def selected(dev: str):
+    """(K, (vt_map, a), worst peak error % over the five widths) of the candidate selected on
+    this buffer: the uniform build where the checks rebuilt it, else the selector's pick."""
+    u = uniform_picks()
+    if dev in u:
+        r = u[dev]
+        vt, a = (float(x) for x in r["shape"].split("/"))
+        return int(r["K"]), (vt, a), float(r["worst_peak_pct"])
+    import build_0924_deck_figures as b24
+    p = b24._selector_picks()[dev]
+    k_str, sh_str = p["rms"].split()
+    vt, a = (float(x) for x in sh_str.split("/"))
+    return int(k_str[1:]), (vt, a), float(p["rms_pct"])
+
+
+def pick_build(dev: str) -> Path:
+    """The build folder of the selected candidate (see selected())."""
+    u = uniform_picks()
+    if dev in u:
+        return Path(u[dev]["folder"])
+    import build_0924_deck_figures as b24
+    return b24._pick_build(dev)
+
+
+def sensitivity_rows() -> list:
+    """The x_lin sensitivity rows of the checks (ex2 and inv_chain at 0.35 and 0.55)."""
+    if not CHECKS.exists():
+        return []
+    return [r for r in csv.DictReader(CHECKS.open(encoding="utf-8")) if r["check"] == "xlin_sensitivity"]
 _STG = _re.compile(r"^BSTG(\d+) .*?\(([0-9.eE+-]+) \* max\(min\(\(V\(\w+\) - ([0-9.eE+-]+)\) / [0-9.eE+-]+, 1\), 0\)"
                    r" \* min\(1, \(1 - V\(\w+\)\) / ([0-9.eE+-]+)\) - ([0-9.eE+-]+) \* max", _re.M)
 ORANGE = "#C9862B"
@@ -1149,19 +1295,14 @@ def file_only_builds():
     numbers before calibration (= the fit (26)) and after, the fit's own target and residual.
     Also written to fit_all.csv for the document's table."""
     import gate_ramp_prototype as gp  # noqa: F401  (import order: before the deck modules)
-    import selector_from_one_run as sel
     import stage_count_from_file as sc
-    picks = {r["buffer"]: r for r in csv.DictReader((ROOT / "results/selector_from_one_run_2026-09-23/selector_picks.csv").open())}
     knet = {r["buffer"]: r["K_netlist"] for r in csv.DictReader((SC / "step8_picks.csv").open())}
     out = []
     for dev in DEVS:
-        p = picks[dev]                                     # the waveform-rms selector (29), as in the pad table
-        k_str, sh_str = p["rms"].split()
-        K = int(k_str[1:])
-        vt_m, a_m = (float(x) for x in sh_str.split("/"))
-        b = next(b for b in sel.builds(dev) if b["key"] == (K, vt_m, a_m))
-        pre = stage_params((b["dir"] / "calib" / "it00" / "driver.sub").read_text(encoding="utf-8"))
-        post = stage_params((b["dir"] / "driver_chain.sub").read_text(encoding="utf-8"))
+        K, (vt_m, a_m), worst = selected(dev)             # the waveform-rms selector (29), as in the pad table
+        bdir = pick_build(dev)
+        pre = stage_params((bdir / "calib" / "it00" / "driver.sub").read_text(encoding="utf-8"))
+        post = stage_params((bdir / "driver_chain.sub").read_text(encoding="utf-8"))
         assert len(pre) == K == len(post)
         raw = SC / "knee_models" / sc.dcc_name("step8", dev) / "shipped" / "full" / "run.raw"
         grid, u, target, t_on = shipped_target(dev, raw)
@@ -1172,7 +1313,7 @@ def file_only_builds():
                         s_up=pre[0][0], s_dn=pre[0][1], vt_fit=pre[0][2], vt_cal=post[0][2], x_lin=pre[0][3],
                         rate_scale=post[0][0] / pre[0][0],
                         rms=rms, t=grid - t_on, target=target, model=model, gate=g,
-                        worst=float(p["rms_pct"])))
+                        worst=worst))
     with (DOCDIR / "fit_all.csv").open("w", newline="") as fh:
         w = csv.writer(fh)
         w.writerow(["buffer", "C_comp_pF", "K_selected", "K_netlist", "vt_map", "a", "s_up", "s_dn", "vt_fit", "vt_calibrated",
@@ -1231,60 +1372,34 @@ def ex2_ledger():
 
 # ------------------------------------------------------------------ F. the procedure as a flow
 def fig_workflow():
-    """The procedure of Table IV as a flow: what comes from the file, what is assumed, what is
-    fitted, what the one measurement settles."""
+    """The procedure as a plain flow chart: five steps, the two inputs that are not the file (the
+    built-in constants and the one stressed measurement), and the model."""
     with plt.rc_context(RC):
-        fig, a = plt.subplots(figsize=(W, 3.9))
-        a.set_xlim(0, 100); a.set_ylim(0, 62); a.axis("off")
-        FILE, FIT, MEAS, ASSUME = "#F1F3F4", "#DDF1F0", "#F8E3DC", "#FBEFD9"
-
-        def box(x, y, w, h, text, fc, ec="#555555", fs=6.9):
-            a.add_patch(mpatches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.25,rounding_size=0.8",
-                                                fc=fc, ec=ec, lw=1.0))
-            a.text(x + w / 2, y + h / 2, text, ha="center", va="center", fontsize=fs, linespacing=1.25)
-
-        def arrow(x0, y0, x1, y1, text=None, above=True, fs=6.8):
-            a.annotate("", (x1, y1), (x0, y0), arrowprops=dict(arrowstyle="-|>", color="#444444", lw=1.0))
-            if text:
-                a.text((x0 + x1) / 2, (y0 + y1) / 2 + (1.4 if above else -1.4), text, ha="center",
-                       va="bottom" if above else "top", fontsize=fs)
-
-        def step(x, y, s):
-            a.text(x, y, s, fontsize=7.4, fontweight="bold", color="#333333", va="bottom")
-
-        # row 1: the file and the target
-        step(2, 56.5, "step 0: the file")
-        box(2, 45, 24, 11, "IBIS file\nI–V tables, V–T waveforms,\n$C_{comp}$, package", FILE)
-        arrow(26, 50.5, 31, 50.5)
-        box(31, 45, 28, 11, "existing converter\nsolves $K_u(t)$, $K_d(t)$ from the\nV–T waveforms, instant by instant", FILE)
-        arrow(59, 50.5, 64, 50.5)
-        box(64, 45, 22, 11, "target $\\hat{K}_u(t)$ (25)\none full transition,\nnormalised 0 → 1", FILE)
-        # row 2: assumptions and the fit
-        step(2, 37.5, "steps 1–2: fit to the file, for every candidate")
-        box(2, 26, 26, 11, "assumed\nstage count $K$: three, band (27)\nmap shape: three, Fig. 7(c)", ASSUME, ec=ORANGE)
-        arrow(28, 31.5, 33, 31.5)
-        box(33, 26, 26, 11, "fit (26)\n$s_{up}$, $s_{dn}$, $v_t$ adjusted until\n$M(G_{UP}(t))$ lies on the target", FIT, ec=TEAL)
-        arrow(75, 45, 75, 37.2)
-        a.text(76, 41, "target", fontsize=6.8, va="center")
-        arrow(59, 31.5, 64, 31.5)
-        box(64, 26, 22, 11, "nine candidates\nall reproduce the file,\ndisagree on short pulses", FIT, ec=TEAL)
-        a.text(88, 31.5, "built-in:\n$x_{lin}$ = 0.45\n$p$ = 1", fontsize=6.8, va="center", ha="left", color="#7A5A1E")
-        # row 3: the measurement
-        step(2, 18.5, "steps 3–4: one stressed measurement decides")
-        box(2, 7, 24, 11, "one stressed pad\nwaveform (measured):\nits peak and its shape", MEAS, ec=RED)
-        arrow(26, 12.5, 31, 12.5)
-        box(31, 7, 26, 11, "calibrate (28)\nbisect $v_t$ of each candidate\nuntil its pad peak matches", FIT, ec=TEAL)
-        arrow(75, 26, 75, 18.2)
-        arrow(57, 12.5, 62, 12.5)
-        box(62, 7, 25, 11, "select (29)\nkeep the candidate whose\nwhole waveform is closest", FIT, ec=TEAL)
-        arrow(87, 12.5, 91, 12.5)
-        box(91, 7, 8, 11, "model", "#FFFFFF", ec="#222222", fs=7.4)
-        a.text(95, 4.8, "verified at\nfive widths", ha="center", va="top", fontsize=6.4, color="#444444")
-        # legend
-        for x, fc, ec, lab in ((2, FILE, "#555555", "from the IBIS file"), (24, ASSUME, ORANGE, "assumed (built-in)"),
-                               (46, FIT, TEAL, "fitted / computed"), (68, MEAS, RED, "measured")):
-            a.add_patch(mpatches.Rectangle((x, 0.8), 3.2, 2.4, fc=fc, ec=ec, lw=0.9))
-            a.text(x + 4.2, 2.0, lab, fontsize=6.8, va="center")
+        fig, a = plt.subplots(figsize=(W, 2.9))
+        a.set_xlim(0, 100); a.set_ylim(0, 46); a.axis("off")
+        fs = 6.3
+        dbox(a, 1, 32, 23, 11, "IBIS file\nI–V tables, V–T waveforms,\n$C_{comp}$, package", ls="--", fs=fs)
+        darrow(a, 24, 37.5, 27, 37.5)
+        dbox(a, 27, 32, 23.5, 11, "step 0\nestimate $C_{comp}$; solve\n$K_u(t)$, $K_d(t)$; target (25)", fs=fs)
+        darrow(a, 50.5, 37.5, 53.5, 37.5)
+        dbox(a, 53.5, 32, 23.5, 11, "step 1\nfit $s_{up}$, $s_{dn}$, $v_t$ per\ncandidate, (26)", fs=fs)
+        darrow(a, 77, 37.5, 80, 37.5)
+        dbox(a, 80, 32, 19, 11, "step 2\nnine candidates:\nband (27) × 3 shapes", fs=fs)
+        dbox(a, 53.5, 17, 23.5, 9.5, "built-in constants\n$x_{lin}$, $p$, three map\nshapes, band rule", ls="--", fs=fs)
+        darrow(a, 65.25, 26.5, 65.25, 32)
+        a.plot([89.5, 89.5], [32, 9.5], color=K_, lw=0.9)
+        darrow(a, 89.5, 9.5, 77, 9.5)
+        dbox(a, 53.5, 4, 23.5, 11, "step 3\ncalibrate $v_t$ of each\ncandidate on the peak, (28)", fs=fs)
+        darrow(a, 53.5, 9.5, 50.5, 9.5)
+        dbox(a, 27, 4, 23.5, 11, "step 4\nselect by the waveform\nover the pulse, (29)", fs=fs)
+        darrow(a, 27, 9.5, 24, 9.5)
+        dbox(a, 1, 4, 23, 11, "model\nsubcircuit, (19)–(24)", fs=fs)
+        dbox(a, 1, 19, 23, 9.5, "one stressed pad\nwaveform (measured)", ls="--", fs=fs)
+        a.plot([12.5, 12.5], [19, 15], color=K_, lw=0.9)
+        a.plot([12.5, 38.75], [17, 17], color=K_, lw=0.9)
+        darrow(a, 38.75, 17, 38.75, 15)
+        a.plot([38.75, 60], [17, 17], color=K_, lw=0.9)
+        darrow(a, 60, 17, 60, 15)
         save(fig, "fig_workflow")
 
 
@@ -1296,7 +1411,7 @@ def fig_target():
     import gate_ramp_prototype as gp
     from pybis2spice import pybis2spice as pb
     import spicelab as sl
-    base = ROOT / "results" / "gate_cascade_prototype_2026-09-09" / "ex2_c1.7"
+    base = SC / "knee_models" / "ex2_c2.64"                 # the file at the C_comp estimated from the file
     ib = base / "input_ccomp.ibs"
     m, c = gp.ibis_names(ib)
     dm = pb.DataModel(pb.get_ibis_model_ecdtools(str(ib)), model_name=m, component_name=c)
@@ -1333,7 +1448,7 @@ def fig_target():
     rfix_ohm = float(dm.vt_rising[0].r_fix)
     vfix_list = sorted({float(w.v_fix[0]) for w in dm.vt_rising})
     # the native element's own coefficient through the same transition (native_full_swing.py)
-    nat = DOCDIR / "native_full_swing" / "ex2_c1.7.npz"
+    nat = DOCDIR / "native_full_swing" / "ex2_c2.64.npz"
     nat_rms = float("nan")
     if nat.exists():
         z = np.load(nat)
@@ -1406,7 +1521,7 @@ def fig_target():
 def fig_fit_score():
     """What the residual of (26) measures: the gap between the model's Ku(t) and the file's, for a
     poor trial and for the fit (ex2, K = 3, map (0.57, 0.64), x_lin = 0.45)."""
-    d = np.load(DOCDIR / "shape_from_file" / "target_ex2.npz")
+    d = np.load(DOCDIR / "shape_fileonly" / "target_ex2.npz")
     u, target = d["u"], d["target"]
     t = np.arange(4.0, 21.0, cl.DT) - 5.025
     p = EX2
@@ -1448,8 +1563,8 @@ def fig_fit_score():
 # ------------------------------------------------------------------ J. the search
 def fig_fit_search():
     """The residual landscape of (26) on ex2 and the three Nelder-Mead runs, from fit_search.py."""
-    L = np.load(DOCDIR / "fit_search" / "landscape.npz")
-    P = np.load(DOCDIR / "fit_search" / "paths.npz")
+    L = np.load(DOCDIR / "fit_search_fileonly" / "landscape.npz")
+    P = np.load(DOCDIR / "fit_search_fileonly" / "paths.npz")
     fit = L["fit"]
     cols = {2: TEAL, 8: ORANGE, 30: BLUE}
     out = {}
@@ -1479,12 +1594,25 @@ def fig_fit_search():
             ax[2].plot(np.arange(1, len(lg) + 1), best, color=cols[s0], lw=1.4, label=lab)
         a.plot(fit[0], fit[2], "o", color=RED, ms=4, mfc="none", mew=1.2)
         b.plot(fit[0], fit[1], "o", color=RED, ms=4, mfc="none", mew=1.2)
+        if "vt_bound" in L.files:
+            vb = float(L["vt_bound"])
+            a.axhline(vb, color=RED, lw=0.7, ls="--")
+            a.text(3.4, vb - 0.02, f"bound of the\nmethod, $v_t \\leq {vb:g}$", fontsize=5.6, color=RED, ha="left", va="top")
+        if "end_free" in P.files:
+            ef = P["end_free"]
+            a.plot(ef[0], ef[2], "*", color=RED, ms=8, mfc="none", mew=0.8)
+            a.annotate(f"no bound:\n$v_t$ = {ef[2]:.2f}, rms {ef[3]:.4f}", (ef[0], ef[2]), (0.52, 0.93), textcoords="axes fraction",
+                       fontsize=5.6, color=RED, ha="left", va="top",
+                       arrowprops=dict(arrowstyle="-", color=RED, lw=0.5, shrinkA=0, shrinkB=3))
+            out["free"] = dict(end=ef)
         a.set_xlabel("$s_{up}$ (per ns, log scale)"); a.set_ylabel("$v_t$")
         a.set_title(f"(a) over ($s_{{up}}$, $v_t$), $s_{{dn}}$ = {fit[1]:.2f}/ns", fontsize=7.8)
         b.set_xlabel("$s_{up}$ (per ns, log scale)"); b.set_ylabel("$s_{dn}$ (per ns, log scale)")
         b.set_title(f"(b) over ($s_{{up}}$, $s_{{dn}}$), $v_t$ = {fit[2]:.3f}", fontsize=7.8)
         b.set_ylim(0.4, 14)
-        b.text(0.55, 12.6, "start 30/ns ends at $s_{dn}$ = 52/ns (off scale)", fontsize=5.8, color=BLUE, ha="left", va="top")
+        if P["end_30"][1] > 14:
+            b.text(0.03, 0.97, f"start 30/ns ends at\n$s_{{dn}}$ = {P['end_30'][1]:.0f}/ns (off scale)", transform=b.transAxes,
+                   fontsize=5.6, color=BLUE, ha="left", va="top")
         cb = fig.colorbar(cf, ax=[a, b], orientation="horizontal", fraction=0.045, pad=0.3, aspect=45)
         cb.set_ticks(np.log10([0.02, 0.05, 0.1, 0.2, 0.5])); cb.set_ticklabels(["0.02", "0.05", "0.1", "0.2", "0.5"])
         cb.set_label("residual (rms)", fontsize=7); cb.ax.tick_params(labelsize=6.5)
@@ -1492,7 +1620,7 @@ def fig_fit_search():
         c.set_yscale("log"); c.set_ylim(0.02, 1.6); c.set_xlim(0, 150)
         c.set_xlabel("evaluations of (26)"); c.set_ylabel("best residual so far")
         c.set_title("(c) the three runs", fontsize=8)
-        c.legend(frameon=False, fontsize=6.3, loc="upper right")
+        c.legend(frameon=False, fontsize=6.3, loc="upper right", bbox_to_anchor=(1.02, 0.84))
         c.axhline(fit[3] if len(fit) > 3 else float(L["fit_rms"]), color=RED, lw=0.7, ls=":")
         save(fig, "fig_fit_search")
     return out
@@ -1501,9 +1629,10 @@ def fig_fit_search():
 # ------------------------------------------------------------------ J. one stage against the chain
 def fig_one_vs_chain():
     """Why a chain: the best single stage against the best three-stage chain on ex2's file curve
-    (both from stage_count_from_file step 1, as_track1 pass), and where the chain spends the delay."""
-    rows = {int(r["K"]): r for r in csv.DictReader((SC / "step1" / "as_track1__ex2__pull-up.csv").open())}
-    d = np.load(DOCDIR / "shape_from_file" / "target_ex2.npz")
+    (both from stage_count_from_file step 1, est_knee pass: the file-only setting), and where the chain
+    spends the delay."""
+    rows = {int(r["K"]): r for r in csv.DictReader((SC / "step1" / "est_knee__ex2__pull-up.csv").open())}
+    d = np.load(DOCDIR / "shape_fileonly" / "target_ex2.npz")
     u, target = d["u"], d["target"]
     t = np.arange(4.0, 21.0, cl.DT) - 5.025
     vt_map, a_map = EX2["shape"]
@@ -1619,6 +1748,7 @@ def fig_calib_mech():
         c.set_xlim(0.2, 3.0); c.set_ylim(-0.4, 1.55)
         c.set_xlabel("time from the input edge (ns)"); c.set_ylabel("pad voltage (V)")
         c.set_title("(b) the pad waveform as $v_t$ is bisected", fontsize=8.5)
+        pct_axis(c, settled_swing("ex2"))
         c.legend(frameon=False, fontsize=6.0, loc="upper left")
         save(fig, "fig_calib_mech")
     return dict(vt_final=vt_final, brackets=brackets, err0=float(err[its[0]]), vt0=float(vt[its[0]]),
@@ -1626,7 +1756,7 @@ def fig_calib_mech():
                 emax=float(err[order].max()), vt_emax=float(vt[order][int(np.argmax(err[order]))]))
 
 
-ALL = (fig_problem, fig_replay_fails, fig_stage, fig_device, fig_stage_law, fig_blocks, fig_workflow, fig_chain,
+ALL = (fig_problem, fig_replay_fails, fig_stage, fig_stage_flow, fig_device, fig_stage_law, fig_blocks, fig_workflow, fig_chain,
        fig_map, fig_gate_to_ku, fig_target, fig_fit_score, fig_fit_knobs, fig_fit_search, fig_one_vs_chain,
        fig_ku_fit, fig_fit_all, fig_ambiguity, fig_rms_vs_k, fig_stress_use, fig_calib_mech, fig_gate_verify,
        fig_gate_internal, fig_pad_waveforms, fig_pad_summary, fig_native_fail, fig_calibration)

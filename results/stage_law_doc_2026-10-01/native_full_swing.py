@@ -4,13 +4,15 @@
 For Fig. 8(b) of the paper: HSPICE's B-element with ramp_rwf=2 ramp_fwf=2 (the two-waveform
 mode), driven by a 10 ns pulse into the test load (50 ohm and 2 pF), with its pull-up and
 pull-down scaling coefficients probed through xv_pu / xv_pd (PrimeSim HSPICE User Guide: Signal
-Integrity, T-2022.06, ch. 8). The file is the one the probed-map setting uses
-(results/gate_cascade_prototype_2026-09-09/ex2_c1.7/input_ccomp.ibs, C_comp 1.7 pF), so the
-coefficients can be laid over the converter's two-fixture solution of the same file.
+Integrity, T-2022.06, ch. 8). The file is the one the procedure uses, ex2 at the C_comp
+estimated from the file (results/stage_count_from_file_2026-09-21/knee_models/ex2_c2.64/
+input_ccomp.ibs, 2.64 pF), so the coefficients can be laid over the converter's two-fixture
+solution of the same file. (Until v6 the document used the 1.7 pF file of the probed-map
+setting; `--probed` reproduces that run.)
 
-Output: native_full_swing/ex2_c1.7.npz (t_ns, pad, ku, kd) and the HSPICE run next to it.
+Output: native_full_swing/ex2_c2.64.npz (t_ns, pad, ku, kd) and the HSPICE run next to it.
 
-    py -3.14 results/stage_law_doc_2026-10-01/native_full_swing.py
+    py -3.14 results/stage_law_doc_2026-10-01/native_full_swing.py [--probed]
 """
 from __future__ import annotations
 
@@ -30,10 +32,13 @@ from spice_tool_paths import default_hspice  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "native_full_swing"
-IBS = ROOT / "results" / "gate_cascade_prototype_2026-09-09" / "ex2_c1.7" / "input_ccomp.ibs"
+CASES = {"ex2_c2.64": ROOT / "results" / "stage_count_from_file_2026-09-21" / "knee_models" / "ex2_c2.64" / "input_ccomp.ibs",
+         "ex2_c1.7": ROOT / "results" / "gate_cascade_prototype_2026-09-09" / "ex2_c1.7" / "input_ccomp.ibs"}
+NAME = "ex2_c1.7" if "--probed" in sys.argv else "ex2_c2.64"
+IBS = CASES[NAME]
 SUP = 3.3
 DECK = f"""* native element, complete transition, coefficients probed
-.title native full swing ex2 (C_comp 1.7 pF)
+.title native full swing {NAME}
 .option post=2 probe accurate ingold=2
 .temp 27
 Vin in_dig 0 PWL(0n 0  5n 0  5.05n {SUP}  15n {SUP}  15.05n 0  22n 0)
@@ -53,7 +58,7 @@ Cload pad 0 2.0p
 
 
 def main() -> int:
-    d = OUT / "ex2_c1.7"
+    d = OUT / NAME
     d.mkdir(parents=True, exist_ok=True)
     shutil.copy(IBS, d / "input.ibs")
     (d / "run.sp").write_text(DECK, encoding="utf-8")
@@ -63,10 +68,10 @@ def main() -> int:
     raw = sl.parse_hspice_tr0(d / "run.tr0")
     t = sl.time_ns(raw)
     pad, ku, kd = (np.asarray(raw[k], float) for k in ("v(pad)", "v(ku)", "v(kd)"))
-    np.savez(OUT / "ex2_c1.7.npz", t_ns=t, pad=pad, ku=ku, kd=kd)
+    np.savez(OUT / f"{NAME}.npz", t_ns=t, pad=pad, ku=ku, kd=kd)
     m = (t > 5) & (t < 16)
     print(f"pad {pad[m].min():.3f}..{pad[m].max():.3f} V, Ku {ku[m].min():.3f}..{ku[m].max():.3f}, "
-          f"Kd {kd[m].min():.3f}..{kd[m].max():.3f} -> {OUT / 'ex2_c1.7.npz'}")
+          f"Kd {kd[m].min():.3f}..{kd[m].max():.3f} -> {OUT / (NAME + '.npz')}")
     return 0
 
 

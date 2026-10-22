@@ -1,57 +1,60 @@
 {
  "replay_fails": {
-  "before": "A. Terms and Test Set"
+  "before": "A predriver stage is a CMOS inverter dri"
  },
  "device": {
-  "before": "With the PMOS source at"
+  "before": "Applying (7) to each device with (11) an"
  },
  "stage_law": {
-  "before": "In words, a stage is a bucket: it fills "
+  "before": "Fig. 5 draws (19) as a signal flow. The "
  },
  "blocks": {
-  "before": "In words, a stage is a bucket: it fills "
+  "before": "The predriver is modeled as"
  },
  "chain": {
   "before": "C. The Map: From the Gate to the Conduct"
  },
  "map": {
-  "before": "The current delivered to the die node is"
+  "before": "Fig. 9 shows the two relations evaluated"
  },
  "gate_to_ku": {
-  "before": "ex2 is the running example, in two setti"
+  "before": "The running example. ex2 is the running "
+ },
+ "testset": {
+  "before": "Fig. 10 draws the procedure and Table IV"
  },
  "workflow": {
-  "before": "The existing model reproduces the soluti"
+  "before": "C. Step 0: The Target"
  },
  "target": {
-  "before": "D. What the File Cannot Determine"
+  "before": "D. Step 1: Fitting the Stage Law Through"
  },
  "fit_knobs": {
-  "before": "On the twelve test buffers the band cont"
+  "before": "Why several stages. With a single stage,"
  },
  "fit_search": {
-  "before": "On the twelve test buffers the band cont"
+  "before": "Why several stages. With a single stage,"
  },
  "fit_all": {
-  "before": "E. Steps 2\u20134: The Single Stressed Measur"
+  "before": "E. What the File Cannot Determine"
  },
  "shapes": {
-  "before": "E. Steps 2\u20134: The Single Stressed Measur"
+  "before": "The stage count. Fig. 15 gives the resid"
  },
  "ambiguity": {
-  "before": "E. Steps 2\u20134: The Single Stressed Measur"
+  "before": "F. Steps 2–4: The Single Stressed Measur"
  },
  "rms_vs_k": {
-  "before": "is driven to zero by bisection of"
+  "before": "Calibration (step 3). The stage threshol"
  },
  "stress_use": {
-  "before": "is driven to zero by bisection of"
+  "before": "Calibration (step 3). The stage threshol"
  },
  "calib_mech": {
-  "before": "Selection (step 4). After calibration ev"
+  "before": "G. The Procedure End to End on Ex2"
  },
  "ledger": {
-  "before": "On ex2 the stage law with the netlist st"
+  "before": "Three things can be read off Table VIII."
  },
  "gate": {
   "before": "On ex2 the stage law with the netlist st"
@@ -60,15 +63,15 @@
   "before": "C. Limits of the Evidence"
  },
  "pad": {
-  "before": "Several points are open. A drive-depende"
+  "before": "VI. Discussion: Approximations and Limit"
  },
  "pad_summary": {
-  "before": "Several points are open. A drive-depende"
+  "before": "VI. Discussion: Approximations and Limit"
  },
  "pad_waveforms": {
-  "before": "[1] IBIS Open Forum, I/O Buffer Informat"
+  "before": "VI. Discussion: Approximations and Limit"
  },
  "approx": {
-  "before": "[1] IBIS Open Forum, I/O Buffer Informat"
+  "before": "Several points are open. A drive-depende"
  }
 }

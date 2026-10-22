@@ -417,3 +417,49 @@ furthest, because Section V-B mentions four figures and a table on one page). Wi
 4.8-7.1 in so that the dense stretch from Section IV-C to V-B fits. Delivered as
 `\\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v6_ieee.docx` with the markdown
 preview beside it. The builder now writes v6; v2, v3, v4 and v5 stay as committed.
+
+## v7: one setting, one x_lin, the round-2 items (2026-10-22)
+
+`stage_law_paper_v7_ieee.docx` with `stage_law_paper_v7_draft.md`. Items R1-R12 of the second
+round in `v5_feedbacks.md`, and the model review they asked for:
+
+1. **One setting.** Every figure and table now uses the model the procedure builds for ex2:
+   C_comp 2.64 pF estimated from the file, K = 3, map (0.5, 0.7), s_up 2.55, s_dn 2.69, v_t
+   0.700 fitted (on the bound) and 0.632 after calibration. The map measured on ex2's probed
+   gate is named in words in III-C as the evidence that K_u is a function of the gate, and its
+   numbers (0.57, 0.64) survive only in the legend of Fig. 8(b). The "two settings" paragraph is
+   gone; IV-A defines the running example. Regenerated in that setting:
+   `fileonly_fit_data.py` -> `fit_search_fileonly/` (the landscape with v_t extended to 0.95, the
+   three bounded runs and one unbounded), `shape_fileonly/` (the targets and six shapes per
+   buffer), Figs. 7, 9, 11-15, Table VI; `native_full_swing.py` now probes the native coefficient
+   on the 2.64 pF file (`native_full_swing/ex2_c2.64.npz`, 0.003 rms against the two-fixture
+   solution as before); Fig. 11 reads that file.
+2. **One x_lin.** `results/stage_law_model_checks_2026-10-22` rebuilt inv_chain and io_buf with
+   x_lin = 0.45 (they had been fitted, 0.28 and 0.41): inv_chain selects K = 7, the netlist
+   count, (0.4, 0.6) at 5.8 % (was 5.1 % with K = 6); io_buf (0.5, 0.7) at 5.6 % (was 7.7 %).
+   `build_stage_law_doc_figures.uniform_picks()/selected()/pick_build()` own the selected build
+   on those two; Tables V and X, Figs. 19-20 and `gate_internal_check.csv` follow. Section II
+   states only the decision; IV-E carries the evidence and Table VII, the sensitivity (ex2
+   5.5 / 8.3 / 10.4 %, inv_chain K = 6 2.3 / 4.9 / 7.2 % at 0.35 / 0.45 / 0.55).
+3. **Structure.** "A. Terms and Test Set" left the introduction for IV-A "Test buffers, terms and
+   the running example" with Table III (the twelve buffers: supply, predriver stages, output
+   stage, what it is, input edge) and the sentence on why io_buf has no variants; Section IV
+   opens with what it does; the organization paragraph is neutral; "take (19) on trust" is gone.
+   The subsections of IV are now A-G.
+4. **Equations.** (5) is the drive without a clip (the cutoff row of (2) covers D = 0, and the
+   gate never exceeds the supply); the clip enters once, in g(x) of (11), with its reason, and
+   (17) inherits it.
+5. **Figures.** Fig. 5 is new (`fig_stage_flow`, in column): (19) as a signal flow with the
+   gate factor, rate and drain factor of each term, the integrator and the feedback. Figs. 6 and
+   10 are plain block diagrams (rectangles, arrows, equation numbers; dashed boxes for the
+   inputs). Pad panels carry a right-hand axis in percent of the settled swing (Figs. 1(d), 16,
+   17(b), 20). The abstract has no symbols.
+6. **The review.** `docs/stage_law_model_review.md`: what in the stage law is physics and what
+   is assumed, the identical-stage chain, the static map and the (0.57, 0.64) confusion, what
+   the file identifies and the threshold on its bound (the free optimum is at 0.77, 1 % better),
+   the x_lin rule and its sensitivity, the calibration, the circularity of the four constants
+   and the size of the test set, the native baseline, and what evidence would convince.
+
+Rendered through Word: 20 pages, 21 figures, 11 tables, 12 references. Delivered as
+`\\minerfiles.mst.edu\dfs\users\sh3qm\Downloads\stage_law_paper_v7_ieee.docx` with the markdown
+preview beside it. The builder now writes v7; v2 to v6 stay as committed.
