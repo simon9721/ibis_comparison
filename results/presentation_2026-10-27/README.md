@@ -16,7 +16,7 @@ stage-law model teal, the value-matched replay orange, the file's own curves gre
 | fitting | `knob_sup.png`, `knob_sdn.png`, `knob_vt.png`, `knob_fit.png` | the four panels of Fig. 12 as four figures: one number moved around the fit, and a fit built one number at a time (rms only there) | the file's K_u(t) target and the selected chain, as fig_fit_knobs |
 | fitting | `band_K.png` | residual of the fit against K with the band rule: the three smallest K within 25 % of the best are kept and the measured pulse chooses | `stage_count_from_file_2026-09-21/step1_summary.csv`, pass est_knee |
 | verification | `fullswing_ex2.png`, `fullswing_inv_chain.png` | the model's complete transition against the transistor's, 50 % crossings dashed: ex2 1323 against 1400 ps, inv_chain 343 against 353 ps | the selected builds' `full` runs, `predriver_stages_2026-09-09` |
-| result | `result_ex2.png`, `result_inv_chain.png`, `result_table.md/.csv` | transistor, native and the model at the five widths; peak error and lag per width, native beside | the selected builds (ex2 K = 3, inv_chain K = 7), `stress_method_matrix` native |
+| result | `result_<buffer>_<width>ps.png` (ten figures), `result_table.md/.csv` | transistor, native and the model, one figure per buffer and depth, peak errors in the legend; the table has peak error and lag per width, native beside | the selected builds (ex2 K = 3, inv_chain K = 7), `stress_method_matrix` native |
 
 The result table:
 

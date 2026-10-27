@@ -20,7 +20,7 @@ file's own tables grey. Titles carry the pulse width and its depth in percent of
                                does, because that function draws one four-panel figure)
     band_K.png                 residual of the fit against K with the band rule, ex2 and inv_chain
     fullswing_<dev>.png        the model's full-swing pad against the transistor's, 50 % crossings
-    result_<dev>.png           transistor, native and the model at the five widths
+    result_<dev>_<w>ps.png     transistor, native and the model, one figure per buffer and width
     result_table.csv/.md       peak error and lag per width, model and native
 
     py -3.14 scripts/presentation_2026-10-27_figures.py
@@ -345,21 +345,21 @@ def result():
         sweep = list(csv.DictReader((folder / "sweep.csv").open()))[-1]
         swing = figs.settled_swing(dev)
         with plt.rc_context(RC):
-            fig, a = plt.subplots(figsize=(7.6, 4.4))
-            for i, w in enumerate(WIDTHS[dev]):
+            for w in WIDTHS[dev]:
                 t_si, si, nat = matrix_wave(dev, w)
                 tm, _ku, pm = b24._cand(folder, f"d{w}")
-                a.plot(t_si, nat, color=NATIVE, lw=1.3, ls=NAT_LS, label="HSPICE native IBIS" if i == 0 else None, zorder=1)
-                a.plot(t_si, si, color=TR, lw=2.4, label="transistor level" if i == 0 else None, zorder=3)
-                a.plot(tm, pm, color=MODEL, lw=1.9, ls="--", label="stage-law model" if i == 0 else None, zorder=4)
+                e_nat, e_mo = peak_err(t_si, nat, t_si, si, w / 1000), float(sweep[f"pk_d{w}"])
                 table.append(dict(buffer=dev, width_ps=w, depth_pct=DEPTH[dev][w], transistor_peak_V=round(float(si[(t_si > 0) & (t_si < w / 1000 + 2.6)].max()), 3),
-                                  model_peak_err_pct=float(sweep[f"pk_d{w}"]), model_lag_ps=float(sweep[f"lag_d{w}"]),
-                                  native_peak_err_pct=round(peak_err(t_si, nat, t_si, si, w / 1000), 1)))
-            a.set_xlim(*xlim(dev, WIDTHS[dev][0])); a.set_ylim(-0.1, swing * 1.05)
-            a.set_title(f"{dev}: pulses of {DEPTH[dev][WIDTHS[dev][0]]} to {DEPTH[dev][WIDTHS[dev][-1]]} % of the settled swing")
-            a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("pad voltage (V)")
-            a.legend(frameon=False, loc="upper right"); a.grid(alpha=0.25, lw=0.5)
-            save(fig, f"result_{dev}.png")
+                                  model_peak_err_pct=e_mo, model_lag_ps=float(sweep[f"lag_d{w}"]), native_peak_err_pct=round(e_nat, 1)))
+                fig, a = plt.subplots(figsize=(6.4, 4.0))
+                a.plot(t_si, si, color=TR, lw=2.6, label="transistor level", zorder=3)
+                a.plot(t_si, nat, color=NATIVE, lw=2.0, ls=NAT_LS, label=f"HSPICE native IBIS ({e_nat:+.0f} % peak)", zorder=2)
+                a.plot(tm, pm, color=MODEL, lw=2.2, ls="--", label=f"stage-law model ({e_mo:+.1f} % peak)", zorder=4)
+                a.set_xlim(*xlim(dev, w)); a.set_ylim(-0.1, swing * 1.05)
+                a.set_title(title(dev, w), fontsize=12)
+                a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("pad voltage (V)")
+                a.legend(frameon=False, loc="upper right"); a.grid(alpha=0.25, lw=0.5)
+                save(fig, f"result_{dev}_{w}ps.png")
     with (OUT / "result_table.csv").open("w", newline="", encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=list(table[0].keys()))
         w.writeheader(); w.writerows(table)
