@@ -136,13 +136,16 @@ def value_match():
             b.plot(t, ku_mo, color=VALUE, lw=2.0, label="value-matched replay")
             b.axvline(wn, color=VALUE, lw=1, ls=":")
             k_at = float(np.interp(wn, t, ku_mo))
-            b.plot([wn], [k_at], "o", color=VALUE, ms=7)
-            b.annotate(f"value matched here, at the reversal:\nthe replay enters the falling table\nwhere it holds $K_u$ = {k_at:.2f}",
-                       (wn, k_at), (wn + (0.12 if dev == "ex2" else 0.02), -0.47), fontsize=8.5, color=VALUE, va="bottom",
-                       arrowprops=dict(arrowstyle="-|>", color=VALUE, lw=1.2, shrinkB=4))
-            b.set_xlim(a.get_xlim()); b.set_ylim(-0.5, 1.35)
+            device = next(d for d in base.DEVICES if d.device_id == dev)
+            dm = pb.DataModel(pb.get_ibis_model_ecdtools(str(device.fast_ibis)), model_name=device.model, component_name=device.component)
+            kr = pb.solve_k_params_output(dm, 1, "Rising")
+            tr_ = kr[:, 0] * 1e9
+            m = tr_ >= wn
+            b.plot(tr_[m], kr[m, 1], color=VALUE, lw=1.6, ls=(0, (3, 2)), label="the rising table it was on, unfinished")
+            b.plot([wn], [k_at], "o", color=VALUE, ms=8, zorder=6, label="reversal: value matched here")
+            b.set_xlim(a.get_xlim()); b.set_ylim(-0.3, 1.35)
             b.set_title(title(dev, w) + ": $K_u$", fontsize=11); b.set_xlabel("time from the input edge (ns)"); b.set_ylabel("$K_u$")
-            b.legend(frameon=False, loc="upper right", fontsize=8.5); b.grid(alpha=0.25, lw=0.5)
+            b.legend(frameon=False, loc="center right", fontsize=8.5); b.grid(alpha=0.25, lw=0.5)
             save(fig, f"value_match_{dev}.png")
 
 
