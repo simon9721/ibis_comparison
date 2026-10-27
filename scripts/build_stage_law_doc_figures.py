@@ -545,9 +545,12 @@ def darrow(a, x0, y0, x1, y1, text=None, above=True, fs=7.0, dy=1.3):
 
 
 # ------------------------------------------------------------------ 3. the signal path
-def fig_blocks():
+def fig_blocks(eq_numbers: bool = True, name: str = "fig_blocks"):
     """(a) The buffer as an IBIS file describes it; (b) the model's signal path, aligned under it.
-    Plain block diagram: rectangles, arrows, signal names and equation numbers."""
+    Plain block diagram: rectangles, arrows, signal names and equation numbers (eq_numbers=False
+    drops the numbers, for slides)."""
+    n = (lambda k: f"\n({k})") if eq_numbers else (lambda k: "")
+    n2 = (lambda k: f", ({k})") if eq_numbers else (lambda k: "")
     with plt.rc_context(RC):
         fig, a = plt.subplots(figsize=(W, 3.75))
         a.set_xlim(0, 100); a.set_ylim(0, 67); a.axis("off")
@@ -580,34 +583,35 @@ def fig_blocks():
         a.text(0.5, 36.5, "(b) the model", fontsize=8.5, va="center")
         a.text(1.5, 26, "$V_{in}$", fontsize=8, va="center")
         darrow(a, 5.2, 26, 8.5, 26)
-        dbox(a, 8.5, 21, 13.5, 10, "comparator\n$V_{DD}/2$, (20)")
+        dbox(a, 8.5, 21, 13.5, 10, "comparator\n$V_{DD}/2$" + n2(20))
         darrow(a, 22, 26, 25, 26, "$u_1$")
         for i, lab in enumerate(("stage 1", "stage 2")):
-            dbox(a, 25 + 10.5 * i, 21, 8.5, 10, lab + "\n(19)")
+            dbox(a, 25 + 10.5 * i, 21, 8.5, 10, lab + n(19))
             darrow(a, 33.5 + 10.5 * i, 26, 35.5 + 10.5 * i, 26)
         a.text(48.2, 26, "…", fontsize=11, ha="center", va="center")
         darrow(a, 50, 26, 52, 26)
-        dbox(a, 52, 21, 8.5, 10, "stage $K$\n(19)")
+        dbox(a, 52, 21, 8.5, 10, "stage $K$" + n(19))
         darrow(a, 60.5, 26, 66, 26, "$G_{UP}$")
-        dbox(a, 66, 21, 10, 10, "map $M$\n(22)")
+        dbox(a, 66, 21, 10, 10, "map $M$" + n(22))
         darrow(a, 76, 26, 81, 26, "$K_u$")
-        dbox(a, 81, 13, 12, 18, "I–V tables,\n$C_{comp}$,\npackage (24)")
+        dbox(a, 81, 13, 12, 18, "I–V tables,\n$C_{comp}$,\npackage" + (" (24)" if eq_numbers else ""))
         darrow(a, 93, 22, 98.5, 22)
         a.text(96, 24.2, "pad", fontsize=8, ha="center")
         a.plot([63, 63], [26, 15], color=K_, lw=0.9)
         darrow(a, 63, 15, 66, 15)
-        dbox(a, 66, 10, 10, 10, "map $M$\n(23)")
+        dbox(a, 66, 10, 10, 10, "map $M$" + n(23))
         a.text(60.4, 17.5, "$1-G_{UP}$", fontsize=7, ha="right")
         darrow(a, 76, 15, 81, 15, "$K_d$")
         a.plot([8.5, 76], [34.0, 34.0], color=K_, lw=0.7)
         a.plot([8.5, 8.5], [33, 34], color=K_, lw=0.7); a.plot([76, 76], [33, 34], color=K_, lw=0.7)
-        a.text(42, 34.8, "proposed: (19)–(23), identified in Section IV", ha="center", fontsize=7, color=K_)
+        a.text(42, 34.8, "proposed: (19)–(23), identified in Section IV" if eq_numbers else "proposed: the predriver model",
+               ha="center", fontsize=7, color=K_)
         a.plot([81, 93], [9.5, 9.5], color=K_, lw=0.7)
         a.plot([81, 81], [9.5, 10.5], color=K_, lw=0.7); a.plot([93, 93], [9.5, 10.5], color=K_, lw=0.7)
         a.text(87, 8.4, "from the file, unchanged", ha="center", va="top", fontsize=7, color=K_)
         a.text(42, 4.2, "the $K$ stages share one parameter set $\\{s_{up}, s_{dn}, v_t, x_{lin}, p\\}$",
                ha="center", fontsize=7, color=K_)
-        save(fig, "fig_blocks")
+        save(fig, name)
 
 
 # ------------------------------------------------------------------ 4. one chain, two inputs
