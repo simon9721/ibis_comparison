@@ -6,8 +6,9 @@ HSPICE native IBIS blue dashed, the stage-law model teal, the value-matched repl
 file's own tables grey. Titles carry the pulse width and its depth in percent of the settled swing.
 
     challenge_<dev>.png        transistor against native at 50, 70, 90 % (stress matrix waveforms)
-    value_match_<dev>.png      transistor, native and the value-matched replay at 50 %, with the
-                               instant the value is matched marked (reversal_rules_ex2_inv_chain)
+    value_match_<dev>_<w>ps.png
+                               transistor, native and the value-matched replay at 50, 70 and 90 %, with
+                               the instant the value is matched marked (reversal_rules_ex2_inv_chain)
     time_match_<dev>.png       the file's rising and falling K_u / K_d tables on one clock and the
                                step time matching demands at the reversal
     kstage_blocks.png          the signal path of Fig. 6 without equation numbers
@@ -19,7 +20,7 @@ file's own tables grey. Titles carry the pulse width and its depth in percent of
                                figures; the curves are recomputed here exactly as fig_fit_knobs
                                does, because that function draws one four-panel figure)
     band_K.png                 residual of the fit against K with the band rule, ex2 and inv_chain
-    fullswing_<dev>.png        the model's full-swing pad against the transistor's, 50 % crossings
+    fullswing_<dev>.png        the model's full-swing pad against the transistor's, the 50 % level and crossings
     result_<dev>_<w>ps.png     transistor, native and the model, one figure per buffer and width
     result_table.csv/.md       peak error and lag per width, model and native
 
@@ -112,41 +113,41 @@ def challenge():
 # ------------------------------------------------------------------ 2. previous methods
 def value_match():
     for dev in ("ex2", "inv_chain"):
-        w = WIDTHS[dev][0]
-        rows = list(csv.DictReader((RULES / "coeff_match" / "waveforms" / f"{dev}_short_high_w{w}ps.csv").open()))
-        col = lambda k: np.array([float(r[k]) for r in rows])  # noqa: E731
-        t = col("time_ns") - 5.0
-        si, nat, mo = col("silicon_pad"), col("hspice_pad"), col("pybis_pad")
-        ku_si, ku_nat, ku_mo = col("silicon_ku"), col("hspice_ku"), col("pybis_ku")
-        swing = figs.settled_swing(dev)
-        wn = w / 1000.0
-        with plt.rc_context(RC):
-            fig, ax = plt.subplots(1, 2, figsize=(10.5, 3.8), gridspec_kw={"wspace": 0.3})
-            a = ax[0]
-            a.plot(t, si, color=TR, lw=2.6, label="transistor level")
-            a.plot(t, nat, color=NATIVE, lw=2.0, ls=NAT_LS, label=f"native IBIS ({peak_err(t, nat, t, si, wn):+.0f} % peak)")
-            a.plot(t, mo, color=VALUE, lw=2.2, label=f"value-matched replay ({peak_err(t, mo, t, si, wn):+.0f} % peak)")
-            a.axvline(wn, color=VALUE, lw=1, ls=":")
-            a.set_xlim(*xlim(dev, w)); a.set_ylim(-0.1, swing * 1.05)
-            a.set_title(title(dev, w) + ": the pad", fontsize=11); a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("pad voltage (V)")
-            a.legend(frameon=False, loc="upper right"); a.grid(alpha=0.25, lw=0.5)
-            b = ax[1]
-            b.plot(t, ku_si, color=TR, lw=2.2, label="solved from the transistor")
-            b.plot(t, ku_nat, color=NATIVE, lw=1.8, ls=NAT_LS, label="native IBIS")
-            b.plot(t, ku_mo, color=VALUE, lw=2.0, label="value-matched replay")
-            b.axvline(wn, color=VALUE, lw=1, ls=":")
-            k_at = float(np.interp(wn, t, ku_mo))
-            device = next(d for d in base.DEVICES if d.device_id == dev)
-            dm = pb.DataModel(pb.get_ibis_model_ecdtools(str(device.fast_ibis)), model_name=device.model, component_name=device.component)
-            kr = pb.solve_k_params_output(dm, 1, "Rising")
-            tr_ = kr[:, 0] * 1e9
-            m = tr_ >= wn
-            b.plot(tr_[m], kr[m, 1], color=VALUE, lw=1.6, ls=(0, (3, 2)), label="the rising table it was on, unfinished")
-            b.plot([wn], [k_at], "o", color=VALUE, ms=8, zorder=6, label="reversal: value matched here")
-            b.set_xlim(a.get_xlim()); b.set_ylim(-0.3, 1.35)
-            b.set_title(title(dev, w) + ": $K_u$", fontsize=11); b.set_xlabel("time from the input edge (ns)"); b.set_ylabel("$K_u$")
-            b.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=8.5); b.grid(alpha=0.25, lw=0.5)
-            save(fig, f"value_match_{dev}.png")
+        for w in (WIDTHS[dev][0], WIDTHS[dev][2], WIDTHS[dev][4]):
+            rows = list(csv.DictReader((RULES / "coeff_match" / "waveforms" / f"{dev}_short_high_w{w}ps.csv").open()))
+            col = lambda k: np.array([float(r[k]) for r in rows])  # noqa: E731
+            t = col("time_ns") - 5.0
+            si, nat, mo = col("silicon_pad"), col("hspice_pad"), col("pybis_pad")
+            ku_si, ku_nat, ku_mo = col("silicon_ku"), col("hspice_ku"), col("pybis_ku")
+            swing = figs.settled_swing(dev)
+            wn = w / 1000.0
+            with plt.rc_context(RC):
+                fig, ax = plt.subplots(1, 2, figsize=(10.5, 3.8), gridspec_kw={"wspace": 0.3})
+                a = ax[0]
+                a.plot(t, si, color=TR, lw=2.6, label="transistor level")
+                a.plot(t, nat, color=NATIVE, lw=2.0, ls=NAT_LS, label=f"native IBIS ({peak_err(t, nat, t, si, wn):+.0f} % peak)")
+                a.plot(t, mo, color=VALUE, lw=2.2, label=f"value-matched replay ({peak_err(t, mo, t, si, wn):+.0f} % peak)")
+                a.axvline(wn, color=VALUE, lw=1, ls=":")
+                a.set_xlim(*xlim(dev, w)); a.set_ylim(-0.1, swing * 1.05)
+                a.set_title(title(dev, w) + ": the pad", fontsize=11); a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("pad voltage (V)")
+                a.legend(frameon=False, loc="upper right"); a.grid(alpha=0.25, lw=0.5)
+                b = ax[1]
+                b.plot(t, ku_si, color=TR, lw=2.2, label="solved from the transistor")
+                b.plot(t, ku_nat, color=NATIVE, lw=1.8, ls=NAT_LS, label="native IBIS")
+                b.plot(t, ku_mo, color=VALUE, lw=2.0, label="value-matched replay")
+                b.axvline(wn, color=VALUE, lw=1, ls=":")
+                k_at = float(np.interp(wn, t, ku_mo))
+                device = next(d for d in base.DEVICES if d.device_id == dev)
+                dm = pb.DataModel(pb.get_ibis_model_ecdtools(str(device.fast_ibis)), model_name=device.model, component_name=device.component)
+                kr = pb.solve_k_params_output(dm, 1, "Rising")
+                tr_ = kr[:, 0] * 1e9
+                m = tr_ >= wn
+                b.plot(tr_[m], kr[m, 1], color=VALUE, lw=1.6, ls=(0, (3, 2)), label="the rising table it was on, unfinished")
+                b.plot([wn], [k_at], "o", color=VALUE, ms=8, zorder=6, label="reversal: value matched here")
+                b.set_xlim(a.get_xlim()); b.set_ylim(-0.3, 1.35)
+                b.set_title(title(dev, w) + ": $K_u$", fontsize=11); b.set_xlabel("time from the input edge (ns)"); b.set_ylabel("$K_u$")
+                b.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=8.5); b.grid(alpha=0.25, lw=0.5)
+                save(fig, f"value_match_{dev}_{w}ps.png")
 
 
 def time_match():
@@ -334,6 +335,9 @@ def fullswing_delay():
             a.plot(ts, vs, color=TR, lw=2.6, label=f"transistor level, 50 % at {d_si * 1000:.0f} ps")
             a.plot(tm, vm, color=MODEL, lw=2.0, label=f"stage-law model, 50 % at {d_mo * 1000:.0f} ps")
             a.axvline(d_si, color=TR, lw=1.2, ls="--"); a.axvline(d_mo, color=MODEL, lw=1.2, ls="--")
+            half = 0.5 * (float(vs[ms][0]) + float(vs[ms][-1]))
+            a.axhline(half, color=FILE, lw=1.2, ls="--")
+            a.text(-0.15, half + 0.02, "50 % of the swing", color="#555555", fontsize=9, va="bottom")
             a.set_xlim(-0.2, span); a.set_xlabel("time from the input edge (ns)"); a.set_ylabel("pad voltage (V)")
             a.set_title(f"{dev}: complete transition into 50 Ω ∥ 2 pF"); a.legend(frameon=False, loc="center right"); a.grid(alpha=0.25, lw=0.5)
             save(fig, f"fullswing_{dev}.png")
