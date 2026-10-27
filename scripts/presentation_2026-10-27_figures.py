@@ -145,7 +145,7 @@ def value_match():
             b.plot([wn], [k_at], "o", color=VALUE, ms=8, zorder=6, label="reversal: value matched here")
             b.set_xlim(a.get_xlim()); b.set_ylim(-0.3, 1.35)
             b.set_title(title(dev, w) + ": $K_u$", fontsize=11); b.set_xlabel("time from the input edge (ns)"); b.set_ylabel("$K_u$")
-            b.legend(frameon=False, loc="center right", fontsize=8.5); b.grid(alpha=0.25, lw=0.5)
+            b.legend(frameon=False, loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=8.5); b.grid(alpha=0.25, lw=0.5)
             save(fig, f"value_match_{dev}.png")
 
 
